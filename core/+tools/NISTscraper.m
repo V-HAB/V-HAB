@@ -13,7 +13,7 @@
 sResult = questdlg(['Are you sure you want to run this script? ',...
                     'You will require an internet connection. ',...
                     'Depending on your connection speed, the script will run for several tens of minutes. ',...
-                    'This script will overwrite all data files located in lib/+matterdata. ',...
+                    'This script will overwrite all data files located in core/+matter/+data/+NIST. ',...
                     'Are you sure you want to proceed?'], 'Warning','Proceed','Cancel','Proceed');
 
 if strcmp(sResult, 'Cancel')
@@ -91,7 +91,7 @@ fMaximumPressure = 10;
 %% Preparations for scraping
 
 % Setting the path where V-HAB expects the finished .csv data files to be
-sPath = 'lib/+matterdata/';
+sPath = 'core/+matter/+data/+NIST/';
 
 % We need to let the matter table know, how many substances we scraped from
 % NIST and which ones. So we'll just write this information to a .csv file.
@@ -109,7 +109,7 @@ fprintf(iFileID,'%s',sOutputString_2);
 fclose(iFileID);
                                      
                                      
-oOptions = weboptions('Timeout',30);
+oOptions = weboptions('Timeout',30,'CharacterEncoding','UTF-8','ContentType','text');
 
 pUnitConversionFactors = containers.Map(...
     {'-', 'K',    'MPa', 'kJ/kg',  'J/g*K', 'kg/m3', 'm3/kg', 'm/s',   'K/MPa', 'Pa*s', 'W/m*K'},...
@@ -147,6 +147,9 @@ for iI = 1:pData.Count
     end
     
     afIsochoricScrapes(iI) = iCounter;
+    
+    % Saving the number of scrapes in the substance struct
+    eval(['t',strrep(csSubstanceNames{iI},' ',''),'.iNumberOfIsochors = iCounter']);
 end
 
 iNumberOfIsoChors = sum(afIsochoricScrapes);
@@ -219,7 +222,7 @@ for iI = 1:length(csSubstanceKeys)
     
         sURL = ['http://webbook.nist.gov/cgi/fluid.cgi?Action=Data&Wide=on&ID=C',...
                 num2str(pData(sKey).ID),...
-                '&Type=IsoChor&Digits=5&THigh='...
+                '&Type=IsoChor&Digits=12&THigh='...
                 num2str(pData(sKey).THigh),...
                 '&TLow=',...
                 num2str(pData(sKey).TLow),...
@@ -256,11 +259,6 @@ for iI = 1:length(csSubstanceKeys)
         
         % Old and new are the same, so new is the new old...
         csOldHeaders = csNewHeaders;
-        
-        % Saving the raw data as text into a temporary file
-        oTempFile = fopen('tmp.tsv','w+');
-        fprintf(oTempFile, sRawData);
-        fclose(oTempFile);
         
         % Before we can process the information in the temporary file, we
         % need to analyze the header. Isochoric data is tricky, because at
@@ -375,8 +373,7 @@ for iI = 1:length(csSubstanceKeys)
             csColumnNames{iL+1}        = 'Phase';
             csConvertedUnitNames{iL+1} = '-';
             
-            
-            %        Create a text file with the header information here
+            % Create a text file with the header information here
             oHeaderFile = fopen([sPath, sIsochoricHeaderFileName],'w+');
             sColumnFormat = '%s';
             for iL = 1:(length(csColumnNames)-1)
@@ -387,13 +384,48 @@ for iI = 1:length(csSubstanceKeys)
             fprintf(oHeaderFile,sColumnFormat,csConvertedUnitNames{:,1});
             fclose(oHeaderFile);
             
+            % We need to initialize a large array to store the data from
+            % the individual scrapes. First we get the struct containting
+            % the substance-specific information.
+            tSubstanceData = eval(['t',strrep(csSubstanceNames{iI},' ','')]);
+            
+            % The number of columns is equal to the length of the
+            % csColumnNames cell
+            iColumns = length(csColumnNames);
+            
+            % The number of rows is a function of the temperature range and
+            % the number of 5 degree steps. We have previously saved the
+            % total number of isochors based on the number of densities.
+            % Finally we need to multiply the result by two because in the
+            % raw data the values for liquid and gaseous states are given
+            % in the same row.
+            iRows = floor((tSubstanceData.THigh - tSubstanceData.TLow) / 5 ) * tSubstanceData.iNumberOfIsochors * 2;
+            
+            % Now we can initialize the data matrix
+            mfIsochoricData = nan(iRows, iColumns);
+            
+            % Initializing a counter so we know where to insert the current
+            % scrape's data.
+            iCurrentRow = 1;
+            
             % End of first run if-condition
             bFirstRun = false;
         end
         
-        % Reading the temp file, staring at row nr. 2, so we skip the
-        % header.
-        mfRawData = dlmread('tmp.tsv','\t',2,0);
+        % Now we need to turn the raw data from the website into a matrix
+        % of numbers so we can work with it. First we split the long string
+        % into rows.
+        csRawDataRows = strsplit(sRawData, '\n');
+        
+        % Now we split the rows into columns. At first this will result in
+        % an Nx1 cell, with an 1xM cell in every row. Using vertcat() we
+        % make a NxM cell out of it.
+        csRawDataRows = cellfun(@(cCell) strsplit(cCell, '\t'), csRawDataRows(1:end-1)', 'UniformOutput', false);
+        csRawData = vertcat(csRawDataRows{:,1});
+        
+        % Finally we convert the strings to numbers. We skip the first row
+        % because it's the header. 
+        mfRawData = cellfun(@(cCell) str2double(cCell), csRawData(2:end,:));
         
         mfProcessedData = zeros(length(mfRawData(:,1)) * 2, iLiquidColumns + 3 );
         
@@ -418,8 +450,14 @@ for iI = 1:length(csSubstanceKeys)
             end
         end
         
-        % Writing the processed data to the end of the file.
-        dlmwrite([sPath, sIsochoricFileName], mfProcessedData, '-append');
+        % Counting the number of new rows in this scrape
+        iNewRows = length(mfProcessedData(:,1));
+        
+        % Adding the new data to the matrix
+        mfIsochoricData(iCurrentRow:iCurrentRow + iNewRows - 1,:) = mfProcessedData;
+        
+        % Updating the current row counter
+        iCurrentRow = iCurrentRow + iNewRows;
         
         % Last thing to do is increment the density value for the next
         % iteration.
@@ -427,13 +465,21 @@ for iI = 1:length(csSubstanceKeys)
             fDensity = fDensity + exp(fExponent);
             fExponent = fExponent + 0.1;
         %elseif fDensity < 5
-        %    fDensity = fDensity + 0.1;
+        %    fDensity = fDensity + 0.1; 
         elseif fDensity < 50
             fDensity = fDensity + 10;
         else
             fDensity = fDensity + 100;
         end
     end
+    
+    % We usually pre-allocated a few rows too many, so we delete the rest
+    % of the matrix.
+    mfIsochoricData(iCurrentRow:end,:) = [];
+    
+    % Now we write the collected isochoric data for this substance to a
+    % file.
+    writematrix(mfIsochoricData, [sPath, sIsochoricFileName]);
     
     %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Getting the isobaric data %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -470,7 +516,7 @@ for iI = 1:length(csSubstanceKeys)
     
         sURL = ['http://webbook.nist.gov/cgi/fluid.cgi?Action=Data&Wide=on&ID=C',...
                 num2str(pData(sKey).ID),...
-                '&Type=IsoBar&Digits=5&THigh='...
+                '&Type=IsoBar&Digits=12&THigh='...
                 num2str(pData(sKey).THigh),...
                 '&TLow=',...
                 num2str(pData(sKey).TLow),...
@@ -508,11 +554,6 @@ for iI = 1:length(csSubstanceKeys)
         
         % Old and new are the same, so new is the new old...
         csOldHeaders = csNewHeaders;
-        
-        % Saving the raw data as text into a temporary file
-        oTempFile = fopen('tmp.tsv','w+');
-        fprintf(oTempFile, sRawData);
-        fclose(oTempFile);
         
         % Before we can process the information in the temporary file, we
         % need to analyze the header. 
@@ -562,14 +603,47 @@ for iI = 1:length(csSubstanceKeys)
             fprintf(oHeaderFile,sColumnFormat,csConvertedUnitNames{:,1});
             fclose(oHeaderFile);
             
+            % We need to initialize a large array to store the data from
+            % the individual scrapes. 
+            % The number of columns is equal to the length of the
+            % csColumnNames cell
+            iColumns = length(csColumnNames);
+            
+            % The number of rows is a function of the temperature range and
+            % the number of 5 degree steps. We have previously saved the
+            % total number of isochors based on the number of densities.
+            % Finally we need to multiply the result by two because in the
+            % raw data the values for liquid and gaseous states are given
+            % in the same row.
+            iRows = floor((tSubstanceData.THigh - tSubstanceData.TLow) / 5 ) * iNumberOfIsoBarsPerSubstance * 2;
+            
+            % Now we can initialize the data matrix
+            mfIsobaricData = nan(iRows, iColumns);
+            
+            % Initializing a counter so we know where to insert the current
+            % scrape's data.
+            iCurrentRow = 1;
+            
             % End of first run if-condition
             bFirstRun = false;
 
             
         end
         
-        mfRawData = dlmread('tmp.tsv','\t',1,0);
+        % Now we need to turn the raw data from the website into a matrix
+        % of numbers so we can work with it. First we split the long string
+        % into rows.
+        csRawDataRows = strsplit(sRawData, '\n');
         
+        % Now we split the rows into columns. At first this will result in
+        % an Nx1 cell, with an 1xM cell in every row. Using vertcat() we
+        % make a NxM cell out of it.
+        csRawDataRows = cellfun(@(cCell) strsplit(cCell, '\t'), csRawDataRows(1:end-1)', 'UniformOutput', false);
+        csRawData = vertcat(csRawDataRows{:,1});
+        
+        % Finally we convert the strings to numbers. We skip the first row
+        % because it's the header. 
+        mfRawData = cellfun(@(cCell) str2double(cCell), csRawData(2:end,:));
         
         mfProcessedData = mfRawData;
         
@@ -581,9 +655,14 @@ for iI = 1:length(csSubstanceKeys)
             end
         end
 
+        % Counting the number of new rows in this scrape
+        iNewRows = length(mfProcessedData(:,1));
         
-        dlmwrite([sPath, sIsobaricFileName], mfProcessedData, '-append');
+        % Adding the new data to the matrix
+        mfIsobaricData(iCurrentRow:iCurrentRow + iNewRows - 1,:) = mfProcessedData;
         
+        % Updating the current row counter
+        iCurrentRow = iCurrentRow + iNewRows;
 
         if fPressure < 0.01
             fPressureIncrement = 0.001;
@@ -602,6 +681,14 @@ for iI = 1:length(csSubstanceKeys)
         fPressure = round(fPressure + fPressureIncrement, iRoundTo);
         
     end
+    
+    % We usually pre-allocated a few rows too many, so we delete the rest
+    % of the matrix.
+    mfIsobaricData(iCurrentRow:end,:) = [];
+    
+    % Now we write the collected isochoric data for this substance to a
+    % file.
+    writematrix(mfIsobaricData, [sPath, sIsobaricFileName]);
 end
 
 % Deleting the temporary file
