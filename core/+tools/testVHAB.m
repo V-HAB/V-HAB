@@ -183,6 +183,10 @@ if bChanged || bForceExecution
         
     end
     
+else
+    for iI = 1:length(tTests)
+        tTests(iI).sStatus = 'Not performed';
+    end
 end
 
 % Now that we're all finished, we can tell the user how well everything
@@ -277,7 +281,12 @@ if ~bSkipComparison
     fprintf('=======================================\n\n');
     fprintf('Comparisons are new values - old values!\n');
     fprintf('--------------------------------------\n');
-    for iI = 1:length(tTests)
+    
+    iLength = length(tTests);
+    
+    mfData = zeros(iLength, 5);
+    
+    for iI = 1:iLength
         fprintf('%s:\n', strrep(tTests(iI).name,'+',''));
 
         for iOldTutorial = 1:length(tOldTests.tTests)
@@ -286,26 +295,34 @@ if ~bSkipComparison
             if strcmp(tTests(iI).name, tOldTests.tTests(iOldTutorial).name)
 
                 iTickDiff = tTests(iI).run.iTicks - tOldTests.tTests(iOldTutorial).run.iTicks;
+                mfData(iI,1) = iTickDiff;
                 fprintf('change in ticks compared to old status:                 %s%i\n',sBlanks, iTickDiff);
                 
                 fTimeDiff = tTests(iI).run.fRunTime - tOldTests.tTests(iOldTutorial).run.fRunTime;
+                mfData(iI,2) = fTimeDiff;
                 fprintf('change in run time compared to old status:                  %s%d\n',sBlanks, fTimeDiff);
 
                 fTimeDiffLog = tTests(iI).run.fLogTime - tOldTests.tTests(iOldTutorial).run.fLogTime;
+                mfData(iI,3) = fTimeDiffLog;
                 fprintf('change in log time compared to old status:                  %s%d\n',sBlanks, fTimeDiffLog);
                 
                 fGeneratedMassDiff = tTests(iI).run.fGeneratedMass - tOldTests.tTests(iOldTutorial).run.fGeneratedMass;
+                mfData(iI,4) = fGeneratedMassDiff;
                 fprintf('change in generated mass compared to old status:        %s%d\n',sBlanks, fGeneratedMassDiff);
 
                 fTotalMassBalanceDiff = tTests(iI).run.fTotalMassBalance - tOldTests.tTests(iOldTutorial).run.fTotalMassBalance;
+                mfData(iI,5) = fTotalMassBalanceDiff;
                 fprintf('change in total mass balance compared to old status:    %s%d\n',sBlanks, fTotalMassBalanceDiff);
+                
             end
         end
         fprintf('--------------------------------------\n');
     end
     fprintf('--------------------------------------\n');
     fprintf('--------------------------------------\n\n\n');
-
+    
+    plot(mfData, cellfun(@(cCell) cCell(2:end), {tTests.name}, 'UniformOutput', false));
+    
     sPath = fullfile('data', 'TestStatus.mat');
     save(sPath, 'tTests');
 end
@@ -314,6 +331,153 @@ fprintf('======================================\n');
 fprintf('===== Finished running tests =====\n');
 fprintf('======================================\n\n');
 
+end
+
+function plot(mfData, csNames)
+
+oFigure = figure('Name','Comparisons');
+    
+% First we create the panel that will house the buttons.
+fPanelYSize = 0.12;
+fPanelXSize = 0.065;
+oPanel = uipanel('Title','Undock Subplots','FontSize',10,'Position',[ 0 0 fPanelXSize fPanelYSize]);
+
+% Since the user may want to save the entire figure to a file, we
+% create a save button above the panel.
+oButton = uicontrol(oFigure,'String','Save Figure','FontSize',10,'Units','normalized','Position',[ 0 fPanelYSize fPanelXSize 0.03]);
+oButton.Callback = @tools.postprocessing.plotter.helper.saveFigureAs;
+
+iRows = 2;
+iColumns = 3;
+iNumberOfPlots = 5;
+
+% Doing some math so we get nicely proportioned buttons. The basic
+% idea behind all of it is that the panel is arbitrarily divided
+% into 16 equal units and the button sizes and the gaps between
+% them are sized accordingly. First we set the outer dimensions of
+% the buttons.
+fButtonYSize = (14 - (iRows    - 1)) / iRows    / 16;
+fButtonXSize = (14 - (iColumns - 1)) / iColumns / 16;
+
+% The buttons shall be 1/16th of the panel width and heigth apart,
+% so when calculating the spaceing between the button center
+% coordinates we have to add that to the button size.
+fHorizontalSpaceing = fButtonXSize + 1/16;
+fVerticalSpaceing   = fButtonYSize + 1/16;
+
+% Creating the horizontal coordinates
+afHorizontal = ( 0:fHorizontalSpaceing:1 ) - fButtonXSize;
+afHorizontal = afHorizontal(2:end);
+
+% Creating the vertical coordinates, we need to flip that array
+% because the MATLAB coordinate system has its origin in the bottom
+% left corner, but when arranging the buttons in the same position
+% as the plots, the first button is in the top left corner of the
+% panel.
+afVertical = ( 0:fVerticalSpaceing:1 ) - fButtonYSize;
+afVertical = afVertical(2:end);
+afVertical = fliplr(afVertical);
+
+
+% Initializing some variables. The coButtons cell will contain
+% references to each button object. These will be used later on to
+% attach a plot specific callback function to each button.
+coButtons = cell(iRows,iColumns);
+iSubPlotCounter = 1;
+
+% Creating the array of buttons according to the number of subplots
+% there are and labling them with simple numbers.
+for iI = 1:iRows
+    for iJ = 1:iColumns
+        % Since it can be the case, that some of the entries in
+        % coPlots are empty, we need to check if there are plots
+        % left to create buttons for.
+        if iSubPlotCounter <= iNumberOfPlots
+            % Creating a button with a single number as its label.
+            oButton = uicontrol(oPanel,'String',sprintf('%i', iSubPlotCounter));
+            
+            % Positioning and sizing the button according to the
+            % coordinates we calculated above. These are in
+            % relative coordinates, so we first have to set the
+            % button units to 'normalized'.
+            oButton.Units = 'normalized';
+            oButton.Position = [afHorizontal(iJ) afVertical(iI) fButtonXSize fButtonYSize];
+            
+            % Adding a reference to the button we just created to
+            % the coButtons cell.
+            coButtons{iI, iJ} = oButton;
+            
+            % Incrementing the plot counter.
+            iSubPlotCounter = iSubPlotCounter + 1;
+        end
+    end
+end
+
+
+oPlot = subplot(2,3,1);
+hold(oPlot,'on');
+oBars = bar(mfData(:,1)); %#ok<NASGU>
+% This is currently unsupported by MATLAB. The feature was only added in
+% 2019a, so hopefully it will be extended to bar plots in the future. For
+% now, we need to add a legend at the end.
+%oBars.DataTipTemplate.DataTipRows = dataTipTextRow('Test',csNames);
+title('Ticks');
+coButtons{1, 1}.Callback = {@tools.postprocessing.plotter.helper.undockSubPlot, oPlot, []};
+
+oPlot = subplot(2,3,2);
+hold(oPlot,'on');
+oBars = bar(mfData(:,2)); %#ok<NASGU>
+%oBars.DataTipTemplate.DataTipRows = dataTipTextRow('Test',csNames);
+title('Time');
+ylabel('Simulation Time [s]');
+coButtons{1, 2}.Callback = {@tools.postprocessing.plotter.helper.undockSubPlot, oPlot, []};
+
+oPlot = subplot(2,3,3);
+hold(oPlot,'on');
+oBars = bar(mfData(:,3)); %#ok<NASGU>
+%oBars.DataTipTemplate.DataTipRows = dataTipTextRow('Test',csNames);
+title('Logging');
+ylabel('Logging Time [s]');
+coButtons{1, 3}.Callback = {@tools.postprocessing.plotter.helper.undockSubPlot, oPlot, []};
+
+oPlot = subplot(2,3,4);
+hold(oPlot,'on');
+oBars = bar(mfData(:,4)); %#ok<NASGU>
+%oBars.DataTipTemplate.DataTipRows = dataTipTextRow('Test',csNames);
+title('Generated Mass');
+ylabel('Mass [kg]');
+coButtons{2, 1}.Callback = {@tools.postprocessing.plotter.helper.undockSubPlot, oPlot, []};
+
+oPlot = subplot(2,3,5);
+hold(oPlot,'on');
+oBars = bar(mfData(:,5)); %#ok<NASGU>
+%oBars.DataTipTemplate.DataTipRows = dataTipTextRow('Test',csNames);
+title('Mass balance');
+ylabel('Mass [kg]');
+coButtons{2, 2}.Callback = {@tools.postprocessing.plotter.helper.undockSubPlot, oPlot, []};
+
+oPlot = subplot(2,3,6);
+hold(oPlot,'on');
+oPlot.YTick = [];
+oPlot.XTick = [];
+oPlot.Box = 'on';
+oPlot.Tag = 'LabelPlot';
+title('Legend');
+
+csContent = cellfun(@(csNumbers, csText) [csNumbers, ' ', csText], strsplit(num2str(1:length(csNames))), csNames, 'UniformOutput', false);
+oText = text(oPlot, 0.1, 0.1, csContent);
+oText.Interpreter = 'none';
+resizeTextField(oFigure, []);
+oFigure.SizeChangedFcn = @resizeTextField;
+
+% Maximize the figure window to fill the whole screen.
+set(oFigure, 'WindowState', 'maximized');
+
+end
+
+function resizeTextField(oFigure, ~)
+    oPlot = findobj(oFigure, 'Tag', 'LabelPlot');
+    oPlot.Children(1).Position = [ (1-oPlot.Children(1).Extent(3))/2, 0.5 0];
 end
 
 function sFolderPath = createDataFolderPath()
