@@ -11,12 +11,12 @@ function fSpeedOfSound = calculateSpeedOfSound(this, varargin)
     %  fSpeedOfSound  - speed of sound in m/s
     
 
-[fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures, ~, ~] = getNecessaryParameters(this, varargin{:});
+[fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures, ~, ~, bUseIsobaricData] = getNecessaryParameters(this, varargin{:});
 
 % here decesion on when other calculations should be used could be placed
 % (see calculateDensity function for example)
 
-fSpeedOfSound = calculateProperty(this, 'Speed Of Sound', fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures);
+fSpeedOfSound = calculateProperty(this, 'Speed Of Sound', fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures, bUseIsobaricData);
 
     
 end

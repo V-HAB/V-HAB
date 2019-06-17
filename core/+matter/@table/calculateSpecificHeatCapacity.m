@@ -14,12 +14,12 @@ function fSpecificHeatCapacity = calculateSpecificHeatCapacity(this, varargin) %
 % calculateHeatCapacity returns
 %  fSpecificHeatCapacity  - specific, isobaric heat capacity of mix in J/kgK?
 
-[fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures, ~, ~] = getNecessaryParameters(this, varargin{:});
+[fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures, ~, ~, bUseIsobaricData] = getNecessaryParameters(this, varargin{:});
 
 % here decesion on when other calculations should be used could be placed
 % (see calculateDensity function for example)
 
-fSpecificHeatCapacity = calculateProperty(this, 'Heat Capacity', fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures);
+fSpecificHeatCapacity = calculateProperty(this, 'Heat Capacity', fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures, bUseIsobaricData);
 
 % "Most physical systems exhibit a positive heat capacity. However,
 % there are some systems for which the heat capacity is negative. These

@@ -291,12 +291,19 @@ if ~isempty(aiLiquidIndices)
 end
 
 % Make sure there is no NaN in the specific heat capacity vector.
-assert(~any(isnan(afPP)), 'Invalid entries in partial pressure vector.');
+if any(isnan(afPP))
+   error('Invalid entries in partial pressure vector.');
+end
 
 % Make sure no negative partial pressure were calculated
-assert(~any(afPP < 0), 'Invalid entries in partial pressure vector.');
+if any(afPP < 0)
+    error('Invalid entries in partial pressure vector.');
+end
+
 %DEBUG
-assert(isequal(size(afPP), size(arPartialMass(aiIndices)')), 'Vectors must be of same length but one transposed.');
+if ~isequal(size(afPP), size(arPartialMass(aiIndices)'))
+    error('Vectors must be of same length but one transposed.');
+end
 
 % Multiply the specific heat capacities with the mass fractions. The
 % result of the matrix multiplication is the specific heat capacity of
@@ -304,8 +311,9 @@ assert(isequal(size(afPP), size(arPartialMass(aiIndices)')), 'Vectors must be of
 fPressure = sum(afPP);
 
 % Make sure the heat capacity value is valid.
-assert(~isnan(fPressure) && fTemperature >= 0, ...
-    'Invalid pressure: %f', fTemperature);
+if isnan(fPressure) && fTemperature >= 0
+    error('Invalid pressure: %f', fTemperature);
+end
 
 % "Most physical systems exhibit a positive heat capacity. However,
 % there are some systems for which the heat capacity is negative. These

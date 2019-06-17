@@ -15,12 +15,12 @@ function fEta = calculateDynamicViscosity(this, varargin)
 % calculateDynamicViscosity returns
 %  fEta - dynamic viscosity of matter in current state in kg/ms
 
-[fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures, ~, ~] = getNecessaryParameters(this, varargin{:});
+[fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures, ~, ~, bUseIsobaricData] = getNecessaryParameters(this, varargin{:});
 
 % here decesion on when other calculations should be used could be placed
 % (see calculateDensity function for example)
 
-fEta = calculateProperty(this, 'Dynamic Viscosity', fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures);
+fEta = calculateProperty(this, 'Dynamic Viscosity', fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures, bUseIsobaricData);
 
 
 end

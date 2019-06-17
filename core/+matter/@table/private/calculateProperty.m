@@ -1,10 +1,11 @@
-function fProperty = calculateProperty(this, sProperty, fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures)
-%calculateProperty: Internal function of the matter table used to
-%generalize identical code between the different calculateXXX functions of
-%the matter table. Receives the property it is supposed to calculate as
-%String input and the outputs of getNecessaryParameters except for the last
-%two which are only used to speed up intermediate decision making in the
-%calculateXXX function
+function fProperty = calculateProperty(this, sProperty, fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures, bUseIsobaricData)
+%CALCULATEPROPERTY Calculates requested matter property
+% Internal function of the matter table used to generalize identical code
+% between the different calculateXXX functions of the matter table.
+% Receives the property it is supposed to calculate as String input and the
+% outputs of getNecessaryParameters except for the last two which are only
+% used to speed up intermediate decision making in the calculateXXX
+% function
 
 % If no mass is given the heat capacity will be zero, so no need to do the
 % rest of the calculation.
@@ -36,7 +37,7 @@ for iI = 1:iNumIndices
     tParameters.sPhaseType = csPhase{aiPhase(aiIndices(iI))};
     tParameters.sSecondDepName = 'Pressure';
     tParameters.fSecondDepValue = afPartialPressures(aiIndices(iI));
-    tParameters.bUseIsobaricData = true;
+    tParameters.bUseIsobaricData = bUseIsobaricData;
     
     % Now we can call the findProperty() method.
     afProperty(iI) = this.findProperty(tParameters);

@@ -15,7 +15,7 @@ function fDensity = calculateDensity(this, varargin)
 % calculateDensity returns
 %  fDensitiy - density of matter in current state in kg/m^3
 
-[fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures, tbReference, sMatterState] = getNecessaryParameters(this, varargin{:});
+[fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures, tbReference, sMatterState, bUseIsobaricData] = getNecessaryParameters(this, varargin{:});
 
 % Check Cases where we do not have to calculate the density
 if tbReference.bFlow
@@ -43,6 +43,6 @@ if strcmp(sMatterState, 'gas')
     end
 end
 
-fDensity = calculateProperty(this, 'Density', fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures);
+fDensity = calculateProperty(this, 'Density', fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures, bUseIsobaricData);
 end
 
