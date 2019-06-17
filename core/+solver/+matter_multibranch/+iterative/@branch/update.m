@@ -435,15 +435,18 @@ function update(this)
                 % very small. Therefore we limit the pressure drops from F2Fs
                 % in the branch to the total pressure difference in the branch
                 fPressureDifferenceBranch = sign(this.afFlowRates(iB)) * (this.aoBranches(iB).coExmes{1}.oPhase.fPressure - this.aoBranches(iB).coExmes{2}.oPhase.fPressure);
-
                 if sum(afDeltaPressures) > fPressureDifferenceBranch
                     afDeltaPressures = afDeltaPressures .* (fPressureDifferenceBranch/sum(afDeltaPressures));
                 end
                 
+                % If this branch is choked, we need to use different values
+                % for afDeltaPressures; the ones we calculated in
+                % updatePressureDropCoefficients.
                 if this.abChokedBranches(iB) == true
                     afDeltaPressures = this.cafChokedBranchPressureDiffs{iB};
                 end
 
+                % Now we can call the setFlowRate callback.
                 this.chSetBranchFlowRate{iB}(this.afFlowRates(iB), afDeltaPressures);
             end
         end

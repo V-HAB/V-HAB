@@ -104,13 +104,18 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
             if bActiveBranch
                 this.afPressureDropCoeffsSum(iBranch) = fPressureRise/abs(fFlowRate);
             else
+                % If this branch has the choked flow check activated, we do
+                % the check. If the flow is choked, we overwrite the
+                % fFlowRate variable with the choked flow rate. 
                 if this.abCheckForChokedFlow(iBranch) == true
                     [ bChokedFlow, fChokedFlowRate, iChokedProc, fPressureDiff ] = this.checkForChokedFlow(iBranch);
-                    
                     if bChokedFlow
                         fFlowRate = fChokedFlowRate;
+                        
+                        % Setting the property variable to true for this
+                        % branch.
+                        this.abChokedBranches(iBranch) = true;
                     end
-                    
                 end
                 
                 % Now we loop through all the f2fs of the branch and
@@ -119,11 +124,20 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
                     afPressureDrops(iProc) = oBranch.aoFlowProcs(iProc).toSolve.(this.sSolverType).calculateDeltas(fFlowRate);
                 end
                 
+                % If this branch is choked and there are no closed valves
+                % we need to set the pressure drop for the processor that
+                % is choked to the pressure difference between the left and
+                % right sides of the branch, minus the pressure drop caused
+                % by all of the other processors in the branch. 
                 if this.abCheckForChokedFlow(iBranch) == true && bChokedFlow && ~any(isinf(afPressureDrops))
+                    % Calculating the pressure drop across the choked proc.
                     afPressureDrops(iChokedProc) = fPressureDiff - sum(afPressureDrops(1:end ~= iChokedProc));
-                    this.abChokedBranches(iBranch) = true;
+                    
+                    % Saving the pressure drops across the branch in the
+                    % property so we can access it in update().
                     this.cafChokedBranchPressureDiffs{iBranch} = afPressureDrops;
                 else
+                    % The branch is not choked. 
                     this.abChokedBranches(iBranch) = false;
                 end
                 

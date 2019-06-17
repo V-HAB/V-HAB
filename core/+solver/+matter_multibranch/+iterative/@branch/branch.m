@@ -326,8 +326,15 @@ classdef branch < base & event.source
         % activateChokedFlowChecking() method of this class.
         abCheckForChokedFlow;
         
+        % This boolean array contains all branches that contain a choked
+        % flow for a given iteration of the solver.
         abChokedBranches;
         
+        % This cell contains the pressure drop values for each branch with
+        % a choked flow. We need these values as inputs to the
+        % setBranchFlowRate callback. The values for the pressure
+        % differences are calculated in the
+        % updatePressureDropCoefficients() method of this class.
         cafChokedBranchPressureDiffs;
         
         % As a performance enhancement, these booleans are set to true once
@@ -467,28 +474,84 @@ classdef branch < base & event.source
         end
         
         function activateChokedFlowChecking(this, oBranch)
+            % Activates the choked flow checking for the branch object that
+            % has been passed to this function. 
+            
+            % Finding the branch object in our aoBranches array
             iBranch = find(this.aoBranches == oBranch, 1);
-            this.abCheckForChokedFlow(iBranch) = true;
+            
+            % If it is present, we set the appropriate field in the
+            % abCheckForChokedFlow property to true. Otherwise we let the
+            % user know.
+            if ~isempty(iBranch)
+                this.abCheckForChokedFlow(iBranch) = true;
+            else
+                % Getting the custom name if it is set, otherwise use the
+                % standard name.
+                if ~isempty(oBranch.sCustomName)
+                    sName = oBranch.sCustomName;
+                else
+                    sName = oBranch.sName;
+                end
+                
+                % Throwing up the error message.
+                this.throw('ActivateChokedFlow','Could not activate choked flow checking for branch ''%s'' because it is not part of this multi-branch solver.',sName);
+            end
         end
         
         function [ bChokedFlow, fChokedFlowRate, iChokedProc, fPressureDiff ] = checkForChokedFlow(this, iBranch)
+            % Checks a specified branch for possible choked flow. 
+            % 
+            % Input argument is the index of the branch in the aoBranches
+            % property of this class. 
+            % 
+            % Output arguments are: 
+            % 
+            % - bChokedFlow:     A boolean indicating if the flow in this
+            %                    branch is choked at all.
+            %
+            % - fChokedFlowRate: Mass flow rate of the choked flow.
+            % 
+            % - iChokedProc:     Index of the processor in the branch with
+            %                    the smallest hydraulic diameter, thus
+            %                    causing the flow to be choked.
+            % 
+            % - fPressureDiff:   Pressure difference between the two phases
+            %                    that the branch connects. This is returned
+            %                    to enable the calculation of the
+            %                    individual pressure differences for each
+            %                    processor in the branch.
+            % 
+            
+            % First we get the reference to the branch
             oBranch = this.aoBranches(iBranch);
             
-            fAdiabaticIndex = this.calculateAdiabaticIndex(oBranch);
-            
+            % Now we need the pressure difference across the branch. First
+            % we get the two phase objects.
             oPhaseLeft  = oBranch.coExmes{1}.oPhase;
             oPhaseRight = oBranch.coExmes{2}.oPhase;
             
+            % Getting the current pressures of both phases.
             fPressureLeft  = oPhaseLeft.fMass  * oPhaseLeft.fMassToPressure;
             fPressureRight = oPhaseRight.fMass * oPhaseRight.fMassToPressure;
             
+            % Determining which pressure is higher and saving the index.
             [ fUpstreamPressure, iPhaseIndex ] = max([fPressureLeft, fPressureRight]);
             fDownstreamPressure = min([fPressureLeft, fPressureRight]);
             
+            % Calculating the pressure difference. Always positive!
             fPressureDiff = fUpstreamPressure - fDownstreamPressure;
             
+            % We need to calculate the adiabatic index for the critical
+            % pressure calculation below. 
+            fAdiabaticIndex = this.oMT.calculateAdiabaticIndex(oBranch.coExmes{iPhaseIndex}.oPhase);
+            
+            % Now we can calculate the critical pressure for this branch. 
             fCriticalPressure = fUpstreamPressure * (2 / (fAdiabaticIndex + 1))^(fAdiabaticIndex / (fAdiabaticIndex - 1));
             
+            % If the downstream pressure is smaller or equal to the
+            % critical pressure, the flow is choked. Otherwise we just
+            % return. 
             if fDownstreamPressure <= fCriticalPressure
                 bChokedFlow = true;
             else
@@ -502,53 +565,48 @@ classdef branch < base & event.source
             
             % We now need to find out which of the processors in the branch
             % has the smallest hydraulic diameter, because that is where
-            % the choked flow will occur.
+            % the choked flow will occur. First we initialize an array.
             afHydraulicDiameters = zeros(oBranch.iFlowProcs, 1);
             
+            % Now we loop through all processors and record their diameter.
+            % NOTE: All involved processors must implement this manually,
+            % it is not part of the standard f2f processor. That's why we
+            % include a check here to make sure it works. 
             for iProc = 1:oBranch.iFlowProcs
                 oProc = oBranch.aoFlowProcs(iProc);
-                afHydraulicDiameters(iProc) = oProc.fDiameter;
+                try
+                    afHydraulicDiameters(iProc) = oProc.fDiameter;
+                catch 
+                    this.throw('ChokedFlowCheck','The processor ''%s'' does not have a ''fDiameter'' property. In order to support the checkForChokedFlow() method it must be implemented.', oProc.sName);
+                end
             end
             
+            % Finding the minimum diameter and the index of the processor
+            % that has it. 
             [ fMinimumDiameter, iChokedProc ] = min(afHydraulicDiameters);
             
+            % Now we calculate the choked flow rate. First we need the area
+            % of the choked processor.
             fMinimumArea = pi * (fMinimumDiameter/2)^2;
             
+            % The discharge coefficient is itself dependent on the mass
+            % flow we are trying to calculate here. In order to avoid doing
+            % this whole calculation iteratively, we just set it to 0.9.
+            % This value was found several times in various examples
+            % online, but would be a point of future optimization. 
             fDischargeCoefficient = 0.9;
             
+            % Finally we can calculate the mass flow rate. This is based on
+            % the equation found in Wikipedia (yeah, I know...) here:
+            % https://en.wikipedia.org/wiki/Choked_flow#Mass_flow_rate_of_a_gas_at_choked_conditions
+            % I tried to find a better source with a simple explanation,
+            % but decided not to spend any more time on this. So:
+            % NOTE: The source of the following equations is Wikipedia and
+            % may not be correct. Should make sure it's good at some point.
             fChokedFlowRate = fDischargeCoefficient * fMinimumArea * sqrt(fAdiabaticIndex * oBranch.coExmes{iPhaseIndex}.oPhase.fDensity * fUpstreamPressure * (2/(fAdiabaticIndex+1))^((fAdiabaticIndex + 1)/(fAdiabaticIndex - 1)));
             
         end
-        
-        function fAdiabaticIndex = calculateAdiabaticIndex(this, oBranch)
-            
-            sType = 'gas';
-            
-            if oBranch.fFlowRate >= 0
-                iExme = 1;
-            else
-                iExme = 2;
-            end
-            
-            oPhase = oBranch.coExmes{iExme}.oPhase;
-            
-            afMasses = oPhase.afMass;
-            
-            fTemperature = oPhase.fTemperature;
-            
-            afPartialPressures = oPhase.afPP;
-            
-            bUseIsoBaricData = true;
-            
-            fIsobaricSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(sType, afMasses, fTemperature, afPartialPressures, bUseIsoBaricData);
-            
-            bUseIsoBaricData = false;
-            
-            fIsochoricSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(sType, afMasses, fTemperature, afPartialPressures, bUseIsoBaricData);
-            
-            fAdiabaticIndex = fIsobaricSpecificHeatCapacity / fIsochoricSpecificHeatCapacity;
-            
-        end
+       
     end
     
     
