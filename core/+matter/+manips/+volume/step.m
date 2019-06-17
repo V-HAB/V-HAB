@@ -1,4 +1,4 @@
-classdef (Abstract) stationary < matter.manips.volume
+classdef (Abstract) step < matter.manips.volume
     % a stationary volume manipulator changes the volume by fixed values
     % not flows. Different from the substance manipulator the seperation
     % into stationary and flow manips for volumes has nothing to do with
@@ -17,7 +17,7 @@ classdef (Abstract) stationary < matter.manips.volume
     end
     
     methods
-        function this = stationary(sName, oPhase, sRequiredType)
+        function this = step(sName, oPhase, sRequiredType)
             if nargin < 3, sRequiredType = []; end
             
             this@matter.manips.volume(sName, oPhase, sRequiredType);

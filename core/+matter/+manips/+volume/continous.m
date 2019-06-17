@@ -1,4 +1,4 @@
-classdef (Abstract) flow < matter.manips.volume
+classdef (Abstract) continous < matter.manips.volume
     % a flow volume manipulator changes the volume with a change rate in
     % m^3/s. Different from the substance manipulator the seperation
     % into stationary and flow manips for volumes has nothing to do with
@@ -42,7 +42,7 @@ classdef (Abstract) flow < matter.manips.volume
     end
     
     methods
-        function this = flow(sName, oPhase, sRequiredType)
+        function this = continous(sName, oPhase, sRequiredType)
             if nargin < 3, sRequiredType = []; end
             
             this@matter.manips.volume(sName, oPhase, sRequiredType);
@@ -144,18 +144,6 @@ classdef (Abstract) flow < matter.manips.volume
             % with the flag true to also reset the last time this timestep
             % was set
             this.setTimeStep(this.fTimeStep, true);
-        end
-        
-        % since we want the volume change mechanic to be encapsulated
-        % in the manip we let the manip bind a time step for this function
-        % instead of adding code to the phase.m file
-        function updatePhase(this)
-            % This function is used to register a phase update. The
-            % function is bound to the setTimeStep function of the
-            % matter.manips.volume.flow and ensures that the volume change
-            % before a phase update does not exceed the value specified by
-            % rMaxVolumeChange
-            this.oPhase.registerUpdate();
         end
     end
 end

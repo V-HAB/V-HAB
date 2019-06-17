@@ -28,6 +28,8 @@ classdef mixture < matter.phase
             end
             this.fDensity = this.oMT.calculateDensity(this);
             this.fVolume = this.fMass / this.fDensity;
+            
+            this.bMixture = true;
         end
     end
     

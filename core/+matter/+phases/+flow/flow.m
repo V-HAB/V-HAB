@@ -12,12 +12,10 @@ classdef (Abstract) flow < matter.phase
         % basically considered as flows (but allow the user to attach
         % multiple branches and P2Ps).
         fVirtualPressure;
-        
         % If the virtual pressure property remains empty it means that no
         % solver handles the pressure and the flow_node mass averages the
         % exme pressures to calculate its pressure. Otherwise fPressure is
         % identical to fVirtualPressure
-        fPressure;
         
         % Coefficient for pressure = COEFF * mass,  depends on current 
         % matter properties
@@ -28,9 +26,6 @@ classdef (Abstract) flow < matter.phase
         fInitialMass;
         
         fLastPartialsUpdate = -1;
-        
-        % Volume of this phase
-        fVolume;
     end
     
     methods
@@ -51,7 +46,6 @@ classdef (Abstract) flow < matter.phase
             
             % Set flags to identify this as flow phase and sync all solvers
             % attached to it (boolean flag is faster than isa query)
-            this.bSynced = true;
             this.bFlow   = true;
             
             this.bind('update_partials',@(~)this.updatePartials());

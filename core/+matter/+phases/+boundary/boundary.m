@@ -13,9 +13,6 @@ classdef (Abstract) boundary < matter.phase
         % the boundary. All values in kg
         afMassChange;
         
-        % Volume in m^3
-        fVolume;       
-        
     end
     
     methods

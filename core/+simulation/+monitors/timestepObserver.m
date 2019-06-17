@@ -90,6 +90,9 @@ classdef timestepObserver < simulation.monitor
 
                 elseif isa(oCaller, 'electrical.store')
                     csReports{iIndex} = ['In the circuit ', oCaller.oCircuit.sName, ' in electrical Store ', oCaller.sName, ' a minimal time step of ' num2str(fMinStep), ' seconds was used in Simulation Tick ', num2str(oTimer.iTick)];
+                
+                elseif isa(oCaller, 'matter.manips.volume.flow')
+                    csReports{iIndex} = ['In the system ', oCaller.oPhase.oStore.oContainer.sName, ' in Store ''', oCaller.oPhase.oStore.sName, ''', Phase ''', oCaller.oPhase.sName,''', in the flow volume manipulator ''', oCaller.sName, ''' a minimal time step of ' num2str(fMinStep), ' seconds was used in Simulation Tick ', num2str(oTimer.iTick)];
                 end
                     
                 if isempty(csReports{iIndex})

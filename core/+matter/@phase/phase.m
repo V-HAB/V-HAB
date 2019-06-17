@@ -82,6 +82,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % should only be reset by the child class matter.phases.boundary.boundary.m!
         bBoundary = false;
         
+        % To easier identify mixture phases, all phases have this boolean
+        % property, which is normally false and only set to true by the
+        % mixture subclass
+        bMixture = false;
+        
         % Last time the phase mass was updated. Is NOT an actual update!
         % Only the mass is changed not all other properties, e.g. Pressure
         % and Temperature remain the same.
@@ -194,6 +199,12 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % added again to the empty storeroom this value should be high, as
         % otherwise a slow ramp up of the time step will occur
         fMaximumInitialMass = 0.1;
+        
+        % This boolean property allows other components to check whether
+        % this phase will be updated in the corresponding post tick group
+        % or not. Used for example in the (in)compressibleMedium volume
+        % manipulators to only update them if the phase update will execute
+        bUpdateRegistered = false;
         
         % Masses in phase at last update.
         fMassLastUpdate;
@@ -386,6 +397,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
             % We also ensure that the time step is recalculated
             this.setOutdatedTS();
+            
+            % set the boolean falg to true that this phase will be updated
+            % in the post tick
+            this.bUpdateRegistered = true;
         end
         
         function setTemperature(this, oCaller, fTemperature)
@@ -901,6 +916,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             if ~(this.oTimer.fTime == this.oCapacity.fLastTotalHeatCapacityUpdate)
                 this.oCapacity.updateSpecificHeatCapacity();
             end
+            
+            % The update is finished, therefore we set the flag to false
+            % that this phase will be updated in the post tick
+            this.bUpdateRegistered = false;
             
             % Now we trigger an update_post event which allows other
             % objects/functions to bind themself to the update of this

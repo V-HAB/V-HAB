@@ -232,15 +232,6 @@ if this.fLastUpdate == this.oTimer.fTime
 else
     this.setTimeStep(fNewStep);
 end
-% For certain cases (e.g. liquid and gas in one store) the phases cannot
-% calculate their properties individually, making calculation within the
-% stores necessary. These can be turned on using the boolean
-% bNoStoreCalculation and if they are used the store time step must also be
-% set (by having each phase do this, the store receives the smallest time
-% step of all phases within it)
-if ~this.oStore.bNoStoreCalculation
-    this.oStore.setNextTimeStep(fNewStep)
-end
 
 % Cache - e.g. for logging purposes
 this.fTimeStep = fNewStep;
