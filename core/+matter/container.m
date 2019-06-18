@@ -211,7 +211,7 @@ classdef container < sys
                 this.throw('addF2F', 'Proc %s already exists.', oProcF2F.sName);
                 
             elseif this ~= oProcF2F.oContainer
-                this.throw('addP2P', 'F2F proc does not have this vsys set as a container!');
+                this.throw('addF2F', 'F2F proc does not have this vsys set as a container!');
             
             end
             

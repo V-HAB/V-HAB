@@ -622,13 +622,13 @@ classdef (Abstract) branch < base & event.source
                     % capacity, an electrical component or an electrical
                     % node.
                     if strcmp(this.sType, 'matter')
-                        oPort = matter.procs.exmes.(xInput.sType)(xInput, sPortName);
+                        oExMe = matter.procs.exmes.(xInput.sType)(xInput, sPortName);
                         sSideName = [xInput.oStore.sName, '__', sPortName];
                     elseif strcmp(this.sType, 'thermal')
-                        oPort = thermal.procs.exme(xInput.oCapacity, sPortName);
+                        oExMe = thermal.procs.exme(xInput.oCapacity, sPortName);
                         sSideName = [xInput.oStore.sName, '__', sPortName];
                     elseif strcmp(this.sType, 'electrical')
-                        oPort = electrical.terminal(xInput, sPortName);
+                        oExMe = electrical.terminal(xInput, sPortName);
                         sSideName = [xInput.sName, '__', sPortName];
                     end
                     
@@ -638,7 +638,7 @@ classdef (Abstract) branch < base & event.source
                     % and a port.
                     
                     % Split to object name / port name
-                    [ sObject, sPort ] = strtok(xInput, '.');
+                    [ sObject, sExMe ] = strtok(xInput, '.');
                     
                     % Check if object exists
                     if strcmp(this.sType, 'matter') || strcmp(this.sType, 'thermal')
@@ -653,24 +653,24 @@ classdef (Abstract) branch < base & event.source
                     
                     % Get a handle to the port depending on the domain 
                     if strcmp(this.sType, 'matter')
-                        oPort = this.oContainer.toStores.(sObject).getPort(sPort(2:end));
+                        oExMe = this.oContainer.toStores.(sObject).getExMe(sExMe(2:end));
                         
                         % Since we will be creating a thermal branch to run
                         % in parallel with this matter branch, we need to
                         % create a thermal ExMe that corresponds to this
                         % matter ExMe.
-                        thermal.procs.exme(oPort.oPhase.oCapacity, sPort(2:end));
+                        thermal.procs.exme(oExMe.oPhase.oCapacity, sExMe(2:end));
                         
                     elseif strcmp(this.sType, 'thermal')
-                        oPort = this.oContainer.toStores.(sObject).getThermalPort(sPort(2:end));
+                        oExMe = this.oContainer.toStores.(sObject).getThermalExMe(sExMe(2:end));
                     elseif strcmp(this.sType, 'electrical')
                         % The object we are looking at can either be an an
                         % electrial store or an electrical node. To
                         % successfully get the port, we have to try both.
                         try
-                            oPort = this.oContainer.toNodes.(sObject).getTerminal(sPort(2:end));
+                            oExMe = this.oContainer.toNodes.(sObject).getTerminal(sExMe(2:end));
                         catch
-                            oPort = this.oContainer.toStores.(sObject).getTerminal(sPort(2:end));
+                            oExMe = this.oContainer.toStores.(sObject).getTerminal(sExMe(2:end));
                         end
                         
                     end
@@ -719,15 +719,15 @@ classdef (Abstract) branch < base & event.source
 
                     % ... and add flow, if there is one.
                     if ~isempty(oFlow)
-                        oPort.addFlow(oFlow);
+                        oExMe.addFlow(oFlow);
                     end
                 end
                 % Add port to the coExmes property
-                this.coExmes{iSideIndex} = oPort;
+                this.coExmes{iSideIndex} = oExMe;
                 
                 if strcmp(this.sType, 'electrical')
                     % Add the terminal to the coTerminals property
-                    this.setTerminal(oPort, iSideIndex);
+                    this.setTerminal(oExMe, iSideIndex);
                 end
                 
                 if strcmp(this.sType, 'thermal')

@@ -410,9 +410,9 @@ classdef flow < base
             % exme (if FR provided)
             if nargin >= 3 && ~isempty(oExme)
                 %TODO get exme from this.oBranch, depending on fFlowRate?
-                [ fPortPress, ~ ] = oExme.getPortProperties();
+                [ fExMePress, ~ ] = oExme.getExMeProperties();
             else
-                fPortPress = 0;
+                fExMePress = 0;
             end
             
             % Get matter properties of the phase
@@ -537,7 +537,7 @@ classdef flow < base
                 % If only one flow, no f2f exists --> set pressure, temp
                 % according to IN exme
                 if iL == 1
-                    oThis.fPressure = fPortPress;
+                    oThis.fPressure = fExMePress;
                 end
                 
                 
@@ -546,20 +546,20 @@ classdef flow < base
                 % Skip pressure, temperature?
                 if bSkipPT, continue; end
                 
-                oThis.fPressure = fPortPress;
+                oThis.fPressure = fExMePress;
                 
-                if tools.round.prec(fPortPress, iPrec) < 0
+                if tools.round.prec(fExMePress, iPrec) < 0
                     oThis.fPressure = 0;
                     
                     % FOr manual solvers this is not an issue!
                     if ~isa(oThis.oBranch.oHandler, 'solver.matter.manual.branch')
-                        if fPortPress < -10
-                            aoFlows(1).warn('setData', 'Setting a negative pressure less than -10 Pa (%f) for the LAST flow in branch "%s"!', fPortPress, aoFlows(1).oBranch.sName);
+                        if fExMePress < -10
+                            aoFlows(1).warn('setData', 'Setting a negative pressure less than -10 Pa (%f) for the LAST flow in branch "%s"!', fExMePress, aoFlows(1).oBranch.sName);
                         elseif (~bNeg && iI ~= iL) || (bNeg && iI ~= 1)
                             aoFlows(1).warn('setData', 'Setting a negative pressure, for flow no. %i/%i in branch "%s"!', iI, iL, aoFlows(1).oBranch.sName);
                         end
                     end
-                elseif tools.round.prec(fPortPress, iPrec) == 0
+                elseif tools.round.prec(fExMePress, iPrec) == 0
                     % If the pressure is extremely small, we also set the
                     % flow pressure to zero.
                     oThis.fPressure = 0;
@@ -583,7 +583,7 @@ classdef flow < base
                     else
                         iIndex = iI;
                     end
-                    fPortPress = fPortPress - afPressures(iIndex);
+                    fExMePress = fExMePress - afPressures(iIndex);
                 end
                 
                 % Re-calculate partial pressures

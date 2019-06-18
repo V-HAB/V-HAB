@@ -8,7 +8,9 @@ classdef volumeChanger < matter.manips.volume.continous
         function this = volumeChanger(sName, oPhase)
             this@matter.manips.volume.continous(sName, oPhase);
         end
-        
+    end
+    
+    methods (Access = protected)
         function update(this)
             % Compresses the volume of the phase by 1% per 10 seconds
             fVolumeChangeRate = -(this.oPhase.fVolume / 100) / 10;

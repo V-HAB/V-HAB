@@ -9,9 +9,9 @@ classdef const_press_exme < matter.procs.exmes.gas
             this.fPortPressure = fPortPressure;
         end
         
-        function [ fPortPressure, fPortTemperature ] = getPortProperties(this)
-            fPortPressure = this.fPortPressure;
-            fPortTemperature = this.oPhase.fTemperature;
+        function [ fExMePressure, fExMeTemperature ] = getExMeProperties(this)
+            fExMePressure = this.fPortPressure;
+            fExMeTemperature = this.oPhase.fTemperature;
         end
     end
 end

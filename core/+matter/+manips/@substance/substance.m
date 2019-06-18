@@ -43,12 +43,39 @@ classdef (Abstract) substance < matter.manip
     
     methods
         function this = substance(sName, oPhase)
+            %% Constructor
+            % constructor for substance manipulators. Note that this class
+            % is abstract and therefore cannot be constructed directly.
+            % Only implemented child classes can be constructed, which then
+            % also call this superclass constructor
             this@matter.manip(sName, oPhase);
             
             this.hBindPostTickUpdate = this.oTimer.registerPostTick(@this.update, 'matter', 'substanceManips');
         end
-        
+    end
+    
+    methods (Access = protected)
         function update(this, afPartialFlows)
+            %% Update
+            % INTERNAL FUNCTION! Is executed within the post tick and
+            % should therefore not be executed directly. Note that this
+            % function is used to set the partial flow rates, but only
+            % because the non abstract child class must implement an update
+            % method which calculates the values and then uses the
+            % superclass update methods to set the flowrates!
+            % Execution of the update can be registered using the
+            % registerUpdate function of matter.manip
+            %
+            % This update function can be used to set the mass changes of the
+            % asscociated phase. Overloaded by the derived children, which can then
+            % access this function to set the mass change by using
+            % update@matter.manips.substance(this, afPartialFlows);
+            %
+            % Required Inputs:
+            % afPartialFlows:   Vector with the length (1, oMT.iSubstances)
+            %                   which described the partial mass change for
+            %                   each substance in kg/s
+            
             % Checking if any of the flow rates being set are NaNs. It is
             % necessary to do this here so the origin of NaNs can be found
             % easily during debugging. 

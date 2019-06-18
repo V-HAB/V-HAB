@@ -153,7 +153,7 @@ classdef (Abstract) manip < base & event.source
         end
     end
     
-    methods (Abstract = true)
+    methods (Abstract = true, Access = protected)
         % Every child class must implement this function with the
         % corresponding calculation to set the according flow rates
         update(this)

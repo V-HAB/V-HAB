@@ -202,7 +202,7 @@ classdef exme < base
         % filling level and position of the port, which could be
         % implemented by a derived version of the EXME. See the according
         % matter.procs.exme.[phase type] for that.
-        getPortProperties(~);
+        getExMeProperties(~);
     end
     
     

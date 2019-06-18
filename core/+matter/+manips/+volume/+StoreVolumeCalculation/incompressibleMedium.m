@@ -14,7 +14,8 @@ classdef incompressibleMedium < matter.manips.volume.step
             % mass of the incompressible phase to necessitate a volume
             % recalculation
         end
-        
+    end
+    methods (Access = protected)
         function update(this, fNewVolume, fNewPressure)
             % The incompressible manip cannot calculate changes by
             % itself, but receives the calculated changes from a

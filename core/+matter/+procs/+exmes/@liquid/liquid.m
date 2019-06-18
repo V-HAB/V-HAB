@@ -36,6 +36,11 @@ classdef liquid < matter.procs.exme
             
             if strcmpi(tTankGeomParams.Shape, 'box')
                 fAreaTank = tTankGeomParams.Area;
+                
+                % Move heightexme to the exme, to allow different heights
+                % for different exmes, when setting the parameter to exme
+                % check if it is consistent with height of store
+                
                 fHeightExMe = tTankGeomParams.HeightExMe;
                 
                 fHeightTank = fVolumeTank/fAreaTank;
@@ -62,13 +67,13 @@ classdef liquid < matter.procs.exme
         
         end
         
-        function [ fPortPressure, fPortTemperature ] = getPortProperties(this)
+        function [ fExMePressure, fExMeTemperature ] = getExMeProperties(this)
             
-            fPortPressure    = this.fPressure;
-            fPortTemperature = this.fTemperature;
+            fExMePressure    = this.fPressure;
+            fExMeTemperature = this.fTemperature;
             
             if isempty(this.fPressure)
-                fPortPressure = this.oPhase.fPressure;
+                fExMePressure = this.oPhase.fPressure;
             end
             
         end

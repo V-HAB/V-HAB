@@ -47,8 +47,8 @@ classdef p2p < matter.flow & event.source
             this@matter.flow(oStore);
             
             % Phases / ports
-            [ sPhaseIn,  sPortIn ]  = strtok(sPhaseAndPortIn, '.');
-            [ sPhaseOut, sPortOut ] = strtok(sPhaseAndPortOut, '.');
+            [ sPhaseIn,  sExMeIn ]  = strtok(sPhaseAndPortIn, '.');
+            [ sPhaseOut, sExMeOut ] = strtok(sPhaseAndPortOut, '.');
             
             % Find the phases
             try
@@ -67,34 +67,34 @@ classdef p2p < matter.flow & event.source
             
             % If no port is given in sPaseAndPortIn or -Out, auto-create
             % EXMEs, else add the flow to the given (by name) EXME
-            if isempty(sPortIn)
-                sPortIn = sprintf('.p2p_%s_in', this.sName);
+            if isempty(sExMeIn)
+                sExMeIn = sprintf('.p2p_%s_in', this.sName);
                 
                 sPhaseType = oPhaseIn.sType;
                 
-                matter.procs.exmes.(sPhaseType)(oPhaseIn, sPortIn(2:end));
+                matter.procs.exmes.(sPhaseType)(oPhaseIn, sExMeIn(2:end));
             end
             
-            if isempty(sPortOut)
-                sPortOut = sprintf('.p2p_%s_out', this.sName);
+            if isempty(sExMeOut)
+                sExMeOut = sprintf('.p2p_%s_out', this.sName);
                 
                 sPhaseType = oPhaseOut.sType;
                 
-                matter.procs.exmes.(sPhaseType)(oPhaseOut, sPortOut(2:end));
+                matter.procs.exmes.(sPhaseType)(oPhaseOut, sExMeOut(2:end));
             end
             
-            oPhaseIn.toProcsEXME.(sPortIn(2:end) ).addFlow(this);
-            oPhaseOut.toProcsEXME.(sPortOut(2:end)).addFlow(this);
+            oPhaseIn.toProcsEXME.(sExMeIn(2:end) ).addFlow(this);
+            oPhaseOut.toProcsEXME.(sExMeOut(2:end)).addFlow(this);
             
             %% Construct asscociated thermal branch
             % Create the respective thermal interfaces for the thermal
             % branch
-            % Split to store name / port name
-            oPort = this.oStore.getPort(sPortIn(2:end));
-            thermal.procs.exme(oPort.oPhase.oCapacity, sPortIn(2:end));
+            % Split to store name / ExMe name
+            oExMe = this.oStore.getExMe(sExMeIn(2:end));
+            thermal.procs.exme(oExMe.oPhase.oCapacity, sExMeIn(2:end));
             
-            oPort = this.oStore.getPort(sPortOut(2:end));
-            thermal.procs.exme(oPort.oPhase.oCapacity, sPortOut(2:end));
+            oExMe = this.oStore.getExMe(sExMeOut(2:end));
+            thermal.procs.exme(oExMe.oPhase.oCapacity, sExMeOut(2:end));
             
             % Now we automatically create a fluidic processor for the
             % thermal heat transfer bound to the matter transferred by the
@@ -146,7 +146,7 @@ classdef p2p < matter.flow & event.source
             
             % Now we generically create the corresponding thermal branch
             % using the previously created fluidic conductor
-            this.oThermalBranch = thermal.branch(this.oStore.oContainer, [this.oStore.sName,  sPortIn] , {sCustomName}, [this.oStore.sName,  sPortOut], sCustomName, this);
+            this.oThermalBranch = thermal.branch(this.oStore.oContainer, [this.oStore.sName,  sExMeIn] , {sCustomName}, [this.oStore.sName,  sExMeOut], sCustomName, this);
             
             this.coExmes = {this.oIn, this.oOut};
             
@@ -353,12 +353,12 @@ classdef p2p < matter.flow & event.source
             
             
             % Get matter properties from in exme. 
-            [ fPortPressure, fPortTemperature ] = oExme.getPortProperties();
+            [ fExMePressure, fExMeTemperature ] = oExme.getExMeProperties();
             
             % Check temp and pressure. First temp ... cause that might
             % change in a p2p ... pressure not really.
-            if (nargin < 4) || isempty(fTemperature), fTemperature = fPortTemperature; end
-            if (nargin < 5) || isempty(fPressure), fPressure = fPortPressure; end
+            if (nargin < 4) || isempty(fTemperature), fTemperature = fExMeTemperature; end
+            if (nargin < 5) || isempty(fPressure), fPressure = fExMePressure; end
                 
             
             setMatterProperties@matter.flow(this, fFlowRate, arPartialMass, fTemperature, fPressure);

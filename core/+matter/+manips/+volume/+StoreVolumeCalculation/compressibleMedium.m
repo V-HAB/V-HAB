@@ -13,6 +13,29 @@ classdef compressibleMedium < matter.manips.volume.step
             this@matter.manips.volume.step(sName, oPhase);
         end
         
+        function reattachManip(this, oPhase)
+            % Since the compressibleMedium manipulator must bind certain
+            % update events to the phase and other manipulators we must
+            % overload the attachManip function of
+            % matter.manips.volume.stationary with this function. The
+            % original function is still executed, as all of these
+            % operations are necessary as well but additionally required
+            % triggers are set. Note that on detaching the manip all event
+            % triggers are deleted anyway, and therfore that function must
+            % not be overloaded. The necessary inputs are:
+            % oPhase:   a phase object which fullfills the required phase
+            %           condition of the manip specified in the
+            %           sRequiredType property.
+            reattachManip@matter.manips.volume(this, oPhase);
+           
+            % bind the update function to the update of the connected
+            % phase, as changes in the compressible phase result in
+            % pressure changes which makes a recalculation necessary
+            this.oPhase.bind('update_post', @this.update);
+        end
+    end
+    
+    methods (Access = protected)
         function update(this, fNewVolume, fNewPressure)
             % This function calculates the necessary volume change of this
             % phase 
@@ -281,27 +304,6 @@ classdef compressibleMedium < matter.manips.volume.step
                     end
                 end
             end
-        end
-            
-        function reattachManip(this, oPhase)
-            % Since the compressibleMedium manipulator must bind certain
-            % update events to the phase and other manipulators we must
-            % overload the attachManip function of
-            % matter.manips.volume.stationary with this function. The
-            % original function is still executed, as all of these
-            % operations are necessary as well but additionally required
-            % triggers are set. Note that on detaching the manip all event
-            % triggers are deleted anyway, and therfore that function must
-            % not be overloaded. The necessary inputs are:
-            % oPhase:   a phase object which fullfills the required phase
-            %           condition of the manip specified in the
-            %           sRequiredType property.
-            reattachManip@matter.manips.volume(this, oPhase);
-           
-            % bind the update function to the update of the connected
-            % phase, as changes in the compressible phase result in
-            % pressure changes which makes a recalculation necessary
-            this.oPhase.bind('update_post', @this.update);
         end
     end
 end

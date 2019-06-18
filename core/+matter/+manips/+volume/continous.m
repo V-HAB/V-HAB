@@ -94,6 +94,9 @@ classdef (Abstract) continous < matter.manips.volume
             this.oPhase.bind('update_post', @(~) this.resetTimeStep());
         end
         
+    end
+    
+    methods (Access = protected)
         function update(this, fVolumeChangeRate)
             % This update function can be overloaded by the derived
             % children, which can then access this function to set the
@@ -133,9 +136,6 @@ classdef (Abstract) continous < matter.manips.volume
             this.setTimeStep(this.fTimeStep);
         end
         
-    end
-    
-    methods (Access = protected)
         function resetTimeStep(this)
             % If the phase is updated because of other calculations we want
             % to reset the last time at which the time step of this manip

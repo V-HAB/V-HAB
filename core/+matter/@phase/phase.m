@@ -236,6 +236,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
     methods
 
         function this = phase(oStore, sName, tfMass, fTemperature, sCaller)
+            %% Phase Class Constructor
             % Constructor for the |matter.phase| class. Input parameters
             % can be provided to define the contained masses and
             % temperature, additionally the internal, merge and extract
@@ -361,6 +362,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         end
 
         function this = registerMassupdate(this, ~)
+            %% registerMassupdate
             % To simplify debugging registering a massupdate must be done
             % using this function. That way it is possible to set
             % breakpoints here to see what binds massupdates for the phase
@@ -368,6 +370,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         end
         
         function this = registerUpdate(this)
+            %% registerUpdate
             % A phase update is called, which means the pressure etc
             % changed so much that a recalculation is required. However,
             % the update is not executed directly. Instead the required
@@ -404,15 +407,19 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         end
         
         function setTemperature(this, oCaller, fTemperature)
+            %% SetTemperature
+            % INTERNAL FUNCTION!
             % This function can only be called from the ascociated capacity
-            if ~isa(oCaller, 'thermal.capacity')
+            % to set the temperature of the phase!
+            if ~(oCaller == this.oCapacity)
                 this.throw('setTemperature', 'The setTemperature function of the phase class can only be used by capacity objects. Please do not try to set the temperature directly, as this would lead to errors in the thermal solver');
             end
-                
+            
             this.fTemperature = fTemperature;
         end
-        %% Setting of time step properties
+        
         function setTimeStepProperties(this, tTimeStepProperties)
+            %% Setting of time step properties
             % currently the possible time step properties that can be set
             % by the user are:
             %
@@ -517,9 +524,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         end
         
         function [ this, unbindCallback ] = bind(this, sType, callBack)
-        % Catch 'bind' calls, so we can set a specific boolean property to
-        % true so the .trigger() method will only be called if there are
-        % callbacks registered.
+            %% bind
+            % Catch 'bind' calls, so we can set a specific boolean property
+            % to true so the .trigger() method will only be called if there
+            % are callbacks registered.
             [ this, unbindCallback ] = bind@event.source(this, sType, callBack);
             
             % for the triggers specific to phases we set the corresponding
@@ -537,6 +545,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
     %% Methods for handling manipulators
     methods
         function hRemove = addManipulator(this, oManip)
+            %% addManipulator
             % function to add a manipulator to this phase. The necessary
             % inputs are:
             % oManip: a valid manipulator object
@@ -570,14 +579,16 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         end
         
         function [ hSetProperty ] = bindSetProperty(this, sPropertyName)
+            %% bindSetProperty
+            % INTERNAL FUNCTION! is called by the manips to allow them
+            % access to otherwise protected phase properties.
             % This function is used to provide access to the internal
-            % setProperty function of a phase, which allows to overwrite
-            % parameters. Since overwriting parameters can lead to
-            % inconsistencies if done incorrectly the setProperty function
-            % itself is private and this function checks whether the
-            % parameter that is supposed to be set is a valid parameter.
-            % Valid parameters which can be overwritten by manipulators
-            % are:
+            % Properties of a phase, which allows to overwrite parameters.
+            % Since overwriting parameters can lead to inconsistencies if
+            % done incorrectly the setProperty function itself is private
+            % and this function checks whether the parameter that is
+            % supposed to be set is a valid parameter. Valid parameters
+            % which can be overwritten by manipulators are:
             % fVolume, fPressure, fDensity
             %
             % The temperature specifically cannot be changed by this
@@ -597,6 +608,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
     % the store's bSealed attr, so nothing can be changed later.
     methods
         function addProcEXME(this, oProcEXME)
+            %% addProcEXME
             % Adds a exme proc, i.e. a port. Returns a function handle to
             % the this.setAttribute method (actually the one of the derived
             % class) which allows manipulation of all set protected
@@ -621,8 +633,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             this.toProcsEXME.(oProcEXME.sName) = oProcEXME;
         end
 
-        % Moved to public methods, sometimes external access required
         function [ afTotalInOuts, mfInflowDetails ] = getTotalMassChange(this)
+            %% getTotalMassChange
             % Get vector with total mass change through all EXME flows in
             % [kg/s].
             %
@@ -685,13 +697,15 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 error('Error in phase ''%s''. The flow rate of EXME ''%s'' is NaN.', this.sName, this.coProcsEXME{isnan(afTotalInOuts)}.sName);
             end
         end
-    end
-
-
-    %% Finalize methods
-    methods
-
+        
         function seal(this)
+            %% seal
+            % INTERNAL METHOD! This is called by the sealMatterStructure
+            % function of the container
+            % Seales the phase and prevents further changes to it regarding
+            % exmes etc. Only IF exmes are allowed to change after this, to
+            % allow e.g. a human to move through a habitat.
+            
             % Bind the .update method to the timer, with a time step of 0
             % (i.e. smallest step), will be adapted after each .update
             this.setTimeStep = this.oTimer.bind(@(~) this.registerUpdate(), 0, struct(...
@@ -741,6 +755,12 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
     methods (Access = protected)
 
         function this = massupdate(this, ~)
+            %% massupdate
+            % INTERNAL METHOD! This method can only be executed in the post
+            % tick, if a user wants to execute a massupdate the
+            % registerMassupdate function of the phase should be used to
+            % trigger the post tick update in the current tick!
+            %
             % This method updates the mass related properties of the phase.
             % It takes into account all in- and outflowing matter streams
             % via the exme processors connected to the phase, including the
@@ -876,6 +896,12 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         end
         
         function this = update(this)
+            %% update
+            % INTERNAL FUNCTION! This method can only be executed in the
+            % post tick, if a user wants to execute an update the
+            % registerUpdate function of the phase should be used to
+            % trigger the post tick update in the current tick!
+            %
             % This function updates matte related properties of the phase,
             % like the pressure and the molar mass. More specific update
             % functions for specific phases can be included in child
@@ -931,6 +957,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         end
         
         function detachManipulator(this, sManip)
+            %% detachManipulator
+            % INTERNAL FUNCTION! This function cannot be accessed directly,
+            % as it is created and passed out on the creation of the manip,
+            % to ensure that the correct manip is removed!
+            %
             % this function can be used to remove a manipulator from the
             % system. It is returned as function handle with the necessary
             % inputs upon adding the manipulator to the phase, therefore
@@ -940,6 +971,15 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         end
 
         function setBranchesOutdated(this)
+            %% setBranchesOutdated
+            % INTERNAL FUNCTION! This is triggered by the massupdate
+            % function of the phase and triggering it through other means
+            % as well could (depending on the use case) lead to infinite
+            % loops in the execution. Therefore access is restricted, but
+            % the user can trigger a massupdate using the
+            % registerMassUpdate function also if the branches should be
+            % outdated!
+            %
             % This function is used to set the Branches connected to this
             % phase outdated in case relevant phase parameters have changed            
             
@@ -993,6 +1033,15 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         end
         
         function setP2PsAndManipsOutdated(this)
+            %% setP2PsAndManipsOutdated
+            % INTERNAL FUNCTION! This is triggered by the massupdate
+            % function of the phase and triggering it through other means
+            % as well could (depending on the use case) lead to infinite
+            % loops in the execution. Therefore access is restricted, but
+            % the user can trigger a massupdate using the
+            % registerMassUpdate function also if the P2Ps/Manips should be
+            % outdated!
+            %
             % this function is used to set all manipualtors and P2Ps
             % outdated, which tells them to perform a post tick update
             
@@ -1024,17 +1073,24 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         end
         
         function setOutdatedTS(this)
+            %% setOutdatedTS
+            % INTERNAL FUNCTION! This function is called by the
+            % registerUpdate function
+            %
             % Setting this to true multiple times in the timer is no
             % problem, therefore no check required
             this.hBindPostTickTimeStep();
         end
     end
     methods (Access = private)
-    
         % Only the phase itself should have access to this function. Access
         % by other functions is handled through specific bind/unbind
         % callbacks
         function setProperty(this, sPropertyName, xNewValue)
+            %% setProperty
+            % INTERNAL FUNCTION! Can only be used by manips and for those
+            % the access is provided through the bindSetProperty function!
+            %
             % This function can be used to set otherwise internal
             % parameters of a phase. This is necessary for example to
             % adjust the volume of phases (e.g. if a gas, liquid, solid
@@ -1051,7 +1107,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % if a parameter of the phase changed, we must recalculate
             % everything else
             this.registerUpdate();
-
         end
     end
 end

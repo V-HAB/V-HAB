@@ -176,7 +176,7 @@ classdef branch < base.branch
                 % ensures that the matter properties don't become zero if
                 % the coExmes{1} phase is empty.
                 
-                afPressure = [ this.coExmes{1}.getPortProperties(), this.coExmes{2}.getPortProperties() ];
+                afPressure = [ this.coExmes{1}.getExMeProperties(), this.coExmes{2}.getExMeProperties() ];
                 if afPressure(1) >= afPressure(2); iWhichExme = 1; else; iWhichExme = 2; end
                 
                 for iI = 1:this.iFlowProcs
@@ -237,7 +237,7 @@ classdef branch < base.branch
             
             % No pressure? Distribute equally.
             if nargin < 3 || isempty(afPressure) || any(isinf(afPressure))
-                fPressureDiff = (this.coExmes{1}.getPortProperties() - this.coExmes{2}.getPortProperties());
+                fPressureDiff = (this.coExmes{1}.getExMeProperties() - this.coExmes{2}.getExMeProperties());
                 
                 % Each flow proc produces the same pressure drop, the sum
                 % being the actual pressure difference.

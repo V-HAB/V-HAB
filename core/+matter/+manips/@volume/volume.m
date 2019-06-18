@@ -45,22 +45,6 @@ classdef (Abstract) volume < matter.manip
             % this.setHandles();
         end
         
-        function update(this, fVolume, fPressure)
-            % This update function can be used to set the volume of the
-            % asscociated phase. Optionally the pressure can be set as
-            % well. Overloaded by the derived children, which can then
-            % access this function to set the volume and pressure by using
-            % update@matter.manips.volume(fVolume, fPressure);
-            
-            this.hSetVolume(fVolume);
-            % Only overwrite the pressure if it was provided as parameter
-            if nargin > 2
-                this.hSetPressure(fPressure);
-            end
-            
-            this.fLastExec = this.oTimer.fTime;
-        end
-        
         function detachManip(this)
             % Since the volume manipulator additionally has function
             % handles specific for the phase to which it is connected we
@@ -96,6 +80,44 @@ classdef (Abstract) volume < matter.manip
             % and use it to bind the setVolume and setPressure functions
             this.hSetVolume     = this.oPhase.bindSetProperty('fVolume');
             this.hSetPressure   = this.oPhase.bindSetProperty('fPressure');
+        end
+    end
+    
+    methods (Access = protected)
+        function update(this, fVolume, fPressure)
+            %% Update
+            % INTERNAL FUNCTION! Is executed within the post tick and
+            % should therefore not be executed directly. Note that this
+            % function is used to set the volume and optionally the
+            % pressure, but only because the non abstract child class must
+            % implement an update method which calculates the values and
+            % then uses the superclass update methods to set them!
+            % Execution of the update can be registered using the
+            % registerUpdate function of matter.manip
+            %
+            % This update function can be used to set the volume of the
+            % asscociated phase. Optionally the pressure can be set as
+            % well. Overloaded by the derived children, which can then
+            % access this function to set the volume and pressure by using
+            % update@matter.manips.volume(this, fVolume, fPressure);
+            %
+            % Required Inputs:
+            % fVolume:      a Volume in m^3 by which the volume of the
+            %               asscociated phase should be changed
+            %
+            % Optional Inputs:
+            % fPressure:    a Pressure in Pa by which the pressure of the
+            %               attached phase should be changed. Can be set if
+            %               necessary, otherwise the new pressure is
+            %               calculated by the matter.phase update function
+            
+            this.hSetVolume(fVolume);
+            % Only overwrite the pressure if it was provided as parameter
+            if nargin > 2
+                this.hSetPressure(fPressure);
+            end
+            
+            this.fLastExec = this.oTimer.fTime;
         end
     end
 end

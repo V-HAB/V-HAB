@@ -326,8 +326,8 @@ classdef branch_liquid < solver.matter.base.branch
             %It is important to get the pressure from the exme and not the 
             %store since the liquid exme also tales gravity effects into 
             %account.
-            [fPressureBoundary1, fTemperatureBoundary1]  = this.oBranch.coExmes{1}.getPortProperties();
-            [fPressureBoundary2, fTemperatureBoundary2]  = this.oBranch.coExmes{2}.getPortProperties();
+            [fPressureBoundary1, fTemperatureBoundary1]  = this.oBranch.coExmes{1}.getExMeProperties();
+            [fPressureBoundary2, fTemperatureBoundary2]  = this.oBranch.coExmes{2}.getExMeProperties();
             
             %volume and mass are then taken fromt he respective phase
             
@@ -1172,7 +1172,7 @@ classdef branch_liquid < solver.matter.base.branch
                 %calculation has to be dependent on the flow direction in
                 %the branch.
                 if fMassFlow >= 0
-                    [mFlowPressure(1) , mFlowTemp(1)] = this.oBranch.coExmes{1, 1}.getPortProperties();
+                    [mFlowPressure(1) , mFlowTemp(1)] = this.oBranch.coExmes{1, 1}.getExMeProperties();
                     
                     for iProc = 1:iNumberOfProcs
                         mFlowPressure(iProc+1) = mPressureNew(mCompCellPosition(iProc,2));
@@ -1183,7 +1183,7 @@ classdef branch_liquid < solver.matter.base.branch
                     end
                     
                 else
-                    [mFlowPressure(end) , mFlowTemp(end)] = this.oBranch.coExmes{2, 1}.getPortProperties();
+                    [mFlowPressure(end) , mFlowTemp(end)] = this.oBranch.coExmes{2, 1}.getExMeProperties();
                     
                     for iProc = iNumberOfProcs:-1:1
                         mFlowPressure(iProc) = mPressureNew(mCompCellPosition(iProc,2));

@@ -109,8 +109,8 @@ classdef branch < solver.matter.base.branch
     methods (Access = protected)
         function update(this)
             % Get pressures
-            fPressureLeft  = this.oBranch.coExmes{1}.getPortProperties();
-            fPressureRight = this.oBranch.coExmes{2}.getPortProperties();
+            fPressureLeft  = this.oBranch.coExmes{1}.getExMeProperties();
+            fPressureRight = this.oBranch.coExmes{2}.getExMeProperties();
             fPressDiff     = fPressureLeft - fPressureRight;
             fFlowRate      = 0;
             

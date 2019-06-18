@@ -9,10 +9,10 @@ classdef solid < matter.procs.exme
             this@matter.procs.exme(oPhase, sName);
         end
         
-        function [ fStandardPressure, fPortTemperature ] = getPortProperties(this)
+        function [ fExMePressure, fExMeTemperature ] = getPortProperties(this)
             
-            fStandardPressure = this.oMT.Standard.Pressure;
-            fPortTemperature = this.oPhase.fTemperature;
+            fExMePressure       = this.oPhase.fPressure;
+            fExMeTemperature    = this.oPhase.fTemperature;
         end
     end
 end
