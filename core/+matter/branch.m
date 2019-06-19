@@ -82,14 +82,18 @@ classdef branch < base.branch
                 % name length of 63 characters. 
                 if length(csProcs{1}) > 63
                     % Generating some messages for the debugger
-                    this.out(3,1,'matter.branch','Truncating automatically generated thermal conductor name.');
-                    this.out(3,2,'matter.branch','Old name: %s', csProcs(1));
+                    if ~base.oDebug.bOff
+                        this.out(3,1,'matter.branch','Truncating automatically generated thermal conductor name.');
+                        this.out(3,2,'matter.branch','Old name: %s', csProcs(1));
+                    end
                     
                     % Truncating the name
                     csProcs{1} = csProcs{1}(1:63);
                     
                     % More debugging output
-                    this.out(3,2,'matter.branch','New name: %s', csProcs(1));
+                    if ~base.oDebug.bOff
+                        this.out(3,2,'matter.branch','New name: %s', csProcs(1));
+                    end
                     
                 end
                 
