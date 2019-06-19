@@ -175,7 +175,7 @@ classdef branch < solver.thermal.base.branch
                         % error within the updateThermal() method, we do
                         % want to have it stop the execution of V-HAB, so
                         % we rethrow the error.
-                        if ~strcmp(oError.identifier, {'MATLAB:noSuchMethodOrField'})
+                        if ~strcmp(oError.identifier, {'MATLAB:noSuchMethodOrField'}) || ~strcmp(oError.stack(1).name,'branch.update')
                             rethrow(oError);
                         end
                     end
