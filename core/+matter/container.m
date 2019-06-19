@@ -228,7 +228,7 @@ classdef container < sys
                 this.throw('addBranch', 'Provided branch is not a and does not inherit from matter.branch');
                 
             elseif isfield(this.toBranches, oBranch.sName)
-                this.throw('addBranch', 'Branch with name "%s" alreay exists!', oBranch.sName);
+                this.throw('addBranch', 'Branch with name "%s" already exists!', oBranch.sName);
                 
             end
             
@@ -237,7 +237,7 @@ classdef container < sys
             this.aoBranches(end + 1, 1)     = oBranch;
             if ~isempty(oBranch.sCustomName)
                 if isfield(this.toBranches, oBranch.sCustomName)
-                    this.throw('addBranch', 'Branch with custom name "%s" alreay exists!', oBranch.sCustomName);
+                    this.throw('addBranch', 'Branch with custom name "%s" already exists!', oBranch.sCustomName);
                 else
                     this.toBranches.(oBranch.sCustomName) = oBranch;
                 end
