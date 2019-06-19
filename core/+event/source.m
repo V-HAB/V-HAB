@@ -98,9 +98,9 @@ classdef source < handle
             % for the exact trigger being executed here. So we check if
             % there is even a field with the trigger name and only then do
             % we get the cell with callbacks. 
-            if any(strcmp(fieldnames(this.tcEventCallbacks), sName))
+            try
                 cCallbackCell = this.tcEventCallbacks.(sName);
-            else
+            catch
                 return
             end
             

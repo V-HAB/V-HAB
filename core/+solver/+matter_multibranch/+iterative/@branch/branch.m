@@ -558,8 +558,10 @@ classdef branch < base & event.source
             % regarding solver time step jumps right at the beginning. 
             if this.oTimer.iTick < 13
                 this.setTimeStep(this.fMinimumTimeStep);
-                this.out(1,1,'Multi-Solver','Setting Minimum Time Step: %e', {this.fMinimumTimeStep});
-                this.out(1,2,'Multi-Solver','Setting the minimum time step for the first 12 ticks ensures smooth startup of the simulation.', {});
+                if ~base.oDebug.bOff
+                    this.out(1,1,'Multi-Solver','Setting Minimum Time Step: %e', {this.fMinimumTimeStep});
+                    this.out(1,2,'Multi-Solver','Setting the minimum time step for the first 12 ticks ensures smooth startup of the simulation.', {});
+                end
                 return;
             end
             

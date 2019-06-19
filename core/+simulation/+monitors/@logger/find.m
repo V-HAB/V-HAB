@@ -89,7 +89,9 @@ end
 
 % If there is nothing to be logged, we also tell the user and return.
 if isempty(aiIndex)
-    this.out(4, 1, 'Nothing found in log.');
+    if ~base.oDebug.bOff
+        this.out(4, 1, 'Nothing found in log.');
+    end
     return;
 end
 

@@ -52,7 +52,9 @@ classdef fluidic < thermal.procs.conductor
             
             this.fResistance = fResistance;
             
-            this.out(1,1,'Flow Rate: %i [kg/s], Heat Capactiy: %i [J/(kgK)]', {this.oMassBranch.fFlowRate, fSpecificHeatCapacity});
+            if ~base.oDebug.bOff
+                this.out(1,1,'Flow Rate: %i [kg/s], Heat Capactiy: %i [J/(kgK)]', {this.oMassBranch.fFlowRate, fSpecificHeatCapacity});
+            end
         end
         
         function updateConnectedMatterBranch(this, oMassBranch)
