@@ -42,6 +42,9 @@ classdef capacity < base & event.source
         % capacity (as there is no capacity without matter)
         oPhase;
         
+        % The thermal.container of which this capacity is a part of.
+        oContainer;
+        
         % cell array containing all heat sources within this capacity
         coHeatSource;
         % struct array containing all heat sources within this capacitiy
@@ -141,11 +144,15 @@ classdef capacity < base & event.source
             %   with phases and all thermal calculations are performed here
             
             % Set associated objects.
-            this.oPhase = oPhase;
-            this.oMT = oPhase.oMT;
-            this.oTimer = oPhase.oTimer;
+            this.oPhase     = oPhase;
+            this.oContainer = this.oPhase.oStore.oContainer;
+            this.oMT        = oPhase.oMT;
+            this.oTimer     = oPhase.oTimer;
             
-            % sets the temperature of this capacity and the asscociated
+            % Adding this capacity to the container
+            this.oContainer.addCapacity(this);
+            
+            % Sets the temperature of this capacity and the asscociated
             % phase
             this.setTemperature(fTemperature);
             
@@ -156,15 +163,14 @@ classdef capacity < base & event.source
                 this.fSpecificHeatCapacity  = this.oMT.calculateSpecificHeatCapacity(this.oPhase);
                 this.fTotalHeatCapacity     = sum(this.oPhase.afMass) * this.fSpecificHeatCapacity;
             catch
-                % just use dummy values in case the previous try did not
+                % Just use dummy values in case the previous try did not
                 % work, the really correct ones will be calculated before
                 % the sim starts in the init_post triggered function
                 this.fSpecificHeatCapacity  = 1000;
                 this.fTotalHeatCapacity     = sum(this.oPhase.afMass) * this.fSpecificHeatCapacity;
             end
             
-            this.oPhase.oStore.oContainer.bind('ThermalSeal_post',@(~)this.setInitialHeatCapacity());
-            
+            this.oContainer.bind('ThermalSeal_post',@(~)this.setInitialHeatCapacity());
             
             % Set name of capacity.
             this.sName = oPhase.sName;
@@ -176,7 +182,7 @@ classdef capacity < base & event.source
             this.hBindPostTickTemperatureUpdate = this.oTimer.registerPostTick(@this.updateTemperature, 'thermal', 'capacity_temperatureupdate');
             this.hBindPostTickTimeStep          = this.oTimer.registerPostTick(@this.calculateTimeStep, 'post_physics', 'timestep');
             
-            % and already register the first temperature update
+            % Register the first temperature update
             this.hBindPostTickTemperatureUpdate();
             
             % Bind the .update method to the timer, with a time step of 0
@@ -212,7 +218,7 @@ classdef capacity < base & event.source
                 
            
                 if ~base.oDebug.bOff
-                    this.out(1, 1, 'name', '%s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName });
+                    this.out(1, 1, 'name', '%s-%s-%s', { this.oContainer.sName, this.oStore.sName, this.sName });
 
                     this.out(1, 2, 'last', 'fSpecificHeatCapacity:              %f [J/(kg*K)]', { this.fSpecificHeatCapacity });
                     this.out(1, 2, 'last', 'fMass:                              %f [kg]', { sum(this.arPartialMassLastHeatCapacityUpdate) });
@@ -306,7 +312,7 @@ classdef capacity < base & event.source
             
             % Check cases which would result in inconsistencies within the
             % simulation
-            if this.oPhase.oStore.oContainer.bThermalSealed
+            if this.oContainer.bThermalSealed
                 this.throw('addProcEXME', 'The container to which this capacity belongs is sealed, so no ports can be added any more.');
             end
 
@@ -339,7 +345,7 @@ classdef capacity < base & event.source
             % of this capacity
             % Positive power means temperature RISE.
             
-            if this.oPhase.oStore.oContainer.bThermalSealed
+            if this.oContainer.bThermalSealed
                 this.throw('addHeatSource', 'The container to which this capacity belongs is sealed, so no heat sources can be added any more.');
             end
 
@@ -389,7 +395,7 @@ classdef capacity < base & event.source
             
             % Return if no time has passed
             if fLastStep == 0
-                if ~base.oDebug.bOff, this.out(2, 1, 'skip', 'Skipping temperatureupdate in %s-%s-%s\tset branches outdated? %i', { this.oPhase.oStore.oContainer.sName, this.oPhase.oStore.sName, this.sName, bSetBranchesOutdated }); end
+                if ~base.oDebug.bOff, this.out(2, 1, 'skip', 'Skipping temperatureupdate in %s-%s-%s\tset branches outdated? %i', { this.oContainer.sName, this.oPhase.oStore.sName, this.sName, bSetBranchesOutdated }); end
                 return;
             end
             
@@ -728,7 +734,7 @@ classdef capacity < base & event.source
                 fNewStep = min(fNewStep, fMaximumTimeStep);
                 
                 if fNewStep < 0
-                    if ~base.oDebug.bOff, this.out(3, 1, 'time-step-neg', 'Phase %s-%s-%s has neg. time step of %.16f', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, fNewStep }); end
+                    if ~base.oDebug.bOff, this.out(3, 1, 'time-step-neg', 'Phase %s-%s-%s has neg. time step of %.16f', { this.oContainer.sName, this.oStore.sName, this.sName, fNewStep }); end
                 end
                 
                 % If our newly calculated time step is larger than the

@@ -19,13 +19,19 @@ classdef container < sys
         % Cached names
         csConductors;
         
+        % A cell containing all capacities in this container. This needs to
+        % be a cell and not a struct because a capacity is linked to matter
+        % phases and they can have identical names. This property is
+        % included to enable looping through all capacities.
+        coCapacities;
+        
         % Reference to the branches, by name
         toThermalBranches = struct();
         
         % Total number of thermal branches inside this thermal container
         iThermalBranches = 0;
         
-        % total number of capacities inside this thermal container
+        % Total number of capacities inside this thermal container
         iCapacities = 0;
         
         % Reference to the corresponding matter container
@@ -403,6 +409,14 @@ classdef container < sys
                 % throw an error message.
                 this.throw('container:updateThermalBranchNames','The provided branch does not exist in this thermal container.');
             end
+        end
+        
+        function addCapacity(this, oCapacity)
+            % Adds a capacity to the coCapacities cell
+            this.coCapacities{end+1} = oCapacity;
+            
+            % Incrementing the capacity counter
+            this.iCapacities = this.iCapacities + 1;
         end
     end
 end

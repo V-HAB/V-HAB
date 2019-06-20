@@ -68,7 +68,7 @@ classdef exme < base
             % Assigning a branch to this exme
             
             % Checking if the container is already sealed
-            if this.oCapacity.oPhase.oStore.oContainer.bThermalSealed
+            if this.oCapacity.oContainer.bThermalSealed
                 this.throw('addBranch', 'The container to which this processors phase belongs is sealed, so no ports can be added any more.');
                 
             % Checking if we already have a branch. If this exme is being
