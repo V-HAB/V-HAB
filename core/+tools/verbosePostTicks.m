@@ -11,10 +11,7 @@ function tbPostTickControl = verbosePostTicks(oTimer)
         for iLevel = 1:length(csLevel)
             cxPostTicks = oTimer.txPostTicks.(oTimer.csPostTickGroups{iGroup}).(csLevel{iLevel});
             if ~isempty(cxPostTicks)
-                for iTick = 1:length(cxPostTicks)
-                    mbControl(iTick) = oTimer.mbPostTickControl(iGroup, iLevel, iTick);
-                end
-                
+                mbControl = oTimer.cabPostTickControl{iGroup, iLevel};
             else
                 mbControl = logical.empty();
             end
