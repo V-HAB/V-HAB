@@ -15,12 +15,12 @@ function fJouleThomson = calculateJouleThomson(this, varargin)
 % calculateDynamicViscosity returns
 %  fJouleThomson - Joule-Thomson coefficient in K/Pa
 
-[fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures, ~, ~] = getNecessaryParameters(this, varargin{:});
+[fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures, ~, ~, bUseIsobaricData] = getNecessaryParameters(this, varargin{:});
 
 % here decesion on when other calculations should be used could be placed
 % (see calculateDensity function for example)
 
-fJouleThomson = calculateProperty(this, 'Joule Thomson', fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures);
+fJouleThomson = calculateProperty(this, 'Joule Thomson', fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures, bUseIsobaricData);
 
 
 end

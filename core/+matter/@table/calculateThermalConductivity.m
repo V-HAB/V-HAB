@@ -16,11 +16,11 @@ function fThermalConductivity = calculateThermalConductivity(this, varargin)
 %  fThermalConductivity - conductivity of matter in current state in W/mK
 
 
-[fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures, ~, ~] = getNecessaryParameters(this, varargin{:});
+[fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures, ~, ~, bUseIsobaricData] = getNecessaryParameters(this, varargin{:});
 
 % here decesion on when other calculations should be used could be placed
 % (see calculateDensity function for example)
 
-fThermalConductivity = calculateProperty(this, 'Thermal Conductivity', fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures);
+fThermalConductivity = calculateProperty(this, 'Thermal Conductivity', fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures, bUseIsobaricData);
 end
 

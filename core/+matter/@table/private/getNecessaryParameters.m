@@ -1,4 +1,4 @@
-function [fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures, tbReference, sMatterState] = getNecessaryParameters(this, varargin)
+function [fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures, tbReference, sMatterState, bUseIsobaricData] = getNecessaryParameters(this, varargin)
 % Case one - just a phase or flow object provided
 tbReference.bPhase = false;
 tbReference.bFlow = false;
@@ -79,6 +79,11 @@ if length(varargin) == 1
         fTemperature = this.Standard.Temperature; % std temperature (K)
     end
     
+    % We always use isobaric data. If you wish to use isochoric data, you
+    % need to pass in the matter parameters manually and include as the
+    % final barameter a false boolean. 
+    bUseIsobaricData = true;
+    
 else
     % This part is in case values directly passed to this function, rather
     % than a phase or flow object.
@@ -124,6 +129,13 @@ else
         else
             afPartialPressures = ones(1, this.iSubstances) * fPressure;
         end
+    end
+    
+    % Isobar or isochor?
+    if nargin > 5 && varargin{5} == true
+        bUseIsobaricData = true;
+    else
+        bUseIsobaricData = false;
     end
     
 end
