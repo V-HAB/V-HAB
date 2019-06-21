@@ -44,7 +44,7 @@ for iI = 1:iNumIndices
         % Since only for mixtures the phases were actually determined, if
         % an error occured first check if a phase change is currently
         % happening and throw a corresponding error if that is the case
-        iPhase = this.determinePhase(this, tParameters.sSubstance, fTemperature, afPartialPressures(aiIndices(iI)));
+        iPhase = this.determinePhase(tParameters.sSubstance, fTemperature, afPartialPressures(aiIndices(iI)));
 
         if mod(iPhase,1) ~= 0
             error('A substance (%s) is undergoing a phase change and therefore the matter property %s could not be calculated', tParameters.sSubstance, sProperty)
