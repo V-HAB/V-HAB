@@ -67,8 +67,9 @@ classdef (Abstract) flow < matter.phase
         function updatePartials(this, afPartialInFlows)
             
             if isempty(this.fPressure)
-                
-                this.out(1, 1, 'skip-partials', '%s-%s: skip at %i (%f) - no pressure (i.e. before multi solver executed at least once)!', { this.oStore.sName, this.sName, this.oTimer.iTick, this.oTimer.fTime });
+                if ~base.oDebug.bOff
+                    this.out(1, 1, 'skip-partials', '%s-%s: skip at %i (%f) - no pressure (i.e. before multi solver executed at least once)!', { this.oStore.sName, this.sName, this.oTimer.iTick, this.oTimer.fTime });
+                end
                 
                 return;
             end
@@ -79,8 +80,9 @@ classdef (Abstract) flow < matter.phase
             % except forced, in case this method is called e.g. from
             % .update() or .updateProcessorsAndManipulators()
             if ~this.oStore.bSealed %|| (this.fLastPartialsUpdate >= this.oTimer.fTime && ~bForce)
-                
-                this.out(1, 1, 'skip-partials', '%s-%s: skip at %i (%f) - already executed!', { this.oStore.sName, this.sName, this.oTimer.iTick, this.oTimer.fTime });
+                if ~base.oDebug.bOff
+                    this.out(1, 1, 'skip-partials', '%s-%s: skip at %i (%f) - already executed!', { this.oStore.sName, this.sName, this.oTimer.iTick, this.oTimer.fTime });
+                end
                 
                 return;
             end
@@ -161,9 +163,10 @@ classdef (Abstract) flow < matter.phase
             
             if any(afPartialInFlows < 0)
                 afPartialInFlows(afPartialInFlows < 0) = 0;
-                this.out(2, 1, 'partials-error', 'NEGATIVE PARTIALS');
-                % TO DO: Make a lower level debugging output
-                % this.warn('updatePartials', 'negative partials');
+                if ~base.oDebug.bOff
+                    this.out(2, 1, 'partials-error', 'NEGATIVE PARTIALS');
+                end
+                
             end
             
             fTotalInFlow       = sum(afPartialInFlows);
