@@ -1,7 +1,7 @@
 classdef compressibleMedium < matter.manips.volume.step
     % This volume manipulator identifies a phase as compressible and
     % handles the required volume calculations with respect to other phases
-    % to respect the compressible nature of this phase
+    % in the store to respect the compressible nature of this phase
     
     properties (Constant)
         % Identifies this manipualtor as a stationary volume manipulator
@@ -10,10 +10,13 @@ classdef compressibleMedium < matter.manips.volume.step
     
     methods
         function this = compressibleMedium(sName, oPhase)
+            %% class constructor
+            % creates a new compressibleMedium volume manipulator
             this@matter.manips.volume.step(sName, oPhase);
         end
         
         function reattachManip(this, oPhase)
+            %% reattachManip
             % Since the compressibleMedium manipulator must bind certain
             % update events to the phase and other manipulators we must
             % overload the attachManip function of
@@ -37,8 +40,22 @@ classdef compressibleMedium < matter.manips.volume.step
     
     methods (Access = protected)
         function update(this, fNewVolume, fNewPressure)
-            % This function calculates the necessary volume change of this
-            % phase 
+            %% update
+            % calculate the necessary volume change of the compressible
+            % phase if some time elapsed since the last execution.
+            % Alternative, since the calculation of one manip is sufficient
+            % for all phases, the new volume and pressure can be provided
+            % as input, which results in skipping the calculation and
+            % setting the values directly (this should only be done by
+            % other compressibleMedium manips)
+            %
+            % Optional Inputs:
+            % fNewVolume:   The new volume for the phase of this manip in
+            %               m^3 calculated by another compressibleMedium
+            %               manip
+            % fNewPressure: The new pressure calculated for the phase of
+            %               this manip in Pa calculated by another
+            %               compressible Medium manip
             
             fElapsedTime = this.oTimer.fTime - this.fLastExec;
             

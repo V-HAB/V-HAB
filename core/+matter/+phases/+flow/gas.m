@@ -24,7 +24,8 @@ classdef gas < matter.phases.flow.flow
         function this = gas(oStore, sName, varargin)
             this@matter.phases.flow.flow(oStore, sName, varargin{:});
             
-            this.afPP = zeros(1,this.oMT.iSubstances);
+            this.fVirtualPressure = this.fMass * this.oMT.Const.fUniversalGas * this.fTemperature / (this.fMolarMass * this.fVolume);
+            [ this.afPP, this.afPartsPerMillion ] = this.oMT.calculatePartialPressures(this);
             
         end
     end
@@ -70,7 +71,7 @@ classdef gas < matter.phases.flow.flow
                 end
                 
             else
-                this.fPressure = 0;
+                this.fMassToPressure = 0;
                 this.afPP = zeros(1,this.oMT.iSubstances);
                 this.rRelHumidity = 0;
             end

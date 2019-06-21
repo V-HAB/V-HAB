@@ -59,8 +59,6 @@ if length(varargin) == 1
                 afPartialPressures(aiPhase == 1) = fPressure;
 
                 aiPhase = this.determinePhase(arPartialMass, fTemperature, afPartialPressures);
-                
-                aiPhase = round(aiPhase,0);
             else
                 afPartialPressures = ones(1,this.iSubstances) .* fPressure;
             end
@@ -128,8 +126,9 @@ else
     
 end
 
-% Find the indices of all substances that are in the flow
-aiIndices = find(arPartialMass > 0);
+% Find the indices of all substances that are present and have a
+% significant impact on the matter property (more than one promille)
+aiIndices = find(arPartialMass > 0.001);
 
 csPhase = {'solid';'liquid';'gas';'supercritical'};
 tiP2N.solid = 1;

@@ -20,9 +20,9 @@ classdef mixture < matter.phases.flow.flow
             
             this.sPhaseType = sPhaseType;
             if nargin > 6
-                this.fPressure = fPressure;
+                this.fVirtualPressure = fPressure;
             else
-                this.fPressure = 1e5;
+                this.fVirtualPressure = 1e5;
             end
         end
     end

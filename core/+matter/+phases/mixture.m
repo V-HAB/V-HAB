@@ -12,7 +12,6 @@ classdef mixture < matter.phase
     end
     
     properties (SetAccess = protected, GetAccess = public)
-        
         sPhaseType;
     end
     
@@ -22,9 +21,9 @@ classdef mixture < matter.phase
             
             this.sPhaseType = sPhaseType;
             if strcmp(this.sPhaseType, 'gas')
-                this.fPressure = this.fMass * this.oMT.Const.fUniversalGas * this.fTemperature / (this.fMolarMass * this.fVolume);
+                this.fMassToPressure = this.oMT.Const.fUniversalGas * this.fTemperature / (this.fMolarMass * this.fVolume);
             else
-                this.fPressure = fPressure;
+                this.fMassToPressure = fPressure / this.fMass;
             end
             this.fDensity = this.oMT.calculateDensity(this);
             this.fVolume = this.fMass / this.fDensity;
@@ -40,9 +39,16 @@ classdef mixture < matter.phase
             
             this.fDensity = this.fMass / this.fVolume;
             
-            if strcmp(this.sPhaseType, 'gas')
-                this.fPressure = this.oMT.calculatePressure(this);
+            if ~strcmp(this.sPhaseType, 'solid')
+                this.fMassToPressure = this.oMT.calculatePressure(this) / this.fMass;
             end
+        end
+        
+        function fPressure = get_fPressure(this)
+            %% get_fPressure
+            % for mixtures we do not want to include the mass change between
+            % updates as a pressure change
+            fPressure = this.fMassToPressure * this.fMass;
         end
     end
 end

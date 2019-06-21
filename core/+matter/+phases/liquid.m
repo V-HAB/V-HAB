@@ -8,18 +8,6 @@ classdef liquid < matter.phase
         sType = 'liquid';
 
     end
-
-    properties (SetAccess = protected, GetAccess = public)
-        
-        fDynamicViscosity;      % Dynamic Viscosity in Pa*s
-        
-        fLastUpdateLiquid = 0;
-        
-        % Handles for the pressure and density correlation functions
-        hLiquidDensity;
-        hLiquidPressure;
-        
-    end
     
     methods
         % oStore        : Name of parent store
@@ -35,9 +23,9 @@ classdef liquid < matter.phase
             this.fTemperature = fTemperature;
             
             if nargin > 4
-                this.fPressure    = fPressure;
+                this.fMassToPressure    = fPressure / this.fMass;
             else
-                this.fPressure    = this.oMT.Standard.Pressure;
+                this.fMassToPressure    = this.oMT.Standard.Pressure / this.fMass;
             end
             
             this.fDensity = this.oMT.calculateDensity(this);

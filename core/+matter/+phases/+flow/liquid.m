@@ -29,8 +29,8 @@ classdef liquid < matter.phases.flow.flow
             % Calling the parent constructor
             this@matter.phases.flow.flow(oStore, sName, tfMasses, fVolume, fTemperature);
             
-            % Setting the pressure. 
-            this.fPressure = fPressure;
+            % Setting the pressure.
+            this.fVirtualPressure = fPressure;
         end
     end
 end

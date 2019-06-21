@@ -341,8 +341,8 @@ classdef CDRA < vsys
                 % A special filter store has to be used for the filter to
                 % prevent the gas phase volume from beeing overwritten since
                 % more than one gas phase is used to implement several cells
-                components.matter.filter.components.FilterStore(this, [(csTypes{iType}), '_1'], (2*fFlowVolume + fAbsorberVolume));
-                components.matter.filter.components.FilterStore(this, [(csTypes{iType}), '_2'], (2*fFlowVolume + fAbsorberVolume));
+                matter.store(this, [(csTypes{iType}), '_1'], (2*fFlowVolume + fAbsorberVolume));
+                matter.store(this, [(csTypes{iType}), '_2'], (2*fFlowVolume + fAbsorberVolume));
                 
                 % Since there are two filters of each type a for loop over the
                 % two filters is used as well
@@ -458,8 +458,8 @@ classdef CDRA < vsys
                         % is possible that one substance is currently absorber
                         % while another is desorbing which results in two different
                         % flow directions that can occur at the same time.
-                                components.matter.filter.components.Desorption_P2P(this.toStores.(sName), ['DesorptionProcessor_',num2str(iCell)], ['Absorber_',num2str(iCell),'.', sName, '_Absorber_Desorption_',num2str(iCell)], ['Flow_',num2str(iCell),'.', sName, '_Flow_Desorption_',num2str(iCell)]);
-                        oP2P =  components.matter.filter.components.Adsorption_P2P(this.toStores.(sName), ['AdsorptionProcessor_',num2str(iCell)], ['Flow_',num2str(iCell),'.', sName, '_Flow_Adsorption_',num2str(iCell)], ['Absorber_',num2str(iCell),'.', sName, '_Absorber_Adsorption_',num2str(iCell)], mfMassTransferCoefficient);
+                                components.matter.CDRA.components.Desorption_P2P(this.toStores.(sName), ['DesorptionProcessor_',num2str(iCell)], ['Absorber_',num2str(iCell),'.', sName, '_Absorber_Desorption_',num2str(iCell)], ['Flow_',num2str(iCell),'.', sName, '_Flow_Desorption_',num2str(iCell)]);
+                        oP2P =  components.matter.CDRA.components.Adsorption_P2P(this.toStores.(sName), ['AdsorptionProcessor_',num2str(iCell)], ['Flow_',num2str(iCell),'.', sName, '_Flow_Adsorption_',num2str(iCell)], ['Absorber_',num2str(iCell),'.', sName, '_Absorber_Adsorption_',num2str(iCell)], mfMassTransferCoefficient);
                         oP2P.iCell = iCell;
                         
                         % Each cell is connected to the next cell by a branch, the

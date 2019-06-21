@@ -160,10 +160,6 @@ classdef (Abstract) manip < base & event.source
     end
     
     methods (Access = protected)
-        function fTimeStep = getTimeStep(this)
-            fTimeStep = this.oPhase.fMassUpdateTimeStep;
-        end
-        
         function afFlowRates = getTotalFlowRates(this)
             % Get all inwards and the stored partial masses as total kg/s
             % values.

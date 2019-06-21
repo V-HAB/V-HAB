@@ -16,10 +16,6 @@ classdef gas < matter.phase
         % Substance concentrations in ppm
         afPartsPerMillion;
         
-        % Coefficient for pressure = COEFF * mass,  depends on current 
-        % matter properties
-        fMassToPressure;  
-        
         % Relative humidity in the phase, see this.update() for details on
         % the calculation.
         rRelHumidity;
@@ -43,8 +39,6 @@ classdef gas < matter.phase
             this.fDensity = this.fMass / this.fVolume;
             
             this.fMassToPressure = this.calculatePressureCoefficient();
-            this.fPressure = this.fMass * this.fMassToPressure;
-            
             
             [ this.afPP, this.afPartsPerMillion ] = this.oMT.calculatePartialPressures(this);
             
@@ -99,7 +93,6 @@ classdef gas < matter.phase
             if ~isempty(this.fVolume)
                 this.fMassToPressure = this.calculatePressureCoefficient();
                 
-                this.fPressure = this.fMass * this.fMassToPressure;
                 [ this.afPP, this.afPartsPerMillion ] = this.oMT.calculatePartialPressures(this);
                 this.fDensity = this.fMass / this.fVolume;
                 
@@ -126,7 +119,7 @@ classdef gas < matter.phase
                     this.rRelHumidity = 0;
                 end
             else
-                this.fPressure = 0;
+                this.fMassToPressure = 0;
             end
         end
     end

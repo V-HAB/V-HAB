@@ -5,44 +5,22 @@ classdef liquid < matter.phases.boundary.boundary
     % temperature. The intended use case is e.g. to model vacuum in space
     % and environmental conditions in test cases
     properties (Constant)
-        
         % State of matter in phase (e.g. gas, liquid, ?)
         sType = 'liquid';
-        
-    end
-    
-    properties (SetAccess = protected, GetAccess = public)
-        % Pressure in Pa
-        % the pressure in the tank without the influence of gravity or
-        % acceleration even if these effects exist
-        fPressure;
-        
-        fDynamicViscosity;      % Dynamic Viscosity in Pa*s
-        
-        fLastUpdateLiquid = 0;
-        
-        % Coefficient for pressure = COEFF * mass,  depends on current 
-        % matter properties
-        fMassToPressure;
-        
-        % Handles for the pressure and density correlation functions
-        hLiquidDensity;
-        hLiquidPressure;
-        
     end
     
     methods
-        % oStore        : Name of parent store
-        % sName         : Name of phase
-        % tfMasses      : Struct containing mass value for each species
-        % fTemperature  : Temperature of matter in phase
-        % fPress        : Pressure of matter in phase
-        
         function this = liquid(oStore, sName, tfMass, fTemperature, fPressure)
             
+            % oStore        : Name of parent store
+            % sName         : Name of phase
+            % tfMasses      : Struct containing mass value for each species
+            % fTemperature  : Temperature of matter in phase
+            % fPress        : Pressure of matter in phase
+
             this@matter.phases.boundary.boundary(oStore, sName, tfMass, fTemperature);
             
-            this.fPressure =  fPressure;
+            this.fMassToPressure =  fPressure / sum(this.afMass);
             
             tProperties.afMass = this.afMass;
             this.setBoundaryProperties(tProperties)
@@ -85,10 +63,15 @@ classdef liquid < matter.phases.boundary.boundary
                 this.oCapacity.setBoundaryTemperature(tProperties.fTemperature);
             end
             
+            % Store the current pressure in a local variable in case
+            % nothing else overwrites the pressure this will again be the
+            % pressure of the phase
+            fPressure = this.fPressure;
+            
             % In case afMass is used we calculate the partial pressures
             if isfield(tProperties, 'afMass')
                 if isfield(tProperties, 'fPressure')
-                    this.fPressure = tProperties.fPressure;
+                   fPressure = tProperties.fPressure;
                 end
                 
                 this.afMass = tProperties.afMass;
@@ -97,7 +80,7 @@ classdef liquid < matter.phases.boundary.boundary
             
             if this.fMass ~= 0
                 % Now we calculate other derived values with the new parameters
-                this.fMassToPressure = this.fPressure/this.fMass;
+                this.fMassToPressure = fPressure/this.fMass;
                 this.fMolarMass      = sum(this.afMass .* this.oMT.afMolarMass) / this.fMass;
                 
                 this.arPartialMass = this.afMass/this.fMass;

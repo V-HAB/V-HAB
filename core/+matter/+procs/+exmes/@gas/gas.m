@@ -13,15 +13,9 @@ classdef gas < matter.procs.exme
         function [ fExMePressure, fExMeTemperature ] = getExMeProperties(this)
             fExMeTemperature = this.oPhase.fTemperature;
             
-            % Updated - uses the mass change rate as well. Faster ...?
-            fMassSinceUpdate = this.oPhase.fCurrentTotalMassInOut * (this.oPhase.oStore.oTimer.fTime - this.oPhase.fLastMassUpdate);
-
-            
-            fExMePressure = this.oPhase.fMassToPressure * (this.oPhase.fMass + fMassSinceUpdate);
+            fExMePressure = this.oPhase.fPressure;
             
         end
-
     end
-
 end
 

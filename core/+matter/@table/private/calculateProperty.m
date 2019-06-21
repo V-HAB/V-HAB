@@ -33,13 +33,25 @@ for iI = 1:iNumIndices
     tParameters.sProperty = sProperty;
     tParameters.sFirstDepName = 'Temperature';
     tParameters.fFirstDepValue = fTemperature;
-    tParameters.sPhaseType = csPhase{aiPhase(aiIndices(iI))};
+    tParameters.sPhaseType = csPhase{round(aiPhase(aiIndices(iI)), 0)};
     tParameters.sSecondDepName = 'Pressure';
     tParameters.fSecondDepValue = afPartialPressures(aiIndices(iI));
     tParameters.bUseIsobaricData = true;
-    
     % Now we can call the findProperty() method.
-    afProperty(iI) = this.findProperty(tParameters);
+    try
+        afProperty(iI) = this.findProperty(tParameters);
+    catch sMsg
+        % Since only for mixtures the phases were actually determined, if
+        % an error occured first check if a phase change is currently
+        % happening and throw a corresponding error if that is the case
+        iPhase = this.determinePhase(this, tParameters.sSubstance, fTemperature, afPartialPressures(aiIndices(iI)));
+
+        if mod(iPhase,1) ~= 0
+            error('A substance (%s) is undergoing a phase change and therefore the matter property %s could not be calculated', tParameters.sSubstance, sProperty)
+        else
+            rethrow(sMsg)
+        end
+    end
 end
 
 % Make sure there is no NaN in the property vector.
@@ -55,7 +67,7 @@ end
 % Multiply the specific heat capacities with the mass fractions. The
 % result of the matrix multiplication is the specific heat capacity of
 % the mixture.
-fProperty = arPartialMass(aiIndices) * afProperty;
+fProperty = (arPartialMass(aiIndices)./sum(arPartialMass(aiIndices))) * afProperty;
 
 % Make sure the property value is valid.
 if isnan(fProperty) && fProperty >= 0

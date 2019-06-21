@@ -19,8 +19,8 @@ classdef (Abstract) volume < matter.manip
         hSetVolume;
         
         % A function handle which contains the private function setProperty
-        % of phase.m with fPressure as property which can be set
-        hSetPressure;
+        % of phase.m with fMassToPressure as property which can be set
+        hSetMassToPressure;
         
         % The time at which the update function of this manip was last
         % executed
@@ -35,6 +35,18 @@ classdef (Abstract) volume < matter.manip
     
     methods
         function this = volume(sName, oPhase, sRequiredType)
+            %% Class constructor for volume manip
+            % creates a new manipulator which can change the volume of the
+            % phase in which it is located.
+            % Inputs:
+            % sName:    Name for this manip
+            % oPhase:   Phase object in which this manip is located
+            %
+            % Optional Input:
+            % sRequiredType:    If the manip is only usable by a specific
+            %                   type of phase, this can be specified using
+            %                   this input parameter (e.g. 'gas' or
+            %                   'liquid'
             if nargin < 3, sRequiredType = []; end
             
             this@matter.manip(sName, oPhase, sRequiredType);
@@ -52,11 +64,11 @@ classdef (Abstract) volume < matter.manip
             % this function. The original function is still executed, as
             % all of these operations are necessary as well but
             % additionally the handles in the properties hSetVolume and
-            % hSetPressure are set to empty here
+            % hSetMassToPressure are set to empty here
             detachManip@matter.manip();
             
-            this.hSetVolume     = [];
-            this.hSetPressure   = [];
+            this.hSetVolume         = [];
+            this.hSetMassToPressure = [];
         end
             
         function reattachManip(this, oPhase)
@@ -66,7 +78,7 @@ classdef (Abstract) volume < matter.manip
             % this function. The original function is still executed, as
             % all of these operations are necessary as well but
             % additionally the handles in the properties hSetVolume and
-            % hSetPressure are set to the new phase. The necessary inputs
+            % hSetMassToPressure are set to the new phase. The necessary inputs
             % are:
             % oPhase:   a phase object which fullfills the required phase
             %           condition of the manip specified in the
@@ -78,8 +90,8 @@ classdef (Abstract) volume < matter.manip
             % the property this.oPhase to the input oPhase of this
             % function. Therefore we can access the property oPhase here
             % and use it to bind the setVolume and setPressure functions
-            this.hSetVolume     = this.oPhase.bindSetProperty('fVolume');
-            this.hSetPressure   = this.oPhase.bindSetProperty('fPressure');
+            this.hSetVolume         = this.oPhase.bindSetProperty('fVolume');
+            this.hSetMassToPressure = this.oPhase.bindSetProperty('fMassToPressure');
         end
     end
     
@@ -114,7 +126,7 @@ classdef (Abstract) volume < matter.manip
             this.hSetVolume(fVolume);
             % Only overwrite the pressure if it was provided as parameter
             if nargin > 2
-                this.hSetPressure(fPressure);
+                this.hSetMassToPressure(fPressure / this.oPhase.fMass);
             end
             
             this.fLastExec = this.oTimer.fTime;

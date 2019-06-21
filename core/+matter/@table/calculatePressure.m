@@ -7,9 +7,6 @@ iNumArgs = length(varargin); % |iNumArgs == nargin - 1|!?
 % necessary data can be retrieved from, or the data itself.
 if iNumArgs == 1 %nargin < 3
     % First case: Just a phase or flow object is provided.
-    %TODO: Delete this part and put it into the corresponding classes
-    %      instead (the matter table should not know about other objects).
-    
     oMatterRef = varargin{1};
     
     % Get data from object: The state of matter (gas, liquid, solid)
@@ -142,16 +139,20 @@ for iI = 1:iNumIndices
     % Creating the input struct for the findProperty() method
     tParameters = struct();
     tParameters.sSubstance = this.csSubstances{aiIndices(iI)};
-    tParameters.sProperty = 'Pressure';
-    tParameters.sFirstDepName = 'Temperature';
-    tParameters.fFirstDepValue = fTemperature;
-    tParameters.sPhaseType = csPhase{aiPhase(aiIndices(iI))};
-    tParameters.sSecondDepName = 'Density';
-    tParameters.fSecondDepValue = afPartialDensity(aiIndices(iI));
-    tParameters.bUseIsobaricData = bUseIsobaricData;
-    
-    % Now we can call the findProperty() method.
-    afPP(iI) = this.findProperty(tParameters);
+    if this.ttxMatter.(tParameters.sSubstance).bIndividualFile
+        tParameters.sProperty = 'Pressure';
+        tParameters.sFirstDepName = 'Temperature';
+        tParameters.fFirstDepValue = fTemperature;
+        tParameters.sPhaseType = csPhase{aiPhase(aiIndices(iI))};
+        tParameters.sSecondDepName = 'Density';
+        tParameters.fSecondDepValue = afPartialDensity(aiIndices(iI));
+        tParameters.bUseIsobaricData = bUseIsobaricData;
+
+        % Now we can call the findProperty() method.
+        afPP(iI) = this.findProperty(tParameters);
+    else
+        afPP(iI) = this.Standard.Pressure;
+    end
 end
 
 

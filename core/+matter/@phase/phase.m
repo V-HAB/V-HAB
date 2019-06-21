@@ -30,10 +30,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         fTemperature; % [K]
         
         % Volume in m^3
-        fVolume;       
+        fVolume; %[m^3]
         
-        % Pressure in Pa
-        fPressure;              
+        % Coefficient for pressure = COEFF * mass,  depends on current 
+        % matter properties
+        fMassToPressure; % [Pa/kg]
         
         % Mean Density of mixture; not updated by this class, has to be
         % handled by a deriving class.
@@ -211,6 +212,15 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         afMassLastUpdate;
     end
 
+    properties (Dependent)
+        % Pressure in Pa. This is a dependent property because it is
+        % calculated on demand from fMassToPressure * fMass. That is a
+        % linearization approach and yields the pressure for the current
+        % mass. The fMassToPressure parameter is updated in the update
+        % function of the phase
+        fPressure;
+    end
+    
     % These properties are private because changing them would change the
     % update order, which is a significant change of the core and should
     % not be allowed without a certain hurdle. If it is necessary at some
@@ -336,6 +346,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             this.fMass = sum(this.afMass);
             this.afMassGenerated = zeros(1, this.oMT.iSubstances);
 
+            this.fMassToPressure = this.fPressure / this.fMass;
+            
             % add a thermal capacity to this phase to handle thermal
             % calculations 
             if nargin > 4 && strcmp(sCaller, 'boundary')
@@ -540,6 +552,17 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 this.bTriggerSetUpdateCallbackBound = true;
             end
         end
+        
+        
+        function fPressure = get.fPressure(this)
+            %% get.fPressure
+            % Since the pressure is a dependent property but some child
+            % classes require a different calculation approach for
+            % the pressure this function only defines the function name
+            % which is used to calculate the pressure (since child classes
+            % cannot overload this function).
+            fPressure = this.get_fPressure();
+        end
     end
 
     %% Methods for handling manipulators
@@ -593,7 +616,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             %
             % The temperature specifically cannot be changed by this
             % function because it is a thermal domain property!
-            csValidProperties = {'fVolume', 'fPressure', 'fDensity'};
+            csValidProperties = {'fVolume', 'fMassToPressure', 'fDensity'};
             if ~any(strcmp(sPropertyName, csValidProperties))
                  error(['The function BindSetProperty was provided the unknown input parameter: ', sPropertyName, ' please view the help of the function for possible input parameters']);
             end
@@ -1080,6 +1103,20 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Setting this to true multiple times in the timer is no
             % problem, therefore no check required
             this.hBindPostTickTimeStep();
+        end
+        
+        % since the fPressure property is accessed by get.fPressure this
+        % function should be protected as it should not be used directly.
+        % It cannot be private because that prevent the function from
+        % beeing overwritten by child classes
+        function fPressure = get_fPressure(this)
+            %% get_fPressure
+            % defines how to calculate the dependent fPressure property.
+            % Can be overloaded by child classes which require a different
+            % calculation (e.g. flow phases)
+            fMassSinceUpdate = this.fCurrentTotalMassInOut * (this.oStore.oTimer.fTime - this.fLastMassUpdate);
+            
+            fPressure = this.fMassToPressure * (this.fMass + fMassSinceUpdate);
         end
     end
     methods (Access = private)

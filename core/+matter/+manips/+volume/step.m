@@ -13,11 +13,24 @@ classdef (Abstract) step < matter.manips.volume
     % constant and cannot be changed.
     properties (Constant)
         % Identifies this manipualtor as a stationary volume manipulator
-        bStationaryVolumeProcessor = true;
+        bStepVolumeProcessor = true;
     end
     
     methods
         function this = step(sName, oPhase, sRequiredType)
+            %% step class constructor
+            % creates a step volume manipulator which changes the volume of
+            % the phase by fixed values.
+            %
+            % Inputs:
+            % sName:    Name for this manip
+            % oPhase:   Phase object in which this manip is located
+            %
+            % Optional Input:
+            % sRequiredType:    If the manip is only usable by a specific
+            %                   type of phase, this can be specified using
+            %                   this input parameter (e.g. 'gas' or
+            %                   'liquid'
             if nargin < 3, sRequiredType = []; end
             
             this@matter.manips.volume(sName, oPhase, sRequiredType);

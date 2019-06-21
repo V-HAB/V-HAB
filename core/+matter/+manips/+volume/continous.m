@@ -32,7 +32,7 @@ classdef (Abstract) continous < matter.manips.volume
     % constant and cannot be changed.
     properties (Constant)
         % Identifies this manipualtor as a flow volume manipulator
-        bStationaryVolumeProcessor = false;
+        bStepVolumeProcessor = false;
     end
     
     properties (SetAccess = private, GetAccess = protected)
@@ -43,12 +43,26 @@ classdef (Abstract) continous < matter.manips.volume
     
     methods
         function this = continous(sName, oPhase, sRequiredType)
+            %% continous class constructor
+            % creates a new continous volume manipulator which changes the
+            % volume using a volume change rate which also allows setting a
+            % time step for the maximum allowed volume change
+            % Inputs:
+            % sName:    Name for this manip
+            % oPhase:   Phase object in which this manip is located
+            %
+            % Optional Input:
+            % sRequiredType:    If the manip is only usable by a specific
+            %                   type of phase, this can be specified using
+            %                   this input parameter (e.g. 'gas' or
+            %                   'liquid'
             if nargin < 3, sRequiredType = []; end
             
             this@matter.manips.volume(sName, oPhase, sRequiredType);
         end
         
         function detachManip(this)
+            %% detachManip
             % Since the volume manipulator additionally has function
             % handles specific for the phase to which it is connected we
             % must overload the detachManip function of matter.manips with
@@ -66,6 +80,7 @@ classdef (Abstract) continous < matter.manips.volume
         end
             
         function reattachManip(this, oPhase)
+            %% reattachManip
             % Since the volume manipulator additionally has function
             % handles specific for the phase to which it is connected we
             % must overload the attachManip function of matter.manips with
@@ -98,6 +113,7 @@ classdef (Abstract) continous < matter.manips.volume
     
     methods (Access = protected)
         function update(this, fVolumeChangeRate)
+            %% update
             % This update function can be overloaded by the derived
             % children, which can then access this function to set the
             % volume change rate by using
@@ -111,6 +127,10 @@ classdef (Abstract) continous < matter.manips.volume
             % can be overloaded where this does not occur. In that case the
             % update@matter.manips.volume(fVolume, fPressure) function must
             % be called to be consistent
+            %
+            % Input parameters:
+            % fVolumeChangeRate:    rate in m^3/s by which the volume of
+            %                       the phase is changing
             
             % Before we set the new parameter for the volume change rate,
             % we first have to perform the volume change operation from the
@@ -137,6 +157,7 @@ classdef (Abstract) continous < matter.manips.volume
         end
         
         function resetTimeStep(this)
+            %% resetTimeStep
             % If the phase is updated because of other calculations we want
             % to reset the last time at which the time step of this manip
             % was set as well. Therefore this function is bound to the

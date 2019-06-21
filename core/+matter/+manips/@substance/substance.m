@@ -48,6 +48,9 @@ classdef (Abstract) substance < matter.manip
             % is abstract and therefore cannot be constructed directly.
             % Only implemented child classes can be constructed, which then
             % also call this superclass constructor
+            % Inputs:
+            % sName:    Name for this manip
+            % oPhase:   Phase object in which this manip is located
             this@matter.manip(sName, oPhase);
             
             this.hBindPostTickUpdate = this.oTimer.registerPostTick(@this.update, 'matter', 'substanceManips');

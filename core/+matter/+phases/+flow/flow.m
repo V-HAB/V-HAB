@@ -10,16 +10,13 @@ classdef (Abstract) flow < matter.phase
         % flow_nodes can be used within multi branch solvers to allow the
         % solver to handle the pressure of the flow nodes, since they are
         % basically considered as flows (but allow the user to attach
-        % multiple branches and P2Ps).
+        % multiple branches and P2Ps). Since flow nodes are modelled as not
+        % containing mass the usual approach to model the pressure as
+        % depdendent property and calculate it based on the fMassToPressure
+        % property times fMass does not work for flow nodes, the get
+        % function for the pressure property for flow nodes is overloaded
+        % and instead returns the virtual pressure
         fVirtualPressure;
-        % If the virtual pressure property remains empty it means that no
-        % solver handles the pressure and the flow_node mass averages the
-        % exme pressures to calculate its pressure. Otherwise fPressure is
-        % identical to fVirtualPressure
-        
-        % Coefficient for pressure = COEFF * mass,  depends on current 
-        % matter properties
-        fMassToPressure = 0;  
         
         % Initial mass for information and debugging purposes. If
         % everything works correctly the phase should not change its mass!
@@ -63,9 +60,9 @@ classdef (Abstract) flow < matter.phase
                 error(['a negative pressure occured in the flow phase ', this.sName, ' in store ', this.oStore.sName, '. This can happen if e.g. the f2f have a too large pressure drops for a constant flowrate boundary forcing the solver to converge to a solution with negative pressures. Please check your system']);
             end
             this.fVirtualPressure = fPressure;
-            this.fPressure = fPressure;
-            this.fMassToPressure = fPressure / this.fMass;
+            this.fMassToPressure = fPressure;
         end
+        
         
         function updatePartials(this, afPartialInFlows)
             
@@ -152,9 +149,6 @@ classdef (Abstract) flow < matter.phase
                     afManipPartialsIn (afManipPartialsIn  < 0) = 0;
                     afManipPartialsOut(afManipPartialsOut > 0) = 0;
                     
-                    afInFlowrates(end + 1) = sum(afManipPartialsIn);
-                    afInFlowrates(end + 1) = sum(afManipPartialsOut);
-                    
                     mrInPartials(end + 1, :) = afManipPartialsIn;
                     mrInPartials(end + 1, :) = afManipPartialsOut;
                 end
@@ -217,9 +211,15 @@ classdef (Abstract) flow < matter.phase
                 end
             else
                 this.fMassToPressure = this.fVirtualPressure / this.fMass;
-
-                this.fPressure       = this.fVirtualPressure;
             end
+        end
+        
+        function fPressure = get_fPressure(this)
+            % Since the pressure is a dependent property this get function
+            % defines how to calculate it. Child classes which do not want
+            % to make the pressure mass dependent (e.g. solids) should
+            % overload this function
+            fPressure = this.fVirtualPressure;
         end
     end
 end

@@ -4,6 +4,11 @@ classdef (Abstract) flow < matter.manips.substance
     
     methods
         function this = flow(sName, oPhase)
+            %% flow class constructor
+            % creates a new flow manipulator
+            % Inputs:
+            % sName:    Name for this manip
+            % oPhase:   Phase object in which this manip is located
             this@matter.manips.substance(sName, oPhase);
             
             if ~this.oPhase.bFlow
@@ -29,4 +34,3 @@ classdef (Abstract) flow < matter.manips.substance
         calculateConversionRate(this, afInFlowRates, aarInPartials);
     end
 end
-

@@ -6,17 +6,16 @@ classdef (Abstract) boundary < matter.phase
     % and environmental conditions in test cases
     
     properties (SetAccess = protected, GetAccess = public)
-        
         % Property to store the total mass exchange of the boundary with
         % other systems. Positive values represent mass that flowed into
         % the boundary, negative values represent mass that flowed out of
         % the boundary. All values in kg
         afMassChange;
-        
     end
     
     methods
         function this = boundary(oStore, sName, tfMass, fTemperature, varargin)
+            %% boundary class constructor
             this@matter.phase(oStore, sName, tfMass, fTemperature, 'boundary');
             
             this.fVolume = inf;
@@ -32,25 +31,25 @@ classdef (Abstract) boundary < matter.phase
             % Set flags to identify this as boundary phase
             this.bBoundary      = true;
         end
-        
-        function setVolume(~, ~)
-            % Must be here because the store tries to overwrite the volume,
-            % but for flow nodes we want the small volumes and the volume
-            % is not relevant for the calculations anyway
-        end
-        
     end
     
     %% Setting of boundary phase properties
     methods (Abstract = true)
+        % the implementation of the methods to set the boundary properties
+        % is phase type specific but each child class must implement this,
+        % therefore it is an abstract method
         setBoundaryProperties(this)
     end
     
     methods  (Access = protected)
         function massupdate(this, varargin)
+            %% massupdate
             % The massupdate for boundary phases only stores what was
             % taken/added over the time of the simulation. It does not
-            % change the current composition of the phase
+            % change the current composition of the phase! This is
+            % necessary to calculate a mass balance and check for mass
+            % balance errors after a simulation is finished
+            
             fTime     = this.oTimer.fTime;
             fLastStep = fTime - this.fLastMassUpdate;
             

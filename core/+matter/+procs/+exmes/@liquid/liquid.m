@@ -18,6 +18,7 @@ classdef liquid < matter.procs.exme
         %sign)
         fAcceleration; %in m/s²
         
+        fHeightExMe = 0;
     end
     
     methods
@@ -41,17 +42,15 @@ classdef liquid < matter.procs.exme
                 % for different exmes, when setting the parameter to exme
                 % check if it is consistent with height of store
                 
-                fHeightExMe = tTankGeomParams.HeightExMe;
-                
                 fHeightTank = fVolumeTank/fAreaTank;
-                if fHeightTank < fHeightExMe
+                if fHeightTank < this.fHeightExMe
                     error('the height of the exme is larger than the height of the tank')
                 end
                 
                 fLiquidLevelTank = fVolumeLiquid/fAreaTank;
                 
-                if (fLiquidLevelTank-fHeightExMe) >= 0
-                    this.fLiquidLevel = fLiquidLevelTank-fHeightExMe;
+                if (fLiquidLevelTank - this.fHeightExMe) >= 0
+                    this.fLiquidLevel = fLiquidLevelTank - this.fHeightExMe;
                 end
            	else
                 error('check the name for store geometry')
@@ -86,38 +85,41 @@ classdef liquid < matter.procs.exme
         
         function this = update(this)
            
-            tTankGeomParams = this.oPhase.oStore.tGeometryParameters;
-            fVolumeTank     = this.oPhase.oStore.fVolume;
-            fVolumeLiquid   = this.oPhase.fVolume;
-            fPressureTank   = this.oPhase.fPressure;
-            fMassTank       = this.oPhase.fMass;
-            
-            this.fTemperature = this.oPhase.fTemperature;
-            fDensityLiquid = fMassTank/fVolumeLiquid;
-            
-            if strcmp(tTankGeomParams.Shape, 'box') || strcmp(tTankGeomParams.Shape,'Box')
-                fAreaTank = tTankGeomParams.Area;
-                fHeightExMe = tTankGeomParams.HeightExMe;
-                
-                fHeightTank = fVolumeTank/fAreaTank;
-                if fHeightTank < fHeightExMe
-                    error('the height of the exme is larger than the height of the tank')
+            if this.fAcceleration ~= 0
+                tTankGeomParams = this.oPhase.oStore.tGeometryParameters;
+                fVolumeTank     = this.oPhase.oStore.fVolume;
+                fVolumeLiquid   = this.oPhase.fVolume;
+                fPressureTank   = this.oPhase.fPressure;
+                fMassTank       = this.oPhase.fMass;
+
+                this.fTemperature = this.oPhase.fTemperature;
+                fDensityLiquid = fMassTank/fVolumeLiquid;
+
+                if strcmp(tTankGeomParams.Shape, 'box') || strcmp(tTankGeomParams.Shape,'Box')
+                    fAreaTank = tTankGeomParams.Area;
+
+                    fHeightTank = fVolumeTank/fAreaTank;
+                    if fHeightTank < this.fHeightExMe
+                        error('the height of the exme is larger than the height of the tank')
+                    end
+
+                    fLiquidLevelTank = fVolumeLiquid/fAreaTank;
+
+                    if (fLiquidLevelTank - this.fHeightExMe) >= 0
+                        this.fLiquidLevel = fLiquidLevelTank - this.fHeightExMe;
+                    end
+                else
+                    error('check the name for store geometry')
                 end
+
+                %calculates the pressure at the exme by using the inherent tank
+                %pressure for 0g and adding the pressure which is created by
+                %gravity
+                this.fPressure = fPressureTank + this.fLiquidLevel*this.fAcceleration*fDensityLiquid;
                 
-                fLiquidLevelTank = fVolumeLiquid/fAreaTank;
-                
-                if (fLiquidLevelTank-fHeightExMe) >= 0
-                    this.fLiquidLevel = fLiquidLevelTank-fHeightExMe;
-                end
             else
-                error('check the name for store geometry')
+                this.fPressure = this.oPhase.fPressure;
             end
-            
-            %calculates the pressure at the exme by using the inherent tank
-            %pressure for 0g and adding the pressure which is created by
-            %gravity
-            this.fPressure = fPressureTank + this.fLiquidLevel*this.fAcceleration*fDensityLiquid;   
-            
         end
     end
 end
