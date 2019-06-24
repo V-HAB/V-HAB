@@ -156,10 +156,10 @@ classdef branch < base & event.source
             % beeing outdated, we trigger the corresponding event, also
             % informing about the post tick priority of this solver
             if this.bTriggerRegisterUpdateCallbackBound
-                this.trigger('register_update', struct('iPostTickPriority', this.iPostTickPriority));
+                this.trigger('register_update');
             end
 
-            if ~base.oDebug.bOff, this.out(1, 1, 'registerUpdate', 'Registering .update method on post tick prio %i for thermal solver for branch %s', { this.iPostTickPriority, this.oBranch.sName }); end
+            if ~base.oDebug.bOff, this.out(1, 1, 'registerUpdate', 'Registering .update method on post tick for thermal solver for branch %s', { this.oBranch.sName }); end
             
             this.bRegisteredOutdated = true;
             this.hBindPostTickUpdate();

@@ -218,7 +218,7 @@ classdef capacity < base & event.source
                 
            
                 if ~base.oDebug.bOff
-                    this.out(1, 1, 'name', '%s-%s-%s', { this.oContainer.sName, this.oStore.sName, this.sName });
+                    this.out(1, 1, 'name', '%s-%s-%s', { this.oContainer.sName, this.oPhase.oStore.sName, this.sName });
 
                     this.out(1, 2, 'last', 'fSpecificHeatCapacity:              %f [J/(kg*K)]', { this.fSpecificHeatCapacity });
                     this.out(1, 2, 'last', 'fMass:                              %f [kg]', { sum(this.arPartialMassLastHeatCapacityUpdate) });
@@ -395,7 +395,7 @@ classdef capacity < base & event.source
             
             % Return if no time has passed
             if fLastStep == 0
-                if ~base.oDebug.bOff, this.out(2, 1, 'skip', 'Skipping temperatureupdate in %s-%s-%s\tset branches outdated? %i', { this.oContainer.sName, this.oPhase.oStore.sName, this.sName, bSetBranchesOutdated }); end
+                if ~base.oDebug.bOff, this.out(2, 1, 'skip', 'Skipping temperatureupdate in %s-%s-%s', { this.oPhase.oStore.oContainer.sName, this.oPhase.oStore.sName, this.sName }); end
                 return;
             end
             
@@ -734,7 +734,7 @@ classdef capacity < base & event.source
                 fNewStep = min(fNewStep, fMaximumTimeStep);
                 
                 if fNewStep < 0
-                    if ~base.oDebug.bOff, this.out(3, 1, 'time-step-neg', 'Phase %s-%s-%s has neg. time step of %.16f', { this.oContainer.sName, this.oStore.sName, this.sName, fNewStep }); end
+                    if ~base.oDebug.bOff, this.out(3, 1, 'time-step-neg', 'Phase %s-%s-%s has neg. time step of %.16f', { this.oContainer.sName, this.oPhase.oStore.sName, this.sName, fNewStep }); end
                 end
                 
                 % If our newly calculated time step is larger than the
@@ -742,8 +742,9 @@ classdef capacity < base & event.source
                 % instead.
                 if fNewStep > this.oPhase.fMaxStep
                     fNewStep = this.oPhase.fMaxStep;
-                    %TODO Make this output a lower level debug message.
-                    %fprintf('\nTick %i, Time %f: Phase %s setting maximum timestep of %f\n', this.oTimer.iTick, this.oTimer.fTime, this.sName, this.fMaxStep);
+                    if ~base.oDebug.bOff
+                        this.out(3, 1, 'max-time-step', 'Phase %s-%s-%s setting maximum timestep of %f', { this.oContainer.sName, this.oPhase.oStore.sName, this.sName, this.oPhase.fMaxStep }); 
+                    end
                     
                 % If the time step is smaller than the set minimal time
                 % step for the phase the minimal time step is used
@@ -751,8 +752,9 @@ classdef capacity < base & event.source
                 % set it to a different value)
                 elseif fNewStep < this.oPhase.fMinStep
                     fNewStep = this.oPhase.fMinStep;
-                    %TODO Make this output a lower level debug message.
-                    %fprintf('Tick %i, Time %f: Phase %s.%s setting minimum timestep\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName, this.sName);
+                    if ~base.oDebug.bOff
+                        this.out(3, 1, 'min-time-step', 'Phase %s-%s-%s setting minimum timestep', { this.oContainer.sName, this.oPhase.oStore.sName, this.sName }); 
+                    end
                 end
             end
             
