@@ -395,9 +395,10 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
             % or right after a bed switch. To avoid problems later on,
             % we'll just skip this execution and try next time. 
             if fFlowRateIn < 0
-                %TODO make this a very low level debugging output once the
-                %debug class is implemented
-                fprintf('%i\t(%.7fs)\t%s: Skipping adsorption calculation because of negative flow rate.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
+                if ~base.oDebug.bOff
+                    this.out(3,1,'skipping-adsorption','%s: Skipping adsorption calculation because of negative flow rate', {this.oStore.sName});
+                end
+                
                 return;
             end
             
@@ -450,9 +451,10 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
             % the pressure here can be zero. It should only be zero for one
             % timestep, so we'll just skip this one.
             if this.fSorptionPressure <= 0 
-                %TODO make this a very low level debugging output once the
-                %debug class is implemented
-                fprintf('%i\t(%.7fs)\t%s: Skipping adsorption calculation because of zero or negative pressure.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
+                if ~base.oDebug.bOff
+                    this.out(3,1,'skipping-adsorption','%s: Skipping adsorption calculation because zero or negative pressure', {this.oStore.sName});
+                end
+                
                 return;
             end
 
