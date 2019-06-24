@@ -12,11 +12,7 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams) % Constructor function
-            
-            % Possible to change the constructor paths and params for the
-            % monitors
-            ttMonitorConfig = struct();
+        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig) % Constructor function
             
             % First we call the parent constructor and tell it the name of
             % this simulation we are creating.

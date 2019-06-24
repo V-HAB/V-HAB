@@ -12,7 +12,7 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams) % Constructor function
+        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig) % Constructor function
             
             
             %%%% Tuning of the solving process %%%%
@@ -72,7 +72,7 @@ classdef setup < simulation.infrastructure
             
             
             
-            this@simulation.infrastructure('Test_Subsystems', ptConfigParams, tSolverParams);
+            this@simulation.infrastructure('Test_Subsystems', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             
             

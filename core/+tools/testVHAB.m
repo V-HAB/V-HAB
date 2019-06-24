@@ -1,4 +1,4 @@
-function testVHAB(sCompareToState, bForceExecution)
+function testVHAB(sCompareToState, bForceExecution, bDebugModeOn)
 %TESTVHAB Runs all tests and saves the figures to a folder
 %   This function is a debugging helper. It will run all tests inside
 %   the user/+tests folder and save the resulting figures to
@@ -6,6 +6,10 @@ function testVHAB(sCompareToState, bForceExecution)
 %   to work is that the class file that inherits from simulation.m is on
 %   the top level of the tutorial folder and is called 'setup.m'. If this
 %   is not the case, the function will throw an error. 
+%   
+%   If you have the Parallel Computing Toolbox installed this function will
+%   create a parallel pool and execute as many of the tests in parallel as
+%   possible. This significantly speeds up the execution time.
 %
 %   Possible inputs are:
 %   sCompareToState: a String which allows the user to select against which
@@ -26,11 +30,17 @@ function testVHAB(sCompareToState, bForceExecution)
 %   file. The TestStatus file is created on each run of this function and
 %   always represents the latest run of this function
 
+% Starting a timer so we can capture how long this function takes to
+% complete.
+hTimer = tic();
+
+% Processing the input parameters
+
 if nargin < 1
     sCompareToState = 'server';
 else
     if  ~(strcmp(sCompareToState, 'server') ||  strcmp(sCompareToState, 'local'))
-        error('Unknown state to which the testVHAB run should be compared')
+        error('VHAB:testVHAB','Unknown state to which the testVHAB run should be compared');
     end
 end
 
@@ -38,10 +48,17 @@ if nargin < 2
     bForceExecution = false;
 end
 
+if nargin < 3
+    bDebugModeOn = false;
+end
+
 % Initializing some counters
 iSuccessfulTests = 0;
 iSkippedTests    = 0;
 iAbortedTests    = 0;
+
+% Boolean that is set to true if we can do this in parallel.
+bParallelExecution = false;
 
 % First we get the struct that shows us the current contents of the
 % tests directory. We also check which entries are directories.
@@ -77,10 +94,18 @@ bVHABChanged  = checkVHABFile();
 
 % Being a UI nerd, I needed to produce a nice dynamic user message here. 
 
+% Initializing a boolean array for each of the possibly changed folders and
+% a cell containing their names.
 abChanged = [false false false];
+csWords = {'Core', 'Library', 'Tests'};
+
+% We only need to do stuff if something changed at all.
 if any([bCoreChanged, bVHABChanged, bLibChanged, bTestsChanged])
+    % Global changed status
     bChanged = true;
 
+    % Figuring out where the change(s) happened and setting the according
+    % fields in the abChanged array to true.
     if bCoreChanged || bVHABChanged
         abChanged(1) = true;
     end
@@ -93,8 +118,8 @@ if any([bCoreChanged, bVHABChanged, bLibChanged, bTestsChanged])
         abChanged(3) = true;
     end
     
-    csWords = {'Core', 'Library', 'Tests'};
-    
+    % Depending if one, two or all three changed we construct a
+    % gramatically correct sentence. 
     switch sum(abChanged)
         case 1
             sString = [csWords{abChanged}, ' has '];
@@ -105,17 +130,150 @@ if any([bCoreChanged, bVHABChanged, bLibChanged, bTestsChanged])
             sString = [csWords{1}, ', ', csWords{2}, ' and ', csWords{3}, ' have '];
     end
     
+    % Now we can tell the user what's going on. 
     fprintf('\n%schanged. All tests will be executed!\n\n', sString);
+    
 else
     bChanged = false;
-    fprintf('\nNothing has changed. No tests will be performed.\n\n');
+    
+    if bForceExecution
+        fprintf('\nForced execution. All tests will be executed!\n\n');
+    else
+        fprintf('\nNothing has changed. No tests will be performed.\n\n');
+    end
 end
 
+% If we run these using parallel execution, we need to add these fields
+% outside of the parfor loop. 
+tTests = arrayfun(@(tStruct) tools.addFieldToStruct(tStruct,'run'), tTests);
+tTests = arrayfun(@(tStruct) tools.addFieldToStruct(tStruct,'sStatus'), tTests);
+tTests = arrayfun(@(tStruct) tools.addFieldToStruct(tStruct,'sErrorReport'), tTests);
+
+% Getting the total number of tests.
+iNumberOfTests = length(tTests);
+    
+
+% The Parallel Computing Toolbox assigns for-loop-iterations to the workers
+% based on their order in the tTests struct. (I think.) The assignment is
+% done prior to the execution and doesn't change after that. That can lead
+% to the situation that several of the longest running simulations are
+% assigned to the same worker, while the shorter simulations are not. The
+% result is only one worker simulating while the others have already
+% finished, negating the whole idea of parallel execution. The code
+% contained in the following try-catch block is an attempt to re-arrange
+% the simulations within the tTests struct so that the longest running
+% simulations are distributed evenly among the workers. This is done by
+% looking at previous test data, meaning the OldTestStatus file must exist,
+% and also figuring out how many workers (i.e. CPU cores) are available on
+% this machine. Then the tTests struct is re-arranged.
+
+% We're enclosing this in a try-catch block so if the OldTestStatus file
+% doesn't exist or the user hasn't installed the Parallel Computing Toolbox
+% the function keeps executing. 
+try
+    % In order to query the parallel pool of workers, we need to start one.
+    % The gcp() function gets the current parallel pool or starts a new
+    % one.
+    oPool = gcp();
+    
+    % If starting the parallel pool worked, we set this boolean to true so
+    % we can make decisions based on its value later on.
+    bParallelExecution = true;
+    
+    % Now we can get the number of workers
+    iNumberOfWorkers = oPool.NumWorkers;
+    
+    % Getting the data from a previous test run.
+    tOldTestData = load('data/OldTestStatus.mat','tTests');
+    tOldTestData = tOldTestData.tTests;
+    
+    % Now we need to check if we can use the data. If there are empty runs,
+    % the following arrayfun() call will fail, throwing us out of this
+    % try-catch block.
+    if any(~isempty([tOldTestData.run]))
+        warning('VHAB:testVHAB',['At least one of the tests in the OldTestStatus.mat file has not completed successfully.\n',...
+                                 'This prevents V-HAB from optimizing for parallel execution.']);
+    end
+    
+    % Extracting the run times for each of the simulations.
+    afRunTimes = arrayfun(@(tStruct) tStruct.run.fRunTime, tOldTestData);
+    
+    % It may be that the number of tests has changed since the last
+    % execution, so we check for that.
+    if length(tOldTestData) == iNumberOfTests
+        % First we sort the tTests struct by run time, with the longest
+        % simulation as the first index.
+        [~, aiSortIndexes] = sort(afRunTimes, 'descend');
+        tTests = tTests(aiSortIndexes);
+        
+        % Initializing an integer array that will contain the new indexes
+        aiNewSortIndexes = zeros(iNumberOfTests, 1);
+        
+        % Now we initialize two counters, one for the current index of
+        % aiNewSortIndexes and one for the current group. Here a group
+        % refers to the order of the tests that are performed on each
+        % individual worker. So group 1 is the first to be executed, group
+        % two the second and so on. At first, the group and index are
+        % identical, so we initialize the group at 2. 
+        iCurrentIndex = 1;
+        iCurrentGroup = 2;
+        
+        % To determine the offset between workers within the
+        % aiNewSortIndexes array, we divide the number of tests by the
+        % number of workers and round up the result. We later use the
+        % result as the offset between index steps.
+        iFixedOffset = ceil(iNumberOfTests/iNumberOfWorkers);
+        
+        % Now we loop through all tests and determine their new indexes.
+        for iI = 1:iNumberOfTests
+            % If we have reached the end of the length of the test array,
+            % we move into the next group. 
+            if iCurrentIndex > iNumberOfTests
+                iCurrentIndex = iCurrentGroup;
+                iCurrentGroup = iCurrentGroup + 1;
+            end
+            
+            % Now we can set the index accordingly and increment the
+            % current index variable by the offset.
+            aiNewSortIndexes(iCurrentIndex) = iI;
+            iCurrentIndex = iCurrentIndex + iFixedOffset;
+            
+        end
+        
+        % We're done and the last thing to do is to sort the tTests struct
+        % using the new order. 
+        tTests = tTests(aiNewSortIndexes);
+    else
+        % The number of tests has changed, so we tell the user what's going
+        % on.
+        warning('VHAB:testVHAB',['The number of tests has changed in comparison to the data in OldTestStatus.mat.\n',...
+                                 'This means we cannot optimize the execution order of tests for parallel execution.\n',...
+                                 'Once this run of testVHAB() is complete, save the TestStatus.mat file as OldTestStatus.mat.']);
+    end
+catch
+    
+end
+    
 % Only do stuff if we need to
 if bChanged || bForceExecution
+    % Creating a matter table object. Due to the file system access that is
+    % done during the matter table instantiation, this cannot be done within
+    % the parallel loop.
+    oMT = matter.table();
+    
+    % In case we are in parallel execution mode we need to set a
+    % key-value-pair in the ptParams containers.Map called
+    % 'ParallelExecution' with the matter table object as its value. If
+    % we're not in parallel execution mode, this doesn't matter. It just
+    % changes how the matter table object is assigned to the
+    % simulation.infrastructure object.
+    ptParams = containers.Map({'ParallelExecution'}, {oMT});
+    
     % Go through each item in the struct and see if we can execute a
-    % V-HAB simulation.
-    for iI = 1:length(tTests)
+    % V-HAB simulation. This parfor loop will be executed in parallel if
+    % the Parallel Computing Toolbox is installed. Otherwise it will act as
+    % a normal for-loop.
+    parfor iI = 1:length(tTests)
         % Some nice printing for the console output
         fprintf('\n\n======================================\n');
         fprintf('Running %s Test\n',strrep(tTests(iI).name,'+',''));
@@ -132,20 +290,45 @@ if bChanged || bForceExecution
             % Now we can finally run the simulation, but we need to catch
             % any errors inside the simulation itself
             try
-                oLastSimObj = vhab.exec(sExecString);
+                % Creating the simulation object.
+                oLastSimObj = vhab.sim(sExecString, ptParams, [], []);
+                
+                % In case the user wants to run the simulations with the
+                % debug mode activated, we toggle that switch now.
+                if bDebugModeOn
+                    oLastSimObj.oDebug.toggleOutputState();
+                end
+                
+                % In case we are performing the tests in parallel we have
+                % to set the reporting interval fairly high, because
+                % otherwise the console would be bombarded with outputs.
+                % This also suppresses the period characters '.' in between
+                % the major console updates.
+                if bParallelExecution
+                    oLastSimObj.toMonitors.oConsoleOutput.setReportingInterval(1000);
+                end
+                
+                % Actually running the simulation
+                oLastSimObj.run();
                 
                 % Done! Let's plot stuff!
                 oLastSimObj.plot();
                 
+                aoFigures = evalin('base', 'aoFigures'); %#ok<PFEVB>
+                
                 % Saving the figures to the pre-determined location
-                tools.saveFigures(sFolderPath, strrep(tTests(iI).name,'+',''));
+                tools.saveFigures(sFolderPath, strrep(tTests(iI).name,'+',''), aoFigures);
                 
                 % Closing all windows so we can see the console again. The
                 % drawnow() call is necessary, because otherwise MATLAB would
                 % just jump over the close('all') instruction and run the next
-                % sim. Stupid behavior, but this is the workaround.
-                close('all');
-                drawnow();
+                % sim. Stupid behavior, but this is the workaround. We only
+                % need to do this when not running in parallel, because
+                % then the windows are not visible. 
+                if ~bParallelExecution
+                    close('all');
+                    drawnow();
+                end
                 
                 % Store information about the simulation duration and
                 % errors. This will be saved later on to allow a comparison
@@ -184,10 +367,16 @@ if bChanged || bForceExecution
     end
     
 else
+    % Nothing has changed, so we have to set the status for all tests to
+    % 'Not performed'.
     for iI = 1:length(tTests)
         tTests(iI).sStatus = 'Not performed';
     end
 end
+
+% Saving the test data in the TestStatus.mat file
+sPath = fullfile('data', 'TestStatus.mat');
+save(sPath, 'tTests');
 
 % Now that we're all finished, we can tell the user how well everything
 % went. 
@@ -247,7 +436,9 @@ if any(mbHasAborted)
     end
 end
 
-bSkipComparison = false;
+% Depending on what was selected, we now try to compare the current
+% simulation result to a past one, either from the data on the server or
+% our local copy.
 if strcmp(sCompareToState, 'server')
     try
         tOldTests = load(strrep('user\+tests\ServerTestStatus.mat','\',filesep));
@@ -268,51 +459,64 @@ else
             % if the file not yet exists, we create it!
             sPath = fullfile('data', 'OldTestStatus.mat');
             save(sPath, 'tTests');
-            bSkipComparison = true;
+            % Since there are no data to make comparisons to, we have to
+            % set the bChanged variable back to false in order to skip the
+            % code blocks below. 
+            bChanged = false;
+            warning('VHAB:testVHAB',['There was no OldTestStatus.mat file, so we created it using the current test data. No comparisons\n',...
+                                     'can be made at this time. You can select ''server'' as the first input argument to this function\n',...
+                                     'to compare your results to the server state.']);
         else
             rethrow(Msg)
         end
     end
 end
 
-if ~bSkipComparison
+% If there were changes and we performed simulations and we have data to
+% make comparisons, we make them now an display them to the user. 
+if bChanged
     fprintf('=======================================\n');
     fprintf('=== Time and Mass Error Comparisons ===\n');
     fprintf('=======================================\n\n');
     fprintf('Comparisons are new values - old values!\n');
     fprintf('--------------------------------------\n');
     
-    iLength = length(tTests);
+    % Initializing a data matrix so we can plot the data.
+    mfData = zeros(iNumberOfTests, 5);
     
-    mfData = zeros(iLength, 5);
-    
-    for iI = 1:iLength
+    % Looping through all tests and displaying the results of the
+    % comparisons in the console.
+    for iI = 1:iNumberOfTests
         fprintf('%s:\n', strrep(tTests(iI).name,'+',''));
-
-        for iOldTutorial = 1:length(tOldTests.tTests)
+        
+        % The order in which the tests are listed in both structs may be
+        % different, so we also loop through all tests in the tOldTests
+        % struct and compare the simulation object names. If they don't
+        % match, then a new test has been added. 
+        for iOldTest = 1:length(tOldTests.tTests)
             % check if the name of the old tutorial matches the new tutorial,
             % if it does, compare the tutorials
-            if strcmp(tTests(iI).name, tOldTests.tTests(iOldTutorial).name)
-
-                iTickDiff = tTests(iI).run.iTicks - tOldTests.tTests(iOldTutorial).run.iTicks;
+            if strcmp(tTests(iI).name, tOldTests.tTests(iOldTest).name) && ~isempty(tTests(iI).run)
+                
+                iTickDiff = tTests(iI).run.iTicks - tOldTests.tTests(iOldTest).run.iTicks;
                 mfData(iI,1) = iTickDiff;
-                fprintf('change in ticks compared to old status:                 %s%i\n',sBlanks, iTickDiff);
+                fprintf('change in ticks compared to old status:               %i\n', iTickDiff);
                 
-                fTimeDiff = tTests(iI).run.fRunTime - tOldTests.tTests(iOldTutorial).run.fRunTime;
+                fTimeDiff = tTests(iI).run.fRunTime - tOldTests.tTests(iOldTest).run.fRunTime;
                 mfData(iI,2) = fTimeDiff;
-                fprintf('change in run time compared to old status:                  %s%d\n',sBlanks, fTimeDiff);
+                fprintf('change in run time compared to old status:            %d\n', fTimeDiff);
 
-                fTimeDiffLog = tTests(iI).run.fLogTime - tOldTests.tTests(iOldTutorial).run.fLogTime;
+                fTimeDiffLog = tTests(iI).run.fLogTime - tOldTests.tTests(iOldTest).run.fLogTime;
                 mfData(iI,3) = fTimeDiffLog;
-                fprintf('change in log time compared to old status:                  %s%d\n',sBlanks, fTimeDiffLog);
+                fprintf('change in log time compared to old status:            %d\n', fTimeDiffLog);
                 
-                fGeneratedMassDiff = tTests(iI).run.fGeneratedMass - tOldTests.tTests(iOldTutorial).run.fGeneratedMass;
+                fGeneratedMassDiff = tTests(iI).run.fGeneratedMass - tOldTests.tTests(iOldTest).run.fGeneratedMass;
                 mfData(iI,4) = fGeneratedMassDiff;
-                fprintf('change in generated mass compared to old status:        %s%d\n',sBlanks, fGeneratedMassDiff);
+                fprintf('change in generated mass compared to old status:      %d\n', fGeneratedMassDiff);
 
-                fTotalMassBalanceDiff = tTests(iI).run.fTotalMassBalance - tOldTests.tTests(iOldTutorial).run.fTotalMassBalance;
+                fTotalMassBalanceDiff = tTests(iI).run.fTotalMassBalance - tOldTests.tTests(iOldTest).run.fTotalMassBalance;
                 mfData(iI,5) = fTotalMassBalanceDiff;
-                fprintf('change in total mass balance compared to old status:    %s%d\n',sBlanks, fTotalMassBalanceDiff);
+                fprintf('change in total mass balance compared to old status:  %d\n', fTotalMassBalanceDiff);
                 
             end
         end
@@ -321,20 +525,21 @@ if ~bSkipComparison
     fprintf('--------------------------------------\n');
     fprintf('--------------------------------------\n\n\n');
     
+    % Plotting the data
     plot(mfData, cellfun(@(cCell) cCell(2:end), {tTests.name}, 'UniformOutput', false));
-    
-    sPath = fullfile('data', 'TestStatus.mat');
-    save(sPath, 'tTests');
 end
 
 fprintf('======================================\n');
-fprintf('===== Finished running tests =====\n');
+fprintf('======= Finished running tests =======\n');
 fprintf('======================================\n\n');
+
+% Outputting the total runtime. 
+toc(hTimer);
 
 end
 
 function plot(mfData, csNames)
-
+% Creating a figure
 oFigure = figure('Name','Comparisons');
     
 % First we create the panel that will house the buttons.
@@ -413,6 +618,7 @@ for iI = 1:iRows
     end
 end
 
+% Now we create the five individual subplots.
 
 oPlot = subplot(2,3,1);
 hold(oPlot,'on');
@@ -456,6 +662,13 @@ title('Mass balance');
 ylabel('Mass [kg]');
 coButtons{2, 2}.Callback = {@tools.postprocessing.plotter.helper.undockSubPlot, oPlot, []};
 
+% In the sixth field of the 2x3 figure, we create a sort of legend. This is
+% done because MATLAB 2019a does not (yet?) support custom data tips for
+% each bar in a bar graph. That makes it hard to see, which test is
+% actually represented by each bar, because it only has a number. The
+% legend we are creating here links the number to the name of the test. 
+
+% First creating the plot itself
 oPlot = subplot(2,3,6);
 hold(oPlot,'on');
 oPlot.YTick = [];
@@ -464,9 +677,16 @@ oPlot.Box = 'on';
 oPlot.Tag = 'LabelPlot';
 title('Legend');
 
+% Now we create a textfield that contains concatenations of each test's
+% index in the csNames cell and their name. 
 csContent = cellfun(@(csNumbers, csText) [csNumbers, ' ', csText], strsplit(num2str(1:length(csNames))), csNames, 'UniformOutput', false);
 oText = text(oPlot, 0.1, 0.1, csContent);
 oText.Interpreter = 'none';
+
+% We want to have the text field nice and centered in the plot, so we have
+% a function for this. We call it here once initially and then bind it to
+% the figure's size changed callback so it is executed everytime the
+% window, and thereby the subplot, is resized. 
 resizeTextField(oFigure, []);
 oFigure.SizeChangedFcn = @resizeTextField;
 
@@ -476,7 +696,10 @@ set(oFigure, 'WindowState', 'maximized');
 end
 
 function resizeTextField(oFigure, ~)
+    % Finding the plot containing the legend
     oPlot = findobj(oFigure, 'Tag', 'LabelPlot');
+    
+    % Setting its position to the center of the subplot.
     oPlot.Children(1).Position = [ (1-oPlot.Children(1).Extent(3))/2, 0.5 0];
 end
 
@@ -498,7 +721,7 @@ function sFolderPath = createDataFolderPath()
     % yet. 
     while ~bSuccess
         sFolderPath = fullfile(sBaseFolderPath, sprintf('%s_Test_Run_%i', sTimeStamp, iFolderNumber));
-        if exist([sBaseFolderPath, sFolderPath],'dir')
+        if exist(sFolderPath,'dir')
             iFolderNumber = iFolderNumber + 1;
         else
             bSuccess = true;

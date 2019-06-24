@@ -39,6 +39,8 @@ classdef infrastructure < base & event.source
         % message when a simulation is complete. This can be enabled by
         % setting this flag to true.
         bPlayFinishSound = false;
+        
+        bParallelExecution = false;
     end
     
     % The following properties have private SetAccess due to the
@@ -197,6 +199,8 @@ classdef infrastructure < base & event.source
                 if ~isa(oMT, 'matter.table')
                     this.throw('infrastructure','The provided object is not a matter table.');
                 end
+                
+                this.bParallelExecution = true;
             else
                 oMT = matter.table();
             end

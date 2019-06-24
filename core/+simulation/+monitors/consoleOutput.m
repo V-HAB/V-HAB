@@ -267,7 +267,11 @@ classdef consoleOutput < simulation.monitor
                 % And now we can finally print the report. It includes the
                 % current tick, the current time and how much time has
                 % passed since the last report. 
-                fprintf([ '%i\t(' sFloat 's)\t(Tick Delta ' sFloat 's)\n' ], oSim.oTimer.iTick, oSim.oTimer.fTime, fDeltaTime);
+                if this.oSimulationInfrastructure.bParallelExecution
+                    fprintf([ '%i\t(' sFloat 's)\t(Tick Delta ' sFloat 's)\t(Simulation: %s)\n' ], oSim.oTimer.iTick, oSim.oTimer.fTime, fDeltaTime, this.oSimulationInfrastructure.sName);
+                else
+                    fprintf([ '%i\t(' sFloat 's)\t(Tick Delta ' sFloat 's)\n' ], oSim.oTimer.iTick, oSim.oTimer.fTime, fDeltaTime);
+                end
             end
         end
         

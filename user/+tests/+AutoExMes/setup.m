@@ -19,7 +19,7 @@ classdef setup < simulation.infrastructure
             
             % First we call the parent constructor and tell it the name of
             % this simulation we are creating.
-            this@simulation.infrastructure('Tutorial_Automatic_ExMes', ptConfigParams, tSolverParams, ttMonitorConfig);
+            this@simulation.infrastructure('Test_Automatic_ExMes', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             % Creating the 'Example' system as a child of the root system
             % of this simulation. 

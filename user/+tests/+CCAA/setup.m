@@ -12,13 +12,9 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams) % Constructor function
+        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig) % Constructor function
             
-            % Possible to change the constructor paths and params for the
-            % monitors
-            ttMonitorConfig = struct();
-            
-            this@simulation.infrastructure('Example_CCAA', ptConfigParams, tSolverParams, ttMonitorConfig);
+            this@simulation.infrastructure('Test_CCAA', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             % Creating the root object
             examples.CCAA.systems.Example(this.oSimulationContainer, 'Example');

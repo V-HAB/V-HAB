@@ -27,6 +27,10 @@ if oLogger.bDumpToMat && oLogger.afTime(1) ~= 0
     oLogger.readFromMat();
 end
 
+if this.oSimulationInfrastructure.bParallelExecution
+    aoFigures = gobjects(length(this.coFigures),1);
+end
+
 % Now we loop through each item in the coFigures cell and create an
 % individual figure for each of them.
 for iFigure = 1:length(this.coFigures)
@@ -639,5 +643,13 @@ for iFigure = 1:length(this.coFigures)
     % figure in case we need to use them later.
     oFigure.UserData = struct('coAxesHandles', { coAxesHandles });
     
+    if this.oSimulationInfrastructure.bParallelExecution
+        aoFigures(iFigure) = oFigure;
+    end
+    
 end
+if this.oSimulationInfrastructure.bParallelExecution
+    assignin('base','aoFigures',aoFigures);
+end
+
 end
