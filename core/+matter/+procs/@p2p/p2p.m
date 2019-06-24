@@ -170,16 +170,26 @@ classdef p2p < matter.flow & event.source
             if this.fFlowRate < 0; oExme = this.oOut; else; oExme = this.oIn; end
         end
         
-        
-        function exec(this, fTime)
-            % Called from subsystem to update the internal state of the
-            % processor, e.g. change efficiencies etc
-        end
-        
         function registerUpdate(this)
             this.hBindPostTickUpdate();
         end
+        
+        function [ this, unbindCallback ] = bind(this, sType, callBack)
+            % Overwrite the general bind function to be able and write
+            % specific trigger flags
+            [ this, unbindCallback ] = bind@event.source(this, sType, callBack);
             
+            % for setMatterProperties we set the Trigger to true which tells
+            % us that we actually have to trigger this. Otherwise it is not
+            % triggered saving calculation time
+            if strcmp(sType, 'setMatterProperties')
+                this.bTriggersetMatterPropertiesCallbackBound = true;
+            end
+        end
+    end
+    
+    
+    methods (Access = protected)
         function update(this, fFlowRate, arPartials)
             % Calculate new flow rate in [kg/s]. The update method is
             % called right before the phases merge/extract. The p2p merge
@@ -208,22 +218,6 @@ classdef p2p < matter.flow & event.source
             end
         end
         
-        function [ this, unbindCallback ] = bind(this, sType, callBack)
-            % Overwrite the general bind function to be able and write
-            % specific trigger flags
-            [ this, unbindCallback ] = bind@event.source(this, sType, callBack);
-            
-            % for setMatterProperties we set the Trigger to true which tells
-            % us that we actually have to trigger this. Otherwise it is not
-            % triggered saving calculation time
-            if strcmp(sType, 'setMatterProperties')
-                this.bTriggersetMatterPropertiesCallbackBound = true;
-            end
-        end
-    end
-    
-    
-    methods (Access = protected)
         function [ afInFlowrates, mrInPartials ] = getInFlows(this, sPhase)
             % Return vector with all INWARD flow rates and matrix with 
             % partial masses of each in flow

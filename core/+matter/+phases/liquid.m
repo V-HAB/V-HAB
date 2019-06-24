@@ -3,21 +3,28 @@ classdef liquid < matter.phase
     % assumed incompressible in V-HAB compressible liquids are in principle
     % possible
     properties (Constant)
-
         % State of matter in phase (e.g. gas, liquid, ?)
         sType = 'liquid';
-
     end
     
     methods
-        % oStore        : Name of parent store
-        % sName         : Name of phase
-        % tfMasses      : Struct containing mass value for each species
-        % fTemperature  : Temperature of matter in phase
-        % fPressure     : Pressure of matter in phase
         
         function this = liquid(oStore, sName, tfMasses, fTemperature, fPressure)
-
+            %% liquid class constructor
+            % describes an ideally mixed volume of liquid. Different from the
+            % boundary and flow type phases the mass of this phase will
+            % change and a time step is calculated limiting by how much the
+            % phase properties are allowed to change. This type of phase
+            % should be used e.g. to model the habitat atmosphere (boundary
+            % would be e.g. the martian atmosphere, flow phases would be
+            % e.g. individual phases within subsystems that are very small)
+            %
+            % Required Inputs:
+            % oStore        : Name of parent store
+            % sName         : Name of phase
+            % tfMasses      : Struct containing mass value for each species
+            % fTemperature  : Temperature of matter in phase
+            % fPressure     : Pressure of matter in phase
             this@matter.phase(oStore, sName, tfMasses, fTemperature);
             
             this.fTemperature = fTemperature;
@@ -41,6 +48,9 @@ classdef liquid < matter.phase
     %% Protected methods, called internally to update matter properties %%%
     methods (Access = protected)
         function this = update(this)
+            %% liquid update
+            % calls the update methods of exmes as well because liquids can
+            % be gravity driven!
             update@matter.phase(this);
             
             for k = 1:length(this.coProcsEXME)

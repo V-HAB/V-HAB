@@ -128,12 +128,12 @@ classdef Example < vsys
             % Creates a store for the urine
             matter.store(this, 'UrineStorage', 1);
             
-            oUrinePhase = matter.phases.mixture(this.toStores.UrineStorage, 'Urine', 'liquid', struct('C2H6O2N2', 0.059, 'H2O', 1.6), 1, 295, 101325); 
+            oUrinePhase = matter.phases.mixture(this.toStores.UrineStorage, 'Urine', 'liquid', struct('C2H6O2N2', 0.059, 'H2O', 1.6), 295, 101325); 
             
             
             % Creates a store for the feces storage            
             matter.store(this, 'FecesStorage', 1);
-            oFecesPhase = matter.phases.mixture(this.toStores.FecesStorage, 'Feces', 'solid', struct('C42H69O13N5', 0.032, 'H2O', 0.1), 1, 295, 101325); 
+            oFecesPhase = matter.phases.mixture(this.toStores.FecesStorage, 'Feces', 'solid', struct('C42H69O13N5', 0.032, 'H2O', 0.1), 295, 101325); 
             
             % Adds a food store to the system
             tfFood = struct('Food', 100, 'CarrotsEdibleWet', 10);

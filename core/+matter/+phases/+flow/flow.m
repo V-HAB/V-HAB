@@ -5,7 +5,6 @@ classdef (Abstract) flow < matter.phase
     % zero mass change for the phase and calculate all values based on the
     % inflows.
     
-    
     properties (SetAccess = protected, GetAccess = public)
         % flow_nodes can be used within multi branch solvers to allow the
         % solver to handle the pressure of the flow nodes, since they are
@@ -21,12 +20,24 @@ classdef (Abstract) flow < matter.phase
         % Initial mass for information and debugging purposes. If
         % everything works correctly the phase should not change its mass!
         fInitialMass;
-        
-        fLastPartialsUpdate = -1;
     end
     
     methods
         function this = flow(oStore, sName, tfMass, fVolume, fTemperature)
+            %% flow constructor
+            %
+            % creates a flow phase which is modelled to contain no mass.
+            % However, this is an abstract class and it cannot be used
+            % directly. If you want to add a flow phase use on the derived
+            % child classes from matter.phases.flow
+            %
+            % Required inputs:
+            % oStore        : Name of parent store
+            % sName         : Name of phase
+            % tfMasses      : Struct containing mass value for each species
+            % fVolume       : Assumed volume for the phase in m^3. Not used
+            %                 in calculations but informative property
+            % fTemperature  : Temperature of matter in phase
             this@matter.phase(oStore, sName, tfMass, fTemperature);
             
             this.fVolume = fVolume;
@@ -48,14 +59,16 @@ classdef (Abstract) flow < matter.phase
             this.bind('update_partials',@(~)this.updatePartials());
         end
         
-        function setVolume(~, ~)
-            % Must be here because the store tries to overwrite the volume,
-            % but for flow_nodes we want the small volumes and the volume
-            % is not relevant for the calculations anyway
-        end
-        
         function setPressure(this, fPressure)
-            % Allows the solver to set the pressure
+            %% setPressure
+            % INTERNAL FUNCTION!
+            % This function is called by the multi branch solver to set the
+            % pressure of the connected flow nodes. Should not be used by
+            % the user, however access restrictions would require further
+            % queries and since this function is called very often, that
+            % would slow down the simulation.
+            % Required Inputs:
+            % fPressure: Pressure of the flow node in Pa
             if fPressure < 0
                 error(['a negative pressure occured in the flow phase ', this.sName, ' in store ', this.oStore.sName, '. This can happen if e.g. the f2f have a too large pressure drops for a constant flowrate boundary forcing the solver to converge to a solution with negative pressures. Please check your system']);
             end
@@ -65,7 +78,21 @@ classdef (Abstract) flow < matter.phase
         
         
         function updatePartials(this, afPartialInFlows)
-            
+            %% updatePartials
+            % INTERNAL FUNCTION!
+            % this function is called by either the exme of a flow phase if
+            % it is queried for information regarding the phase, the
+            % multi_branch solver or through the 'update_partials' trigger
+            % used in matter.phase (e.g. in the massupdate and update
+            % functions). Calling it from somewhere else with incorrect
+            % flow information might result in inconsistent values!
+            %
+            % Update the arPartialMass property of the flow phase based on
+            % the current in flows.
+            % Required Inputs:
+            % afPartialInFlows: Vector with the length (1, oMT.iSubstances)
+            %                   with a partial mass flow in kg/s for each
+            %                   substance
             if isempty(this.fPressure)
                 if ~base.oDebug.bOff
                     this.out(1, 1, 'skip-partials', '%s-%s: skip at %i (%f) - no pressure (i.e. before multi solver executed at least once)!', { this.oStore.sName, this.sName, this.oTimer.iTick, this.oTimer.fTime });
@@ -74,12 +101,11 @@ classdef (Abstract) flow < matter.phase
                 return;
             end
             
-            
             % Store needs to be sealed (else problems with initial
             % conditions). Last partials update needs to be in the past,
             % except forced, in case this method is called e.g. from
             % .update() or .updateProcessorsAndManipulators()
-            if ~this.oStore.bSealed %|| (this.fLastPartialsUpdate >= this.oTimer.fTime && ~bForce)
+            if ~this.oStore.bSealed
                 if ~base.oDebug.bOff
                     this.out(1, 1, 'skip-partials', '%s-%s: skip at %i (%f) - already executed!', { this.oStore.sName, this.sName, this.oTimer.iTick, this.oTimer.fTime });
                 end
@@ -180,6 +206,7 @@ classdef (Abstract) flow < matter.phase
     
     methods  (Access = protected)
         function massupdate(this, varargin)
+            %% flow phase massupdate
             % We call the massupdate together with the function to update
             % the pressure
             massupdate@matter.phase(this, varargin{:});
@@ -189,6 +216,7 @@ classdef (Abstract) flow < matter.phase
         end
         
         function updatePressure(this)
+            %% updatePressure
             % if a multi branch solver is used the virtual pressure
             % property is set and the phase pressure is handled by the
             % solver. However, a flow node can also be used individually.
@@ -218,11 +246,19 @@ classdef (Abstract) flow < matter.phase
         end
         
         function fPressure = get_fPressure(this)
+            %% get_fPressure of flow phase
             % Since the pressure is a dependent property this get function
-            % defines how to calculate it. Child classes which do not want
-            % to make the pressure mass dependent (e.g. solids) should
-            % overload this function
-            fPressure = this.fVirtualPressure;
+            % defines how to calculate it. For flow phases that depends on
+            % the question whether the virtual pressure property is empty
+            % (no multibranch solver) or not. If it is not empty the
+            % virtual pressure property is simply used. Otherwise the mass
+            % to pressure property (which is set in the updatePressure
+            % function) is used
+            if isempty(this.fVirtualPressure)
+                fPressure = this.fMassToPressure * this.fMass;
+            else
+                fPressure = this.fVirtualPressure;
+            end
         end
     end
 end

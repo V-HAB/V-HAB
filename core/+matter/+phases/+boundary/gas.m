@@ -25,9 +25,25 @@ classdef gas < matter.phases.boundary.boundary
     methods
         function this = gas(oStore, sName, tfMass, fVolume, fTemperature, fPressure)
             %% gas boundary class constructor
+            %
+            % creates a gas boundary phase with the specifid conditions.
+            % These will remain constant throughout the simulation unless
+            % they are directly changed using the setBoundaryProperties
+            % function!
+            %
             % to make the boundary phase compatible with phase definitions
             % of normal gas phases, if the volume is provided it is simply
             % ignored, otherwise only three parameters are required
+            %
+            % Required inputs:
+            % oStore        : Name of parent store
+            % sName         : Name of phase
+            % tfMasses      : Struct containing mass value for each species
+            % fVolume       : Just here so that nothing must be changed
+            %                 when a phase definition is changed from a
+            %                 normal phase to a boundary phase
+            % fTemperature  : Temperature of matter in phase
+            % fPressure     : Pressure of the phase
             
             this@matter.phases.boundary.boundary(oStore, sName, tfMass, fTemperature);
             

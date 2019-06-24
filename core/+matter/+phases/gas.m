@@ -3,10 +3,8 @@ classdef gas < matter.phase
     % assumptions. Must be located inside a store to work!
     
     properties (Constant)
-
         % State of matter in phase (e.g. gas, liquid, solid)
         sType = 'gas';
-
     end
 
     properties (SetAccess = protected, GetAccess = public)
@@ -19,17 +17,25 @@ classdef gas < matter.phase
         % Relative humidity in the phase, see this.update() for details on
         % the calculation.
         rRelHumidity;
-    
     end
     
-    
     methods
-        % oStore        : Name of parent store
-        % sName         : Name of phase
-        % tfMasses      : Struct containing mass value for each species
-        % fVolume       : Volume of the phase
-        % fTemperature  : Temperature of matter in phase
         function this = gas(oStore, sName, tfMasses, fVolume, fTemperature)
+            %% gas class constructor
+            % describes an ideally mixed volume of gas. Different from the
+            % boundary and flow type phases the mass of this phase will
+            % change and a time step is calculated limiting by how much the
+            % phase properties are allowed to change. This type of phase
+            % should be used e.g. to model the habitat atmosphere (boundary
+            % would be e.g. the martian atmosphere, flow phases would be
+            % e.g. individual phases within subsystems that are very small)
+            %
+            % Required Inputs:
+            % oStore        : Name of parent store
+            % sName         : Name of phase
+            % tfMasses      : Struct containing mass value for each species
+            % fVolume       : The volume of the phase in m^3
+            % fTemperature  : Temperature of matter in phase
             this@matter.phase(oStore, sName, tfMasses, fTemperature);
             
             % Get volume from 
@@ -53,28 +59,37 @@ classdef gas < matter.phase
         end
         
         function fMassToPressure = calculatePressureCoefficient(this)
-            % p = m * (R_m * T / M / V)
-            %
+            %% calculatePressureCoefficient
+            % calculate the coefficient from the ideal gas law which
+            % results in the pressure in Pav if multiplied with a mass in
+            % kg. p = m * (R_m * T / M / V)
+            % For pressures higher than 10 bar the coefficient is instead
+            % calculated by using the matter table (realgas assumption) and
+            % dividing it with the current mass
             
-            fMassToPressure = this.oMT.Const.fUniversalGas * this.fTemperature / (this.fMolarMass * this.fVolume);
+            if this.fPressure < 10e5
+                fMassToPressure = this.oMT.Const.fUniversalGas * this.fTemperature / (this.fMolarMass * this.fVolume);
+            else
+                fMassToPressure = this.oMT.calculatePressure(this) / this.fMass;
+            end
             
             if isnan(fMassToPressure) || isinf(fMassToPressure)
                 fMassToPressure = 0;
             end
         end
-
-        function seal(this)
-
-            seal@matter.phase(this);
-
-        end
         
         function setTemperature(this, oCaller, fTemperature)
+            %% setTemperature
+            % INTERNAL FUNCTION!
             % This function can only be called from the ascociated capacity
-            if ~isa(oCaller, 'thermal.capacity')
-                this.throw('setTemperature', 'The setTemperature function of the phase class can only be used by capacity objects. Please do not try to set the temperature directly, as this would lead to errors in the thermal solver');
+            %
+            % Used to set the temperature of the phase from the thermal
+            % domain so that the user can access this.fTemperature instead
+            % of having to go through this.oCapacity.fTemperature
+            if oCaller ~= this.oCapacity
+                this.throw('setTemperature', 'The setTemperature function of the phase class can only be used by the connected capacity object. Please do not try to set the temperature directly, as this would lead to errors in the thermal solver');
             end
-                
+            
             this.fTemperature = fTemperature;
             
             if ~isempty(this.fVolume)
@@ -87,6 +102,11 @@ classdef gas < matter.phase
     %% Protected methods, called internally to update matter properties %%%
     methods (Access = protected)
         function this = update(this)
+            %% gas update
+            % INTERNAL FUNCTION!
+            % called in addition to the normal phase update to calculate
+            % gas specific properties like the partial pressure and parts
+            % per million
             update@matter.phase(this);
             
             % Check for volume not empty, when called from constructor

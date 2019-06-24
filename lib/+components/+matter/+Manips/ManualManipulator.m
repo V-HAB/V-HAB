@@ -59,7 +59,8 @@ classdef ManualManipulator < matter.manips.substance.stationary
             % manipualtor flow rates
             this.update()
         end
-        
+    end
+    methods (Access = protected)
         function update(this, ~)
             %% sets the flowrate values
             update@matter.manips.substance(this, this.afManualFlowRates);

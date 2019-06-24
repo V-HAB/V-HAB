@@ -1,19 +1,19 @@
-classdef liquid < matter.phases.boundary.boundary
-    %% liquid_boundary
-    % A liquid phase that is modelled as containing an infinite amount of matter
+classdef mixture < matter.phases.boundary.boundary
+    %% mixture_boundary
+    % A solid phase that is modelled as containing an infinite amount of matter
     % with specifiable (and changeable) values for the composition and
     % temperature. The intended use case is e.g. to model vacuum in space
     % and environmental conditions in test cases
     properties (Constant)
         % State of matter in phase (e.g. gas, liquid, ?)
-        sType = 'liquid';
+        sType = 'mixture';
     end
     
     methods
-        function this = liquid(oStore, sName, tfMass, fTemperature, fPressure)
-            %% liquid boundary class constructor
+        function this = mixture(oStore, sName, tfMass, fTemperature, fPressure)
+            %% mixture boundary class constructor
             %
-            % creates a liquid boundary phase with the specifid conditions.
+            % creates a mixture boundary phase with the specifid conditions.
             % These will remain constant throughout the simulation unless
             % they are directly changed using the setBoundaryProperties
             % function!

@@ -314,7 +314,7 @@ classdef Human < vsys
             % Creating Stores
             matter.store(this, 'Human', fVolumeHuman + fVolumeUrine + fVolumeFeces + fVolumeLung + fVolumeStomach ); 
 
-            oHumanPhase = matter.phases.mixture(this.toStores.Human, 'HumanPhase', 'liquid', tfMassesHuman, fVolumeHuman, fHumanTemperature, 101325); 
+            oHumanPhase = matter.phases.mixture(this.toStores.Human, 'HumanPhase', 'solid', tfMassesHuman, fHumanTemperature, 101325); 
             
             this.afInitialMassHuman = oHumanPhase.afMass;
             
@@ -331,7 +331,7 @@ classdef Human < vsys
             % add a manip that converts food to metabolism products
             components.matter.Manips.ManualManipulator(this, 'DigestionSimulator', oHumanPhase);
             
-            oStomachPhase = matter.phases.mixture(this.toStores.Human, 'Stomach', 'liquid', tfMassesStomach, fVolumeStomach, fHumanTemperature, 101325);
+            oStomachPhase = matter.phases.mixture(this.toStores.Human, 'Stomach', 'liquid', tfMassesStomach, fHumanTemperature, 101325);
             
             matter.procs.exmes.mixture(oStomachPhase, 'Food_In');
             matter.procs.exmes.mixture(oStomachPhase, 'Food_Out_Internal');
@@ -354,14 +354,14 @@ classdef Human < vsys
             matter.procs.exmes.gas(oAirPhase, 'Air_Out'); %IF
             
             % Urine Phase
-            oBladderPhase = matter.phases.mixture(this.toStores.Human, 'Urine', 'liquid', tfMassesUrine, fVolumeUrine, fHumanTemperature, 101325); 
+            oBladderPhase = matter.phases.mixture(this.toStores.Human, 'Urine', 'liquid', tfMassesUrine, fHumanTemperature, 101325); 
             this.afInitialMassUrine = oBladderPhase.afMass;
             
             matter.procs.exmes.mixture(oBladderPhase, 'Urine_Out');
             matter.procs.exmes.mixture(oBladderPhase, 'Urine_In_Internal');
             
             % Feces phase
-            oFecesPhase = matter.phases.mixture( this.toStores.Human, 'Feces', 'solid', tfMassesFeces, fVolumeFeces, fHumanTemperature, 101325); 
+            oFecesPhase = matter.phases.mixture( this.toStores.Human, 'Feces', 'solid', tfMassesFeces, fHumanTemperature, 101325); 
             this.afInitialMassFeces = oFecesPhase.afMass;
             
             matter.procs.exmes.mixture(oFecesPhase, 'Feces_In_Internal');

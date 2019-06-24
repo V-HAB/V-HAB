@@ -14,8 +14,20 @@ classdef (Abstract) boundary < matter.phase
     end
     
     methods
-        function this = boundary(oStore, sName, tfMass, fTemperature, varargin)
+        function this = boundary(oStore, sName, tfMass, fTemperature)
             %% boundary class constructor
+            %
+            % this class is abstract because boundaries also must be of a
+            % specific phase type therefore you cannot create it directly
+            % but must use a child class from the matter.phases.boundary
+            % folder!
+            %
+            % Required inputs:
+            % oStore        : Name of parent store
+            % sName         : Name of phase
+            % tfMasses      : Struct containing mass value for each species
+            % fTemperature  : Temperature of matter in phase
+
             this@matter.phase(oStore, sName, tfMass, fTemperature, 'boundary');
             
             this.fVolume = inf;

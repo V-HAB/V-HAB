@@ -137,6 +137,8 @@ tiP2N.gas = 3;
 tiP2N.supercritical = 4;
 if ~strcmp(sMatterState, 'mixture')
     aiPhase = tiP2N.(sMatterState)*ones(1,this.iSubstances);
+elseif length(varargin) ~= 1
+    aiPhase = this.determinePhase(arPartialMass, fTemperature, afPartialPressures);
 end
 
 end
