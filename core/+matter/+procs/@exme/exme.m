@@ -1,24 +1,12 @@
 classdef exme < base
-    %EXME extract/merge processor
-    %   Extracts matter flow from and merges matter flow into a phase.
-    %
-    % See also matter.procs.f2f which has a lot in common.
-    
-    properties (SetAccess = private, GetAccess = private)
-        % See matter.proc.f2f
-        pthFlow;
-    end
-    
-    properties (SetAccess = private, GetAccess = protected)
-        
-        % Function handle to the phase to set any attribute!
-        setAttribute;
-        
-        
-    end
+    % EXME extract/merge processor
+    % The ExMe is the basic port within V-HAB to remove or add mass to a
+    % phase. It is used by both branches and P2Ps to connect two different
+    % phases. ExMes can also be created automatically by providing a phase
+    % object as reference during branch definition.
     
     properties (SetAccess = private, GetAccess = public)
-        % Phase the EXME belongs to
+        % Phase this EXME belongs to
         oPhase;
         
         % Matter table
@@ -27,18 +15,19 @@ classdef exme < base
         % Timer
         oTimer;
         
-        % Name of processor. If 'default', several MFs can be connected
+        % Name of the ExMe
         sName;
         
         % Connected matter flow
         oFlow = matter.flow.empty();
         
-        % Has a flow?
+        % Boolean flag to check if the ExMe has a flow or if it is
+        % unconnected
         bHasFlow = false;
         
-        % Is flow a p2p?
+        % Boolean flag to check if this exme is used for a P2P, which
+        % requires some adjustments to handling in certain cases
         bFlowIsAProcP2P = false;
-        
         
         % integer that is either 1 or -1. This multiplied with the flowrate
         % of the asscociated flow from the oFlow property results in the
@@ -52,15 +41,16 @@ classdef exme < base
     
     methods
         function this = exme(oPhase, sName)
+            %% exme class constructor
             % Constructor for the exme matter processor class. 
-            % oPhase is the phase the exme is attached to
-            % sName is the name of the processor
-            % Used to extract / merge matter from / into phases. Default
-            % functionality is just merging of enthalpies based on ideal
-            % conditions and extraction with the according matter
-            % properties and no "side effects".
-            % For another behaviour, derive from that proc and overload the
-            % .extract or .merge method.
+            % Used to extract / merge matter from / into phases. Note that
+            % the processor itself does not handle the merging, it is just
+            % an interface providing the necessary information to handle
+            % the corresponding calculation within the matter.phase class
+            %
+            % Required Inputs:
+            % oPhase:   the phase the exme is attached to
+            % sName:    the name of the processor
             
             this.sName  = sName;
             this.oMT    = oPhase.oMT;
@@ -69,14 +59,21 @@ classdef exme < base
             oPhase.addProcEXME(this);
             
             this.oPhase = oPhase;
-            
-            % Create map for the func handles
-            this.pthFlow = containers.Map('KeyType', 'single', 'ValueType', 'any');
         end
         
         
         function addFlow(this, oFlow)
-            % For some more doc, see @matter.procs.f2f.addFlow()
+            %% ExMe addFlow
+            % INTERNAL METHOD! Called from the matter.procs.p2p class
+            % constructor or the base.branch handleSide function!
+            %
+            % adds a flow to this exme and sets the corresponding
+            % properties (bHasFlow, bFlowIsAProcP2P, iSign) according to
+            % the flow which is connected to this exme
+            %
+            % Required inputs:
+            % oFlow, the matter flow object which should be connected with
+            % this exme
             
             if this.oPhase.oStore.bSealed
                 this.throw('addFlow', 'The store to which this processors phase belongs is sealed, so no ports can be added any more.');
@@ -93,14 +90,11 @@ classdef exme < base
             
             this.oFlow = oFlow;
             
-            
-            
             this.bHasFlow = true;
             this.bFlowIsAProcP2P = isa(this.oFlow, 'matter.procs.p2ps.flow') || isa(this.oFlow, 'matter.procs.p2ps.stationary');
             
-            
             try
-                [ this.iSign, this.pthFlow ] = oFlow.addProc(this, @() this.removeFlow(oFlow));
+                this.iSign = oFlow.addProc(this, @() this.removeFlow(oFlow));
             catch oErr
                 % Reset back to default MF
                 this.oFlow = this.oMT.oFlowZero;
@@ -113,26 +107,21 @@ classdef exme < base
         
         
         function [ fFlowRate, arPartials, afProperties ] = getFlowData(this, fFlowRate)
-            % Return the flow rate, plus the according partial mass
-            % ratios. Depends on flow direction and flow type: if a p2p
-            % flow processor is connected, getting the arPartials from
-            % there either way. Else, if outflowing, return phase partials,
-            % and if inflowing, again get from flow.
+            %% ExMe getFlowData
+            % This function can be called to receive information about the
+            % exme flow properties. 
             %
-            % Also returns matrix with two columns containing temperature 
-            % and the heat capacity and for each flow!
-            
-            % If there is no flow connected to this exme yet, it returns
-            % placeholder values.
-            %CHECK is this even executed, or is there an earlier warning of
-            % 'unused exme'? In that case, this condition can be deleted.
-            if ~this.bHasFlow
-                fFlowRate    = 0;
-                arPartials   = [];
-                afProperties = [];
-                
-                return;
-            end
+            % Outputs:
+            % fFlowRate:    current mass flow rate in kg/s with respect to
+            %               the connected phase (negative values mean the
+            %               mass of this.oPhase is beeing reduced)
+            % arPartials:   A vector with the length (1,oMT.iSubstances)
+            %               with the partial mass ratio of each substance in the current
+            %               fFlowRate. The sum of this vector is 1 and
+            %               multipliying arPartials with fFlowRate yields
+            %               the partial mass flow rates for each substance
+            % afProperties: A vector with two entries, the flow temperature
+            %               and the flow specific heat capacity
             
             % The flow rate property of the flow is unsigned, so we have to
             % add it again by multiplying with the iSign property of this
@@ -174,24 +163,6 @@ classdef exme < base
                 end
             end
         end
-        
-        function [ arPartialMass, fMolarMass, fSpecificHeatCapacity ] = getMatterProperties(this)
-            %CHECK If a p2p processor asks for the port properties, makes
-            %      sense to return the phase partials. The p2p itself can
-            %      set another arPartialMass, for extracting selectively,
-            %      so if one needs to get the flow partials, the p2p has to
-            %      be asked (or aoFlows(iI).oBranch which references back
-            %      to the p2p). Does that make sense?
-            
-            if this.oPhase.bFlow
-                this.oPhase.updatePartials();
-            end
-            arPartialMass = this.oPhase.arPartialMass;
-            
-            fMolarMass            = this.oPhase.fMolarMass;
-            fSpecificHeatCapacity = this.oPhase.oCapacity.fSpecificHeatCapacity;
-            
-        end
     end
     
     %% ABSTRACT METHODS - the concrete exmes have to define those!
@@ -206,30 +177,20 @@ classdef exme < base
     end
     
     
-    %% Internal methdos for handling the flows/flow rates
+    %% Internal methdos for handling the flows
     % The removeFlow is private - only accessible through anonymous handle
     methods (Access = private)
         function removeFlow(this, ~ )
+            %% ExMe removeFlow
+            % This function can be used to remove the flow from this ExMe
+            % which is necessary to then reconnect the ExMe with another
+            % flow!
             % Here we need the tilde as an input parameter, because the
             % removeFlow method for the matter table and the f2f processor
             % need to specify which flow is to be removed. Since exmes only
             % have one input parameter, this is not necessary here. 
             this.oFlow = matter.flow.empty();
             this.iSign = 0;
-        end
-    end
-    
-    % Protected methods - get flow rates, set matter properties
-    methods (Access = protected)
-        function set(this, iFlow, sFunc, varargin)
-            % See matter.procs.f2f
-            
-            % Allow only setting if FR is negative, i.e. outflow!
-            if this.aoFlows(iFlow).fFlowRate * this.aiSign(iFlow) < 0
-                this.pthFlow(iFlow).(sFunc)(varargin{:});
-            else
-                this.throw('set', 'Can only set for negative flow rates (outflowing mass)');
-            end
         end
     end
 end

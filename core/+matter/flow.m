@@ -215,7 +215,7 @@ classdef flow < base
     %% Sealed to ensure flow/f2f proc behaviour
     methods (Sealed = true)
         
-        function [ iSign, thFuncs ] = addProc(this, oProc, removeCallBack)
+        function [ iSign ] = addProc(this, oProc, removeCallBack)
             % Adds the provided processor (has to be or derive from either
             % matter.procs.f2f or matter.procs.exme). If *oIn* is empty,
             % the proc is written on that attribute, and -1 is returned
@@ -262,10 +262,6 @@ classdef flow < base
             else
                 this.throw('addProc', 'Both oIn and oOut are already set');
             end
-            
-            % Provide struct with function handles allowing manipulation
-            % of matter properties through the protected methods below!
-            thFuncs = struct();
         end
     end
     
@@ -417,24 +413,19 @@ classdef flow < base
             
             % Get matter properties of the phase
             if ~isempty(oExme)
-                [ arPhasePartialMass, fPhaseMolarMass, fPhaseSpecificHeatCapacity ] = oExme.getMatterProperties();
-                
                 % In some edge cases (the one that triggered the creation
                 % of the following code involved manual branches bound to
                 % p2p updates) the arPhasePartialMass may be all zeros,
                 % even though the phase mass is not zero. In that case,
                 % we'll just update the phase.
-                if oExme.oPhase.bFlow
-                    if sum(arPhasePartialMass) == 0 && oExme.oPhase.fCurrentTotalMassInOut ~= 0
-                        oExme.oPhase.registerUpdate();
-                        [ arPhasePartialMass, fPhaseMolarMass, fPhaseSpecificHeatCapacity ] = oExme.getMatterProperties();
-                    end
-                else
-                    if sum(arPhasePartialMass) == 0 && oExme.oPhase.fMass ~= 0
-                        oExme.oPhase.registerUpdate();
-                        [ arPhasePartialMass, fPhaseMolarMass, fPhaseSpecificHeatCapacity ] = oExme.getMatterProperties();
-                    end
+                if sum(oExme.oPhase.arPhasePartialMass) == 0
+                   oExme.oPhase.registerUpdate();
                 end
+                
+                arPhasePartialMass         = oExme.oPhase.arPartialMass;
+                fPhaseMolarMass            = oExme.oPhase.fMolarMass;
+                fPhaseSpecificHeatCapacity = oExme.oPhase.fSpecificHeatCapacity;
+                        
                 % This can occur for example if a flow phase is used, which
                 % has an outflow, but not yet an inflow. In that case the
                 % partial mass of the phase is zero (as nothing flows in)

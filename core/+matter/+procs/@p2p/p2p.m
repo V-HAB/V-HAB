@@ -340,9 +340,7 @@ classdef p2p < matter.flow & event.source
             
             
             if nargin < 3 || isempty(arPartialMass)
-                % We also get the molar mass and heat capacity ... however,
-                % setMatterProps calculates those anyway so ignore  them.
-                [ arPartialMass, ~, ~ ] = oExme.getMatterProperties();
+                arPartialMass = oExme.oPhase.arPartialMass;
             end
             
             
