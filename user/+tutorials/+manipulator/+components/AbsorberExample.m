@@ -63,7 +63,9 @@ classdef AbsorberExample < matter.procs.p2ps.stationary
             % instead of afMass(X), btw) to determine load.
             this.rLoad = this.oOut.oPhase.afMass(iSubstances) / this.fCapacity;
             
-            if this.fCapacity == 0, this.rLoad = 1; end;
+            if this.fCapacity == 0
+                this.rLoad = 1;
+            end
             
             %this.rLoad = 0;
             
@@ -74,7 +76,9 @@ classdef AbsorberExample < matter.procs.p2ps.stationary
             % according partial masses. Flow rates are a row vector,
             % partials are a matrix - each row represents one flow, the
             % columns represent the different substances.
-            [ afPartialFlowRates ] = this.getPartialInFlows();
+            [ afInFlowrates, mrInPartials ] = getInFlows();
+            
+            afPartialInFlows = sum(afInFlowrates .* mrInPartials,1);
             
             % Nothing flows in, so nothing absorbed ...
             if isempty(afPartialFlowRates)

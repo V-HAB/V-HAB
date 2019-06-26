@@ -147,6 +147,7 @@ classdef timer < base
         % group and level.
         iCurrentPostTickGroup = 0;
         iCurrentPostTickLevel = 0;
+        iCurrentPostTick = 0;
         
         % Also for faster operation, the corresponding number of post tick
         % levels for each post tick group index from tiPostTickGroup is
@@ -581,11 +582,10 @@ classdef timer < base
                             % call their functions
                             for iIndex = 1:sum(abExecutePostTicks)
                                 iPostTick = aiPostTicksToExecute(iIndex);
-                                % We set the post tick control for this post
-                                % tick to false, before we execute the post
-                                % tick, to allow rebinding of other post ticks
-                                % in the level during the execution of the
-                                % level
+                                % store the current post tick, necessary to
+                                % check if a post tick bind is recursive
+                                this.iCurrentPostTick = iPostTick;
+        
                                 chCurrentPostTicks{iPostTick}();
                                 % The booelans are set to false after the
                                 % calculation to prevent the currently
@@ -629,12 +629,14 @@ classdef timer < base
                     aiPostTicksToExecute = find(abExecutePostTicks);
                     for iIndex = 1:sum(abExecutePostTicks)
                         iPostTick = aiPostTicksToExecute(iIndex);
-                        % We set the post tick control for this post
-                        % tick to false, before we execute the post
-                        % tick, to allow rebinding of other post ticks
-                        % in the level during the execution of the
-                        % level
+                        % store the current post tick, necessary to
+                        % check if a post tick bind is recursive
+                        this.iCurrentPostTick = iPostTick;
+                        
                         chCurrentPostTicks{iPostTick}();
+                        % The booelans are set to false after the
+                        % calculation to prevent the currently executing
+                        % post tick from binding an update directly again
                         this.mbPostTickControl(iPostTickGroup, iPostTickLevel, iPostTick) = false;
                     end
                 end

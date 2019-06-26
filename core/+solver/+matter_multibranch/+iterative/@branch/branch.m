@@ -202,8 +202,6 @@ classdef branch < base & event.source
         iLastWarn = -1000;
         
         bFinalLoop = false;
-        
-        bRegisteredOutdated = false;
     end
     
     properties (SetAccess = private, GetAccess = protected) %, Transient = true)
@@ -326,6 +324,9 @@ classdef branch < base & event.source
         % them.
         bTriggerUpdateCallbackBound = false;
         bTriggerRegisterUpdateCallbackBound = false;
+        
+        % The current time step of the solver in seconds
+        fTimeStep;
     end
     
     
@@ -521,12 +522,6 @@ classdef branch < base & event.source
             % TO DO: provide more information on this in the wiki
             if ~base.oDebug.bOff, this.out(1, 1, 'reg-post-tick', 'Multi-Solver - register outdated? [%i]', { ~this.bRegisteredOutdated }); end
             
-            if this.bRegisteredOutdated
-                return;
-            end
-            
-            this.bRegisteredOutdated = true;
-            
             for iB = 1:this.iBranches
                 for iE = 1:2
                     this.aoBranches(iB).coExmes{iE}.oPhase.registerMassupdate();
@@ -557,7 +552,7 @@ classdef branch < base & event.source
             % slowly starting the solver we get rid of weird effects
             % regarding solver time step jumps right at the beginning. 
             if this.oTimer.iTick < 13
-                this.setTimeStep(this.fMinimumTimeStep);
+                this.setTimeStep(this.fMinimumTimeStep, true);
                 this.out(1,1,'Multi-Solver','Setting Minimum Time Step: %e', {this.fMinimumTimeStep});
                 this.out(1,2,'Multi-Solver','Setting the minimum time step for the first 12 ticks ensures smooth startup of the simulation.', {});
                 return;
@@ -581,7 +576,7 @@ classdef branch < base & event.source
             % maximum allowable time step. However, temperature changes are
             % neglected here so in some cases this limitation might not be
             % sufficient
-            fTimeStep = inf;
+            this.fTimeStep = inf;
             if ~isempty(this.tBoundaryConnection)
                 csBoundaries = fieldnames(this.tBoundaryConnection);
                 if length(csBoundaries) > 1
@@ -629,21 +624,21 @@ classdef branch < base & event.source
 
                                 % 0 Means we have reached equalization, therefore this can also
                                 % be ignored for max time step condition
-                                if fNewStep < fTimeStep && fNewStep ~= 0
-                                    fTimeStep = fNewStep;
+                                if fNewStep < this.fTimeStep && fNewStep ~= 0
+                                    this.fTimeStep = fNewStep;
                                 end
                             end
                         end
                     end
                 end
             end
-            if fTimeStep < this.fMinimumTimeStep
-                fTimeStep = this.fMinimumTimeStep;
+            if this.fTimeStep < this.fMinimumTimeStep
+                this.fTimeStep = this.fMinimumTimeStep;
             end
             
-            this.out(1,1,'Multi-Solver','New Time Step: %e', {fTimeStep});
+            this.out(1,1,'Multi-Solver','New Time Step: %e', {this.fTimeStep});
             
-            this.setTimeStep(fTimeStep);
+            this.setTimeStep(this.fTimeStep, true);
         end
     end
 end

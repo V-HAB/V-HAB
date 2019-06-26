@@ -419,7 +419,10 @@ classdef flow < base
                 % even though the phase mass is not zero. In that case,
                 % we'll just update the phase.
                 if sum(oExme.oPhase.arPartialMass) == 0
-                   oExme.oPhase.registerUpdate();
+                    % Note that registering an actual update here could
+                    % lead to a recursive call where a branch while
+                    % recalculating itself also sets itself outdated
+                   oExme.oPhase.registerMassupdate();
                 end
                 
                 arPhasePartialMass         = oExme.oPhase.arPartialMass;
