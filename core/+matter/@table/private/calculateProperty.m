@@ -47,7 +47,7 @@ for iI = 1:iNumIndices
         iPhase = this.determinePhase(tParameters.sSubstance, fTemperature, afPartialPressures(aiIndices(iI)));
 
         if mod(iPhase,1) ~= 0
-            error('A substance (%s) is undergoing a phase change and therefore the matter property %s could not be calculated', tParameters.sSubstance, sProperty)
+            afProperty(iI) = this.findClosestValidMatterEntry(tParameters);
         else
             rethrow(sMsg)
         end

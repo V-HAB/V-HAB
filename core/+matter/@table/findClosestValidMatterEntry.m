@@ -1,16 +1,14 @@
-function fProperty = findProperty(this, tParameters)
-% FINDPROPERTY A helper method to find substance properties in the matter table
-%   This function searches for property values that are dependent on one or
-%   two other values. One dependency is mandatory, the second one is
-%   optional. If the desired value is not given directly in the ttxMatter
-%   struct, the function will perform a linear interpolation to find the
-%   value. The function does NOT perform extrapolation. If the dependencies
-%   are out of the bounds of the data in ttxMatter, the value neares to the
-%   given dependency values will be returned. A message will be displayed
-%   when this happens.
+function fProperty = findClosestValidMatterEntry(this, tParameters)
+% findClosestValidMatterEntry is a helper to find the closes entry for the
+% provided parameters. Different to the findProperty function it does not
+% use interpolation, but simply looks for the closest valid value for the
+% demanded property. Therefore, while findProperty can crash in edge cases
+% this function will always provide valid matter values, although not for
+% the exact provided conditions
 %
 %   FindProperty returns
-%   fProperty - (interpolated) value of searched property
+%   fProperty - closest matching value for the demanded property which is
+%   stored in the matter table
 %
 %   Input struct 'tParameters':
 %
@@ -256,89 +254,47 @@ if txMatterForSubstance.bIndividualFile
     
     if iDependencies == 1
         
-        if ~abOutOfRange(1)
-            % If the property is not directly given an interpolation is
-            % needed.
-            
-            % Check and see, if this interpolation has been done before and
-            % use those values for better performance.
-            
-            % First we need to create the unique ID for this specific
-            % interpolation to see, if it already exists.
-            sID = sprintf('ID%i', iColumnFirst * 10000 + iPhaseType);
-            
-            
-            % Now we check if this interpolation already exists. If yes, we
-            % just use the saved function.
-            
-            try
-                % If there is data, we use it.
-                fProperty = txMatterForSubstanceAndTypeAndAggregate.tInterpolations.(sPropertyNoSpaces).(sID)(fFirstDepValue);
-                
-            catch
-                % The interpolation function does not yet exist, so we have
-                % to go and run the interpolation.
-                
-                % create temporary array because scatteredInterpolant
-                % doesn't allow NaN values
-                afTemporary = txMatterForSubstanceAndTypeAndAggregate.mfData(:,[iColumn, iColumnFirst]);
-                
-                % Now we remove all rows that contain NaN values
-                afTemporary(any(isnan(afTemporary), 2), :) = [];
-                
-                % Only unique values are needed (also scatteredInterpolant
-                % would give out a warning in that case)
-                afTemporary = unique(afTemporary,'rows');
-                % Sometimes there are also multiple values for the same
-                % combination of dependencies. Here we get rid of those
-                % too.
-                [ ~, aIndices ] = unique(afTemporary(:, 2), 'rows');
-                afTemporary = afTemporary(aIndices, :);
-                
-                % interpolate linear with no extrapolation
-                %CHECK Does it make sense not to extrapolate?
-                hInterpolation = griddedInterpolant(afTemporary(:,2),afTemporary(:,1),'linear','none');
-                fProperty = hInterpolation(fFirstDepValue);
-                
-                % To make this faster the next time around, we save the
-                % scatteredInterpolant into the matter table.
-                
-                this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).tInterpolations.(sPropertyNoSpaces).(sID) = hInterpolation;
-                this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).bInterpolations = true;
-                
-                % This addition to the matter table will be overwritten,
-                % when the next simulation starts, even if the matter data
-                % files have not changed. To prevent this, we need to save
-                % the table object to the MatterData.mat file again.
-                filename = strrep('data\MatterData.mat', '\', filesep);
-                save(filename, 'this', '-v7');
-            end
-            if ~base.oDebug.bOff
-                sReportString = 'One dependency in range. Tried to get value by interpolation.';
-            end
-        else
-            % The dependency value is out of range and not directly given
-            % in the matter table. We already set fFirstDepValue to a
-            % minimum or maximum value, so we'll just take that.
-            iRowsFirst = txMatterForSubstanceAndTypeAndAggregate.mfData(:,iColumnFirst) == fFirstDepValue;
-            fProperty = txMatterForSubstanceAndTypeAndAggregate.mfData((txMatterForSubstanceAndTypeAndAggregate.mfData(iRowsFirst,iColumnFirst) == fFirstDepValue), iColumn);
-            if ~base.oDebug.bOff
-                sReportString = ['The value given for ',sFirstDepName,' (',num2str(tParameters.fFirstDepValue),') is out of range. Tried to get best value in range.'];
-            end
-            
-            % If more than one value is returned, we cannot determine
-            % which value is correct. An example for this would be the heat
-            % capacity of a gas, which is dependent on temperature AND
-            % pressure, but the call only specifies the temperature. Then
-            % there will be multiple entries in the matter table with the
-            % same temperature but different heat capacities. If this is
-            % the case, we abort and give the appropriate error message.
-            if length(fProperty) > 1
-                fProperty = NaN;
-                if ~base.oDebug.bOff
-                    sReportString = 'The property you are looking for is dependent on more than one value. Please add more dependencies to the call of findProperty().';
-                end
-            end
+        % Check and see, if this interpolation has been done before and
+        % use those values for better performance.
+
+        % First we need to create the unique ID for this specific
+        % interpolation to see, if it already exists.
+        sID = sprintf('ID%i', iColumnFirst * 10000 + iPhaseType);
+
+
+
+        % The interpolation function does not yet exist, so we have
+        % to go and run the interpolation.
+
+        % create temporary array because scatteredInterpolant
+        % doesn't allow NaN values
+        afTemporary = txMatterForSubstanceAndTypeAndAggregate.mfData(:,[iColumn, iColumnFirst]);
+
+        % Now we remove all rows that contain NaN values
+        afTemporary(any(isnan(afTemporary), 2), :) = [];
+
+        % Only unique values are needed (also scatteredInterpolant
+        % would give out a warning in that case)
+        afTemporary = unique(afTemporary,'rows');
+        % Sometimes there are also multiple values for the same
+        % combination of dependencies. Here we get rid of those
+        % too.
+        [ ~, aIndices ] = unique(afTemporary(:, 2), 'rows');
+        afTemporary = afTemporary(aIndices, :);
+
+        % Now we get the property closest to the provided dependencies by
+        % calculating the root square sum over all available values for the
+        % dependencies
+        afRootSquareSum = ((afTemporary(:,2) - fFirstDepValue).^2).^(1/2);
+
+        % Now we find the entry with the smallest error
+        abSmallestErrorEntry = (afRootSquareSum == min(afRootSquareSum));
+
+        % and get the property value for that entry
+        fProperty = afTemporary(abSmallestErrorEntry,1);
+        
+        if length(fProperty) > 1
+            fProperty = fProperty(1);
         end
         
     else
@@ -383,58 +339,37 @@ if txMatterForSubstance.bIndividualFile
         % already exists.
         sID = sprintf('ID%i', iColumnFirst * 10000 + iColumnSecond * 100 + iPhaseType);
         
+        % The interpolation function does not yet
+        % exist, so we have to go and run the
+        % interpolation.
+
+        % create temporary array because scatteredInterpolant doesn't allow NaN values
+        afTemporary = txMatterForSubstanceAndTypeAndAggregate.mfData(:,[iColumn, iColumnFirst, iColumnSecond]);
+
+        % Now we remove all rows that contain NaN values
+        afTemporary(any(isnan(afTemporary), 2), :) = [];
+
+        % Only unique values are needed (also scatteredInterpolant would give out a warning in that case)
+        afTemporary = unique(afTemporary,'rows');
+        % Sometimes there are also multiple values for
+        % the same combination of dependencies. Here we
+        % get rid of those too.
+        [ ~, aIndices ] = unique(afTemporary(:, [2 3]), 'rows');
+        afTemporary = afTemporary(aIndices, :);
         
-        % Now we check if this interpolation already
-        % exists. If yes, we just use the saved
-        % function.
+        % Now we get the property closest to the provided dependencies by
+        % calculating the root square sum over all available values for the
+        % dependencies
+        afRootSquareSum = ((afTemporary(:,2) - fFirstDepValue).^2 + (afTemporary(:,3) - fSecondDepValue).^2).^(1/2);
         
-        try
-            % If there is data, we use it.
-            fProperty = txMatterForSubstanceAndTypeAndAggregate.tInterpolations.(sPropertyNoSpaces).(sID)(fFirstDepValue, fSecondDepValue);
-            if isnan(fProperty)
-                this.throw('findProperty',['The combination of dependencies provided to the findProperty method is impossible.\n',...
-                    'There is no %s %s at a %s of %.2f [%s] and a %s of %.2f [%s].'], sPhaseAdjective, sSubstance, sFirstDepName, ...
-                    fFirstDepValue, sFirstDepUnit, sSecondDepName, ...
-                    fSecondDepValue, sSecondDepUnit);
-            end
-        catch
-            % The interpolation function does not yet
-            % exist, so we have to go and run the
-            % interpolation.
-            
-            % create temporary array because scatteredInterpolant doesn't allow NaN values
-            afTemporary = txMatterForSubstanceAndTypeAndAggregate.mfData(:,[iColumn, iColumnFirst, iColumnSecond]);
-            
-            % Now we remove all rows that contain NaN values
-            afTemporary(any(isnan(afTemporary), 2), :) = [];
-            
-            % Only unique values are needed (also scatteredInterpolant would give out a warning in that case)
-            afTemporary = unique(afTemporary,'rows');
-            % Sometimes there are also multiple values for
-            % the same combination of dependencies. Here we
-            % get rid of those too.
-            [ ~, aIndices ] = unique(afTemporary(:, [2 3]), 'rows');
-            afTemporary = afTemporary(aIndices, :);
-            
-            % interpolate linear with no extrapolation
-            %CHECK Does it make sense not to extrapolate?
-            hInterpolation = scatteredInterpolant(afTemporary(:,2),afTemporary(:,3),afTemporary(:,1),'linear','none');
-            fProperty = hInterpolation(fFirstDepValue, fSecondDepValue);
-            
-            % To make this faster the next time around, we
-            % save the scatteredInterpolant into the matter
-            % table.
-            
-            this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).tInterpolations.(sPropertyNoSpaces).(sID) = hInterpolation;
-            this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).bInterpolations = true;
-            
-            % This addition to the matter table will be
-            % overwritten, when the next simulation
-            % starts, even if Matter.xlsx has not
-            % changed. To prevent this, we need to save
-            % the table object again.
-            filename = strrep('data\MatterData.mat', '\', filesep);
-            save(filename, 'this', '-v7');
+        % Now we find the entry with the smallest error
+        abSmallestErrorEntry = (afRootSquareSum == min(afRootSquareSum));
+        
+        % and get the property value for that entry
+        fProperty = afTemporary(abSmallestErrorEntry,1);
+        
+        if length(fProperty) > 1
+            fProperty = fProperty(1);
         end
         
         if ~base.oDebug.bOff
@@ -497,10 +432,16 @@ end
 
 if isnan(fProperty) || isempty(fProperty)
     if ~base.oDebug.bOff
+        this.warn('findProperty', 'Error using findProperty. No valid value for %s %s of %s (%s) found in matter table. %s\n', sTypeString, sProperty, sSubstance, sPhaseType, sReportString);
+        %     keyboard();
         this.throw('findProperty', 'Error using findProperty. No valid value for %s %s of %s (%s) found in matter table. %s\n', sTypeString, sProperty, sSubstance, sPhaseType, sReportString);
     else
+        this.warn('findProperty', 'Error using findProperty. No valid value for %s %s of %s (%s) found in matter table.\n', sTypeString, sProperty, sSubstance, sPhaseType);
+        %     keyboard();
         this.throw('findProperty', 'Error using findProperty. No valid value for %s %s of %s (%s) found in matter table.\n', sTypeString, sProperty, sSubstance, sPhaseType);
+
     end
+    
 end
 
 end
