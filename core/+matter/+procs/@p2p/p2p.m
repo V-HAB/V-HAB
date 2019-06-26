@@ -42,8 +42,9 @@ classdef (Abstract) p2p < matter.flow & event.source
             % one phase to another phase in the same store. Note that mass
             % transfer between phases in different stores does NOT work!
             %
-            % Inputs:
-            % sName: Name of the processor
+            % Required Inputs:
+            % oStore:   Store object in which the P2P is located
+            % sName:    Name of the processor
             % sPhaseAndPortIn and sPhaseAndPortOut:
             %       Combination of Phase and Exme name in dot notation:
             %       phase.exme as a string. The in side is considered from
@@ -234,6 +235,8 @@ classdef (Abstract) p2p < matter.flow & event.source
             else
                 this.setMatterProperties();
             end
+            
+            this.fLastUpdate = this.oStore.oTimer.fTime;
         end
         
         function [ afInFlowrates, mrInPartials ] = getInFlows(this, sPhase)
@@ -306,7 +309,27 @@ classdef (Abstract) p2p < matter.flow & event.source
         end
         
         function setMatterProperties(this, fFlowRate, arPartialMass, fTemperature, fPressure)
-            % Get missing values from exmes
+            %% setMatterProperties
+            % is the function used by the update function to actually set
+            % the new partial mass flow rates of the P2P
+            %
+            % Optional Inputs:
+            % fFlowRate:     The current total flowrate of the p2p in kg/s.
+            %                Total means it must be the sum of all partial
+            %                mass flow rates
+            % arPartialMass: Vector containing the partial mass flow ratios
+            %                to convert fFlowRate into a vector with
+            %                partial mass flows by using fFlowRate *
+            %                arPartialMass
+            % fTemperature:  The temperature for the flow of the P2P mass
+            %                transfer
+            % fPressure:     The pressure for the flow of the P2P mass
+            %                transfer
+            %
+            % If no value is provided for any of the inputs the value of
+            % the ingoing Exme is used based on the fFlowRate. If fFlowRate
+            % is not provided the current property fFlowRate is used
+            
             
             if (nargin < 2) || isempty(fFlowRate), fFlowRate = this.fFlowRate; end
             
@@ -340,4 +363,3 @@ classdef (Abstract) p2p < matter.flow & event.source
         end
     end
 end
-

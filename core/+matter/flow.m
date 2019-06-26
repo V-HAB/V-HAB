@@ -512,26 +512,26 @@ classdef flow < base
        
             if bNeg; aiIndices = iL:-1:1; else; aiIndices = 1:iL; end
             for iI = aiIndices
-                oThis = aoFlows(iI);
+                oFlow = aoFlows(iI);
                 
                 % Only set those params if oExme was provided
                 if ~isempty(oExme)
-                    oThis.arPartialMass         = arPhasePartialMass;
-                    oThis.fMolarMass            = fPhaseMolarMass;
+                    oFlow.arPartialMass         = arPhasePartialMass;
+                    oFlow.fMolarMass            = fPhaseMolarMass;
                     
-                    oThis.fSpecificHeatCapacity = fPhaseSpecificHeatCapacity;
+                    oFlow.fSpecificHeatCapacity = fPhaseSpecificHeatCapacity;
                 end
                 
                 
                 % Skip flowrate, pressure, temperature?
                 if bSkipFRandPT, continue; end
                 
-                oThis.fFlowRate = fFlowRate;
+                oFlow.fFlowRate = fFlowRate;
                 
                 % If only one flow, no f2f exists --> set pressure, temp
                 % according to IN exme
                 if iL == 1
-                    oThis.fPressure = fExMePress;
+                    oFlow.fPressure = fExMePress;
                 end
                 
                 
@@ -540,23 +540,23 @@ classdef flow < base
                 % Skip pressure, temperature?
                 if bSkipPT, continue; end
                 
-                oThis.fPressure = fExMePress;
+                oFlow.fPressure = fExMePress;
                 
                 if tools.round.prec(fExMePress, iPrec) < 0
-                    oThis.fPressure = 0;
+                    oFlow.fPressure = 0;
                     
-                    % FOr manual solvers this is not an issue!
-                    if ~isa(oThis.oBranch.oHandler, 'solver.matter.manual.branch')
-                        if fExMePress < -10
-                            aoFlows(1).warn('setData', 'Setting a negative pressure less than -10 Pa (%f) for the LAST flow in branch "%s"!', fExMePress, aoFlows(1).oBranch.sName);
-                        elseif (~bNeg && iI ~= iL) || (bNeg && iI ~= 1)
-                            aoFlows(1).warn('setData', 'Setting a negative pressure, for flow no. %i/%i in branch "%s"!', iI, iL, aoFlows(1).oBranch.sName);
-                        end
+                    % For manual solvers this is not an issue! Check
+                    % performed after other checks to save calculation time
+                    % in case this is not even an issue at all!
+                    if (fExMePress < -10) && ~isa(oFlow.oBranch.oHandler, 'solver.matter.manual.branch')
+                        aoFlows(1).warn('setData', 'Setting a negative pressure less than -10 Pa (%f) for the LAST flow in branch "%s"!', fExMePress, aoFlows(1).oBranch.sName);
+                    elseif ((~bNeg && iI ~= iL) || (bNeg && iI ~= 1)) && ~isa(oFlow.oBranch.oHandler, 'solver.matter.manual.branch')
+                        aoFlows(1).warn('setData', 'Setting a negative pressure, for flow no. %i/%i in branch "%s"!', iI, iL, aoFlows(1).oBranch.sName);
                     end
                 elseif tools.round.prec(fExMePress, iPrec) == 0
                     % If the pressure is extremely small, we also set the
                     % flow pressure to zero.
-                    oThis.fPressure = 0;
+                    oFlow.fPressure = 0;
                 end
                 
                 % Calculates the pressure for the NEXT flow, so make sure
@@ -581,11 +581,11 @@ classdef flow < base
                 end
                 
                 % Re-calculate partial pressures
-                oThis.afPartialPressure = oThis.calculatePartialPressures();
+                oFlow.afPartialPressure = oFlow.calculatePartialPressures();
                 
                 % Reset to empty, so if requested again, recalculated!
-                oThis.fDensity          = [];
-                oThis.fDynamicViscosity = [];
+                oFlow.fDensity          = [];
+                oFlow.fDynamicViscosity = [];
             end
         end
     end

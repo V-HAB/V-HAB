@@ -104,8 +104,6 @@ classdef exme < base
             
         end
         
-        
-        
         function [ fFlowRate, arPartials, afProperties ] = getFlowData(this, fFlowRate)
             %% ExMe getFlowData
             % This function can be called to receive information about the
