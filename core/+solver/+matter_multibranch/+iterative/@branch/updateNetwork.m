@@ -68,30 +68,37 @@ function updateNetwork(this, bForceP2Pcalc)
                             for iProcP2P = 1:oPhase.iProcsP2P
                                 oProcP2P = oPhase.coProcsP2P{iProcP2P};
                                 
-                                % If the P2P calculations for flow phases
-                                % are calculated we have to get the in flow
-                                % rates of the other p2p side
-                                if oProcP2P.oIn.oPhase ~= oPhase
-                                    oOtherPhase = oProcP2P.oIn.oPhase;
-                                    
-                                    [afInsideInFlowRates, aarInsideInPartials] = this.getPhaseInFlows(oOtherPhase);
-                                    
-                                    afOutsideInFlowRate = afInFlowRates;
-                                    aarOutsideInPartials = aarInPartials; 
-                                else
-                                    oOtherPhase = oProcP2P.oOut.oPhase;
-                                    
-                                    [afOutsideInFlowRate, aarOutsideInPartials] = this.getPhaseInFlows(oOtherPhase);
-                                    
-                                    afInsideInFlowRates = afInFlowRates;
-                                    aarInsideInPartials = aarInPartials; 
-                                    
+                                % stationary p2ps are assumed to be
+                                % constant for one tick and are calculated
+                                % before the branch, therefore they do not
+                                % require an update before their flowrate
+                                % is used
+                                if ~oProcP2P.bStationary
+                                    % If the P2P calculations for flow phases
+                                    % are calculated we have to get the in flow
+                                    % rates of the other p2p side
+                                    if oProcP2P.oIn.oPhase ~= oPhase
+                                        oOtherPhase = oProcP2P.oIn.oPhase;
+
+                                        [afInsideInFlowRates, aarInsideInPartials] = this.getPhaseInFlows(oOtherPhase);
+
+                                        afOutsideInFlowRate = afInFlowRates;
+                                        aarOutsideInPartials = aarInPartials; 
+                                    else
+                                        oOtherPhase = oProcP2P.oOut.oPhase;
+
+                                        [afOutsideInFlowRate, aarOutsideInPartials] = this.getPhaseInFlows(oOtherPhase);
+
+                                        afInsideInFlowRates = afInFlowRates;
+                                        aarInsideInPartials = aarInPartials; 
+
+                                    end
+
+                                    % Update the P2P! (not with update function
+                                    % because that is also called at different
+                                    % other times!
+                                    oProcP2P.calculateFlowRate(afInsideInFlowRates, aarInsideInPartials, afOutsideInFlowRate, aarOutsideInPartials);
                                 end
-                                
-                                % Update the P2P! (not with update function
-                                % because that is also called at different
-                                % other times!
-                                oProcP2P.calculateFlowRate(afInsideInFlowRates, aarInsideInPartials, afOutsideInFlowRate, aarOutsideInPartials);
                             end
                         end
                         

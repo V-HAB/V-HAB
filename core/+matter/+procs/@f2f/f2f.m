@@ -75,11 +75,6 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             
             this.oMT    = this.oContainer.oMT;
             this.oTimer = this.oContainer.oTimer;
-            
-            % Preset the flow array with a default, zero FR matter flow
-            for iI = 1:this.iPorts
-                this.aoFlows(iI) = matter.flow(); 
-            end
         end
         
         function seal(this, oBranch)
@@ -116,8 +111,8 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             
             % Find empty port (first zero in aiSign array) - left or right
             if nargin < 3 || isempty(iFlowID)
-                iFlowID = length(this.aoFlows(iFlowID)) + 1;
-            elseif (iFlowID < length(this.aoFlows(iFlowID)) && ~isempty(this.aoFlows(iFlowID))) || iFlowID > 2
+                iFlowID = length(this.aoFlows) + 1;
+            elseif (iFlowID < length(this.aoFlows) && ~isempty(this.aoFlows(iFlowID))) || iFlowID > 2
                 this.throw('addFlow', ['The f2f-processor ''',this.sName,...
                            ''' is already in use by another branch.\n', ...
                            'Please check the definition of the following branch: ',...

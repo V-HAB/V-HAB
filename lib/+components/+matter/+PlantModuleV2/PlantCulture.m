@@ -177,7 +177,6 @@ classdef PlantCulture < vsys
                 struct(...                                              % phase contents    [kg]
                 ([this.txPlantParameters.sPlantSpecies, 'EdibleWet']), fEdibleMass,...
                 ([this.txPlantParameters.sPlantSpecies, 'InedibleWet']), fInedibleMass), ...
-                5, ...                                                 % volume    [m^3]
                 293.15, ...                                             % phase temperature [K]
                 101325);
             
@@ -191,7 +190,6 @@ classdef PlantCulture < vsys
                 struct('CO2', 0.1, 'O2', 0.1, 'H2O', 0.5, 'Nutrients', 0.01,...
                 ([this.txPlantParameters.sPlantSpecies, 'EdibleWet']), 0.1,...
                 ([this.txPlantParameters.sPlantSpecies, 'InedibleWet']), 0.1), ...
-                5, ...                                                 % volume    [m^3]
                 293.15, ...                                             % phase temperature [K]
                 101325);
             
@@ -268,7 +266,15 @@ classdef PlantCulture < vsys
             
             % add branches to solvers            
             solver.matter.manual.branch(this.toBranches.Atmosphere_In);
-            solver.matter.residual.branch(this.toBranches.Atmosphere_Out);
+            
+            tSolverProperties.fMaxError = 1e-6;
+            tSolverProperties.iMaxIterations = 100;
+            tSolverProperties.fMinimumTimeStep = 1;
+            tSolverProperties.iIterationsBetweenP2PUpdate = 20;
+            
+            oSolver = solver.matter_multibranch.iterative.branch(this.toBranches.Atmosphere_Out, 'complex');
+            oSolver.setSolverProperties(tSolverProperties);
+            
 
             solver.matter.manual.branch(this.toBranches.WaterSupply_In);
             solver.matter.manual.branch(this.toBranches.NutrientSupply_In);
@@ -293,8 +299,6 @@ classdef PlantCulture < vsys
                     arMaxChange(this.oMT.tiN2I.O2)  = 0.5;
                     tTimeStepProperties.arMaxChange =arMaxChange;
                     tTimeStepProperties.fMaxStep = this.fTimeStep;
-                    
-                    this.toStores.(csStoreNames{iStore}).fDefaultTimeStep = this.fTimeStep;
                     
                     oPhase.setTimeStepProperties(tTimeStepProperties)
                 end

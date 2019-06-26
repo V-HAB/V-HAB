@@ -13,8 +13,10 @@ classdef Desorption_P2P < matter.procs.p2ps.flow
         
         function calculateFlowRate(~, ~, ~, ~, ~)
         end
+    end
+    
+    methods (Access = protected)
         function update(~)   
         end
     end
-    
 end

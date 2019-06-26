@@ -2,14 +2,13 @@ classdef flow < matter.procs.p2p
     %FLOW A P2P processor for flow phases, this processor must be used if a
     % p2p is used in a flow node
     
-    properties (SetAccess = protected, GetAccess = protected)
-        
+    % to easier discern between P2Ps that are stationary and do not change
+    % within one tick and flow p2ps where the p2p flowrate must be
+    % recalculated in every tick, a constant property is defined
+    properties (Constant)
+        % Boolean property to decide if this is a stationary or flow P2P
+        bStationary = false;
     end
-    
-    properties (SetAccess = private, GetAccess = public)
-        
-    end
-    
     
     
     methods

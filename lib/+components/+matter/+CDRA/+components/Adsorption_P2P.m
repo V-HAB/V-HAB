@@ -83,11 +83,6 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             this.mfAbsorptionEnthalpy = mfAbsorptionEnthalpyHelper;
         end
         
-        function update(~)
-            % this must be here since the normal V-HAB logic tries to
-            % call the update
-        end
-        
         function calculateFlowRate(this, afInFlowRates, aarInPartials, ~, ~)
             % This function is called by the multibranch solver, which also
             % calculates the inflowrates and partials (as the p2p flowrates
@@ -329,6 +324,13 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             
             % sets the heat flow to the absorber capacity
             this.oOut.oPhase.oCapacity.toHeatSources.(['AbsorberHeatSource', this.sCell]).setHeatFlow(this.fAdsorptionHeatFlow)
+        end
+    end
+        
+    methods (Access = protected)
+        function update(~)
+            % this must be here since the normal V-HAB logic tries to
+            % call the update
         end
     end
 end

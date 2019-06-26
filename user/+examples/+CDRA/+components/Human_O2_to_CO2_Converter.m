@@ -14,7 +14,9 @@ classdef Human_O2_to_CO2_Converter < matter.manips.substance.stationary
             this@matter.manips.substance.stationary(sName, oPhase);
             this.fLastUpdate = 0;
         end
+    end
         
+    methods (Access = protected)
         function update(this)
             
             fTimeStep = this.oPhase.oStore.oTimer.fTime-this.fLastUpdate;
@@ -39,7 +41,5 @@ classdef Human_O2_to_CO2_Converter < matter.manips.substance.stationary
             
             this.fLastUpdate = this.oPhase.oStore.oTimer.fTime;
         end
-        
-        
     end
 end

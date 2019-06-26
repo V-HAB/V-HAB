@@ -24,6 +24,12 @@ classdef ConstantMassP2P < matter.procs.p2ps.stationary
         fLastExec = 0;
     end
     
+    properties (SetAccess = private, GetAccess = protected)
+        % function handle registered at the timer object that allows this
+        % phase to set a time step, which is then enforced by the timer
+        setTimeStep;
+    end
+    
     methods
         function this = ConstantMassP2P(oStore, sName, sPhaseAndPortIn, sPhaseAndPortOut, csSubstances, iDirection)
             this@matter.procs.p2ps.stationary(oStore, sName, sPhaseAndPortIn, sPhaseAndPortOut);
@@ -39,8 +45,36 @@ classdef ConstantMassP2P < matter.procs.p2ps.stationary
             this.afConstantMass(this.aiSubstances) = this.oIn.oPhase.afMass(this.aiSubstances);
             
             this.iDirection = iDirection;
+            
+            this.setTimeStep = this.oTimer.bind(@(~) this.registerUpdate(), 0, struct(...
+                'sMethod', 'update', ...
+                'sDescription', 'The .update method of a constant mass P2P', ...
+                'oSrcObj', this ...
+            ));
+        
+            % initialize the time step to inf
+            this.setTimeStep(this.fTimeStep, true);
         end
         
+        function setSubstances(this, csSubstances)
+            % the substances that shall be kept constant are transformed
+            % into their respective indices and stored as indices in the
+            % P2P to improve speed.
+            this.aiSubstances = zeros(1,length(csSubstances));
+            for iSubstance = 1:length(csSubstances)
+                this.aiSubstances(iSubstance) = this.oMT.tiN2I.(csSubstances{iSubstance});
+            end
+            
+            this.afConstantMass = this.oIn.oPhase.afMass(this.aiSubstances);
+        end
+        
+        function setTimeStepProperties(this, fTimeStep)
+            this.fTimeStep = fTimeStep;
+            this.setTimeStep(this.fTimeStep);
+        end
+    end
+        
+    methods (Access = protected)
         function update(this)
             
             % calculate the difference between the current mass and the
@@ -73,20 +107,9 @@ classdef ConstantMassP2P < matter.procs.p2ps.stationary
             % extract specified substance with desired flow rate
             this.setMatterProperties(fFlowRate, arPartialFlowRates);
             
-            this.oIn.oPhase.oStore.setNextTimeStep(this.fTimeStep);
             this.fLastExec = this.oTimer.fTime;
-        end
-        
-        function setSubstances(this, csSubstances)
-            % the substances that shall be kept constant are transformed
-            % into their respective indices and stored as indices in the
-            % P2P to improve speed.
-            this.aiSubstances = zeros(1,length(csSubstances));
-            for iSubstance = 1:length(csSubstances)
-                this.aiSubstances(iSubstance) = this.oMT.tiN2I.(csSubstances{iSubstance});
-            end
             
-            this.afConstantMass = this.oIn.oPhase.afMass(this.aiSubstances);
+            this.setTimeStep(this.fTimeStep, true);
         end
     end
 end

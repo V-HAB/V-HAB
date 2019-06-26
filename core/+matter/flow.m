@@ -418,13 +418,13 @@ classdef flow < base
                 % p2p updates) the arPhasePartialMass may be all zeros,
                 % even though the phase mass is not zero. In that case,
                 % we'll just update the phase.
-                if sum(oExme.oPhase.arPhasePartialMass) == 0
+                if sum(oExme.oPhase.arPartialMass) == 0
                    oExme.oPhase.registerUpdate();
                 end
                 
                 arPhasePartialMass         = oExme.oPhase.arPartialMass;
                 fPhaseMolarMass            = oExme.oPhase.fMolarMass;
-                fPhaseSpecificHeatCapacity = oExme.oPhase.fSpecificHeatCapacity;
+                fPhaseSpecificHeatCapacity = oExme.oPhase.oCapacity.fSpecificHeatCapacity;
                         
                 % This can occur for example if a flow phase is used, which
                 % has an outflow, but not yet an inflow. In that case the

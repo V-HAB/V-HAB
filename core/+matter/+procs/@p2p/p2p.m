@@ -1,4 +1,4 @@
-classdef p2p < matter.flow & event.source
+classdef (Abstract) p2p < matter.flow & event.source
     %P2P or Phase to Phase processor, can be used to move matter from one
     % phase to another within a single store. Allows phase change and
     % specific substance transfer to model e.g. condensation/vaporization
@@ -6,6 +6,7 @@ classdef p2p < matter.flow & event.source
     % CO2 and H2O)
     
     properties (SetAccess = protected, GetAccess = public)
+        % Time in seconds at which the P2P was last updated
         fLastUpdate = -1;
         
         % for the thermal side the P2Ps are not different from branches,
@@ -22,8 +23,12 @@ classdef p2p < matter.flow & event.source
         % and boolean array of the timer
         hBindPostTickUpdate;
         
+        % cell array containing both exmes which connect the P2P to the
+        % different phases
         coExmes;
         
+        % boolean flag to decide if the event 'setMatterProperties' has any
+        % callbacks registered and should be executed
         bTriggersetMatterPropertiesCallbackBound = false;
     end
     
@@ -31,11 +36,15 @@ classdef p2p < matter.flow & event.source
     
     methods
         function this = p2p(oStore, sName, sPhaseAndPortIn, sPhaseAndPortOut)
-            % p2p constructor.
+            %% p2p class constructor.
             %
-            % Parameters:
-            %   - sName                 Name of the processor
-            %   - sPhaseAndPortIn and sPhaseAndPortOut:
+            % creates a new P2P which can move individual substance from
+            % one phase to another phase in the same store. Note that mass
+            % transfer between phases in different stores does NOT work!
+            %
+            % Inputs:
+            % sName: Name of the processor
+            % sPhaseAndPortIn and sPhaseAndPortOut:
             %       Combination of Phase and Exme name in dot notation:
             %       phase.exme as a string. The in side is considered from
             %       the perspective of the P2P, which means in goes into
@@ -159,22 +168,30 @@ classdef p2p < matter.flow & event.source
     
     %% Methods required for the matter handling
     methods
-        
         function oExme = getInEXME(this)
-            % Little bit of a fake method. The p2p sets the oBranch attri-
-            % bute to itself. By implementing this method, the flow can get
-            % the inflowing phase properties through the according EXME.
-            % This is needed to e.g. get the phase type for heat capacity
-            % calculations.
-            %TODO: reword
-            if this.fFlowRate < 0; oExme = this.oOut; else; oExme = this.oIn; end
+            %% getInEXME
+            % this function can be used to get the current exme from which
+            % matter is entering the P2P. For negative flowrates that is
+            % the side which is normally the out side, otherwise it is the
+            % in side
+            if this.fFlowRate < 0
+                oExme = this.oOut;
+            else
+                oExme = this.oIn;
+            end
         end
         
         function registerUpdate(this)
+            %% registerUpdate
+            % registers the post tick callback for the P2P with the timer.
+            % Since this only sets a boolean to true it does not matter if
+            % it is called multiple times within one tick and no further
+            % checks are required
             this.hBindPostTickUpdate();
         end
         
         function [ this, unbindCallback ] = bind(this, sType, callBack)
+            %% bind
             % Overwrite the general bind function to be able and write
             % specific trigger flags
             [ this, unbindCallback ] = bind@event.source(this, sType, callBack);
@@ -191,24 +208,25 @@ classdef p2p < matter.flow & event.source
     
     methods (Access = protected)
         function update(this, fFlowRate, arPartials)
-            % Calculate new flow rate in [kg/s]. The update method is
-            % called right before the phases merge/extract. The p2p merge
-            % or extract is done after the merge of the 'outer' flows and
-            % before the extract of those takes places.
-            % Therefore, at the point of p2p extraction, the whole (tempo-
-            % rary) mass flowing through the phase within that time step is
-            % stored in the phase.
-            % An absolute value for mass extraction has to be divided by
-            % the fTimeStep parameter to get a flow.
-            % In case of flow through the filter volume >> the mass within,
-            % the in/out flow rates can be used for absorption flow rate
-            % calculations.
-            
-            
-            % Fake method, can be used to set a manual FR. If .update is
-            % not defined in a subclass, flow rate never changes on mass
-            % update sutff in phases, only if the .update method here is
-            % manually called including the flow rate parameter.
+            %% update
+            % Calculate new flow rate in [kg/s]. This function itself does
+            % not calculate anything but only sets the provided values. The
+            % actual calculation must be implemented in the update function
+            % of a child class of the P2P. The update is only executed in
+            % the post tick, therefore it is a protected method. To
+            % register an update of the P2P the registerUpdate function can
+            % be used.
+            %
+            % Inputs:
+            % fFlowRate:    total mass flowrate with which this p2p
+            %               transfers mass
+            % arPartials:   vector with the length (1, oMT.iSubstances)
+            %               which contains the partial mass ratios for
+            %               fFlowRate. Multiplying fFlowRate with
+            %               arPartials results in a vector containing the
+            %               partial mass flowrates for all substances in
+            %               the P2P. Note that the flowrates cannot have
+            %               two different directions within the same P2P!
             if nargin >= 3
                 this.setMatterProperties(fFlowRate, arPartials);
             elseif nargin >= 2
@@ -219,6 +237,8 @@ classdef p2p < matter.flow & event.source
         end
         
         function [ afInFlowrates, mrInPartials ] = getInFlows(this, sPhase)
+            %% getInFlows
+            %
             % Return vector with all INWARD flow rates and matrix with 
             % partial masses of each in flow
             %
