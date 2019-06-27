@@ -771,15 +771,14 @@ classdef logger < simulation.monitor
                             % If this is the item that returns empty, we
                             % break the for loop and iI is the index of the
                             % item we are looking for. 
-                            break;
+                            % Now we extend the results array by one...
+                            afValues(iI+1:end+1) = afValues(iI:end);
+                            % ... and insert NaN at the found index.
+                            afValues(iI) = NaN;
+                            
                         end
                     end
-                    
-                    % Now we extend the results array by one...
-                    afValues(iI+1:end+1) = afValues(iI:end);
-                    % ... and insert NaN at the found index.
-                    afValues(iI) = NaN;
-                    
+            
                     % Finally we can write the array into the log. 
                     this.mfLog(this.iLogIndex + 1,:) = afValues;
                 else
