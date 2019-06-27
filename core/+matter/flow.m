@@ -1,27 +1,9 @@
 classdef flow < base
-    %FLOW A class describing the flow of matter during a discrete timestep
-    %   The MatterFlow class is one of the three smalles building blocks in
-    %   this simulation. It is used to describe a homogenous flow of matter 
-    %   at an interface between two other blocks. 
-    %   The flow can only be in one state, so either gaseous,
-    %   liquid, solid or plasma. To create a flow with two or more phases,
-    %   several MatterFlow objects have to be combined.
-    %
-    % flow Properties:
-    %   oIn     - reference to the 'in' matter.proc
-    %
-    %TODO
-    %   - check if we need a matter.flows.gas, matter.flows.fluid etc ...?
-    %       => e.g. fPressure not for solids ...
-    %   - see .update() - when to call the update method, provide geometry?
-    %   - diameter + fr + pressure etc -> provide dynamic pressure? Also
-    %     merge the kinetic energy in exmes?
-    %   - some geometry/diamter stuff that allows to define the connection
-    %     type for f2f's and prevents connecting incompatible (e.g. diam)?
-    %   - Rename to |MassFlow|
+    %FLOW A class describing the flow of matter. It is used to describe a
+    % homogenous flow of matter at an interface between other components of
+    % the simulation.
     
-    properties (SetAccess = private, GetAccess = public)
-        
+    properties (SetAccess = protected, GetAccess = public)
         % Flow rate, pressure and temperature of the matter stream
         fFlowRate    = 0;   % [kg/s]
         
@@ -34,19 +16,26 @@ classdef flow < base
         fSpecificHeatCapacity = 0;       % [J/K/kg]
         fMolarMass            = 0;       % [kg/mol]
         
+        % Re-calculated every tick in setData/seal
+        % Partial pressures of the matter of the flow
+        afPartialPressure;  % [Pa]
+        
+        % Only recalculated when setData was executed and requested again!
+        % Density of the matter of the flow in kg/m³
+        fDensity;           % [kg/m^3]
+        % Dynamic Viscosity of the matter of the flow in Pa/s
+        fDynamicViscosity;  % [Pa/s]
+        
         % Partial masses in percent (ratio) in indexed vector (use oMT to
         % translate, e.g. this.oMT.tiN2I)
         arPartialMass;
-        
         
         % Reference to the matter table
         oMT;
         
         % Reference to the timer
         oTimer;
-    end
-    
-    properties (SetAccess = protected, GetAccess = public)
+        
         % Branch the flow belongs to
         oBranch;
         
@@ -56,9 +45,7 @@ classdef flow < base
         
         % Diameter
         fDiameter = 0;
-    end
-    
-    properties (SetAccess = private, GetAccess = public)
+        
         % References to the processors connected to the flow (exme || f2f)
         oIn;
         oOut;
@@ -70,31 +57,18 @@ classdef flow < base
         % the remove callback can be executed for in methods other then
         % delete
         bInterface = false;
-        
-        % Re-calculated every tick in setData/seal
-        afPartialPressure;
-        
-        % Only recalculated when setData was executed and requested again!
-        fDensity;
-        fDynamicViscosity;
-        
-        % Properties to decide when the matter properties have to be
-        % recalculated
-        fPressureLastMassPropUpdate    = 0;
-        fTemperatureLastMassPropUpdate = 0;
-        arPartialMassLastMassPropUpdate;
-
     end
     
     properties (SetAccess = private, GetAccess = private)
-        
+        % A struct containing the necessary function handles to later on
+        % remove the corresponding flows from the F2F
         thRemoveCBs = struct();
     end
     
-    %% Public methods
     methods
         function this = flow(oCreator)
-            
+            %% flow class constructor
+            % creates a new matter flow object
             if nargin == 1
                 % Setting the matter table
                 this.oMT    = oCreator.oMT;
@@ -112,12 +86,25 @@ classdef flow < base
                 
                 % Initialize the mass fractions array with zeros.
                 this.arPartialMass = zeros(1, this.oMT.iSubstances);
-                this.arPartialMassLastMassPropUpdate = this.arPartialMass;
             end
         end
         
         function [ setData, hRemoveIfProc ] = seal(this, bIf, oBranch)
-            
+            %% seal flow
+            % seals the flow object and provides the setData function for
+            % this flow as function handle output. Also provides a function
+            % handle to remove an interface processor
+            %
+            % Required Inputs
+            % bIf:      Flag to identify this flow as an interface flow
+            % oBranch:  Object reference to the branch in which the flow is
+            %           located when it is sealed
+            %
+            % Outputs:
+            % setData:          Function handle to set the matter data
+            %                   (e.g. pressure) of the flow object
+            % hRemoveIfProc:    Function handle to remove the flow if it is
+            %                   an interface flow
             if this.bSealed
                 this.throw('seal', 'Already sealed!');
             end
@@ -172,8 +159,10 @@ classdef flow < base
         
         
         function remove(this)
-            % Remove references to In/Out proc, also tell that proc about
-            % it if it still exists
+            %% remove flow
+            %
+            % Removes the flow from the f2f/exme objects to which it is
+            % connect and empties the oIn and oOut properties
             
             if ~isempty(this.oIn)  && isvalid(this.oIn),  this.thRemoveCBs.in(); end
             if ~isempty(this.oOut) && isvalid(this.oOut), this.thRemoveCBs.out(); end
@@ -182,28 +171,38 @@ classdef flow < base
             this.oOut = [];
         end
         
-        function afPartialPressure = getPartialPressures(this)
-            afPartialPressure = [];
-            
-            this.throw('getPartialPressures', 'Please access afPartialPressure directly!');
-        end
-        
-        
         function fDensity = getDensity(this)
+            %% getDensity
+            % the Density property is set to empty when the setData
+            % function of the flow is executed (when the matter properties
+            % of the flow changed). It is then received through this
+            % function, which only recalculates it using the matter table
+            % if that was not yet done before
+            %
+            % Outputs:
+            % fDensity: Density of the matter of the flow in kg/m^3
             if isempty(this.fDensity)
                 this.fDensity = this.oMT.calculateDensity(this);
             end
-            
             
             fDensity = this.fDensity;
         end
         
         
         function fDynamicViscosity = getDynamicViscosity(this)
+            %% getDynamicViscosity
+            % the Dynamic Viscosity property is set to empty when the
+            % setData function of the flow is executed (when the matter
+            % properties of the flow changed). It is then received through
+            % this function, which only recalculates it using the matter
+            % table if that was not yet done before
+            %
+            % Outputs:
+            % fDynamicViscosity: Dynamic Viscosity of the matter of the
+            %                    flow in Pa/s
             if isempty(this.fDynamicViscosity)
                 this.fDynamicViscosity = this.oMT.calculateDynamicViscosity(this);
             end
-            
             
             fDynamicViscosity = this.fDynamicViscosity;
         end
@@ -216,12 +215,21 @@ classdef flow < base
     methods (Sealed = true)
         
         function [ iSign ] = addProc(this, oProc, removeCallBack)
+            %% addProc
             % Adds the provided processor (has to be or derive from either
             % matter.procs.f2f or matter.procs.exme). If *oIn* is empty,
-            % the proc is written on that attribute, and -1 is returned
-            % which can be multiplied with fFlowRate to get the correct
-            % sign of the flow rate. If oIn is not empty but oOut is, an
-            % 1 is returned for iSighn. If none are empty, error thrown.
+            % the proc is written on that attribute, and -1 is returned.
+            % Otherwise if oIn is not empty but oOut is the proc is written
+            % to the oOut attribut and 1 is returned for iSign.
+            %
+            % Required Inputs:
+            % oProc:            f2f/exme to which the flow should be added
+            % removeCallBack:   function handle which can be used to remove
+            %                   the flow from the f2f/exme
+            %
+            % Outputs:
+            % iSign:    is -1 if the f2f/exme is written to oIn and 1 if it
+            %           is written to oOut
             
             % Proc of right type?
             if ~isa(oProc, 'matter.procs.f2f') && ~isa(oProc, 'matter.procs.exme')
@@ -271,9 +279,20 @@ classdef flow < base
         % based on the current state of the matter flowing through the
         % flow.
         function fVolumetricFlowRate = calculateVolumetricFlowRate(this, fFlowRate)
-            % If no flowrate is provided to the function call (the usual
-            % use case) the flowrate of the current flow object is used to
-            % calculate the volumetric flowrate 
+            %% calculateVolumetricFlowRate
+            % calculates the volumetric flowrate for this flow.
+            %
+            % Optional Inputs:
+            % fFlowRate:    mass flow in kg/s which should be transformed
+            %               to a volumetric flow rate using the current
+            %               matter properties of this flow If no flowrate
+            %               is provided to the function call (the usual use
+            %               case) the flowrate of the current flow object
+            %               is used to calculate the volumetric flowrate
+            %
+            % Output:
+            % fVolumetricFlowRate:  Volumetric flowrate in m^3/s
+            
             if nargin < 2 || isempty(fFlowRate)
                 fFlowRate = this.fFlowRate;
             end
@@ -302,8 +321,19 @@ classdef flow < base
         end
 
         function setTemperature(this, fTemperature)
-            % TO DO: limit acces to respective thermal solver
+            %% setTemperature
+            % INTERNAL FUNCTION! is called by the thermal solver of the
+            % associated thermal branch (which is also asscociated to the
+            % matter branch). Only a thermal solver should use this
+            % function to set the temperature!
+            %
+            % Required Inputs:
+            % fTemperature:     New Temperature of the flow in K
             this.fTemperature = fTemperature;
+            
+            % Reset to empty, so if requested again, recalculated!
+            this.fDensity          = [];
+            this.fDynamicViscosity = [];
         end
     end
     
@@ -312,34 +342,9 @@ classdef flow < base
     % See above, handles are returned when adding procs or on .seal()
     methods (Access = protected)
         
-        function [ afPartialPressure ] = calculatePartialPressures(this)
-            %TODO put in matter.table, see calcHeatCapacity etc (?)
-            %     only works for gas -> store phase type in branch? Multi
-            %     phase flows through "linked" branches? Or add "parallel"
-            %     flows at each point in branch, one for each phase?
-            
-            % Calculating the number of mols for each species
-            afMols = this.arPartialMass ./ this.oMT.afMolarMass;
-            % Calculating the total number of mols
-            fGasAmount = sum(afMols);
-            
-            %TODO Do this using matter table!
-            %fGasAmount = this.oMT.calculateMols(this);
-            
-            if fGasAmount == 0
-                afPartialPressure = zeros(this.oMT.iSubstances,1);
-                return
-            end
-            
-            % Calculating the partial amount of each species by mols
-            arFractions = afMols ./ fGasAmount;
-            % Calculating the partial pressures by multiplying with the
-            % total pressure in the phase
-            afPartialPressure = arFractions .* this.fPressure;
-        end
-        
         function removeIfProc(this)
-            % Decouple from processor - only possible if interface flow!
+            %% removeIfProc
+            % decouples the flow from the f2f/exme, but only if it is an IF
             if ~this.bInterface
                 this.throw('removeProc', 'Can only be done for interface flows.');
             
@@ -347,7 +352,6 @@ classdef flow < base
                 this.throw('removeProc', 'Not connected.');
                 
             end
-            
             
             this.thRemoveCBs.out();
             
@@ -357,6 +361,7 @@ classdef flow < base
         
         
         function setMatterProperties(this, fFlowRate, arPartialMass, fTemperature, fPressure)
+            %% setMatterProperties
             % For derived classes of flow, can set the matter properties 
             % through this method manually. In contrast to setData, this 
             % method does not get information automatically from the 
@@ -364,6 +369,14 @@ classdef flow < base
             % derived, but still generic classes (namely matter.p2ps.flow 
             % and matter.p2ps.stationary) to ensure control over the actual
             % processor implementatins when they set the flow properties.
+            %
+            % Required Inputs:
+            % fFlowRate:        new mass flow rate in kg/s
+            % arPartialMass:    new partial mass ratios (vector with length
+            %                   of (1, oMT.iSubstances) where the sum of
+            %                   the vector is 1
+            % fTemperature:     new temperature of the flow in K
+            % fPressure:        new pressure of the flow in Pa
             
             this.fFlowRate     = fFlowRate;
             this.arPartialMass = arPartialMass;
@@ -383,19 +396,23 @@ classdef flow < base
         
         
         function setData(aoFlows, oExme, fFlowRate, afPressures)
+            %% setData
             % Sets flow data on an array of flow objects. If flow rate not
-            % provided, just molar masses, cp, arPartials etc are set.
-            % Function handle to this method is provided on seal(), so the
+            % provided, just molar masses, specific heat capacity,
+            % arPartials etc are set. Function handle to this method is
+            % provided on seal(), so the branch can access it to set the
+            % data for all flows within the branch directly
             %
-            %TODO
-            % - This method does not need to be part of the flow class. It
-            %   is called only by the matter.branch class and it does not
-            %   use any private or protected properties and methods of the
-            %   flow object it is being called on. Therfore it could be
-            %   moved to the matter.branch class. 
-            % - right now, solver provide flow rate and pressure drops in
-            %   'sync', i.e. if flow rate is negative, pressure drops will
-            %   be negative values. Should all that be handled here?
+            % Required Inputs:
+            % aoFlows:      Array of the flow objects for which the new
+            %               data should be set
+            % oExme:        Current in exme of the branch from which the
+            %               matter is coming
+            % fFlowRate:    new flow rate of the branch and therefore also
+            %               the flows
+            % afPressures:  the pressure losses (positive values) produced
+            %               by the f2fs within the branch. or pressure
+            %               rises if the values are negative
             
             % We need the initial pressure and temperature of the inflowing
             % matter, as the values in afPressure / afTemps are relative
@@ -405,7 +422,6 @@ classdef flow < base
             % fTemperature in the flows. So get pressure/temperature of in
             % exme (if FR provided)
             if nargin >= 3 && ~isempty(oExme)
-                %TODO get exme from this.oBranch, depending on fFlowRate?
                 [ fExMePress, ~ ] = oExme.getExMeProperties();
             else
                 fExMePress = 0;
@@ -449,8 +465,7 @@ classdef flow < base
                     oExme.oPhase.oCapacity.updateSpecificHeatCapacity();
                     fPhaseSpecificHeatCapacity = oExme.oPhase.oCapacity.fSpecificHeatCapacity;
                 end
-
-            
+                
             % If no exme is provided, those values will not be changed (see
             % above, in case of e.g. a closed valve within the branch).
             else
@@ -465,22 +480,9 @@ classdef flow < base
             % If no pressure drops / temperature changes are provided, only
             % set according values in flows if only one flow available,
             % meaning that the branch doesn't contain any f2fs.
-            %TODO check - do we need the isempty check at all? Just throw
-            %     out? Check for isnan() or something?
             bSkipFRandPT = (nargin < 3) || isempty(fFlowRate);   % skip flow rate, pressure, temp?
             bSkipPT      = (nargin < 4) || (isempty(afPressures) && (iL > 1)); % skip pressure, temp?
-            %bSkipT       = (nargin < 5) || (isempty(afTemps) && (iL > 1));     % skip temp?
             
-            %TODO find out correct behaviour here ... don't set pressures
-            %     or temps (from solver init?) if those params are empty or
-            %     not provided --> but they're also empty if no f2fs exist
-            %     in this branch!!
-            %     then however length(this) == 1 -> use that?
-            %     or just ALWAYS set the flow params for those flows
-            %     directly connected to the EXMEs?
-            %     ALSO: if no afPress/afTemps, just distribute equally!?
-            %if bSkipT || bSkipPT, this.warn('setData', 'setData on flows w/o press/temp (or just empty) --> difference: no delta temp/press (cause no f2f) or really don''t set??'); end;
-            %if (bSkipT || bSkipPT) && (iL > 1), this.warn('setData', 'No temperature and/or temperature set for matter.flow(s), but matter.procs.f2f''s exist -> no usable data for those?'); end;
             if bSkipPT && (iL > 1), aoFlows(1).warn('setData', 'No temperature and/or temperature set for matter.flow(s), but matter.procs.f2f''s exist -> no usable data for those?'); end
             
             % Rounding precision
@@ -534,9 +536,6 @@ classdef flow < base
                     oFlow.fPressure = fExMePress;
                 end
                 
-                
-                
-                
                 % Skip pressure, temperature?
                 if bSkipPT, continue; end
                 
@@ -581,7 +580,7 @@ classdef flow < base
                 end
                 
                 % Re-calculate partial pressures
-                oFlow.afPartialPressure = oFlow.calculatePartialPressures();
+                oFlow.afPartialPressure = oFlow.oMT.calculatePartialPressures(oFlow);
                 
                 % Reset to empty, so if requested again, recalculated!
                 oFlow.fDensity          = [];

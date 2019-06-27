@@ -40,19 +40,30 @@ classdef container < sys
         bMatterSealed = false;
     end
     
-    properties (SetAccess = private, GetAccess = public) %, Transient = true)
+    properties (SetAccess = private, GetAccess = public)
         % Matter table object reference
         oMT;
     end
     
     properties (SetAccess = protected, GetAccess = public)
-        % Solver parameters
+        % Solver parameters, see simulation.container for a detailed
+        % description
         tSolverParams;
     end
     
     
     methods
         function this = container(oParent, sName)
+            %% matter container class constructor
+            %
+            % Creates a new matter container class, the matter container
+            % represents a system consisting of multiple store, branches
+            % etc. within V-HAB.
+            %
+            % Required Inputs:
+            % oParent:  The parent system reference, can either be another
+            %           vsys or a simulation.container class
+            % sName:    The name for this system
             this@sys(oParent, sName);
             
             % Copy solver params so they can be adapted locally!
@@ -70,12 +81,12 @@ classdef container < sys
     methods (Access = public)
         
         function sealMatterStructure(this)
-            %SEALMATTERSTRUCTURE Seals all stores and branches in this
-            %container and calls this method on any subsystems
+            %% sealMatterStructure
+            % Seals all stores and branches in this container and calls
+            % this method on any subsystems
             if this.bMatterSealed
                 this.throw('sealMatterStructure', 'Already sealed');
             end
-            
             
             csChildren = fieldnames(this.toChildren);
             
@@ -161,7 +172,12 @@ classdef container < sys
         end
         
         function createMatterStructure(this)
-            % Call in child elems
+            %% createMatterStructure
+            % within derived classes (actual systems, e.g. CDRA) the
+            % definition of all matter domain components takes place in the
+            % createMaterStructure function. However, this function must
+            % still be called to execute the createMatterStructure
+            % functions of all child systems
             csChildren = fieldnames(this.toChildren);
             
             for iC = 1:length(csChildren)
@@ -172,9 +188,13 @@ classdef container < sys
         end
         
         function addStore(this, oStore)
-            % Adds the store to toStores. Might be overloaded by derived
-            % classes to e.g. implement some dynamic handling of store
-            % volumes or other stuff.
+            %% addStore
+            % INTERNAL FUNCTION! Called by the store class constructor!
+            %
+            % Adds the provided store object reference to the systems
+            % toStores property
+            % Required Inputs:
+            % oStore:   Object reference to the store that should be added
             
             if this.bSealed
                 this.throw('addStore', 'The container is sealed, so no stores can be added any more.');
@@ -197,7 +217,13 @@ classdef container < sys
         end
         
         function this = addProcF2F(this, oProcF2F)
-            % Adds a f2f proc.
+            %% addProcF2F
+            % INTERNAL FUNCTION! Called by the f2f class constructor!
+            %
+            % Adds the provided f2f object reference to the systems
+            % toProcsF2F property
+            % Required Inputs:
+            % oProcF2F:   Object reference to the f2f that should be added
             
             if this.bSealed
                 this.throw('addProcF2F', 'The container is sealed, so no f2f procs can be added any more.');
@@ -218,9 +244,15 @@ classdef container < sys
             this.toProcsF2F.(oProcF2F.sName) = oProcF2F;
         end
         
-        
-        
         function this = addBranch(this, oBranch)
+            %% addBranch
+            % INTERNAL FUNCTION! Called by the branch class constructor!
+            %
+            % Adds the provided branch object reference to the systems
+            % toBranches  and aoBranches property.
+            %
+            % Required Inputs:
+            % oProcF2F:   Object reference to the f2f that should be added
             if this.bSealed
                 this.throw('addBranch', 'Can''t create branches any more, sealed.');
                 
@@ -231,8 +263,6 @@ classdef container < sys
                 this.throw('addBranch', 'Branch with name "%s" already exists!', oBranch.sName);
                 
             end
-            
-            
             
             this.aoBranches(end + 1, 1)     = oBranch;
             if ~isempty(oBranch.sCustomName)
@@ -246,106 +276,12 @@ classdef container < sys
             end
         end
         
-        
-        
-        
-        function connectSubsystemInterfaces(this, sLeftSysAndIf, sRightSysAndIf, csProcsLeft, csProcsRight, fVolume)
-            
-            if nargin < 4 || isempty(csProcsLeft),  csProcsLeft  = {}; end
-            if nargin < 5 || isempty(csProcsRight), csProcsRight = {}; end
-            if nargin < 6, fVolume = []; end
-            
-            % Get left, right child sysmtes
-            [ sLeftSys, sLeftSysIf ] = strtok(sLeftSysAndIf, '.');
-            sLeftSysIf = sLeftSysIf(2:end);
-            
-            [ sRightSys, sRightSysIf ] = strtok(sRightSysAndIf, '.');
-            sRightSysIf = sRightSysIf(2:end);
-            
-            
-            oLeftSys = this.toChildren.(sLeftSys);
-            oRightSys = this.toChildren.(sRightSys);
-            
-            
-            % Get branches
-            csBranchIfs   = [ oLeftSys.aoBranches.csNames ];
-            oLeftBranch = this.aoBranches(find(strcmp(csBranchIfs(2, :), sLeftSysIf), 1));
-            
-            csBranchIfs   = [ oRightSys.aoBranches.csNames ];
-            oRightBranch = this.aoBranches(find(strcmp(csBranchIfs(2, :), sRightSysIf), 1));
-            
-            % Phases
-            oLeftPhase  = oLeftBranch.coExmes{1}.oPhase;
-            oRightPhase = oRightBranch.coExmes{1}.oPhase;
-            
-            
-            % Smaller phase -> use for matter properties
-            if oLeftPhase.fVolume > oRightPhase.fVolume
-                oRefPhase = oRightPhase; 
-            else
-                oRefPhase = oLeftPhase;
-            end
-            
-            if isa(oLeftPhase, 'matter.phases.gas') && isa(oRightPhase, 'matter.phases.gas')
-                sPhaseType = 'gas_virtual';
-                
-                if isempty(fVolume)
-                    % Set to 10% percent of smaller phase
-                    fVolume = 0.1 * oRefPhase.fVolume;
-                end
-                
-                
-            elseif isa(oLeftPhase, 'matter.phases.liquid') && isa(oRightPhase, 'matter.phases.liquid')
-                sPhaseType = 'liquid';
-                
-                if isempty(fVolume)
-                    % Throw?
-                end
-                
-            else
-                this.throw('connectIfBranches', 'Cannot handle phase types (either not equal, or not gas/liquid!');
-            end
-            
-            % Create phases
-            tfMass = struct();
-            
-            for iS = 1:length(oRefPhase.afMass)
-                tfMass.(this.oMT.csSubstances{iS}) = oRefPhase.afMass(iS);
-            end
-            
-            
-            % Create store and phase
-            sStoreName = sprintf('conn_%s_%s_and_%s_%s', sLeftSys, sLeftSysIf, sRightSys, sRightSysIf);
-            sPhaseName = 'conn';
-            
-            
-            matter.store(this, sStoreName, fVolume);
-            
-            oPhase = matter.phases.(sPhaseType)(this, sPhaseName, tfMass, fVolume, oRefPhase.fTemperature);
-            
-            
-            matter.procs.exmes.gas(oPhase, 'left');
-            matter.procs.exmes.gas(oPhase, 'right');
-            
-            
-            % Create branches (left if -> phase, right if -> phase)
-            sLeftIf  = sprintf('from_subs_%s_if_%s', sLeftSys, sLeftSysIf);
-            sRightIf = sprintf('from_subs_%s_if_%s', sRightSys, sRightSysIf);
-            
-            
-            matter.branch(this, sLeftIf,  csProcsLeft,  [ sPhaseName '.left' ]);
-            matter.branch(this, sRightIf, csProcsRight, [ sPhaseName '.right' ]);
-            
-            
-            % Connect
-            oLeftSys.connectIF(sLeftSysIf, sLeftIf);
-            oRightSys.connectIF(sRightSysIf, sRightIf);
-            
-        end
-        
         function checkMatterSolvers(this)
-            % Check if all branches have a solver, both here and in our
-            % children.
+            %% checkMatterSolvers
+            % INTERNAL FUNCTION! Called by simulation.infrastructure while
+            % setting up the simulation (in the initialize function) to
+            % ensure that all branches have a solver, as otherwise strange
+            % errors can occur
             
             csChildren = fieldnames(this.toChildren);
             for iChild = 1:this.iChildren
@@ -361,25 +297,23 @@ classdef container < sys
         end
     end
     
-    
-    
-    % Changed --> allow external access, e.g. scheduler needs to be able to
-    % change the IFs ... or the Sub-System need to implement methods for
-    % that, e.g. Human.goToFridge(sFridgeName) --> the human executes
-    % this.connectIF('foodPort', sFridgeName) -> the galley/kitchen system
-    % has to be already set as parent to human. Fridge would be a subsystem
-    % of the according galley, an an interface branch already connected
-    % from the fridge 'store' to the gally (door!). Human can connect to
-    % that and get food.
     methods (Access = public, Sealed = true)
         
         function connectIF(this, sLocalInterface, sParentInterface)
-            % Connect two branches, first (local) branch needs right side
+            %% connectIF
+            % 
+            % Connect two interface branches, first (local) branch needs right side
             % interface, second (parent system) branch needs left side
-            % interface.
+            % interface. For the initial system definition this is
+            % performed automatically while the system is finished.
+            % However, in the future the idea is to also use this function
+            % to remake connection during a simulation (e.g. human moving
+            % through a system)
             %
-            % Find local branch, check for right side IF, then find parent
-            % sys branch and check left side (abIFs)
+            % Required Inputs:
+            % sLocalInterface:  Name of the Interface on the Subsystem Side
+            % sParentInterface: Name of the Interface on the Parent System
+            %                   side
             
             % Get cell with branch end names, 2nd row is right names (the
             % csNames is two rows, one col with left/right name --> get
@@ -415,6 +349,11 @@ classdef container < sys
         end
         
         function disconnectIF(this, sLocalInterface)
+            %% disconnectIF
+            %
+            % This function can be used to disconnect an existing
+            % connection between two interface branches. Allowing it to be
+            % reconnected with another IF.
             iLocalBranch = find(strcmp({ this.aoBranches.sNameLeft }, sLocalInterface), 1);
             
             if isempty(iLocalBranch)
@@ -437,11 +376,56 @@ classdef container < sys
             end
         end
         
+        
+        
+        function updateBranchNames(this, oBranch, sOldName)
+            %% updateBranchNames
+            % INTERNAL FUNCTION! Called by base.branch connectTo function
+            % to update the branch names. It removes the old branch names
+            % from the toBranches struct and then readds the branches with
+            % the new names
+            %
+            % Required Inputs:
+            % oBranch:  Branch Object for which the name should be changed
+            % sOldName: The old name of the branch
+            
+            % First we make sure, that the calling branch is actually a
+            % branch in this container. 
+            if any(this.aoBranches == oBranch)
+                % We need to jump through some hoops because the maximum
+                % field name length of MATLAB is only 63 characters, so we 
+                % delete the rest of the actual branch name...
+                % namelengthmax is the MATLAB variable that stores the 
+                % maximum name length, so in case it changes in the future, 
+                % we don't have to change this code!
+                if length(sOldName) > namelengthmax
+                    sOldName = sOldName(1:namelengthmax);
+                end
+                this.toBranches = rmfield(this.toBranches, sOldName);
+                % Now we'll add the branch to the struct again, but with
+                % its new name. 
+                if ~isempty(oBranch.sCustomName)
+                    this.toBranches.(oBranch.sCustomName) = oBranch;
+                else
+                    this.toBranches.(oBranch.sName) = oBranch;
+                end
+            else
+                % In case the calling branch is not in this container, we
+                % throw an error message.
+                this.throw('container:updateBranchNames','The provided branch does not exist in this matter container.');
+            end
+        end
+    end
+    
+    methods (Access = private)
         function removePassThroughBranches(this)
+            %% removePassThroughBranches
+            % INTERNAL FUNCTION! Called by sealMatterStructure function of
+            % the matter container.
             % If a branch is a pass-through branch from a subsystem to a
-            % supersystem via an intermediate system, abIf = [1; 1]. So we
-            % just find all branches with an abIf like that and delete
-            % them.
+            % supersystem via an intermediate system, then the propery abIf
+            % = [1; 1]. So we just find all branches with an abIf like that
+            % and delete them.
             
             % We should, however, only do this, if this method is called by
             % the supersystem. So before we do anything, we'll check if
@@ -490,34 +474,5 @@ classdef container < sys
                 end
             end
         end
-        
-        function updateBranchNames(this, oBranch, sOldName)
-            % First we make sure, that the calling branch is actually a
-            % branch in this container. 
-            if any(this.aoBranches == oBranch)
-                % We need to jump through some hoops because the maximum
-                % field name length of MATLAB is only 63 characters, so we 
-                % delete the rest of the actual branch name...
-                % namelengthmax is the MATLAB variable that stores the 
-                % maximum name length, so in case it changes in the future, 
-                % we don't have to change this code!
-                if length(sOldName) > namelengthmax
-                    sOldName = sOldName(1:namelengthmax);
-                end
-                this.toBranches = rmfield(this.toBranches, sOldName);
-                % Now we'll add the branch to the struct again, but with
-                % its new name. 
-                if ~isempty(oBranch.sCustomName)
-                    this.toBranches.(oBranch.sCustomName) = oBranch;
-                else
-                    this.toBranches.(oBranch.sName) = oBranch;
-                end
-            else
-                % In case the calling branch is not in this container, we
-                % throw an error message.
-                this.throw('container:updateBranchNames','The provided branch does not exist in this matter container.');
-            end
-        end
     end
 end
-

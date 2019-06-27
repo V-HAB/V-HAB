@@ -67,6 +67,10 @@ classdef (Abstract) manip < base & event.source
     
     methods
         function this = manip(sName, oPhase, sRequiredType)
+            %% manip base class constructor
+            % creates a general manip which can either manipulate matter
+            % composition or volume depending on the implemented child
+            % classes
             if nargin >= 3, this.sRequiredType = sRequiredType; end
             
             % Setting the properties
@@ -81,6 +85,7 @@ classdef (Abstract) manip < base & event.source
         end
         
         function detachManip(this)
+            %% detachManip
             % Function to deatach the manipulator from its phase. The
             % manipulator still exists but is no longer connected to the
             % phase and cannot be updated. The now defunct manip can then
@@ -109,6 +114,7 @@ classdef (Abstract) manip < base & event.source
         end
         
         function reattachManip(this, oPhase)
+            %% reattachManip
             % Function to reattach the manip to a phase after it has been
             % detached or on its initialization. 
             % Necessary input parameters are:
@@ -145,6 +151,10 @@ classdef (Abstract) manip < base & event.source
         end
         
         function registerUpdate(this)
+            %% registerUpdate
+            % Can be used to register a post tick update() function call
+            % for the manipulator
+            
             % we only register update for manipulators that are currently
             % connected to a phase
             if this.bAttached
@@ -161,8 +171,13 @@ classdef (Abstract) manip < base & event.source
     
     methods (Access = protected)
         function afFlowRates = getTotalFlowRates(this)
+            %% getTotalFlowRates
             % Get all inwards and the stored partial masses as total kg/s
             % values.
+            % Outputs:
+            % afFlowRates:  Vector with the flowrates in kg/s for each
+            %               substance. Only flowrates which enter the phase
+            %               of the manipulator are considered here!
             
             [ afFlowRates, mrInPartials ] = this.getInFlows();
             
@@ -175,9 +190,15 @@ classdef (Abstract) manip < base & event.source
         end
         
         function [ afInFlowrates, mrInPartials ] = getInFlows(this)
+            %% getInFlows
             % Return vector with all INWARD flow rates and matrix with 
             % partial masses of each in flow.
             % Adds the local mass by division by curr time step.
+            % Outputs:
+            % afInFlowrates:    Vektor with the total in flow rates in kg/s
+            %                   per ExMe
+            % mrInPartials:     Matrix with the partial mass ratios for the
+            %                   in flow rates per ExMe
             
             % Getting the number of EXMEs for better legibility and a very
             % minor code performance improvement.

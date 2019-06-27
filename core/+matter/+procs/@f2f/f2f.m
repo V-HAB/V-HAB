@@ -53,6 +53,10 @@ classdef f2f < base & matlab.mixin.Heterogeneous
         
         % Pressure difference of the f2f component in [Pa]
         fDeltaPressure = 0;
+        
+        % Boolean to decide which flow of the aoFlow array have actually
+        % been set
+        abSetFlows;
     end
     
     
@@ -75,6 +79,8 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             
             this.oMT    = this.oContainer.oMT;
             this.oTimer = this.oContainer.oTimer;
+            
+            this.abSetFlows = [false, false];
         end
         
         function seal(this, oBranch)
@@ -110,8 +116,9 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             end
             
             % Find empty port (first zero in aiSign array) - left or right
-            if nargin < 3 || isempty(iFlowID)
-                iFlowID = length(this.aoFlows) + 1;
+            if nargin < 3 || isempty(iFlowID) 
+                iFlowID = find(~this.abSetFlows, 1);
+                    
             elseif (iFlowID < length(this.aoFlows) && ~isempty(this.aoFlows(iFlowID))) || iFlowID > 2
                 this.throw('addFlow', ['The f2f-processor ''',this.sName,...
                            ''' is already in use by another branch.\n', ...
@@ -122,6 +129,8 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             % Set the flow obj - when we call the addProc of the flow
             % object, it checks if it exists on aoFlows!
             this.aoFlows(iFlowID) = oFlow;
+            
+            this.abSetFlows(iFlowID) = true;
             
             % Call addProc on the flow, provide function handle to
             % enable removing, returns the sign for the flow rate, throws
