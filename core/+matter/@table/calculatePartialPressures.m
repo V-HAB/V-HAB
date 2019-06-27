@@ -40,8 +40,23 @@ if length(varargin) == 1
         afMass = varargin{1}.afMass;
         
     elseif bIsaMatterFlow
-        %afPartialPressures = varargin{1}.getPartialPressures();
-        afPartialPressures = varargin{1}.afPartialPressure;
+        % Calculating the number of mols for each species
+        afMols = varargin{1}.arPartialMass ./ this.afMolarMass;
+        % Calculating the total number of mols
+        fGasAmount = sum(afMols);
+
+        if fGasAmount == 0
+            afPartialPressures = zeros(this.iSubstances,1);
+            afPartsPerMillion = zeros(this.iSubstances,1);
+            return
+        end
+
+        % Calculating the partial amount of each species by mols
+        arFractions = afMols ./ fGasAmount;
+        % Calculating the partial pressures by multiplying with the
+        % total pressure in the phase
+        afPartialPressures = arFractions .* varargin{1}.fPressure;
+        
         afMass = varargin{1}.arPartialMass;
         try
             afPartsPerMillion = (afMass .* varargin{1}.fMolarMass) ./ (this.afMolarMass .* varargin{1}.fMass) * 1e6;

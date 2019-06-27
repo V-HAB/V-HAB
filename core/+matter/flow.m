@@ -151,7 +151,7 @@ classdef flow < base
                     this.fMolarMass    = oPhase.fMolarMass;
                     this.fSpecificHeatCapacity = oPhase.oCapacity.fSpecificHeatCapacity;
                     
-                    this.afPartialPressure = this.calculatePartialPressures();
+                    this.afPartialPressure = this.oMT.calculatePartialPressures(this);
                 end
 
             end
