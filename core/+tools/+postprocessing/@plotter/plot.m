@@ -27,6 +27,10 @@ if oLogger.bDumpToMat && oLogger.afTime(1) ~= 0
     oLogger.readFromMat();
 end
 
+% In case we are running a simulation using the parallel pool, we need to
+% create an array of empty graphics objects so we can later save the
+% figures to a file. Without this there would be no way to access the
+% figure objects after the plot() method has finished executing.
 if this.oSimulationInfrastructure.bParallelExecution
     aoFigures = gobjects(length(this.coFigures),1);
 end
@@ -643,11 +647,18 @@ for iFigure = 1:length(this.coFigures)
     % figure in case we need to use them later.
     oFigure.UserData = struct('coAxesHandles', { coAxesHandles });
     
+    % In case we are running a simulation using the parallel pool, we need
+    % to save the figures to the aoFigures array. 
     if this.oSimulationInfrastructure.bParallelExecution
         aoFigures(iFigure) = oFigure;
     end
     
 end
+
+% In case we are running a simulation using the parallel pool, we need to
+% assign the aoFigures array in the base workspace so the parallel worker
+% can save them into a file. Without this there would be no way to access
+% the figure objects after the plot() method has finished executing. 
 if this.oSimulationInfrastructure.bParallelExecution
     assignin('base','aoFigures',aoFigures);
 end
