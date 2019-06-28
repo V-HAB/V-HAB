@@ -39,6 +39,8 @@ classdef setup < simulation.infrastructure
             % specific amount of ticks (bUseTime true/false).
             this.fSimTime = 3600 * 50; % In seconds
             this.bUseTime = true;
+            
+            base.oDebug.toggleOutputState();
         end
         
         function configureMonitors(this)

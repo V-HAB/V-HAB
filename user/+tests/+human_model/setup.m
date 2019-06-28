@@ -4,9 +4,8 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams) % Constructor function
+        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig) % Constructor function
             
-            ttMonitorConfig = struct();
             this@simulation.infrastructure('Test_Human_Model', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             examples.human_model.systems.Example(this.oSimulationContainer, 'Example');

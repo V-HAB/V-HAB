@@ -1,4 +1,4 @@
-function saveFigures(sFolderName, sFileName)
+function saveFigures(sFolderName, sFileName, aoFigures)
 %SAVEFIGURES Saves all open figures into a folder
 %
 %   This function saves all currently open windows. It is intended to be
@@ -7,11 +7,15 @@ function saveFigures(sFolderName, sFileName)
 %   graphics root object, groot. All open figures are children of groot
 %   (groot.Children). The figures will be saved in a single .fig file with
 %   a timestamp and sFileName as the file name. 
+%   If the aoFigures argument is present, those figures will be saved. 
 
-% Getting the graphics root object (needs to be a separate step)
-oGraphicsRoot = get(groot);
-% Getting the array of figure handle objects
-aoFigures = oGraphicsRoot.Children;
+if nargin < 3
+    % Getting the graphics root object (needs to be a separate step)
+    oGraphicsRoot = get(groot);
+    % Getting the array of figure handle objects
+    aoFigures = oGraphicsRoot.Children;
+end
+
 % Getting the time stamp
 sTimeStamp  = datestr(datetime('now'), 'yyyymmddHHMM');
 

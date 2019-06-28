@@ -13,7 +13,7 @@ classdef setup < simulation.infrastructure
     
     methods
         % Constructor function
-        function this = setup(varargin) 
+        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig) 
             
             ttMonitorConfig.oMassBalanceObserver.sClass = 'simulation.monitors.massbalanceObserver';
             fAccuracy = 1e-8;
@@ -22,7 +22,7 @@ classdef setup < simulation.infrastructure
             ttMonitorConfig.oMassBalanceObserver.cParams = { fAccuracy, fMaxMassBalanceDifference, bSetBreakPoints };
             % First we call the parent constructor and tell it the name of
             % this simulation we are creating.
-            this@simulation.infrastructure('Tutorial_Boundaries', containers.Map(), struct(), ttMonitorConfig);
+            this@simulation.infrastructure('Test_Boundaries', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             % Creating the 'Example' system as a child of the root system
             % of this simulation. 

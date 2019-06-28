@@ -13,7 +13,7 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams, fSimTime) % Constructor function
+        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig, fSimTime) % Constructor function
             
             % vhab.exec always passes in ptConfigParams, tSolverParams
             % If not provided, set to empty containers.Map/struct
@@ -36,7 +36,7 @@ classdef setup < simulation.infrastructure
             
             % Possible to change the constructor paths and params for the
             % monitors
-            ttMonitorConfig = struct('oTimeStepObserver', struct('sClass', 'simulation.monitors.timestepObserver', 'cParams', {{ 0 }}));
+            ttMonitorConfig.oTimeStepObserver = struct('sClass', 'simulation.monitors.timestepObserver', 'cParams', {{ 0 }});
             
             %%%ttMonitorConfig.oConsoleOutput = struct('cParams', {{ 50 5 }});
             
@@ -45,7 +45,7 @@ classdef setup < simulation.infrastructure
             
             % First we call the parent constructor and tell it the name of
             % this simulation we are creating.
-            this@simulation.infrastructure('Test_Thermal_Test', ptConfigParams, tSolverParams, ttMonitorConfig);
+            this@simulation.infrastructure('Test_Thermal', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             % Creating the 'Example' system as a child of the root system
             % of this simulation. 
@@ -57,7 +57,7 @@ classdef setup < simulation.infrastructure
             % specific amount of ticks (bUseTime true/false).
             this.fSimTime = 3600 * 1; % In seconds
             
-            if nargin >= 3 && ~isempty(fSimTime)
+            if nargin >= 4 && ~isempty(fSimTime)
                 this.fSimTime = fSimTime;
             end
             

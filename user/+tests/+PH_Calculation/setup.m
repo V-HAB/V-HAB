@@ -13,11 +13,10 @@ classdef setup < simulation.infrastructure
     
     methods
         % Constructor function
-        function this = setup(varargin) 
-            
+        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig) % Constructor function
             % First we call the parent constructor and tell it the name of
             % this simulation we are creating.
-            this@simulation.infrastructure('Example_PH_Calculation', containers.Map(), struct(), struct());
+            this@simulation.infrastructure('Test_PH_Calculation', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             % Creating the 'Example' system as a child of the root system
             % of this simulation. 

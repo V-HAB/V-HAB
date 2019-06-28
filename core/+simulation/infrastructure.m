@@ -39,6 +39,13 @@ classdef infrastructure < base & event.source
         % message when a simulation is complete. This can be enabled by
         % setting this flag to true.
         bPlayFinishSound = false;
+        
+        % Boolean variable to indicate if this simulation is being executed
+        % using the parallel pool. This is here so the simulation
+        % infrastructure itself, but also other parts of the simulation can
+        % do things differently to account for running on a parallel worker
+        % instead of a full MATLAB instance. 
+        bParallelExecution = false;
     end
     
     % The following properties have private SetAccess due to the
@@ -197,6 +204,9 @@ classdef infrastructure < base & event.source
                 if ~isa(oMT, 'matter.table')
                     this.throw('infrastructure','The provided object is not a matter table.');
                 end
+                
+                % Setting the parallel execution flag to true.
+                this.bParallelExecution = true;
             else
                 oMT = matter.table();
             end

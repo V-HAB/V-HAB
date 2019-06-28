@@ -7,13 +7,10 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams)
-            % Possible to change the constructor paths and params for the
-            % monitors
-            ttMonitorConfig = struct();
+        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig)
             
             % call superconstructor (with possible altered monitor configs)
-            this@simulation.infrastructure('Greenhouse', ptConfigParams, tSolverParams, ttMonitorConfig);
+            this@simulation.infrastructure('Test_Greenhouse', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             % Create Root Object - Initializing system 'Greenhouse'
             examples.Greenhouse.systems.Greenhouse(this.oSimulationContainer, 'Greenhouse');

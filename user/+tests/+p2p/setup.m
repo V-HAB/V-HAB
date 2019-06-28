@@ -14,7 +14,7 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams, fSimTime)
+        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig, fSimTime)
             
             %if nargin < 1 || isempty(tOpt), tOpt = struct(); end;
             
@@ -106,14 +106,9 @@ classdef setup < simulation.infrastructure
             %tSolverParams.rHighestMaxChangeDecrease = 50;
             
             
-            % Params for the monitor logger -> dump to mat!
-            ttMonitorCfg = struct();
-            %ttMonitorCfg = struct('oLogger', struct('cParams', {{ true, 100 }}));
-            
-            
             % First we call the parent constructor and tell it the name of
             % this simulation we are creating.
-            this@simulation.infrastructure('Tutorial_p2p', ptConfigParams, tSolverParams, ttMonitorCfg);
+            this@simulation.infrastructure('Test_P2P', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             
             
@@ -131,7 +126,7 @@ classdef setup < simulation.infrastructure
             % or after specific amount of ticks (bUseTime true/false).
             this.fSimTime = 5000 * 1;
             
-            if nargin >= 3 && ~isempty(fSimTime)
+            if nargin >= 4 && ~isempty(fSimTime)
                 this.fSimTime = fSimTime;
             end
             

@@ -15,11 +15,11 @@ classdef setup < simulation.infrastructure
     
     methods
         % Constructor function
-        function this = setup(ptConfigParams, tSolverParams)
+        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig)
             
             % First we call the parent constructor and tell it the name of
             % this simulation we are creating.
-            this@simulation.infrastructure('Test_Simple_Circuit', ptConfigParams, tSolverParams, struct());
+            this@simulation.infrastructure('Test_Simple_Circuit', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             % Creating the 'Example' system as a child of the root system
             % of this simulation. 
