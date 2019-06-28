@@ -147,13 +147,20 @@ classdef timer < base
         % group and level.
         iCurrentPostTickGroup = 0;
         iCurrentPostTickLevel = 0;
-        iCurrentPostTick = 0;
         
         % Also for faster operation, the corresponding number of post tick
         % levels for each post tick group index from tiPostTickGroup is
         % stored here
         aiNumberOfPostTickLevel;
         
+    end
+    
+    properties (SetAccess = protected, GetAccess = public)
+        % This flag is used to decide if the timer should execute all
+        % callbacks with bound time steps in the current tick. This can be
+        % used to resynchronize call backs and reduce the number of
+        % required ticks for a simulation
+        bSynchronizeExecuteCallBack = false;
     end
     
     methods
@@ -226,6 +233,13 @@ classdef timer < base
             %SETMINSTEP Sets the minimum time step of the solver
             this.fMinimumTimeStep = fMinStep;
             this.fTime            = -1 * this.fMinimumTimeStep;
+        end
+        
+        function synchronizeCallBacks(this)
+            %% synchronizeCallBacks
+            % tells the timer to execute all callbacks which have time
+            % steps registered at the timer to resynchronize them
+            this.bSynchronizeExecuteCallBack = true;
         end
         
         function setSimulationPrecision(this, iPrecision)
@@ -493,11 +507,16 @@ classdef timer < base
             % should always be true!
             abExec = (this.afLastExec + this.afTimeSteps) <= this.fTime;
             
-            % To resynchronize the update calls of different parts of the
-            % system every x ticks we update everything in the same tick
-            if mod(this.iTick, 100) == 0
+            % The user can trigger the execution of all callbacks at once,
+            % by using the synchronizeCallBacks function. This can help
+            % reduce the amount of ticks in a simulation
+            if this.bSynchronizeExecuteCallBack
+                % tells the timer to executa all call backs
                 abExec = true(1, length(this.afTimeSteps));
+                
+                this.bSynchronizeExecuteCallBack = false;
             end
+            
             aiExec  = find(abExec);
             
             %% Execute callbacks
@@ -588,9 +607,6 @@ classdef timer < base
                             % call their functions
                             for iIndex = 1:sum(abExecutePostTicks)
                                 iPostTick = aiPostTicksToExecute(iIndex);
-                                % store the current post tick, necessary to
-                                % check if a post tick bind is recursive
-                                this.iCurrentPostTick = iPostTick;
         
                                 chCurrentPostTicks{iPostTick}();
                                 % The booelans are set to false after the
@@ -635,9 +651,6 @@ classdef timer < base
                     aiPostTicksToExecute = find(abExecutePostTicks);
                     for iIndex = 1:sum(abExecutePostTicks)
                         iPostTick = aiPostTicksToExecute(iIndex);
-                        % store the current post tick, necessary to
-                        % check if a post tick bind is recursive
-                        this.iCurrentPostTick = iPostTick;
                         
                         chCurrentPostTicks{iPostTick}();
                         % The booelans are set to false after the

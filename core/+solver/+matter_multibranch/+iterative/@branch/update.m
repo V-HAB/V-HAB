@@ -447,4 +447,7 @@ function update(this)
     if this.bTriggerUpdateCallbackBound
         this.trigger('update');
     end
+    
+    % now set the flag that this solver is outdated
+    this.bRegisteredOutdated = false;
 end

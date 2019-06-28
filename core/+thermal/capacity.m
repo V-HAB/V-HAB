@@ -93,6 +93,16 @@ classdef capacity < base & event.source
         % the last time at which this capacity was set outdated
         fLastSetOutdated = -1; % [s]
         
+        % A flag to decide if the updateTemperature is already registered or not
+        bRegisteredTemperatureUpdated       = false;
+            
+        % In recursive calls within the post tick where the capacity itself
+        % triggers outdated calls up to the point where it is set outdated
+        % again itself it is possible for it to get stuck with a
+        % true bRegisteredOutdated flag. To prevent this we also store the
+        % last time at which we registered a massupdate
+        fLastRegisteredTemperatureUpdated   = -1;
+        
         % The last time at which the total heat capacity of this capacity
         % was updated
         fLastTotalHeatCapacityUpdate = 0; % [s]
@@ -378,7 +388,15 @@ classdef capacity < base & event.source
         function registerUpdateTemperature(this, ~)
             % register a temperature update for this capacity in the post
             % tick
+            if ~(this.oTimer.fTime > this.fLastRegisteredTemperatureUpdated) && this.bRegisteredTemperatureUpdated
+                return
+            end
+            
             this.hBindPostTickTemperatureUpdate();
+            
+            this.fLastRegisteredTemperatureUpdated = this.oTimer.fTime;
+            this.bRegisteredTemperatureUpdated = true;
+            
         end
             
         function updateTemperature(this, ~)
@@ -553,6 +571,7 @@ classdef capacity < base & event.source
             	this.trigger('updateTemperature_post');
             end
             
+            this.bRegisteredTemperatureUpdated = false;
         end
         
         %% Setting of time step properties
@@ -631,7 +650,7 @@ classdef capacity < base & event.source
             % time. Note that only the capacity is allowed to set
             % temperature values
             this.fTemperature = fTemperature;
-            this.oPhase.setTemperature(this, fTemperature);
+            this.oPhase.setTemperature(fTemperature);
         end
         
         function setInitialHeatCapacity(this,~)

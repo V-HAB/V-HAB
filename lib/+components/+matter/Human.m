@@ -815,10 +815,7 @@ classdef Human < vsys
             % the Oxygen in the air is consumed
             this.toBranches.Air_In.oHandler.setFlowRate(- (this.fOxygenDemand/0.04)/this.toBranches.Air_In.coExmes{2}.oPhase.arPartialMass(this.oMT.tiN2I.O2));
             
-            for iPhase = 1:this.toStores.Human.iPhases
-                this.toStores.Human.aoPhases(iPhase).registerUpdate();
-            end
-            
+            this.oTimer.synchronizeCallBacks();
         end
     end
 end

@@ -83,25 +83,6 @@ classdef gas < matter.phase
             end
         end
         
-        function setTemperature(this, oCaller, fTemperature)
-            %% setTemperature
-            % INTERNAL FUNCTION!
-            % This function can only be called from the ascociated capacity
-            %
-            % Used to set the temperature of the phase from the thermal
-            % domain so that the user can access this.fTemperature instead
-            % of having to go through this.oCapacity.fTemperature
-            if oCaller ~= this.oCapacity
-                this.throw('setTemperature', 'The setTemperature function of the phase class can only be used by the connected capacity object. Please do not try to set the temperature directly, as this would lead to errors in the thermal solver');
-            end
-            
-            this.fTemperature = fTemperature;
-            
-            if ~isempty(this.fVolume)
-                this.fMassToPressure = this.calculatePressureCoefficient();
-            end
-        end
-        
         function afPartsPerMillion = get.afPartsPerMillion(this)
             %% get.fPressure
             % Since the pressure is a dependent property but some child
@@ -115,6 +96,19 @@ classdef gas < matter.phase
     
     
     %% Protected methods, called internally to update matter properties %%%
+    methods (Access = {?thermal.capacity, ?matter.phase})
+        function setTemperature(this, fTemperature)
+            %% setTemperature
+            % INTERNAL FUNCTION!
+            % This function can only be called from the ascociated capacity
+            this.fTemperature = fTemperature;
+            
+            if ~isempty(this.fVolume)
+                this.fMassToPressure = this.calculatePressureCoefficient();
+            end
+        end
+    end
+    
     methods (Access = protected)
         function this = update(this)
             %% gas update

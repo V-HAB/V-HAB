@@ -160,6 +160,16 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % Last time branches were set oudated
         fLastSetOutdated = -10;
         
+        % A flag to decide if the massupdate is already registered or not
+        bRegisteredMassupdate = false;
+        
+        % In recursive calls within the post tick where the phase itself
+        % triggers outdated calls up to the point where it is set outdated
+        % again itself it is possible for it to get stuck with a
+        % true bRegisteredOutdated flag. To prevent this we also store the
+        % last time at which we registered a massupdate
+        fLastRegisteredMassupdate = -1;
+        
         % Maximum allowed percentage change in the total mass of the phase
         rMaxChange = 1e-3;
         
@@ -378,7 +388,15 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % To simplify debugging registering a massupdate must be done
             % using this function. That way it is possible to set
             % breakpoints here to see what binds massupdates for the phase
+            if ~(this.oTimer.fTime > this.fLastRegisteredMassupdate) && this.bRegisteredMassupdate
+                return
+            end
+            
             this.hBindPostTickMassUpdate();
+            
+            this.fLastRegisteredMassupdate = this.oTimer.fTime;
+            this.bRegisteredMassupdate = true;
+            
         end
         
         function this = registerUpdate(this)
@@ -416,18 +434,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % set the boolean falg to true that this phase will be updated
             % in the post tick
             this.bUpdateRegistered = true;
-        end
-        
-        function setTemperature(this, oCaller, fTemperature)
-            %% SetTemperature
-            % INTERNAL FUNCTION!
-            % This function can only be called from the ascociated capacity
-            % to set the temperature of the phase!
-            if ~(oCaller == this.oCapacity)
-                this.throw('setTemperature', 'The setTemperature function of the phase class can only be used by capacity objects. Please do not try to set the temperature directly, as this would lead to errors in the thermal solver');
-            end
-            
-            this.fTemperature = fTemperature;
         end
         
         function setTimeStepProperties(this, tTimeStepProperties)
@@ -565,6 +571,19 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         end
     end
 
+    methods (Access = {?thermal.capacity, ?matter.phase})
+        % The setTemperature function of the phase class can only be used
+        % by capacity objects. Please do not try to set the temperature
+        % directly, as this would lead to errors in the thermal solver
+        function setTemperature(this, fTemperature)
+            %% SetTemperature
+            % INTERNAL FUNCTION!
+            % This function can only be called from the ascociated capacity
+            % to set the temperature of the phase!
+            this.fTemperature = fTemperature;
+        end
+    end
+    
     %% Methods for handling manipulators
     methods
         function hRemove = addManipulator(this, oManip)
@@ -916,6 +935,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             if this.bTriggerSetMassUpdateCallbackBound
             	this.trigger('massupdate_post');
             end
+            
+            % massupdate is finished, therefore a massupdate is no longer
+            % registered
+            this.bRegisteredMassupdate = false;
         end
         
         function this = update(this)

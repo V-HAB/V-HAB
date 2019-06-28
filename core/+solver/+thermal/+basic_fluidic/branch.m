@@ -164,20 +164,8 @@ classdef branch < solver.thermal.base.branch
                 end
                 % now loop through the remaining flows
                 for iFlow = aiFlows
-                    try
+                    if oMassBranch.aoFlowProcs(iFlow + iFlowProcShifter).bThermalActive
                         oMassBranch.aoFlowProcs(iFlow + iFlowProcShifter).updateThermal();
-                    catch oError
-                        % If the error in the above try block was due to
-                        % the fact that the flow proc does not implement
-                        % the updateThermal() method, then we ignore the
-                        % error since that case simply means we have a
-                        % thermally inactive F2F. However, if there was an
-                        % error within the updateThermal() method, we do
-                        % want to have it stop the execution of V-HAB, so
-                        % we rethrow the error.
-                        if ~strcmp(oError.identifier, {'MATLAB:noSuchMethodOrField'})
-                            rethrow(oError);
-                        end
                     end
                     
                     % The thermal energy from the f2f is added to the

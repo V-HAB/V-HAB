@@ -57,6 +57,8 @@ classdef flow < base
         % the remove callback can be executed for in methods other then
         % delete
         bInterface = false;
+        
+        tfPropertiesAtLastMassPropertySet;
     end
     
     properties (SetAccess = private, GetAccess = private)
@@ -86,7 +88,13 @@ classdef flow < base
                 
                 % Initialize the mass fractions array with zeros.
                 this.arPartialMass = zeros(1, this.oMT.iSubstances);
+                
+                this.tfPropertiesAtLastMassPropertySet.fTemperature = -1;
+                this.tfPropertiesAtLastMassPropertySet.fPressure    = -1;
+                this.tfPropertiesAtLastMassPropertySet.arPartials   = this.arPartialMass;
             end
+            
+            
         end
         
         function [ setData, hRemoveIfProc ] = seal(this, bIf, oBranch)
@@ -319,22 +327,6 @@ classdef flow < base
                 fVolumetricFlowRate = 0;
             end
         end
-
-        function setTemperature(this, fTemperature)
-            %% setTemperature
-            % INTERNAL FUNCTION! is called by the thermal solver of the
-            % associated thermal branch (which is also asscociated to the
-            % matter branch). Only a thermal solver should use this
-            % function to set the temperature!
-            %
-            % Required Inputs:
-            % fTemperature:     New Temperature of the flow in K
-            this.fTemperature = fTemperature;
-            
-            % Reset to empty, so if requested again, recalculated!
-            this.fDensity          = [];
-            this.fDynamicViscosity = [];
-        end
     end
     
 
@@ -393,8 +385,35 @@ classdef flow < base
             this.fMolarMass            = oPhase.fMolarMass;
         end
         
+    end
         
-        
+    methods (Access = {?solver.thermal.base.branch})
+        function setTemperature(this, fTemperature)
+            %% setTemperature
+            % INTERNAL FUNCTION! is called by the thermal solver of the
+            % associated thermal branch (which is also asscociated to the
+            % matter branch). Only a thermal solver should use this
+            % function to set the temperature!
+            %
+            % Required Inputs:
+            % fTemperature:     New Temperature of the flow in K
+            this.fTemperature = fTemperature;
+            
+            % Reset to empty, so if requested again, recalculated!
+            if (abs(this.fTemperature       - this.tfPropertiesAtLastMassPropertySet.fTemperature) > 0.5)
+
+                this.fDensity          = [];
+                this.fDynamicViscosity = [];
+
+                this.tfPropertiesAtLastMassPropertySet.fTemperature     = this.fTemperature;
+            end
+            this.fDensity          = [];
+            this.fDynamicViscosity = [];
+        end
+    end
+    methods (Access = {?matter.branch})
+        % Only branches are allowed to use the setData function. This is
+        % done to prevent data corruption
         function setData(aoFlows, oExme, fFlowRate, afPressures)
             %% setData
             % Sets flow data on an array of flow objects. If flow rate not
@@ -583,8 +602,17 @@ classdef flow < base
                 oFlow.afPartialPressure = oFlow.oMT.calculatePartialPressures(oFlow);
                 
                 % Reset to empty, so if requested again, recalculated!
-                oFlow.fDensity          = [];
-                oFlow.fDynamicViscosity = [];
+                if (abs(oFlow.fTemperature       - oFlow.tfPropertiesAtLastMassPropertySet.fTemperature) > 0.5) ||...
+                    (abs(oFlow.fPressure         - oFlow.tfPropertiesAtLastMassPropertySet.fPressure) > 10) ||...
+                    (any(abs(oFlow.arPartialMass - oFlow.tfPropertiesAtLastMassPropertySet.arPartials) > 5e-4))
+                
+                    oFlow.fDensity          = [];
+                    oFlow.fDynamicViscosity = [];
+                    
+                    oFlow.tfPropertiesAtLastMassPropertySet.fTemperature     = oFlow.fTemperature;
+                    oFlow.tfPropertiesAtLastMassPropertySet.fPressure        = oFlow.fPressure;
+                    oFlow.tfPropertiesAtLastMassPropertySet.arPartials       = oFlow.arPartialMass;
+                end
             end
         end
     end

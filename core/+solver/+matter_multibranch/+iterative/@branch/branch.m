@@ -202,6 +202,16 @@ classdef branch < base & event.source
         iLastWarn = -1000;
         
         bFinalLoop = false;
+        
+        % A flag to decide if the solver is already outdated or not
+        bRegisteredOutdated = false;
+        
+        % In recursive calls within the post tick where the solver itself
+        % triggers outdated calls up to the point where it is set outdated
+        % again itself it is possible for the solver to get stuck with a
+        % true bRegisteredOutdated flag. To prevent this we also store the
+        % last time at which we registered an update
+        fLastSetOutdated = -1;
     end
     
     properties (SetAccess = private, GetAccess = protected) %, Transient = true)
@@ -519,7 +529,11 @@ classdef branch < base & event.source
         
         function registerUpdate(this, ~)
             % this function registers an update
-            % TO DO: provide more information on this in the wiki
+            
+            if ~(this.oTimer.fTime > this.fLastSetOutdated) && this.bRegisteredOutdated
+                return;
+            end
+            
             if ~base.oDebug.bOff, this.out(1, 1, 'reg-post-tick', 'Multi-Solver - register outdated? [%i]', { ~this.bRegisteredOutdated }); end
             
             for iB = 1:this.iBranches
@@ -538,6 +552,8 @@ classdef branch < base & event.source
             this.hBindPostTickUpdate();
             this.hBindPostTickTimeStepCalculation();
             
+            this.bRegisteredOutdated = true;
+            this.fLastSetOutdated = this.oTimer.fTime;
         end
         
         function calculateTimeStep(this)

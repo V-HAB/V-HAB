@@ -51,6 +51,11 @@ classdef f2f < base & matlab.mixin.Heterogeneous
         % property is false
         bActive = false;
         
+        % This property is used to check if the implemented class of F2F
+        % has the function updateThermal, and is therefore considered
+        % thermally active.
+        bThermalActive = false;
+        
         % Pressure difference of the f2f component in [Pa]
         fDeltaPressure = 0;
         
@@ -73,6 +78,9 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             
             this.sName = sName;
             
+            if ismethod(this, 'updateThermal')
+                this.bThermalActive = true;
+            end
             
             this.oContainer = oContainer;
             this.oContainer.addProcF2F(this);

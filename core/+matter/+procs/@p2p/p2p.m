@@ -301,11 +301,6 @@ classdef (Abstract) p2p < matter.flow & event.source
                 mrInPartials(abOutFlows,:)  = [];
                 afInFlowrates(abOutFlows,:) = [];
             end
-            
-            % Check manipulator for partial
-            if ~isempty(oPhase.toManips.substance) && ~isempty(oPhase.toManips.substance.afPartialFlows)
-                this.warn('getInFlows', 'Unsafe when using a manipulator. Use getPartialInFlows instead!');
-            end
         end
         
         function setMatterProperties(this, fFlowRate, arPartialMass, fTemperature, fPressure)
