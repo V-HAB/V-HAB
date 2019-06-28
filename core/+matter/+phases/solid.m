@@ -28,14 +28,13 @@ classdef solid < matter.phase
             % fTemperature  : Temperature of matter in phase
             this@matter.phase(oStore, sName, tfMasses, fTemperature);
             
-            this.fDensity = this.oMT.calculateDensity(this);
-            
-            this.fVolume      = this.fMass / this.fDensity;
-            
-            % initialize to the standard pressure, if a different pressure
+            % Initialize to the standard pressure, if a different pressure
             % for solids should be calculated have a solid and gas phase in
             % one store and use the store function addStandardVolumeManipulators
             this.fMassToPressure    = this.oMT.Standard.Pressure / this.fMass;
+            this.fDensity = this.oMT.calculateDensity(this);
+            
+            this.fVolume      = this.fMass / this.fDensity;
         end
     end
     methods (Access = protected)

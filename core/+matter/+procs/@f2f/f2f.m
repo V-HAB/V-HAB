@@ -193,7 +193,7 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             % fFlowRate: defined flowrate for which the in- and outflow are
             %            of interest
             if nargin < 2
-                fFlowRate = thia.aoFlows(1).fFlowRate;
+                fFlowRate = this.aoFlows(1).fFlowRate;
             end
             
             if (fFlowRate >= 0)
