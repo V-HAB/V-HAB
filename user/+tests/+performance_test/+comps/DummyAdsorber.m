@@ -44,7 +44,9 @@ classdef DummyAdsorber < matter.procs.p2ps.stationary
             % is extracted.
             this.arExtractPartials(this.oMT.tiN2I.(this.sSubstance)) = 1;
         end
-        
+    end
+    
+    methods (Access = protected)
         function update(this)
             % Called whenever a flow rate changes. The two EXMES (oIn/oOut)
             % have an oPhase attribute that allows us to get the phases on

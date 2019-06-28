@@ -9,14 +9,19 @@ classdef gas < matter.phase
 
     properties (SetAccess = protected, GetAccess = public)
         % Partial pressures in Pa
-        afPP;   
-        
-        % Substance concentrations in ppm
-        afPartsPerMillion;
+        afPP;
         
         % Relative humidity in the phase, see this.update() for details on
         % the calculation.
         rRelHumidity;
+    end
+    
+    properties (Dependent)
+        % Substance concentrations in ppm. This is a dependent property because it is
+        % only calculated on demand because it should rarely be used. if
+        % the property is used often, making it not a dependent property or
+        % providing a faster calculation option is suggested
+        afPartsPerMillion;
     end
     
     methods
@@ -46,7 +51,7 @@ classdef gas < matter.phase
             
             this.fMassToPressure = this.calculatePressureCoefficient();
             
-            [ this.afPP, this.afPartsPerMillion ] = this.oMT.calculatePartialPressures(this);
+            this.afPP               = this.oMT.calculatePartialPressures(this);
             
             if this.afPP(this.oMT.tiN2I.H2O)
                 % calculate saturation vapour pressure [Pa];
@@ -96,6 +101,16 @@ classdef gas < matter.phase
                 this.fMassToPressure = this.calculatePressureCoefficient();
             end
         end
+        
+        function afPartsPerMillion = get.afPartsPerMillion(this)
+            %% get.fPressure
+            % Since the pressure is a dependent property but some child
+            % classes require a different calculation approach for
+            % the pressure this function only defines the function name
+            % which is used to calculate the pressure (since child classes
+            % cannot overload this function).
+            afPartsPerMillion = this.oMT.calculatePartsPerMillion(this);
+        end
     end
     
     
@@ -113,7 +128,7 @@ classdef gas < matter.phase
             if ~isempty(this.fVolume)
                 this.fMassToPressure = this.calculatePressureCoefficient();
                 
-                [ this.afPP, this.afPartsPerMillion ] = this.oMT.calculatePartialPressures(this);
+                this.afPP               = this.oMT.calculatePartialPressures(this);
                 this.fDensity = this.fMass / this.fVolume;
                 
                 

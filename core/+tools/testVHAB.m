@@ -284,21 +284,22 @@ if ~bSkipComparison
             % check if the name of the old tutorial matches the new tutorial,
             % if it does, compare the tutorials
             if strcmp(tTests(iI).name, tOldTests.tTests(iOldTutorial).name)
+                if ~isempty(tTests(iI).run)
+                    iTickDiff = tTests(iI).run.iTicks - tOldTests.tTests(iOldTutorial).run.iTicks;
+                    fprintf('change in ticks compared to old status:                 %s%i\n',sBlanks, iTickDiff);
 
-                iTickDiff = tTests(iI).run.iTicks - tOldTests.tTests(iOldTutorial).run.iTicks;
-                fprintf('change in ticks compared to old status:                 %s%i\n',sBlanks, iTickDiff);
-                
-                fTimeDiff = tTests(iI).run.fRunTime - tOldTests.tTests(iOldTutorial).run.fRunTime;
-                fprintf('change in run time compared to old status:                  %s%d\n',sBlanks, fTimeDiff);
+                    fTimeDiff = tTests(iI).run.fRunTime - tOldTests.tTests(iOldTutorial).run.fRunTime;
+                    fprintf('change in run time compared to old status:                  %s%d\n',sBlanks, fTimeDiff);
 
-                fTimeDiffLog = tTests(iI).run.fLogTime - tOldTests.tTests(iOldTutorial).run.fLogTime;
-                fprintf('change in log time compared to old status:                  %s%d\n',sBlanks, fTimeDiffLog);
-                
-                fGeneratedMassDiff = tTests(iI).run.fGeneratedMass - tOldTests.tTests(iOldTutorial).run.fGeneratedMass;
-                fprintf('change in generated mass compared to old status:        %s%d\n',sBlanks, fGeneratedMassDiff);
+                    fTimeDiffLog = tTests(iI).run.fLogTime - tOldTests.tTests(iOldTutorial).run.fLogTime;
+                    fprintf('change in log time compared to old status:                  %s%d\n',sBlanks, fTimeDiffLog);
 
-                fTotalMassBalanceDiff = tTests(iI).run.fTotalMassBalance - tOldTests.tTests(iOldTutorial).run.fTotalMassBalance;
-                fprintf('change in total mass balance compared to old status:    %s%d\n',sBlanks, fTotalMassBalanceDiff);
+                    fGeneratedMassDiff = tTests(iI).run.fGeneratedMass - tOldTests.tTests(iOldTutorial).run.fGeneratedMass;
+                    fprintf('change in generated mass compared to old status:        %s%d\n',sBlanks, fGeneratedMassDiff);
+
+                    fTotalMassBalanceDiff = tTests(iI).run.fTotalMassBalance - tOldTests.tTests(iOldTutorial).run.fTotalMassBalance;
+                    fprintf('change in total mass balance compared to old status:    %s%d\n',sBlanks, fTotalMassBalanceDiff);
+                end
             end
         end
         fprintf('--------------------------------------\n');

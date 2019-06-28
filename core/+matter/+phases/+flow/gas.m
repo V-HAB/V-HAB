@@ -14,12 +14,18 @@ classdef gas < matter.phases.flow.flow
         % Partial pressures in Pa
         afPP;
         
-        % Substance concentrations in ppm
-        afPartsPerMillion;
         
         % Relative humidity in the phase, see this.update() for details on
         % the calculation.
         rRelHumidity;
+    end
+    
+    properties (Dependent)
+        % Substance concentrations in ppm. This is a dependent property because it is
+        % only calculated on demand because it should rarely be used. if
+        % the property is used often, making it not a dependent property or
+        % providing a faster calculation option is suggested
+        afPartsPerMillion;
     end
     
     methods
@@ -45,8 +51,18 @@ classdef gas < matter.phases.flow.flow
             this@matter.phases.flow.flow(oStore, sName, tfMasses, fVolume, fTemperature);
             
             this.fVirtualPressure = this.fMass * this.oMT.Const.fUniversalGas * this.fTemperature / (this.fMolarMass * this.fVolume);
-            [ this.afPP, this.afPartsPerMillion ] = this.oMT.calculatePartialPressures(this);
+            this.afPP               = this.oMT.calculatePartialPressures(this);
             
+        end
+        
+        function afPartsPerMillion = get.afPartsPerMillion(this)
+            %% get.fPressure
+            % Since the pressure is a dependent property but some child
+            % classes require a different calculation approach for
+            % the pressure this function only defines the function name
+            % which is used to calculate the pressure (since child classes
+            % cannot overload this function).
+            afPartsPerMillion = this.oMT.calculatePartsPerMillion(this);
         end
     end
         

@@ -388,6 +388,15 @@ classdef Human < vsys
             
          end
         
+        function createThermalStructure(this)
+            createThermalStructure@vsys(this);
+            % to prevent small time steps because the food is at a
+            % different temperature than the human, we set a constant
+            % temperature heat source for the stomach
+            oConstantTemperatureHeatSource = components.thermal.heatsources.ConstantTemperature('StomachConstantTemperature');
+            this.toStores.Human.toPhases.Stomach.oCapacity.addHeatSource(oConstantTemperatureHeatSource);
+        end
+        
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
             
@@ -395,6 +404,7 @@ classdef Human < vsys
             solver.matter.manual.branch(this.toBranches.Feces_Out);
             solver.matter.manual.branch(this.toBranches.Urine_Out);
             solver.matter.manual.branch(this.toBranches.Air_In);
+            
             solver.matter.residual.branch(this.toBranches.Air_Out);
             
             if ~isempty(this.requestFood)
@@ -402,9 +412,20 @@ classdef Human < vsys
                 oResidual.setPositiveFlowDirection(false);
             end
             
-            tTimeStepProperties.fFixedTimeStep = 20;
+            tTimeStepProperties.fFixedTimeStep = this.fTimeStep;
             
-            this.toStores.Human.toPhases.Stomach.setTimeStepProperties(tTimeStepProperties);
+            % set time steps. The phases use the same time step as the
+            % system for a fixed time step. The time step calculation
+            % prevents mass balance errors and unphyiscal properties also
+            % for fixed time steps
+            csStoreNames = fieldnames(this.toStores);
+            for iStore = 1:length(csStoreNames)
+                for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
+                    oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
+                    
+                    oPhase.setTimeStepProperties(tTimeStepProperties);
+                end
+            end
                 
             this.setThermalSolvers();
             

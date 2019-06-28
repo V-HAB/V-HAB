@@ -492,6 +492,12 @@ classdef timer < base
             % Dependent systems have -1 as time step - therefore this
             % should always be true!
             abExec = (this.afLastExec + this.afTimeSteps) <= this.fTime;
+            
+            % To resynchronize the update calls of different parts of the
+            % system every x ticks we update everything in the same tick
+            if mod(this.iTick, 100) == 0
+                abExec = true(1, length(this.afTimeSteps));
+            end
             aiExec  = find(abExec);
             
             %% Execute callbacks

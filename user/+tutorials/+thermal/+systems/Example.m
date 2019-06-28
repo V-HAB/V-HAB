@@ -47,7 +47,7 @@ classdef Example < vsys
             matter.store(this, 'Tank_1', 1 + fSolidVolume);
             
             % Filtered phase
-            matter.phases.mixture(this.toStores.Tank_1, 'FilteredPhase', 'solid', tfMasses, fSolidVolume, 293.15, 1e5); 
+            matter.phases.mixture(this.toStores.Tank_1, 'FilteredPhase', 'solid', tfMasses, 293.15, 1e5); 
             
             % Adding a phase to the store 'Tank_1', 1 m^3 air at 20 deg C
             oGasPhase = this.toStores.Tank_1.createPhase('air', 'Tank1Air', 1, 293.15);

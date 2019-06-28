@@ -305,7 +305,7 @@ classdef PlantCulture < vsys
             end
             
             clear tTimeStepProperties
-            tTimeStepProperties.rMaxChange = inf;
+            tTimeStepProperties.fFixedTimeStep = this.fTimeStep;
             this.toStores.Plant_Culture.toPhases.Plants.setTimeStepProperties(tTimeStepProperties);
             
             %% Assign thermal solvers

@@ -13,7 +13,9 @@ classdef DummyBoschProcess < matter.manips.substance.stationary
             this@matter.manips.substance.stationary(sName, oPhase);
             
         end
-        
+    end
+    
+    methods (Access = protected)
         function update(this)
             % Get the content of the phase
             afMassFlows = this.getTotalFlowRates();

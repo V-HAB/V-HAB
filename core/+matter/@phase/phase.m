@@ -940,9 +940,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
             if ~base.oDebug.bOff, this.out(2, 1, 'update', 'Execute update in %s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName }); end
             
-            % save the update time to a property to check if we already
-            % update at this time
-            this.fLastUpdate = this.oTimer.fTime;
             
             % If it is a flow phase, we also trigger an update of the
             % partial masses to ensure that they are correct
@@ -969,6 +966,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % The update is finished, therefore we set the flag to false
             % that this phase will be updated in the post tick
             this.bUpdateRegistered = false;
+            
+            % save the update time to a property to check if we already
+            % update at this time
+            this.fLastUpdate = this.oTimer.fTime;
             
             % Now we trigger an update_post event which allows other
             % objects/functions to bind themself to the update of this

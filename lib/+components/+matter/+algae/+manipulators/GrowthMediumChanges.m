@@ -6,7 +6,6 @@ classdef GrowthMediumChanges < matter.manips.substance.stationary
     %in the manipulator the flow rates are then added and combined.
     
     properties (SetAccess = protected, GetAccess = public)
-        fLastExec;                              %[s]
         fLastExecTimeStep;                      %[s]
         fTimeStep = 0;                          %[s]
         afMass;                                 %[kg] array of fields containing the masses of each component that is currently present in the growth medium
@@ -33,9 +32,10 @@ classdef GrowthMediumChanges < matter.manips.substance.stationary
             catch
                 
             end
-            
         end
-        
+    end
+    
+    methods (Access = protected)
         function update(this)
             this.fTimeStep = this.oPhase.fTimeStep; %%[s]prediction to future time step. if calculated last time step is used (fTime-fLastExec), then errors and tiny time steps result.
             this.fLastExecTimeStep = this.oTimer.fTime - this.fLastExec; %%[s]passed since last execution

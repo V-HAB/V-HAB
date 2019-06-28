@@ -30,7 +30,7 @@ if length(varargin) == 1
     
     if strcmp(sMatterState, 'gas')
         
-        [ afPartialPressures, ~ ] = this.calculatePartialPressures(varargin{1});
+        afPartialPressures = this.calculatePartialPressures(varargin{1});
         
     elseif strcmp(sMatterState, 'liquid')
         % If the pressure of the flow is zero, as would happen
@@ -118,7 +118,7 @@ else
         end
         
         if any(strcmp(sMatterState, {'gas'}))
-            [ afPartialPressures, ~ ] = this.calculatePartialPressures(sMatterState, afMass, fPressure, fTemperature);
+            afPartialPressures = this.calculatePartialPressures(sMatterState, afMass, fPressure, fTemperature);
         else
             afPartialPressures = ones(1, this.iSubstances) * fPressure;
         end

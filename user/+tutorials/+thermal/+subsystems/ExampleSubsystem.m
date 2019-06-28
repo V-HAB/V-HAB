@@ -96,14 +96,6 @@ classdef ExampleSubsystem < vsys
             oFilterFlowPhase = this.toStores.Filter.aoPhases(1);
             oFilterBedPhase  = this.toStores.Filter.aoPhases(2);
             
-            % To ensure that both branches are always re-calculated at the
-            % same time, we set the flow phase of the filter, in the center
-            % of the system, between the two branches, to synced. This
-            % causes both branches to be re-calculated after every phase
-            % update.
-            oFilterFlowPhase.bSynced   = true;
-            oFilterFlowPhase.oCapacity.bSynced   = true;
-            
             % We are not really interested in the pressure, heat capacity
             % etc. of the filtered phase, so we don't need to re-calculate
             % it often. So we set a large maximum change. 

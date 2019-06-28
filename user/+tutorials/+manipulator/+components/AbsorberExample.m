@@ -47,7 +47,9 @@ classdef AbsorberExample < matter.procs.p2ps.stationary
             % is extracted.
             this.arExtractPartials(this.oMT.tiN2I.(this.sSubstance)) = 1;
         end
-        
+    end
+    
+    methods (Access = protected)
         function update(this)
             % Called whenever a flow rate changes. The two EXMES (oIn/oOut)
             % have an oPhase attribute that allows us to get the phases on
@@ -76,12 +78,12 @@ classdef AbsorberExample < matter.procs.p2ps.stationary
             % according partial masses. Flow rates are a row vector,
             % partials are a matrix - each row represents one flow, the
             % columns represent the different substances.
-            [ afInFlowrates, mrInPartials ] = getInFlows();
+            [ afInFlowrates, mrInPartials ] = this.getInFlows();
             
             afPartialInFlows = sum(afInFlowrates .* mrInPartials,1);
             
             % Nothing flows in, so nothing absorbed ...
-            if isempty(afPartialFlowRates)
+            if isempty(afPartialInFlows)
                 this.setMatterProperties(0, this.arExtractPartials);
                 
                 return;
@@ -90,7 +92,7 @@ classdef AbsorberExample < matter.procs.p2ps.stationary
             
             % Sum up flow rates and use the load of the filter to reduce 
             % the flow rate accordingly
-            fFlowRate = (1 - this.rLoad) * sum(afPartialFlowRates(:, iSubstances));
+            fFlowRate = (1 - this.rLoad) * sum(afPartialInFlows(:, iSubstances));
             
             % If we do nothing else, there will be a huge spike in the 
             % adsorption rate at the beginning of the simulation, because 

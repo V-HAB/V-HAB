@@ -7,6 +7,8 @@ classdef setup < simulation.infrastructure
         function this = setup(ptConfigParams, tSolverParams) % Constructor function
             
             ttMonitorConfig = struct();
+            ttMonitorConfig.oTimeStepObserver.sClass = 'simulation.monitors.timestepObserver';
+            ttMonitorConfig.oTimeStepObserver.cParams = { 0 };
             this@simulation.infrastructure('Example_Human_1_Model', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             examples.human_model.systems.Example(this.oSimulationContainer, 'Example');
