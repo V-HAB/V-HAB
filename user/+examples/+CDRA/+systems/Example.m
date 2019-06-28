@@ -428,6 +428,7 @@ classdef Example < vsys
                 this.toStores.Cabin.toProcsP2P.CrewCO2Prod.setCrew([1,1,1]);
             end
             
+            this.oTimer.synchronizeCallBacks();
         end
         
     end

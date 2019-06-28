@@ -814,8 +814,6 @@ classdef Human < vsys
             % sets the airflowrate into the human to a value that ~4% of
             % the Oxygen in the air is consumed
             this.toBranches.Air_In.oHandler.setFlowRate(- (this.fOxygenDemand/0.04)/this.toBranches.Air_In.coExmes{2}.oPhase.arPartialMass(this.oMT.tiN2I.O2));
-            
-            this.oTimer.synchronizeCallBacks();
         end
     end
 end

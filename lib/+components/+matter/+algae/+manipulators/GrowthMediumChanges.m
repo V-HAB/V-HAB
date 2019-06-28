@@ -25,7 +25,7 @@ classdef GrowthMediumChanges < matter.manips.substance.stationary
     methods
         function this = GrowthMediumChanges(sName, oPhase)
             this@matter.manips.substance.stationary(sName, oPhase);
-            this.fLastExec = 0;
+            
             this.oChemicalReactions = components.matter.algae.CalculationModules.GrowthMediumModule.BBMReactions(this);
             try
                 this.oPhotosynthesisModule = this.oPhase.oStore.oContainer.oPhotosynthesisModule;
@@ -76,7 +76,6 @@ classdef GrowthMediumChanges < matter.manips.substance.stationary
             end
             
             update@matter.manips.substance.stationary(this, afPartialFlowRates);
-            this.fLastExec = this.oTimer.fTime; %[s]
         end
     end
     

@@ -13,7 +13,7 @@ classdef Example < vsys
     
     methods
         function this = Example(oParent, sName)
-            this@vsys(oParent, sName, -1);
+            this@vsys(oParent, sName, 60);
             
             %% crew planer
             % Since the crew schedule follows the same pattern every day,
@@ -195,6 +195,7 @@ classdef Example < vsys
             % Here it only calls its parent's exec function
             exec@vsys(this);
             
+            this.oTimer.synchronizeCallBacks();
         end
      end
     
