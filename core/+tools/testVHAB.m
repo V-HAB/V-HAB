@@ -533,7 +533,8 @@ fprintf('======= Finished running tests =======\n');
 fprintf('======================================\n\n');
 
 % Outputting the total runtime. 
-toc(hTimer);
+disp('Total elapsed time:');
+disp(tools.secs2hms(toc(hTimer)));
 
 end
 
