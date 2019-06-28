@@ -494,7 +494,7 @@ if bChanged
         % struct and compare the simulation object names. If they don't
         % match, then a new test has been added. 
         for iOldTest = 1:length(tOldTests.tTests)
-            % check if the name of the old tutorial matches the new tutorial,
+            % Check if the name of the old tutorial matches the new tutorial,
             % if it does, compare the tutorials
             if strcmp(tTests(iI).name, tOldTests.tTests(iOldTest).name) && ~isempty(tTests(iI).run)
                 
@@ -516,8 +516,7 @@ if bChanged
 
                 fTotalMassBalanceDiff = tTests(iI).run.fTotalMassBalance - tOldTests.tTests(iOldTest).run.fTotalMassBalance;
                 mfData(iI,5) = fTotalMassBalanceDiff;
-                fprintf('change in total mass balance compared to old status:  %d\n', fTotalMassBalanceDiff);
-                
+                fprintf('change in total mass balance compared to old status:  %d\n', fTotalMassBalanceDiff);                
             end
         end
         fprintf('--------------------------------------\n');

@@ -1,33 +1,16 @@
 classdef f2f < base & matlab.mixin.Heterogeneous
     %F2F flow2flow processors
-    %   Manipulate a matter flow/stream. Can have two ports with one
-    %   flow connected to each port. Provides methods for managing the
-    %   connected flows and their flow rates
-    %
-    properties (SetAccess = private, GetAccess = private)
-        % Struct with function handles returned by the flow that allow
-        % manipulation of the matter properties
-        % GetAccess is private - can only be accessed through protected
-        % method, which ensures that only properties of OUTFLOWING matter
-        % flows can be manipulated (manipulation methods are sealed!)!
-        pthFlow;
-    end
+    %   Manipulate a matter flow/stream. Is connected to two different
+    %   flows the left and right flow. Depending on the flowrate the left
+    %   is the in flow and the right the outflow (positive flowrate) or
+    %   vice versa (negative flowrate). And can manipulate the pressure or
+    %   temperature of the flow but NOT the composition. If you want to
+    %   model adsorption processes or somethin similar use P2Ps!
     
     properties (SetAccess = private, GetAccess = public)
-        % Port names. Indices are accordingly used for aiSign / aoFlows
-        csPorts = { 'left', 'right' };
-        
-        % Number of ports
-        iPorts = 2;
-        
-        % Connected matter flows (one for each port possible), indexed
-        % according to port name in csPorts
+        % Connected matter flows first entry aoFlows(1) is considered the
+        % left flow while aoFlows(2) is considered the right flow
         aoFlows = matter.flow.empty();
-        
-        % Sign. Depending on the "side" of the flow this processor is
-        % connected to, the flow rate set for that flow is either out or in
-        % when positive. This array here is accordingly filled with 1 / -1.
-        aiSign = [ 0 0 ];
         
         % Matter table
         oMT;
@@ -44,7 +27,6 @@ classdef f2f < base & matlab.mixin.Heterogeneous
         % Container (vsys) the f2f belongs to
         oContainer;
         
-        
         % Sealed?
         bSealed = false;
         
@@ -56,33 +38,49 @@ classdef f2f < base & matlab.mixin.Heterogeneous
         
         % Heat flow into/from the component. Together with FR, c_p used to
         % calculate a temperature change for the flowing matter through
-        % this component.
-        % No specific mechanism exists where this property can be updated
-        % (e.g. regular call to an .update() method) - instead, the vsys to
-        % which this f2f belongs needs to call a method in this processor
-        % manually, e.g. in .exec().
+        % this component. If the f2f is supposed to update this property
+        % automatically the child class f2f must implement the function
+        % updateThermal with a specific calculation routine for the heat
+        % flow
         fHeatFlow = 0;
         
-        % Heat flow object. If set, fPower on obj written to fHeatFlow
-        oHeatFlowObject;
-        
-        iHeatFlowDirection;
-        
+        % Decide if this processor is an active processor which generates a
+        % pressure difference (e.g. a fan).´In this case this property is
+        % set to true. Or if it is a passive component which only reacts to
+        % the mass flow passing through (e.g. a pipe). In this case the
+        % property is false
         bActive = false;
+        
+        % This property is used to check if the implemented class of F2F
+        % has the function updateThermal, and is therefore considered
+        % thermally active.
+        bThermalActive = false;
         
         % Pressure difference of the f2f component in [Pa]
         fDeltaPressure = 0;
+        
+        % Boolean to decide which flow of the aoFlow array have actually
+        % been set
+        abSetFlows;
     end
     
     
     
     methods
         function this = f2f(oContainer, sName)
-            % Constructor for the f2f matter processor class. If no csPorts
-            % are provided, two default ones (left, right) are created.
+            %% f2f class constructor
+            % creates a new F2F processor, which can change the temperature
+            % and/or pressure of the flows passing through it
+            %
+            % Required Inputs:
+            % oContainer:   vsys in which this f2f is located
+            % sName:        name of the f2f
             
             this.sName = sName;
             
+            if ismethod(this, 'updateThermal')
+                this.bThermalActive = true;
+            end
             
             this.oContainer = oContainer;
             this.oContainer.addProcF2F(this);
@@ -90,40 +88,18 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             this.oMT    = this.oContainer.oMT;
             this.oTimer = this.oContainer.oTimer;
             
-            % Preset the flow array with a default, zero FR matter flow
-            for iI = 1:this.iPorts
-                this.aoFlows(iI) = matter.flow(); 
-            end
-            
-            % Create map for the func handles
-            this.pthFlow = containers.Map('KeyType', 'single', 'ValueType', 'any');
+            this.abSetFlows = [false, false];
         end
-        
-        
-        function setHeatFlowObject(this, oHeatFlow, iSign)
-            if ~isempty(this.oHeatFlowObject)
-                this.throw('setHeatFlowObject', 'Already one heat flow set!');
-            end
-            
-            if nargin < 3 || isempty(iSign) || (iSign ~= -1), iSign = 1; end
-            
-            this.oHeatFlowObject    = oHeatFlow;
-            this.iHeatFlowDirection = iSign;
-            
-            this.oHeatFlowObject.bind('update', @this.updateFromHeatFlowObject);
-            
-            this.updateFromHeatFlowObject();
-        end
-        
-        
         
         function seal(this, oBranch)
+            %% f2f seal
+            %
+            % seal the f2f processor and set the oBranch property
             if this.bSealed
                 this.throw('seal', 'Already sealed!');
             end
             
             this.oBranch = oBranch;
-            %this.oMT     = oBranch.oMT;
             this.bSealed = true;
         end
     end
@@ -133,10 +109,12 @@ classdef f2f < base & matlab.mixin.Heterogeneous
     % properties if inflow
     methods (Sealed = true)
         
-        function this = addFlow(this, oFlow, iIdx)
-            % Adds a flow, sets stuff on aiSign. Automatically first sets
-            % left, then right port. Can only be disconnected by deleting
-            % the flow object.
+        function this = addFlow(this, oFlow, iFlowID)
+            %% addFlow
+            % INTERNAL FUNCTION!
+            % Adds a flow to the f2f processor. This function is called
+            % during branch construction and must not be called
+            % individually
             
             if ~isa(oFlow, 'matter.flow')
                 this.throw('addFlow', 'The provided flow obj has to be a or derive from matter.flow!');
@@ -146,14 +124,10 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             end
             
             % Find empty port (first zero in aiSign array) - left or right
-            if nargin < 3 || isempty(iIdx)
-                iIdx = find(~this.aiSign, 1);
-            elseif this.aiSign(iIdx) ~= 0
-                this.throw('addFlow', 'Port already connected');
-            end
-            
-            % All ports in use (iIdx empty)?
-            if isempty(iIdx)
+            if nargin < 3 || isempty(iFlowID) 
+                iFlowID = find(~this.abSetFlows, 1);
+                    
+            elseif (iFlowID < length(this.aoFlows) && ~isempty(this.aoFlows(iFlowID))) || iFlowID > 2
                 this.throw('addFlow', ['The f2f-processor ''',this.sName,...
                            ''' is already in use by another branch.\n', ...
                            'Please check the definition of the following branch: ',...
@@ -162,7 +136,9 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             
             % Set the flow obj - when we call the addProc of the flow
             % object, it checks if it exists on aoFlows!
-            this.aoFlows(iIdx) = oFlow;
+            this.aoFlows(iFlowID) = oFlow;
+            
+            this.abSetFlows(iFlowID) = true;
             
             % Call addProc on the flow, provide function handle to
             % enable removing, returns the sign for the flow rate, throws
@@ -172,34 +148,33 @@ classdef f2f < base & matlab.mixin.Heterogeneous
                 % method is protected, it can be called from outside
                 % through that! Wrap in anonymous function so no way to
                 % remove another flow.
-                [ iSign, ~ ] = oFlow.addProc(this, @() this.removeFlow(oFlow));
+                oFlow.addProc(this, @() this.removeFlow(oFlow));
             
             catch oErr
                 % Reset back to default MF
-                this.aoFlows(iIdx) = this.oMT.oFlowZero;
+                this.aoFlows(iFlowID) = this.oMT.oFlowZero;
                 
                 rethrow(oErr);
             end
-            
-            % Set the other stuff
-            this.aiSign(iIdx)  = iSign;
-            %this.pthFlow(iIdx) = thFlow;
         end
     end
     
     
     methods (Access = protected)
-        function updateFromHeatFlowObject(this, ~)
-            this.fHeatFlow = this.oHeatFlowObject.fPower * this.iHeatFlowDirection;
-            
-            % On first call (during construction), .seal not yet done so
-            % branch unknown. But no outdated needed.
-            if ~isempty(this.oBranch)
-                this.oBranch.setOutdated();
-            end
-        end
-        
         function supportSolver(this, sType, varargin)
+            %% supportSolver
+            % this function is used to provide compability with specific
+            % solver types. For each different solver type the f2f can
+            % implement a specific function that handles the solving of the
+            % f2f
+            %
+            % Required Inputs
+            % sType:    Define the type of the solver for which the
+            %           provdied solve function can be used. E.g.
+            %           'callback' or 'manual'
+            % varargin: Depends on the solver type, can be a function
+            %           handle or specific values. See
+            %           lib.components.matter.pipe for some examples
             handleClassConstructor = str2func([ 'solver.matter.base.type.' sType ]);
             
             this.toSolve.(sType) = handleClassConstructor(varargin{:});
@@ -207,114 +182,43 @@ classdef f2f < base & matlab.mixin.Heterogeneous
     end
     
     
-    %% Internal methdos for handling the flows/flow rates
-    % The removeFlow is private - only accessible through anonymous handle
-    methods (Access = private)
-        function removeFlow(this, oFlow)
-            iIdx = find(this.aoFlows == oFlow, 1);
-            
-            if isempty(iIdx)
-                this.throw('removeFlow', 'Flow doesn''t exist');
+    % Protected methods - get flow rates, set matter properties
+    methods (Access = protected, Sealed = true)
+        function [ oFlowIn, oFlowOut ] = getFlows(this, fFlowRate)
+            %% getFlows
+            % get the current in and out flow depending on either the
+            % provided fFlowRate or on the current flowrate of the flows
+            %
+            % Optional Inputs:
+            % fFlowRate: defined flowrate for which the in- and outflow are
+            %            of interest
+            if nargin < 2
+                fFlowRate = thia.aoFlows(1).fFlowRate;
             end
             
-            if isvalid(this.oMT) 
-                aiIndexes = 1:length(this.aoFlows);
-                this.aoFlows = this.aoFlows(aiIndexes ~= iIdx);
+            if (fFlowRate >= 0)
+                oFlowIn  = this.aoFlows(1);
+                oFlowOut = this.aoFlows(2);
             else
-                this.aoFlows(iIdx) = []; % Seems like deconstruction of all objs, oMT invalid!
+                oFlowIn  = this.aoFlows(2);
+                oFlowOut = this.aoFlows(1);
             end
-            
-            this.aiSign(iIdx)  = 0;
-            %this.pthFlow(iIdx) = struct();
+                
         end
     end
     
-    % Protected methods - get flow rates, set matter properties
-    methods (Access = protected, Sealed = true)
-        function afFRs = getFRs(this)
-            % Get flow rate of all ports, adjusted with the according sign
-            % to ensure that negative FR always means an outflow of mass!
-            fSecondFlowRate = this.aoFlows(2).fFlowRate * this.aiSign(2);
-            fFirstFlowRate  = this.aoFlows(1).fFlowRate * this.aiSign(1);
-            
-            afFRs = [ fFirstFlowRate fSecondFlowRate ];
-        end
-        
-        
-        function [ oFlowIn, oFlowOut ] = getFlows(this, fFlowRate)
-            
-            if nargin > 1
-                if (fFlowRate >= 0)
-                    oFlowIn  = this.aoFlows(1);
-                    oFlowOut = this.aoFlows(2);
-                else
-                    oFlowIn  = this.aoFlows(2);
-                    oFlowOut = this.aoFlows(1);
-                end
-                
-                return;
-            end
-            afFRs = [this.aoFlows(1).fFlowRate * this.aiSign(1) this.aoFlows(2).fFlowRate * this.aiSign(2)];
-            
-            if ~any(afFRs)
-                %CHECK Does it really make sense to do this, just because
-                %the flow rates are zero? Shouldn't that be possible?
-                this.throw('get', 'Can''t get when flow rate is zero!');
-
-            elseif (afFRs(1) * afFRs(2)) > 0
-                this.throw('set', 'Both flows are in or out, need one in, one out!');
-
-            else
-                iIdx = find(afFRs > 0, 1);
-
-                if isempty(iIdx), this.throw('set', 'No in flow found!');
-                else
-                    oFlowIn = this.aoFlows(iIdx);
-                end
-                
-                
-                
-                iIdx = find(afFRs < 0, 1);
-
-                if isempty(iIdx), this.throw('set', 'No out flow found!');
-                else
-                    oFlowOut = this.aoFlows(iIdx);
-                end
-            end
-        end
-        
-        
-        function oFlow = get(this, fFlowRate)
-            % Gets the object of the INFLOWING matter flow, depending on
-            % the provided flowrate (to be called from calcDeltaP). If no
-            % flow rate provided, taken from flows ...
-            %
-            
-            % See this.set for comments.
-            if nargin < 2
-                afFRs = this.getFRs();
-                
-                if ~any(afFRs)
-                    this.throw('get', 'Can''t get when flow rate is zero!');
-                
-                elseif (afFRs(1) * afFRs(2)) > 0
-                    this.throw('set', 'Both flows are in or out, need one in, one out!');
-
-                else
-                    iIdx = find(afFRs > 0, 1);
-
-                    if isempty(iIdx), this.throw('set', 'No flow to read from found!');
-                    else
-                        oFlow = this.aoFlows(iIdx);
-                    end
-                end
-                
-            else
-                if fFlowRate == 0, this.throw('get', 'Can''t get when flow rate is zero!'); end
-                
-                oFlow = this.aoFlows((fFlowRate > 0) + 1);
-            end
+    %% Internal methdos for handling the flows/flow rates
+    % The removeFlow is private - only accessible through anonymous handle
+    methods (Access = private)
+        function removeFlow(this)
+            %% f2f removeFlow
+            % This function can be used to remove the flows from this f2f
+            % which is necessary to then reconnect the f2f with another
+            % flow (and therefore branch)!
+            this.aoFlows = matter.flow.empty();
+            this.oBranch = [];
         end
     end
+    
 end
 

@@ -314,7 +314,7 @@ classdef Human < vsys
             % Creating Stores
             matter.store(this, 'Human', fVolumeHuman + fVolumeUrine + fVolumeFeces + fVolumeLung + fVolumeStomach ); 
 
-            oHumanPhase = matter.phases.mixture(this.toStores.Human, 'HumanPhase', 'liquid', tfMassesHuman, fVolumeHuman, fHumanTemperature, 101325); 
+            oHumanPhase = matter.phases.mixture(this.toStores.Human, 'HumanPhase', 'solid', tfMassesHuman, fHumanTemperature, 101325); 
             
             this.afInitialMassHuman = oHumanPhase.afMass;
             
@@ -331,7 +331,7 @@ classdef Human < vsys
             % add a manip that converts food to metabolism products
             components.matter.Manips.ManualManipulator(this, 'DigestionSimulator', oHumanPhase);
             
-            oStomachPhase = matter.phases.mixture(this.toStores.Human, 'Stomach', 'liquid', tfMassesStomach, fVolumeStomach, fHumanTemperature, 101325);
+            oStomachPhase = matter.phases.mixture(this.toStores.Human, 'Stomach', 'liquid', tfMassesStomach, fHumanTemperature, 101325);
             
             matter.procs.exmes.mixture(oStomachPhase, 'Food_In');
             matter.procs.exmes.mixture(oStomachPhase, 'Food_Out_Internal');
@@ -354,14 +354,14 @@ classdef Human < vsys
             matter.procs.exmes.gas(oAirPhase, 'Air_Out'); %IF
             
             % Urine Phase
-            oBladderPhase = matter.phases.mixture(this.toStores.Human, 'Urine', 'liquid', tfMassesUrine, fVolumeUrine, fHumanTemperature, 101325); 
+            oBladderPhase = matter.phases.mixture(this.toStores.Human, 'Urine', 'liquid', tfMassesUrine, fHumanTemperature, 101325); 
             this.afInitialMassUrine = oBladderPhase.afMass;
             
             matter.procs.exmes.mixture(oBladderPhase, 'Urine_Out');
             matter.procs.exmes.mixture(oBladderPhase, 'Urine_In_Internal');
             
             % Feces phase
-            oFecesPhase = matter.phases.mixture( this.toStores.Human, 'Feces', 'solid', tfMassesFeces, fVolumeFeces, fHumanTemperature, 101325); 
+            oFecesPhase = matter.phases.mixture( this.toStores.Human, 'Feces', 'solid', tfMassesFeces, fHumanTemperature, 101325); 
             this.afInitialMassFeces = oFecesPhase.afMass;
             
             matter.procs.exmes.mixture(oFecesPhase, 'Feces_In_Internal');
@@ -388,6 +388,15 @@ classdef Human < vsys
             
          end
         
+        function createThermalStructure(this)
+            createThermalStructure@vsys(this);
+            % to prevent small time steps because the food is at a
+            % different temperature than the human, we set a constant
+            % temperature heat source for the stomach
+            oConstantTemperatureHeatSource = components.thermal.heatsources.ConstantTemperature('StomachConstantTemperature');
+            this.toStores.Human.toPhases.Stomach.oCapacity.addHeatSource(oConstantTemperatureHeatSource);
+        end
+        
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
             
@@ -395,6 +404,7 @@ classdef Human < vsys
             solver.matter.manual.branch(this.toBranches.Feces_Out);
             solver.matter.manual.branch(this.toBranches.Urine_Out);
             solver.matter.manual.branch(this.toBranches.Air_In);
+            
             solver.matter.residual.branch(this.toBranches.Air_Out);
             
             if ~isempty(this.requestFood)
@@ -402,9 +412,20 @@ classdef Human < vsys
                 oResidual.setPositiveFlowDirection(false);
             end
             
-            tTimeStepProperties.fFixedTimeStep = 20;
+            tTimeStepProperties.fFixedTimeStep = this.fTimeStep;
             
-            this.toStores.Human.toPhases.Stomach.setTimeStepProperties(tTimeStepProperties);
+            % set time steps. The phases use the same time step as the
+            % system for a fixed time step. The time step calculation
+            % prevents mass balance errors and unphyiscal properties also
+            % for fixed time steps
+            csStoreNames = fieldnames(this.toStores);
+            for iStore = 1:length(csStoreNames)
+                for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
+                    oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
+                    
+                    oPhase.setTimeStepProperties(tTimeStepProperties);
+                end
+            end
                 
             this.setThermalSolvers();
             
@@ -793,11 +814,6 @@ classdef Human < vsys
             % sets the airflowrate into the human to a value that ~4% of
             % the Oxygen in the air is consumed
             this.toBranches.Air_In.oHandler.setFlowRate(- (this.fOxygenDemand/0.04)/this.toBranches.Air_In.coExmes{2}.oPhase.arPartialMass(this.oMT.tiN2I.O2));
-            
-            for iPhase = 1:this.toStores.Human.iPhases
-                this.toStores.Human.aoPhases(iPhase).registerUpdate();
-            end
-            
         end
     end
 end

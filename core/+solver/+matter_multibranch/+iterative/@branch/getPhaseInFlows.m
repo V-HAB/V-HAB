@@ -20,7 +20,7 @@ for iExme = 1:oPhase.iProcsEXME
     % If the branch is not part of this network solver
     % consider it as constant boundary flowrate. TO DO:
     % check this condition!
-    if ~any(this.aoBranches == oBranch)
+    if ~(oBranch.oHandler == this)
         [ fFlowRate, arFlowPartials, ~ ] = oProcExme.getFlowData();
         
         % Dynamically solved branch - get CURRENT flow

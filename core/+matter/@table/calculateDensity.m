@@ -35,8 +35,15 @@ end
 % faster, since we can avoid the multiple findProperty() calls in
 % this function.
 if strcmp(sMatterState, 'gas')
-    if varargin{1}.fPressure < 5e5
-        fDensity = (varargin{1}.fPressure * varargin{1}.fMolarMass) / (this.Const.fUniversalGas * varargin{1}.fTemperature);
+    if tbReference.bNone
+        fPressure = varargin{4};
+        fMolarMass = sum(arPartialMass .* this.afMolarMass);
+    else
+        fPressure = varargin{1}.fPressure;
+        fMolarMass = varargin{1}.fMolarMass;
+    end
+    if fPressure < 5e5
+        fDensity = (fPressure * fMolarMass) / (this.Const.fUniversalGas * fTemperature);
         % We already have what we want, so no need to execute the rest
         % of this function.
         return;

@@ -356,7 +356,7 @@ classdef Greenhouse < vsys
                 'BiomassInedible.EdibleInedible_Split_P2P_In',...
                 csInedibleBiomass, 1);
             
-            oConstantP2P.fTimeStep = 3600;
+            oConstantP2P.setTimeStepProperties(3600);
             %% Create Branches
             
             % create leakage branch
@@ -414,7 +414,6 @@ classdef Greenhouse < vsys
                 for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
                     oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
                     oPhase.setTimeStepProperties(tTimeStepProperties);
-                    this.toStores.(csStoreNames{iStore}).fDefaultTimeStep = this.fTimeStep;
                 end
             end
             

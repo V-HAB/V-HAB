@@ -30,11 +30,6 @@ classdef WaterHarvest < matter.procs.p2ps.flow
             
         end
         
-        function update(~)
-            % this must be here since the normal V-HAB logic tries to
-            % call the update
-        end
-        
         function calculateFlowRate(this, ~, ~, ~, ~)
             %% Set Flow Rate and update time of last execution for next calculation
             %tell that this matter should be removed
@@ -46,6 +41,14 @@ classdef WaterHarvest < matter.procs.p2ps.flow
             fFlowRate = -this.oSystem.toBranches.Urine_from_PBR.aoFlows.fFlowRate * this.oSystem.toBranches.Urine_from_PBR.aoFlows.arPartialMass(this.oMT.tiN2I.H2O);
             this.setMatterProperties(fFlowRate, this.arExtractPartials);
 
+        end
+        
+    end
+    
+    methods (Access = protected)
+        function update(~)
+            % this must be here since the normal V-HAB logic tries to
+            % call the update
         end
     end
 end

@@ -442,7 +442,7 @@ classdef CHX < vsys
         end
         function updateP2P(this)
             try
-                this.oP2P.update();
+                this.oP2P.registerUpdate();
             catch sError
                 %the condensing heat exchanger requires a CHX_p2p proc
                 %to work properly. Otherwise it will calculate the

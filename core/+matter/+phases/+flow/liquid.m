@@ -1,6 +1,9 @@
 classdef liquid < matter.phases.flow.flow
     %% liquid_flow_node
-    % A liquid phase that is modelled as containing no matter. 
+    % A liquid phase that is modelled as containing no matter. For implementation
+    % purposes the phase does have a mass, but the calculations enforce
+    % zero mass change for the phase and calculate all values based on the
+    % inflows.
     
     properties (Constant)
 
@@ -11,6 +14,23 @@ classdef liquid < matter.phases.flow.flow
     
     methods
         function this = liquid(oStore, sName, tfMasses, fTemperature, fPressure)
+            %% liquid flow node constructor
+            % 
+            % creates a new liquid flow node which is modelled as containing
+            % no mass. The fMass property of the phase must still be
+            % present for implementation purposes, but it will not change
+            % from it's initial value.
+            % Ideally a flow node is used together with a multibranch
+            % solver to calculate the pressure of the phase as flow nodes
+            % are considered very small phases.
+            %
+            % Required Inputs:
+            % oStore        : Name of parent store
+            % sName         : Name of phase
+            % tfMasses      : Struct containing mass value for each species
+            % fTemperature  : Temperature of matter in phase
+            % fPressure     : Pressure of the phase
+            
             
             % The constructor of the flow phase base class requires the
             % volume, so we need to calculate that here. First we get the
@@ -29,8 +49,8 @@ classdef liquid < matter.phases.flow.flow
             % Calling the parent constructor
             this@matter.phases.flow.flow(oStore, sName, tfMasses, fVolume, fTemperature);
             
-            % Setting the pressure. 
-            this.fPressure = fPressure;
+            % Setting the pressure.
+            this.fVirtualPressure = fPressure;
         end
     end
 end

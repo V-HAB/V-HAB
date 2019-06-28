@@ -89,8 +89,22 @@ classdef capacity < base & event.source
         % change is 1.47 K
         rMaxChange = 0.005; % [-]
         
+        % as for the phase in the matter domain, the time step for the
+        % capacity can also be set to a fixed value
+        fFixedTimeStep; % [s]
+        
         % the last time at which this capacity was set outdated
         fLastSetOutdated = -1; % [s]
+        
+        % A flag to decide if the updateTemperature is already registered or not
+        bRegisteredTemperatureUpdated       = false;
+            
+        % In recursive calls within the post tick where the capacity itself
+        % triggers outdated calls up to the point where it is set outdated
+        % again itself it is possible for it to get stuck with a
+        % true bRegisteredOutdated flag. To prevent this we also store the
+        % last time at which we registered a massupdate
+        fLastRegisteredTemperatureUpdated   = -1;
         
         % The last time at which the total heat capacity of this capacity
         % was updated
@@ -114,14 +128,12 @@ classdef capacity < base & event.source
         % handle to bind the post tick temperature update function to the
         % correct post tick level. If any part wants to trigger a
         % temperature update this is then done through this handle to
-        % ensure the correct post tick levels are used
+        % ensure the correct post tick levels are used.
+        % Note that the capacity does not have an update function, as the
+        % temperature is the relevant parameter, and similar to mass that
+        % must be updated whenever the heatflow of a branch changes, as
+        % well as when the time step limits are exceeded.
         hBindPostTickTemperatureUpdate
-        
-        % handle to bind the post tick update function to the correct post
-        % tick level. If any part wants to trigger a update this is then
-        % done through this handle to ensure the correct post tick levels
-        % are used
-        hBindPostTickUpdate
 
         % handle to bind the post tick calculateTimeStep function to the
         % correct post tick level. If any part wants to trigger a
@@ -382,7 +394,15 @@ classdef capacity < base & event.source
         function registerUpdateTemperature(this, ~)
             % register a temperature update for this capacity in the post
             % tick
+            if ~(this.oTimer.fTime > this.fLastRegisteredTemperatureUpdated) && this.bRegisteredTemperatureUpdated
+                return
+            end
+            
             this.hBindPostTickTemperatureUpdate();
+            
+            this.fLastRegisteredTemperatureUpdated = this.oTimer.fTime;
+            this.bRegisteredTemperatureUpdated = true;
+            
         end
             
         function updateTemperature(this, ~)
@@ -542,6 +562,9 @@ classdef capacity < base & event.source
             % temperature at all times
             this.setTemperature(fTemperatureNew);
             
+            % check if we have to update the specific heat capacity
+            this.updateSpecificHeatCapacity();
+            
             % Trigger branch solver updates in post tick for all branches
             this.setBranchesOutdated();
             
@@ -554,6 +577,7 @@ classdef capacity < base & event.source
             	this.trigger('updateTemperature_post');
             end
             
+            this.bRegisteredTemperatureUpdated = false;
         end
         
         %% Setting of time step properties
@@ -568,7 +592,7 @@ classdef capacity < base & event.source
             % as described here to this function for the values that you
             % want to set
             
-            csPossibleFieldNames = {'rMaxChange'};
+            csPossibleFieldNames = {'rMaxChange', 'fFixedTimeStep'};
             
             % Gets the fieldnames of the struct to easier loop through them
             csFieldNames = fieldnames(tTimeStepProperties);
@@ -632,7 +656,7 @@ classdef capacity < base & event.source
             % time. Note that only the capacity is allowed to set
             % temperature values
             this.fTemperature = fTemperature;
-            this.oPhase.setTemperature(this, fTemperature);
+            this.oPhase.setTemperature(fTemperature);
         end
         
         function setInitialHeatCapacity(this,~)
@@ -705,24 +729,14 @@ classdef capacity < base & event.source
                 % Recalculation in this case is triggered only through
                 % changes in the branches
                 fNewStep = inf;
-            elseif ~isempty(this.oPhase.fFixedTimeStep)
-                % if a fixed time step is set just use that value as time
-                % step
-                fNewStep = this.oPhase.fFixedTimeStep;
             else
-                % for no heat capacity, no heat can be stored --> infinite
-                % time step
-                if this.fTotalHeatCapacity == 0 || this.fTemperature == 0
-                    this.setTimeStep(inf);
-                    return
-                end
+                % if it is not a flow phase we always calculate a maximum
+                % time step which prevents unphysical properties
                 
                 % calculate the current percentual temperature change per
                 % second
                 fTemperatureChangePerSecond = (this.fCurrentHeatFlow / this.fTotalHeatCapacity);
                 rTemperatureChangePerSecond = abs(fTemperatureChangePerSecond / this.fTemperature);
-                
-                fNewStep = this.rMaxChange / rTemperatureChangePerSecond;
                 
                 % similar to the mass we also limit the temperature update
                 % to prevent negative temperatures:
@@ -731,43 +745,55 @@ classdef capacity < base & event.source
                 else
                     fMaximumTimeStep = inf;
                 end
-                fNewStep = min(fNewStep, fMaximumTimeStep);
                 
-                if fNewStep < 0
-                    if ~base.oDebug.bOff, this.out(3, 1, 'time-step-neg', 'Phase %s-%s-%s has neg. time step of %.16f', { this.oContainer.sName, this.oPhase.oStore.sName, this.sName, fNewStep }); end
-                end
-                
-                % If our newly calculated time step is larger than the
-                % maximum time step set for this phase, we use this
-                % instead.
-                if fNewStep > this.oPhase.fMaxStep
-                    fNewStep = this.oPhase.fMaxStep;
-                    if ~base.oDebug.bOff
-                        this.out(3, 1, 'max-time-step', 'Phase %s-%s-%s setting maximum timestep of %f', { this.oContainer.sName, this.oPhase.oStore.sName, this.sName, this.oPhase.fMaxStep }); 
+                if ~isempty(this.fFixedTimeStep)
+                    % If a fixed time step is set just use that value as
+                    % time step
+                    fNewStep = this.oPhase.fFixedTimeStep;
+                    
+                    fNewStep = min(fNewStep, fMaximumTimeStep);
+                else
+                    % for no heat capacity, no heat can be stored 
+                    % --> infinite time step
+                    if this.fTotalHeatCapacity == 0 || this.fTemperature == 0
+                        this.setTimeStep(inf);
+                        return
                     end
                     
-                % If the time step is smaller than the set minimal time
-                % step for the phase the minimal time step is used
-                % (standard case is that fMinStep is 0, but the user can
-                % set it to a different value)
-                elseif fNewStep < this.oPhase.fMinStep
-                    fNewStep = this.oPhase.fMinStep;
-                    if ~base.oDebug.bOff
-                        this.out(3, 1, 'min-time-step', 'Phase %s-%s-%s setting minimum timestep', { this.oContainer.sName, this.oPhase.oStore.sName, this.sName }); 
+                    fNewStep = this.rMaxChange / rTemperatureChangePerSecond;
+
+                    fNewStep = min(fNewStep, fMaximumTimeStep);
+
+                    if fNewStep < 0
+                        if ~base.oDebug.bOff, this.out(3, 1, 'time-step-neg', 'Phase %s-%s-%s has neg. time step of %.16f', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, fNewStep }); end
+                    end
+
+                    % If our newly calculated time step is larger than the
+                    % maximum time step set for this phase, we use this
+                    % instead.
+                    if fNewStep > this.oPhase.fMaxStep
+                        fNewStep = this.oPhase.fMaxStep;
+                        if ~base.oDebug.bOff
+                            this.out(3, 1, 'max-time-step', 'Phase %s-%s-%s setting maximum timestep of %f', { this.oContainer.sName, this.oPhase.oStore.sName, this.sName, this.oPhase.fMaxStep });
+                        end
+                        
+                    % If the time step is smaller than the set minimal time
+                    % step for the phase the minimal time step is used
+                    % (standard case is that fMinStep is 0, but the user
+                    % can set it to a different value)
+                    elseif fNewStep < this.oPhase.fMinStep
+                        fNewStep = this.oPhase.fMinStep;
+                        %TODO Make this output a lower level debug message.
+                       if ~base.oDebug.bOff
+                           this.out(3, 1, 'min-time-step', 'Phase %s-%s-%s setting minimum timestep', { this.oContainer.sName, this.oPhase.oStore.sName, this.sName });
+                       end
                     end
                 end
             end
-            
-            % Set the time at which the containing store will be updated
-            % again. Need to pass on an absolute time, not a time step.
-            % Value in store is only updated, if the new update time is
-            % earlier than the currently set next update time.
-            %this.oStore.setNextUpdateTime(this.fLastMassUpdate + fNewStep);
-            
-            % Set the time step for this capacity. If the update was also called in this
-            % tick we also reset the time at which the phase was last executed thus
-            % enforcing the next execution time to be exactly this.oTimer.fTime +
-            % fNewStep
+            % Set the time step for this capacity. If the update was also
+            % called in this tick we also reset the time at which the phase
+            % was last executed thus enforcing the next execution time to
+            % be exactly this.oTimer.fTime + fNewStep
             if this.fLastTemperatureUpdate == this.oTimer.fTime
                 this.setTimeStep(fNewStep, true);
             else

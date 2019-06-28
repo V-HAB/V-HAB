@@ -13,7 +13,7 @@ classdef Example < vsys
     
     methods
         function this = Example(oParent, sName)
-            this@vsys(oParent, sName, -1);
+            this@vsys(oParent, sName, 60);
             
             %% crew planer
             % Since the crew schedule follows the same pattern every day,
@@ -120,20 +120,20 @@ classdef Example < vsys
             
             % Creates a store for the potable water reserve
             % Potable Water Store
-            matter.store(this, 'PotableWaterStorage', 1);
+            matter.store(this, 'PotableWaterStorage', 10);
             
-            oPotableWaterPhase = matter.phases.liquid(this.toStores.PotableWaterStorage, 'PotableWater', struct('H2O', 100), 295, 101325);
+            oPotableWaterPhase = matter.phases.liquid(this.toStores.PotableWaterStorage, 'PotableWater', struct('H2O', 1000), 295, 101325);
             
             
             % Creates a store for the urine
-            matter.store(this, 'UrineStorage', 1);
+            matter.store(this, 'UrineStorage', 10);
             
-            oUrinePhase = matter.phases.mixture(this.toStores.UrineStorage, 'Urine', 'liquid', struct('C2H6O2N2', 0.059, 'H2O', 1.6), 1, 295, 101325); 
+            oUrinePhase = matter.phases.mixture(this.toStores.UrineStorage, 'Urine', 'liquid', struct('C2H6O2N2', 0.059, 'H2O', 1.6), 295, 101325); 
             
             
             % Creates a store for the feces storage            
-            matter.store(this, 'FecesStorage', 1);
-            oFecesPhase = matter.phases.mixture(this.toStores.FecesStorage, 'Feces', 'solid', struct('C42H69O13N5', 0.032, 'H2O', 0.1), 1, 295, 101325); 
+            matter.store(this, 'FecesStorage', 10);
+            oFecesPhase = matter.phases.mixture(this.toStores.FecesStorage, 'Feces', 'solid', struct('C42H69O13N5', 0.032, 'H2O', 0.1), 295, 101325); 
             
             % Adds a food store to the system
             tfFood = struct('Food', 100, 'CarrotsEdibleWet', 10);
@@ -176,6 +176,14 @@ classdef Example < vsys
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
             
+            % set a fixed time step for the phases where the change rates
+            % are not of interest
+            tTimeStepProperties.fFixedTimeStep = this.fTimeStep;
+            
+            this.toStores.PotableWaterStorage.toPhases.PotableWater.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.UrineStorage.toPhases.Urine.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.FecesStorage.toPhases.Feces.setTimeStepProperties(tTimeStepProperties);
+            
             this.setThermalSolvers();
         end
     end
@@ -187,6 +195,7 @@ classdef Example < vsys
             % Here it only calls its parent's exec function
             exec@vsys(this);
             
+            this.oTimer.synchronizeCallBacks();
         end
      end
     

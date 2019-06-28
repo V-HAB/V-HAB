@@ -188,10 +188,10 @@ classdef Photobioreactor < vsys
             fMolNO3 = fMassNO3 / this.oMT.ttxMatter.NO3.fMolarMass; % kg/kg/mol = mol
             fMassKplus = fMolNO3 * this.oMT.ttxMatter.Kplus.fMolarMass; % kg
             
-            matter.phases.mixture(this.toStores.MediumMaintenance, 'NO3Supply','solid', struct('NO3',fMassNO3, 'Kplus', fMassKplus), 0.2, 293,1e5); %only nitrate added since Na would just remain in water adn wouldn't be used by the algae model or any of its calculations
+            matter.phases.mixture(this.toStores.MediumMaintenance, 'NO3Supply','solid', struct('NO3',fMassNO3, 'Kplus', fMassKplus), 293, 1e5); %only nitrate added since Na would just remain in water adn wouldn't be used by the algae model or any of its calculations
             
             matter.phases.liquid(this.toStores.MediumMaintenance, 'WaterSupply', struct('H2O', 100), 293, 1e5); %take temperature and pressure from somewhere else?
-            matter.phases.mixture(this.toStores.MediumMaintenance, 'UrineSupplyBuffer', 'liquid', struct('C2H6O2N2', 0.01475, 'H2O', 0.4), 0.001, 295, 101325);
+            matter.phases.mixture(this.toStores.MediumMaintenance, 'UrineSupplyBuffer', 'liquid', struct('C2H6O2N2', 0.01475, 'H2O', 0.4), 295, 101325);
             
             
             %exmes to growth medium
@@ -213,9 +213,9 @@ classdef Photobioreactor < vsys
             %% create Operations Interface (nutrient/watersupply, harvest)
             matter.store(this, 'Harvester', 0.1);
             
-            matter.phases.flow.mixture(this.toStores.Harvester, 'FlowThrough', 'liquid', struct('H2O', 1), 0.0001, 303, 1e5); %flow through pase which is connected to the growth medium and used for harvesting. medium constantly circulated between this flow phase and the growth chamber.
+            matter.phases.flow.mixture(this.toStores.Harvester, 'FlowThrough', 'liquid', struct('H2O', 1), 303, 1e5); %flow through pase which is connected to the growth medium and used for harvesting. medium constantly circulated between this flow phase and the growth chamber.
             matter.phases.liquid(this.toStores.Harvester, 'WaterHarvest', struct('H2O', 10), 293, 1e5); %phase where harvested water goes to
-            matter.phases.mixture(this.toStores.Harvester, 'ChlorellaHarvest','liquid', struct('Chlorella', 0.1),0.05, 293,1e5); %phase where harvested chlorella goes to. Program is extremely slow if solid is used for this
+            matter.phases.mixture(this.toStores.Harvester, 'ChlorellaHarvest','liquid', struct('Chlorella', 0.1), 293,1e5); %phase where harvested chlorella goes to. Program is extremely slow if solid is used for this
             
             %interface to growth medium phase
             matter.procs.exmes.mixture(this.toStores.Harvester.toPhases.FlowThrough, 'Liquid_from_Medium');

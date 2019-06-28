@@ -13,7 +13,9 @@ classdef DummyBoschProcess < matter.manips.substance.stationary
             this@matter.manips.substance.stationary(sName, oPhase);
             
         end
-        
+    end
+    
+    methods (Access = protected)
         function update(this)
             % Get the content of the phase
             afMassFlows = this.getTotalFlowRates();
@@ -49,7 +51,7 @@ classdef DummyBoschProcess < matter.manips.substance.stationary
             % afPartials variable. The last parameter indicates that the
             % values in afPartials are absolute masses, so within the
             % update method they are converted to flow rates. 
-            update@matter.manips.substance.stationary(this, afPartialFlows);
+            update@matter.manips.substance(this, afPartialFlows);
         end
     end
     

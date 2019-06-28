@@ -12,66 +12,72 @@ classdef mixture < matter.phase
     end
     
     properties (SetAccess = protected, GetAccess = public)
-        
-        % Volume in m^3
-        fVolume;
-        fPressure;
-
+        % Actual phase type of the matter in the phase, e.g. 'liquid',
+        % 'solid' or 'gas'.
         sPhaseType;
     end
     
     methods
-        function this = mixture(oStore, sName, sPhaseType, tfMasses, ~, fTemperature, fPressure)
+        function this = mixture(oStore, sName, sPhaseType, tfMasses, fTemperature, fPressure)
+            %% mixture class constructor
+            % describes an ideally mixed volume of mixture. The mixture
+            % phase can be used to describe phases where the general
+            % seperation of matter in different phase types does not work.
+            % E.g. for the adsorption of a gas into a solid or liquid
+            % (where normally the matter table would crash) or for solids
+            % which are aerosols in a gas phase.
+            %
+            % Different from the boundary and flow type phases the mass of
+            % this phase will change and a time step is calculated limiting
+            % by how much the phase properties are allowed to change. This
+            % type of phase should be used e.g. to model the habitat
+            % atmosphere (boundary would be e.g. the martian atmosphere,
+            % flow phases would be e.g. individual phases within subsystems
+            % that are very small)
+            %
+            % Required Inputs:
+            % oStore        : Name of parent store
+            % sName         : Name of phase
+            % sPhaseType    : The primary state of the matter. E.g. if it
+            %                 is a gas phase which has solids as aerosols
+            % tfMasses      : Struct containing mass value for each species
+            % fTemperature  : Temperature of matter in phase
+            % fPressure     : Pressure of matter in phase
             this@matter.phase(oStore, sName, tfMasses, fTemperature);
             
             this.sPhaseType = sPhaseType;
             if strcmp(this.sPhaseType, 'gas')
-                this.fPressure = this.fMass * this.oMT.Const.fUniversalGas * this.fTemperature / (this.fMolarMass * this.fVolume);
+                this.fMassToPressure = this.oMT.Const.fUniversalGas * this.fTemperature / (this.fMolarMass * this.fVolume);
             else
-                this.fPressure = fPressure;
+                this.fMassToPressure = fPressure / this.fMass;
             end
             this.fDensity = this.oMT.calculateDensity(this);
             this.fVolume = this.fMass / this.fDensity;
             
-            this.fPressureLastHeatCapacityUpdate = this.fPressure;
-        end
-        
-        function bSuccess = setPressure(this, fPressure)
-            % Changes the pressure of the phase. If no processor for volume
-            % change registered, do nothing.
-
-            bSuccess = this.setParameter('fPressure', fPressure);
-        end
-
-        function bSuccess = setVolume(this, fVolume)
-            % Changes the volume of the phase. If no processor for volume
-            % change registered, do nothing.
-
-            if strcmp(this.sPhaseType, 'gas')
-                bSuccess = this.setParameter('fVolume', fVolume);
-                this.fDensity = this.fMass / this.fVolume;
-                this.fPressure = this.fMass * this.oMT.Const.fUniversalGas * this.fTemperature / (this.fMolarMass * this.fVolume);
-            else
-                error('you cannot compress solids or liquids')
-            end
+            this.bMixture = true;
         end
     end
     
     
     methods (Access = protected)
         function this = update(this)
+            %% mixture update
+            % update the current state of the mixture, pressure is
+            % currently only calculated for gas phases
             update@matter.phase(this);
             
             this.fDensity = this.fMass / this.fVolume;
             
             if strcmp(this.sPhaseType, 'gas')
-                this.fPressure = this.oMT.calculatePressure(this);
+                this.fMassToPressure = this.oMT.calculatePressure(this) / this.fMass;
             end
         end
         
-        function setAttribute(this, sAttribute, xValue)
-            % Internal helper, see @matter.phase class.
-            this.(sAttribute) = xValue;
+        function fPressure = get_fPressure(this)
+            %% get_fPressure
+            % for mixtures we do not want to include the mass change between
+            % updates as a pressure change
+            fPressure = this.fMassToPressure * this.fMass;
         end
     end
 end

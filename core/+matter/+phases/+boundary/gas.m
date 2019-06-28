@@ -11,31 +11,39 @@ classdef gas < matter.phases.boundary.boundary
     end
 
     properties (SetAccess = protected, GetAccess = public)
-        
-        % Pressure in Pa
-        fPressure;
-        
         % Partial pressures in Pa
         afPP;
         
         % Substance concentrations in ppm
         afPartsPerMillion;
         
-        % Coefficient for pressure = COEFF * mass,  depends on current 
-        % matter properties
-        fMassToPressure;
-        
         % Relative humidity in the phase, see this.update() for details on
         % the calculation.
         rRelHumidity;
-    
     end
     
     methods
         function this = gas(oStore, sName, tfMass, fVolume, fTemperature, fPressure)
+            %% gas boundary class constructor
+            %
+            % creates a gas boundary phase with the specifid conditions.
+            % These will remain constant throughout the simulation unless
+            % they are directly changed using the setBoundaryProperties
+            % function!
+            %
             % to make the boundary phase compatible with phase definitions
             % of normal gas phases, if the volume is provided it is simply
             % ignored, otherwise only three parameters are required
+            %
+            % Required inputs:
+            % oStore        : Name of parent store
+            % sName         : Name of phase
+            % tfMasses      : Struct containing mass value for each species
+            % fVolume       : Just here so that nothing must be changed
+            %                 when a phase definition is changed from a
+            %                 normal phase to a boundary phase
+            % fTemperature  : Temperature of matter in phase
+            % fPressure     : Pressure of the phase
             
             this@matter.phases.boundary.boundary(oStore, sName, tfMass, fTemperature);
             
@@ -48,18 +56,11 @@ classdef gas < matter.phases.boundary.boundary
                 % p*V = m*R*T;
                 if this.fMass == 0
                     this.fMassToPressure = 0;
-
-                    this.fPressure = 0;
                 else
                     this.fMassToPressure = this.oMT.Const.fUniversalGas * this.fTemperature / (this.fMolarMass * fVolume);
-
-                    this.fPressure = this.fMass * this.fMassToPressure;
                 end
-            elseif nargin >= 4
-                
-                this.fPressure = fPressure;
-                
-                this.fMassToPressure = this.fPressure / this.fMass;
+            elseif nargin >= 6
+                this.fMassToPressure = fPressure / this.fMass;
             end
             
             % Now we set all required properties
@@ -67,8 +68,8 @@ classdef gas < matter.phases.boundary.boundary
             this.setBoundaryProperties(tProperties)
         end
         
-        %% Setting of boundary phase properties
         function setBoundaryProperties(this, tProperties)
+            %% setBoundaryProperties
             % using this function the user can set the properties of the
             % boundary phase. Currently the following properties can be
             % set:
@@ -91,10 +92,15 @@ classdef gas < matter.phases.boundary.boundary
                 this.oCapacity.setBoundaryTemperature(tProperties.fTemperature);
             end
             
+            % Store the current pressure in a local variable in case
+            % nothing else overwrites the pressure this will again be the
+            % pressure of the phase
+            fPressure = this.fPressure;
+            
             % In case afMass is used we calculate the partial pressures
             if isfield(tProperties, 'afMass')
                 if isfield(tProperties, 'fPressure')
-                    this.fPressure = tProperties.fPressure;
+                    fPressure = tProperties.fPressure;
                 end
                 
                 this.afMass = tProperties.afMass;
@@ -113,7 +119,7 @@ classdef gas < matter.phases.boundary.boundary
             elseif isfield(tProperties, 'afPP')
                 % if the partial pressures are provided the mass
                 % composition is calculated
-                this.fPressure = sum(tProperties.afPP);
+                fPressure = sum(tProperties.afPP);
                 this.afPP = tProperties.afPP;
                 
                 arMolFractions = this.afPP ./ sum(this.afPP);
@@ -123,7 +129,7 @@ classdef gas < matter.phases.boundary.boundary
             
             if this.fMass ~= 0
                 % Now we calculate other derived values with the new parameters
-                this.fMassToPressure = this.fPressure/this.fMass;
+                this.fMassToPressure = fPressure/this.fMass;
                 this.fMolarMass      = this.fMass ./ sum(this.afMass ./ this.oMT.afMolarMass);
                 
                 this.afPartsPerMillion = (this.afMass ./ this.fMolarMass) ./ (this.oMT.afMolarMass ./ this.fMass) * 1e6;

@@ -59,7 +59,7 @@ function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatri
                 % -C * FR = P_right - P_left     | *-1
                 % C * FR  = - P_right + P_left
                 afBoundaryConditions(iRow) = afBoundaryConditions(iRow) ...
-                    - iSign * oE.getPortProperties(); 
+                    - iSign * oE.getExMeProperties(); 
                 
                 % In case the pressure difference is smaller than our
                 % minimum pressure difference, we set the boundary
@@ -69,7 +69,7 @@ function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatri
                     afBoundaryConditions(iRow) = 0;
                 end
                 
-                if ~base.oDebug.bOff, this.out(1, 3, 'props', 'Phase %s-%s: Pressure %f', { oP.oStore.sName, oP.sName, oE.getPortProperties() }); end
+                if ~base.oDebug.bOff, this.out(1, 3, 'props', 'Phase %s-%s: Pressure %f', { oP.oStore.sName, oP.sName, oE.getExMeProperties() }); end
                 
             else
                 iCol = this.piObjUuidsToColIndex(oP.sUUID);

@@ -70,7 +70,7 @@ classdef ChlorellaInMedia < vsys
             this.tfGrowthChamberComponents = this.oBBMComposition.tfBBMComposition;
             this.tfGrowthChamberComponents.Chlorella = this.fInitialChlorellaMass;
 
-            matter.phases.mixture(this.toStores.GrowthChamber, 'GrowthMedium', 'liquid', this.tfGrowthChamberComponents, this.oParent.fGrowthVolume, 303, 1e5);
+            matter.phases.mixture(this.toStores.GrowthChamber, 'GrowthMedium', 'liquid', this.tfGrowthChamberComponents, 303, 1e5);
             
             %the true after 'gas' makes this to be a flow node, composition
             %of this phase is ignored if it is true (flow).

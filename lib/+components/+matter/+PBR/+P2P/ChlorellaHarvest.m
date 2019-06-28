@@ -45,11 +45,6 @@ classdef ChlorellaHarvest < matter.procs.p2ps.flow
 
         end
         
-        function update(~)
-            % this must be here since the normal V-HAB logic tries to
-            % call the update
-        end
-        
         function calculateFlowRate(this, ~, ~, ~, ~)
             
             this.fCurrentBiomassConcentration = this.oSystem.oGrowthRateCalculationModule.fBiomassConcentration; %kg/m3
@@ -80,6 +75,14 @@ classdef ChlorellaHarvest < matter.procs.p2ps.flow
             this.setMatterProperties(fFlowRate, this.arExtractPartials);
                 
         end       
+        
+    end
+    
+    methods (Access = protected)
+        function update(~)
+            % this must be here since the normal V-HAB logic tries to
+            % call the update
+        end
     end
 end
 

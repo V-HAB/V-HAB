@@ -5,7 +5,6 @@ function update(this)
     % section!
     
     this.fLastUpdate         = this.oTimer.fTime;
-    this.bRegisteredOutdated = false;
     
     if ~base.oDebug.bOff
         this.out(1, 1, 'update', 'Update multi flow rate solver');
@@ -455,4 +454,7 @@ function update(this)
     if this.bTriggerUpdateCallbackBound
         this.trigger('update');
     end
+    
+    % now set the flag that this solver is outdated
+    this.bRegisteredOutdated = false;
 end

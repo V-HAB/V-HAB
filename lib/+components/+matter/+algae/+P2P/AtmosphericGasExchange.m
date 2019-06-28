@@ -129,7 +129,9 @@ classdef AtmosphericGasExchange < matter.procs.p2ps.stationary
 
             
         end
-        
+    end
+    
+    methods (Access = protected)
         function update(this)
           
             

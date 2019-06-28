@@ -27,6 +27,12 @@ classdef Crew_Humidity_Generator < matter.procs.p2ps.stationary
             
         end
         
+        function setCrew(this, mbCrewMembers)
+            this.mbCrewMembers = mbCrewMembers;
+        end
+    end
+        
+    methods (Access = protected)
         function update(this)
             % According to ICES 2000-01-2345 12 lb of humidity per day were
             % constant over the test
@@ -37,9 +43,6 @@ classdef Crew_Humidity_Generator < matter.procs.p2ps.stationary
             % the phase itself are used (i.e. extracting all species
             % equally).
             this.setMatterProperties(fFlowRate, this.arExtractPartials);
-        end
-        function setCrew(this, mbCrewMembers)
-            this.mbCrewMembers = mbCrewMembers;
         end
     end
 end

@@ -37,9 +37,35 @@ classdef branch < base.branch
     
     methods
         function this = branch(oContainer, xLeft, csProcs, xRight, sCustomName)
-            % Can be called with either stores/ports, phase object handles
-            % or interface names (all combinations possible). Connections
-            % are always done from subsystem to system.
+            %% matter branch class constructor
+            %
+            % creates a new matter branch object which can be used to
+            % transport matter between two different phases
+            % 
+            % Required Inputs:
+            % oContainer:   The vsys in which the branch is located
+            % xLeft/xRight: The left/right side interface of the branch. It
+            %               can be either a 'StoreName.ExMeName' reference
+            %               an Interface Name or a phase object. If a phase
+            %               object is passed in a corresponding ExMe is
+            %               automatically created
+            % csProcs:      A cell array with the names of all F2F
+            %               processors as entry e.g. {'Pipe_1', 'Fan_1'}
+            % sCustomName:  A user defined name for the branch which can be
+            %               used to find it in the struct toBranches of the
+            %               vsys to access its values. Especially helpful
+            %               in larger models
+            %
+            % Note that if the branch is defined with an interface, the
+            % connections must always be from subsystem to parent system.
+            % Meaning the parent system has the Interface on the left side
+            % (xLeft), while the subsystem has it on the right side
+            % (xRight). The branch on the parent system will be deleted
+            % while the simulation is constructed and will then no longer
+            % be present. Only the subsystem will then have a branch in its
+            % toBranches and aoBranches struct which performs the specified
+            % connection of the two interface branches
+            
             if nargin < 5
                 sCustomName = [];
             end
@@ -82,14 +108,18 @@ classdef branch < base.branch
                 % name length of 63 characters. 
                 if length(csProcs{1}) > 63
                     % Generating some messages for the debugger
-                    this.out(3,1,'matter.branch','Truncating automatically generated thermal conductor name.');
-                    this.out(3,2,'matter.branch','Old name: %s', csProcs(1));
+                    if ~base.oDebug.bOff
+                        this.out(3,1,'matter.branch','Truncating automatically generated thermal conductor name.');
+                        this.out(3,2,'matter.branch','Old name: %s', csProcs(1));
+                    end
                     
                     % Truncating the name
                     csProcs{1} = csProcs{1}(1:63);
                     
                     % More debugging output
-                    this.out(3,2,'matter.branch','New name: %s', csProcs(1));
+                    if ~base.oDebug.bOff
+                        this.out(3,2,'matter.branch','New name: %s', csProcs(1));
+                    end
                     
                 end
                 
@@ -100,9 +130,18 @@ classdef branch < base.branch
             % branch constructor. 
             this.oThermalBranch = thermal.branch(this.oContainer, xLeft, csProcs, xRight, this.sCustomName, this);
         end
+        
         function createProcs(this, csProcs)
             %% Creating flow objects between the processors
-            % Looping through f2f procs
+            %
+            % Loops through the provided f2f processors and creates flow
+            % object in between all of them, so that the branch always
+            % consists of ExMe, Flow, F2F, Flow, F2F, ... , F2F, Flow, ExMe
+            %
+            % Required Inputs:
+            % csProcs:      A cell array with the names of all F2F
+            %               processors as entry e.g. {'Pipe_1', 'Fan_1'}
+            
             for iI = 1:length(csProcs)
                 sProc = csProcs{iI};
                 
@@ -132,6 +171,7 @@ classdef branch < base.branch
             end
         end
         function setOutdated(this)
+            %% matter branch setOutdated
             % Can be used by phases or f2f processors to request recalc-
             % ulation of the flow rate, e.g. after some internal parameters
             % changed (closing a valve).
@@ -140,8 +180,6 @@ classdef branch < base.branch
             % recalculated
             this.oThermalBranch.setOutdated();
             % Only trigger if not yet set
-            %CHECK inactivated here --> solvers and other "clients" should
-            %      check themselves!
             if ~this.bOutdated
                 this.bOutdated = true;
 
@@ -152,10 +190,28 @@ classdef branch < base.branch
         end
         
         function setIfLength(this, iLength)
+            %% setIfLength
+            % INTERNAL FUNCTION
+            % this function is used by the base branch to inform this
+            % branch object about the total number of elements within the
+            % interface branch
+            %
+            % Required Input:
+            % iLength: Total Number of elements within the Interface branch
             this.iIfFlow = iLength;
         end
         
         function setFlows(this, aoFlows, aoFlowProcs)
+            %% setFlows
+            % INTERNAL FUNCTIOn
+            % this function is used by the base.branch to construct the
+            % overall branch out of two interface branches!
+            %
+            % Required Inputs:
+            % aoFlows:      Object Array of all the flows from both
+            %               interface branches
+            % aoFlowProcs:  Object array of all f2f processors from both
+            %               interface branches
             if nargin < 3
                 this.aoFlows    = aoFlows;
                 this.iFlows     = length(this.aoFlows);
@@ -169,14 +225,21 @@ classdef branch < base.branch
         end
         
         function oExme = getInEXME(this)
-
+            %% getInExMe
+            %
+            % this function can be used to get the current ExMe from which
+            % mass is flowing into the branch, depending on the current
+            % flowrate. If currently there is no flowrate, the pressures of
+            % the two exmes are compared and the one with the higher
+            % pressure is used
+            
             if this.fFlowRate == 0
                 % We have no flow rate, so we use the properties of the
                 % phase that contains more mass than the other! This 
                 % ensures that the matter properties don't become zero if
                 % the coExmes{1} phase is empty.
                 
-                afPressure = [ this.coExmes{1}.getPortProperties(), this.coExmes{2}.getPortProperties() ];
+                afPressure = [ this.coExmes{1}.getExMeProperties(), this.coExmes{2}.getExMeProperties() ];
                 if afPressure(1) >= afPressure(2); iWhichExme = 1; else; iWhichExme = 2; end
                 
                 for iI = 1:this.iFlowProcs
@@ -195,22 +258,35 @@ classdef branch < base.branch
 
         end
         
-        % Catch 'bind' calls, so we can set a specific boolean property to
-        % true so the .trigger() method will only be called if there are
-        % callbacks registered.
         function [ this, unbindCallback ] = bind(this, sType, callBack)
+            % Catch 'bind' calls, so we can set a specific boolean property to
+            % true so the .trigger() method will only be called if there are
+            % callbacks registered.
             [ this, unbindCallback ] = bind@event.source(this, sType, callBack);
             
-            % Only do for set
+            % Only do for setFlowRate as the other triggers always have
+            % something bound to them!
             if strcmp(sType, 'setFlowRate')
                 this.bTriggerSetFlowRateCallbackBound = true;
             end
         end
-   
-        function setFlowRate(this, fFlowRate, afPressure)
-            % Set flowrate for all flow objects
+        
+        function setFlowRate(this, fFlowRate, afPressureDrops)
+            %% matter branch setFlowRate
+            % INTERNAL FUNCTION! The registerHandler function of
+            % base.branch provides access to this function for ONE solver,
+            % and only that solver is allowed to set the flowrate for the
+            % branch. Unfortunatly since base.branch is a parent class this
+            % function cannot be protected or private.
             %
-            % NOTE: afPressure is pressure DROPS, not total pressures!
+            % sets the flowrate for the branch and all flow objects, as
+            % well as the pressures for the flow objects
+            %
+            % Required Inputs:
+            % fFlowRate:        New flowrate for the branch in kg/s
+            % afPressureDrops:  Pressure Drops produced by the f2f
+            %                   processors. Negative values in this input
+            %                   represent pressure rises from e.g. fans
             
             if this.abIf(1), this.throw('setFlowRate', 'Left side is interface, can''t set flowrate on this branch object'); end
             
@@ -228,7 +304,7 @@ classdef branch < base.branch
             if tools.round.prec(sum(this.afFlowRates), this.oTimer.iPrecision) == 0
                 fFlowRate = 0;
                 
-                afPressure = zeros(1,this.iFlowProcs);
+                afPressureDrops = zeros(1,this.iFlowProcs);
                 
             end
             
@@ -236,33 +312,32 @@ classdef branch < base.branch
             this.bOutdated = false;
             
             % No pressure? Distribute equally.
-            if nargin < 3 || isempty(afPressure) || any(isinf(afPressure))
-                fPressureDiff = (this.coExmes{1}.getPortProperties() - this.coExmes{2}.getPortProperties());
+            if nargin < 3 || isempty(afPressureDrops) || any(isinf(afPressureDrops))
+                fPressureDiff = (this.coExmes{1}.getExMeProperties() - this.coExmes{2}.getExMeProperties());
                 
                 % Each flow proc produces the same pressure drop, the sum
                 % being the actual pressure difference.
-                afPressure = ones(1, this.iFlowProcs) * (fPressureDiff) / this.iFlowProcs;
+                afPressureDrops = ones(1, this.iFlowProcs) * (fPressureDiff) / this.iFlowProcs;
                 
                 % Note: no matter the flow direction, positive values on
                 % afPRessure always denote a pressure DROP
             end
             
             % Update data in flows
-            this.hSetFlowData(this.aoFlows, this.getInEXME(), fFlowRate, afPressure);
+            this.hSetFlowData(this.aoFlows, this.getInEXME(), fFlowRate, afPressureDrops);
             
             if this.bTriggerSetFlowRateCallbackBound
                 this.trigger('setFlowRate');
             end
         end
-        
     end
-    
-    
     
     methods (Sealed = true)
         function seal(this)
-            % Seal aoFlows, get FR func handle
-            
+            %% matter branch seal
+            % seals the branch object and prevents further changes
+            % also triggers sealing the flow objects and receives the
+            % corresponding function handles to set their data
             if this.bSealed
                 this.throw('seal', 'Already sealed');
             end

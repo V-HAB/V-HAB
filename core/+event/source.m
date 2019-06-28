@@ -61,11 +61,19 @@ classdef source < handle
             % automatically in the bind() method and passed back to the
             % binding entity. 
             this.tcEventCallbacks.(sName)(iId) = [];
-            
         end
         
+        function unbindAllEvents(this)
+            % this function can be used to unbind all callbacks that the
+            % current object had registered. This is helpfull for example
+            % if something like a manipulator is detached from a phase and
+            % then moved somewhere else. In that case removing all
+            % callbacks makes sense, as most likely everything for the
+            % object has changed. If any callback should still be present,
+            % it must be readded afterwards
+            this.tcEventCallbacks = struct();
+        end
     end
-    
     
     methods (Access = protected)
         % The trigger method is protected so only the objects that derive

@@ -39,11 +39,6 @@ classdef O2Pump < matter.procs.p2ps.stationary
             
         end
         
-        function update(~)
-            % this must be here since the normal V-HAB logic tries to
-            % call the update
-        end
-        
         function calculateFlowRate(this, ~, ~, ~, ~)
             
             this.fCurrentPP = this.oOut.oPhase.afPP(this.oMT.tiN2I.O2);
@@ -70,5 +65,13 @@ classdef O2Pump < matter.procs.p2ps.stationary
             this.setMatterProperties(fFlowRate, this.arExtractPartials);
  
         end      
+        
+    end
+    
+    methods (Access = protected)
+        function update(~)
+            % this must be here since the normal V-HAB logic tries to
+            % call the update
+        end
     end
 end

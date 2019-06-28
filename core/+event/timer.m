@@ -62,12 +62,12 @@ classdef timer < base
         % definition, allowing the user to bind specific functions to be
         % executed either before or after a specific calculation
         txPostTicks = struct('matter', struct(...
-                                'store_update', cell.empty(),...
                                 'phase_massupdate', cell.empty(),...
+                                'volumeManips', cell.empty(),...
                                 'phase_update', cell.empty(),...
                                 'solver', cell.empty(),...
                                 'P2Ps', cell.empty(),...
-                                'manips', cell.empty(),...
+                                'substanceManips', cell.empty(),...
                                 'multibranch_solver', cell.empty(),...
                                 'residual_solver', cell.empty()),...
                              ...
@@ -76,7 +76,6 @@ classdef timer < base
                              ...
                              'thermal', struct(...
                                 'capacity_temperatureupdate', cell.empty(),...
-                                'capacity_update', cell.empty(),...
                                 'solver', cell.empty(),...
                                 'heatsources', cell.empty(),...
                                 'multibranch_solver', cell.empty(),...
@@ -156,6 +155,14 @@ classdef timer < base
         
     end
     
+    properties (SetAccess = protected, GetAccess = public)
+        % This flag is used to decide if the timer should execute all
+        % callbacks with bound time steps in the current tick. This can be
+        % used to resynchronize call backs and reduce the number of
+        % required ticks for a simulation
+        bSynchronizeExecuteCallBack = false;
+    end
+    
     methods
         function this = timer(fMinimumTimeStep, fStart)
             % Parsing the minimum timestep input argument, if it is given
@@ -226,6 +233,13 @@ classdef timer < base
             %SETMINSTEP Sets the minimum time step of the solver
             this.fMinimumTimeStep = fMinStep;
             this.fTime            = -1 * this.fMinimumTimeStep;
+        end
+        
+        function synchronizeCallBacks(this)
+            %% synchronizeCallBacks
+            % tells the timer to execute all callbacks which have time
+            % steps registered at the timer to resynchronize them
+            this.bSynchronizeExecuteCallBack = true;
         end
         
         function setSimulationPrecision(this, iPrecision)
@@ -492,6 +506,17 @@ classdef timer < base
             % Dependent systems have -1 as time step - therefore this
             % should always be true!
             abExec = (this.afLastExec + this.afTimeSteps) <= this.fTime;
+            
+            % The user can trigger the execution of all callbacks at once,
+            % by using the synchronizeCallBacks function. This can help
+            % reduce the amount of ticks in a simulation
+            if this.bSynchronizeExecuteCallBack
+                % tells the timer to executa all call backs
+                abExec = true(1, length(this.afTimeSteps));
+                
+                this.bSynchronizeExecuteCallBack = false;
+            end
+            
             aiExec  = find(abExec);
             
             %% Execute callbacks
@@ -582,11 +607,7 @@ classdef timer < base
                             % call their functions
                             for iIndex = 1:sum(abExecutePostTicks)
                                 iPostTick = aiPostTicksToExecute(iIndex);
-                                % We set the post tick control for this post
-                                % tick to false, before we execute the post
-                                % tick, to allow rebinding of other post ticks
-                                % in the level during the execution of the
-                                % level
+        
                                 chCurrentPostTicks{iPostTick}();
                                 % The booelans are set to false after the
                                 % calculation to prevent the currently
@@ -630,12 +651,11 @@ classdef timer < base
                     aiPostTicksToExecute = find(abExecutePostTicks);
                     for iIndex = 1:sum(abExecutePostTicks)
                         iPostTick = aiPostTicksToExecute(iIndex);
-                        % We set the post tick control for this post
-                        % tick to false, before we execute the post
-                        % tick, to allow rebinding of other post ticks
-                        % in the level during the execution of the
-                        % level
+                        
                         chCurrentPostTicks{iPostTick}();
+                        % The booelans are set to false after the
+                        % calculation to prevent the currently executing
+                        % post tick from binding an update directly again
                         this.cabPostTickControl{iPostTickGroup, iPostTickLevel}(iPostTick) = false;
                     end
                 end

@@ -4,7 +4,7 @@ classdef branch < solver.thermal.base.branch
 % matter.branch
 
     properties (SetAccess = private, GetAccess = public)
-        % heat flow of this solver for the left and right exme. A vector is
+        % Heat flow of this solver for the left and right exme. A vector is
         % necessary because in mass bound thermal energy transfer only the
         % capacity that receives the mass changes its energy through a
         % solver. For the other phase the temperature remains equal and the
@@ -22,7 +22,7 @@ classdef branch < solver.thermal.base.branch
     
     methods
         function this = branch(oBranch)
-            % creat a fluidic thermal solver, which solves the thermal
+            % Creat a fluidic thermal solver, which solves the thermal
             % energy transport which occurs when mass is transported from
             % phase to phase
             this@solver.thermal.base.branch(oBranch, 'fluidic');
@@ -46,7 +46,7 @@ classdef branch < solver.thermal.base.branch
             % tick resulting in the post tick calculation to be executed
             this.hBindPostTickUpdate = this.oBranch.oTimer.registerPostTick(@this.update, 'thermal' , 'solver');
             
-            % and we update the solver to initialize everything
+            % And we update the solver to initialize everything
             this.update();
             
         end
@@ -54,15 +54,15 @@ classdef branch < solver.thermal.base.branch
     
     methods (Access = protected)
         function update(this)
-            % update the thermal solver
+            % Update the thermal solver
             
-            % update the resistances of the conductors within this branch
+            % Update the resistances of the conductors within this branch
             afResistances = zeros(1,this.oBranch.iConductors);
             for iConductor = 1:this.oBranch.iConductors
                 afResistances(iConductor) = this.oBranch.coConductors{iConductor}.update();
             end
             
-            % get the temperature difference between the two capacities
+            % Get the temperature difference between the two capacities
             % which this branch connects
             oMassBranch = this.oBranch.coConductors{1}.oMassBranch;
             fDeltaTemperature = this.oBranch.coExmes{1}.oCapacity.fTemperature - this.oBranch.coExmes{2}.oCapacity.fTemperature;
@@ -76,20 +76,20 @@ classdef branch < solver.thermal.base.branch
             % resistance values in the branch
             fResistance = sum(afResistances) / this.oBranch.iConductors;
             
-            % the (initial) heat flow is simply calculated by dividing the
+            % The (initial) heat flow is simply calculated by dividing the
             % temperature difference with the resistance (this heat flow
             % neglects the heat flow from F2F processors, which is handled
             % hereafter)
             fHeatFlow = fDeltaTemperature / fResistance;
             
             if this.bP2P
-                % in this case we have a p2p
+                % In this case we have a p2p
                 iFlowProcs = 0;
             else
                 iFlowProcs = oMassBranch.iFlowProcs;
             end
              
-            % if the resistance is infinite no mass is currently flowing
+            % If the resistance is infinite no mass is currently flowing
             % and therefore the heatflows are also 0
             if fResistance == inf
                 this.afSolverHeatFlow = [0, 0];
@@ -99,7 +99,7 @@ classdef branch < solver.thermal.base.branch
                 if this.bP2P
                     oMassBranch.setTemperature(afTemperatures(1));
                 else
-                    % in this case it is assumed that the F2Fs also do not
+                    % In this case it is assumed that the F2Fs also do not
                     % produce/consume any heat, as modelling that would
                     % require some more sophisticated models for branches
                     % (where a heater inside a pipe could introduce a
@@ -137,20 +137,20 @@ classdef branch < solver.thermal.base.branch
                 iExme = 1;
             end
             
-            % for the flows we solve the temperatures in a downstream order
-            % and also thermally update the procs in a downstream order
+            % For the flows we solve the temperatures in a downstream order
+            % and also thermally update the procs in a downstream order.
             %
-            % e.g. we have two f2f thus 3 flows and a positive flow
+            % E.g. we have two f2f thus 3 flows and a positive flow
             % direction. Then:
             % afTemperatures(1) = temperature of left capacity
             % afF2F_HeatFlows(2) = heatflow of first f2f, updated after
             % first temperature is known and therefore before the second
             % flow temperature is set
             if this.bP2P
-                % a P2P cannot have F2Fs and therefore we can directly set it
+                % A P2P cannot have F2Fs and therefore we can directly set it
                 oMassBranch.setTemperature(afTemperatures(1));
             else
-                % for actual matter.branch references the branch can
+                % For actual matter.branch references the branch can
                 % contain multiple F2Fs, we now set the temperatures in the
                 % order of the flow passing through them and update them
                 % after each other so that each F2F does know the correct
@@ -162,7 +162,8 @@ classdef branch < solver.thermal.base.branch
                 else
                     aiFlows = (iFlowProcs):-1:1;
                 end
-                % now loop through the remaining flows
+                
+                % Now loop through the remaining flows
                 for iFlow = aiFlows
                     try
                         oMassBranch.aoFlowProcs(iFlow + iFlowProcShifter).updateThermal();
@@ -192,7 +193,7 @@ classdef branch < solver.thermal.base.branch
                 end
             end
             this.afSolverHeatFlow = [0, 0];
-            % for matter bound heat transfer only the side receiving the
+            % For matter bound heat transfer only the side receiving the
             % mass receives the heat flow, the energy change on the other
             % side is handled by changing the total heat capacity. The
             % impact of the F2Fs heat flows is simply added to the

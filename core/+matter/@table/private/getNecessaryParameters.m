@@ -30,7 +30,7 @@ if length(varargin) == 1
     
     if strcmp(sMatterState, 'gas')
         
-        [ afPartialPressures, ~ ] = this.calculatePartialPressures(varargin{1});
+        afPartialPressures = this.calculatePartialPressures(varargin{1});
         
     elseif strcmp(sMatterState, 'liquid')
         % If the pressure of the flow is zero, as would happen
@@ -59,8 +59,6 @@ if length(varargin) == 1
                 afPartialPressures(aiPhase == 1) = fPressure;
 
                 aiPhase = this.determinePhase(arPartialMass, fTemperature, afPartialPressures);
-                
-                aiPhase = round(aiPhase,0);
             else
                 afPartialPressures = ones(1,this.iSubstances) .* fPressure;
             end
@@ -125,7 +123,7 @@ else
         end
         
         if any(strcmp(sMatterState, {'gas'}))
-            [ afPartialPressures, ~ ] = this.calculatePartialPressures(sMatterState, afMass, fPressure, fTemperature);
+            afPartialPressures = this.calculatePartialPressures(sMatterState, afMass, fPressure, fTemperature);
         else
             afPartialPressures = ones(1, this.iSubstances) * fPressure;
         end
@@ -140,8 +138,9 @@ else
     
 end
 
-% Find the indices of all substances that are in the flow
-aiIndices = find(arPartialMass > 0);
+% Find the indices of all substances that are present and have a
+% significant impact on the matter property (more than one promille)
+aiIndices = find(arPartialMass > 0.001);
 
 csPhase = {'solid';'liquid';'gas';'supercritical'};
 tiP2N.solid = 1;
@@ -150,6 +149,8 @@ tiP2N.gas = 3;
 tiP2N.supercritical = 4;
 if ~strcmp(sMatterState, 'mixture')
     aiPhase = tiP2N.(sMatterState)*ones(1,this.iSubstances);
+elseif length(varargin) ~= 1
+    aiPhase = this.determinePhase(arPartialMass, fTemperature, afPartialPressures);
 end
 
 end

@@ -10,31 +10,49 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         sType;
     end
 
+    % These properties (including the mass vlaues) are not private because
+    % the subclasses for flow and boundary phases must have access to them
+    % and be allowed to change them according to their needs
     properties (SetAccess = protected, GetAccess = public)
         % Basic parameters:
 
-        % Mass of every substance in phase
+        % Mass vector of every substance in phase. Contains an entry for
+        % every substance defined in V-HAB, even if that substance is not
+        % used. If a specific substance mass is of interest that can be
+        % accessed by using the matter table to identify the corresponding
+        % index. For example by using afMass(this.oMT.tiN2I.H2O) the
+        % partial mass of water within the phase could be identified
         afMass;       % [kg]
 
-        % Temperature of phase
+        % Temperature of phase, only here for information reasons, the
+        % actual temperature calculation is performed in the thermal domain
+        % capacity
         fTemperature; % [K]
+        
+        % Volume in m^3
+        fVolume; %[m^3]
+        
+        % Coefficient for pressure = COEFF * mass,  depends on current 
+        % matter properties
+        fMassToPressure; % [Pa/kg]
         
         % Mean Density of mixture; not updated by this class, has to be
         % handled by a deriving class.
         fDensity; % [kg/m^3]
 
-        % Total negative masses per substance encountered during mass
-        % update. This data is only kept for debugging/logging purposes.
+        % Total mass of each substance that was generated because too much
+        % mass was taken from this phase
         % If a branch requests more mass of a substance than stored in the
-        % phase, there is currently no way to tell the branch about this
-        % issue. Instead of throwing an error or setting a negative value
-        % for the substance mass, the mass is set to zero and the absolute
-        % 'generated' mass is added to this vector. (Generated because of
-        % we overwrite a negative mass value with 0 we actually ad mass to
-        % the system)
+        % phase, the mass is set to zero and the absolute 'generated' mass
+        % is added to this vector. (Generated because of we overwrite a
+        % negative mass value with 0 we actually ad mass to the system).
+        % The time step calculation of the phase limits this to 1e-8 kg per
+        % tick and substance.
         afMassGenerated;
 
-        % Mass fraction of every substance in phase
+        % Mass fraction of every substance in phase. The sum of this vector
+        % is always 1 and represent afMass ./ fMass. Accessing individual
+        % values for specific substance is analogous to afMass
         arPartialMass; % [%]
 
         % Total mass of phase
@@ -44,48 +62,45 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         fMolarMass;    % [kg/mol]
         
         % Length of the current time step for this phase
-        fTimeStep;
+        fTimeStep;     % [s]
         
-        % Do we need to trigger the massupdate/update events? These
-        % properties were implement to improve simulation speed for cases
-        % where these triggers are not used
+        % booleans used to check if anything is bound to the events
+        % informing other object/functions about a finished
+        % massupdate/update. These properties were implement to improve
+        % simulation speed for cases where these triggers are not used
         bTriggerSetMassUpdateCallbackBound = false;
         bTriggerSetUpdateCallbackBound = false;
         
-        % Properties to decide when the specific heat capacity has to be
-        % recalculated
-        fPressureLastHeatCapacityUpdate    = 0;
-        fTemperatureLastHeatCapacityUpdate = 0;
-        arPartialMassLastHeatCapacityUpdate;
-        
-        % For very small phases, bFlow can be set to true. With that, the
-        % outflowing matter properties will be set to the sum of the
-        % inflowing matter, taking p2ps/manip.substance into account. Also,
-        % properties like molar mass and heat capacity are calculated on 
-        % the fly.
-        % should only be reset by the child class glow node!
+        % Very small phases can be modelled as flow phases (see child class
+        % flow.m and its derviatives) which assumes that the phase does not
+        % contain any mass.
+        % should only be reset by the child class matter.phases.flow.flow.m!
         bFlow = false;
         
         % For very large phases which model e.g. the enviroment boundary
         % phases can be used. This parameter decides if the phase is a
         % boundary phase or not
+        % should only be reset by the child class matter.phases.boundary.boundary.m!
         bBoundary = false;
+        
+        % To easier identify mixture phases, all phases have this boolean
+        % property, which is normally false and only set to true by the
+        % mixture subclass
+        bMixture = false;
         
         % Last time the phase mass was updated. Is NOT an actual update!
         % Only the mass is changed not all other properties, e.g. Pressure
         % and Temperature remain the same.
         fLastMassUpdate = -10;
 
-        % Time step between the last mass updates
+        % Time step between the last mass updates. Note that this is NOT
+        % the time to the next mass update, as we cannot know that!
         fMassUpdateTimeStep = 0;
 
         % Current total incoming or (if negative value) outgoing mass flow,
         % for all substances combined. Used to improve pressure estimation
         % in ExMe processors.
         fCurrentTotalMassInOut = 0;
-    end
-
-    properties (SetAccess = private, GetAccess = public)
 
         % Associated matter store object
         oStore;
@@ -102,13 +117,17 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % User-defined name of phase
         sName;
 
-        % List of Extract/Merge processors added to the phase: Key of
-        % struct is set to the processor's name and can be used to retrieve
-        % that object.
+        % struct list of Extract/Merge processors added to the phase.
+        % The names of the exmes are used as fieldnames for the structs and
+        % the exme can be accessed through this struct with its name
         toProcsEXME = struct();
 
-        % Cache: List and count of ExMe objects, used in |this.update()|
+        % Cell array of all exmes for this phase. Used as alternative
+        % reference of the exmes and is usefull if a for loop over all
+        % exmes is performed.
         coProcsEXME;
+        % Integer value of the number of exmes within this phase (can be
+        % used for for-loops)
         iProcsEXME;
 
         % Cache: List and count of all p2p flow processor objects (i.e.
@@ -120,7 +139,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         
         % List and number of manipulators added to the phase
         toManips = struct('volume', [], 'temperature', [], 'substance', []);
-        iManipulators = 0;
+        iVolumeManipulators = 0;
+        iSubstanceManipulators = 0;
         
         
         % Storage - preserve the values calculated during calculateTimeStep
@@ -139,6 +159,16 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         
         % Last time branches were set oudated
         fLastSetOutdated = -10;
+        
+        % A flag to decide if the massupdate is already registered or not
+        bRegisteredMassupdate = false;
+        
+        % In recursive calls within the post tick where the phase itself
+        % triggers outdated calls up to the point where it is set outdated
+        % again itself it is possible for it to get stuck with a
+        % true bRegisteredOutdated flag. To prevent this we also store the
+        % last time at which we registered a massupdate
+        fLastRegisteredMassupdate = -1;
         
         % Maximum allowed percentage change in the total mass of the phase
         rMaxChange = 1e-3;
@@ -168,19 +198,49 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % calculation
         iTimeStepPrecision = 7;
         
-        % Maximum factor with which rMaxChange is decreased
-        rHighestMaxChangeDecrease = 0;
+        % This property sets the maximum mass that is generated per tick
+        % when too much mass of a specific substance is taken out of the
+        % phase. Lower limits will reduce the afMassGenerated value but
+        % slow down the simulation!
+        fMassErrorLimit = 1e-8;
+        
+        % This value sets the maximum mass that will initally enter a phase
+        % after its mass was zero. If e.g. a storeroom is modelled which
+        % frequently is completly emptied and then many kg of mass are
+        % added again to the empty storeroom this value should be high, as
+        % otherwise a slow ramp up of the time step will occur
+        fMaximumInitialMass = 0.1;
+        
+        % This boolean property allows other components to check whether
+        % this phase will be updated in the corresponding post tick group
+        % or not. Used for example in the (in)compressibleMedium volume
+        % manipulators to only update them if the phase update will execute
+        bUpdateRegistered = false;
         
         % Masses in phase at last update.
         fMassLastUpdate;
         afMassLastUpdate;
-        
-        % Log mass and time steps which are used to influence rMaxChange
-        afMassLog;
-        afLastUpd;
     end
 
-    properties (SetAccess = protected, GetAccess = protected)
+    properties (Dependent)
+        % Pressure in Pa. This is a dependent property because it is
+        % calculated on demand from fMassToPressure * fMass. That is a
+        % linearization approach and yields the pressure for the current
+        % mass. The fMassToPressure parameter is updated in the update
+        % function of the phase
+        fPressure;
+    end
+    
+    % These properties are private because changing them would change the
+    % update order, which is a significant change of the core and should
+    % not be allowed without a certain hurdle. If it is necessary at some
+    % point for a child class to change the execution order, this should be
+    % discussed in depth and then a solution for this should be found (e.g.
+    % using a intermediare function that only allows that child class
+    % access to these properties)
+    properties (SetAccess = private, GetAccess = protected)
+        % function handle registered at the timer object that allows this
+        % phase to set a time step, which is then enforced by the timer
         setTimeStep;
         % function handle to bind a post tick update of the massupdate
         % function of this phase. The handle is created while registering
@@ -193,16 +253,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         hBindPostTickTimeStep
     end
     
-    properties (Access = public)
-        % If true, massupdate triggers all branches to re-calculate their
-        % flow rates. Use when volumes of phase compared to flow rates are
-        % small!
-        bSynced = false;
-    end
-
     methods
 
         function this = phase(oStore, sName, tfMass, fTemperature, sCaller)
+            %% Phase Class Constructor
             % Constructor for the |matter.phase| class. Input parameters
             % can be provided to define the contained masses and
             % temperature, additionally the internal, merge and extract
@@ -222,27 +276,24 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             %   sCaller       - only internally used to decide which
             %                   capactiy should be added to the phase
 
-            % Parent has to be a or derive from matter.store
+            % Parent has to be or derive from matter.store
             if ~isa(oStore, 'matter.store'), this.throw('phase', 'Provided oStore parameter has to be a matter.store'); end
 
             % Set name
             this.sName = sName;
 
-            % Parent store - FIRST call addPhase on parent, THEN set the
-            % store as the parent - matter.store.addPhase only does that if
-            % the oStore attribute here is empty!
-            %CHECK changed, see connector_store, need oStore already set
+            % Parent store - FIRST set the store as the parent, THEN call
+            % addPhase on parent -
             this.oStore = oStore;
             this.oStore.addPhase(this);
             
-            % Set matter table / timer shorthands, register phase in MT
+            % Set matter table / timer shorthands
             this.oMT    = this.oStore.oMT;
             this.oTimer = this.oStore.oTimer;
             
             % Preset masses
             this.afMass = zeros(1, this.oMT.iSubstances);
             this.arPartialMass = zeros(1, this.oMT.iSubstances);
-            this.arPartialMassLastHeatCapacityUpdate = this.arPartialMass;
             this.fMinStep = this.oTimer.fMinimumTimeStep;
             
             % Mass provided?
@@ -305,6 +356,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             this.fMass = sum(this.afMass);
             this.afMassGenerated = zeros(1, this.oMT.iSubstances);
 
+            this.fMassToPressure = this.fPressure / this.fMass;
+            
             % add a thermal capacity to this phase to handle thermal
             % calculations 
             if nargin > 4 && strcmp(sCaller, 'boundary')
@@ -331,22 +384,45 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         end
 
         function this = registerMassupdate(this, ~)
+            %% registerMassupdate
             % To simplify debugging registering a massupdate must be done
             % using this function. That way it is possible to set
             % breakpoints here to see what binds massupdates for the phase
+            if ~(this.oTimer.fTime > this.fLastRegisteredMassupdate) && this.bRegisteredMassupdate
+                return
+            end
+            
             this.hBindPostTickMassUpdate();
+            
+            this.fLastRegisteredMassupdate = this.oTimer.fTime;
+            this.bRegisteredMassupdate = true;
+            
         end
         
         function this = registerUpdate(this)
-            % A phase update is called, which means the
-            % pressure etc changed so much that a recalculation is required
+            %% registerUpdate
+            % A phase update is called, which means the pressure etc
+            % changed so much that a recalculation is required. However,
+            % the update is not executed directly. Instead the required
+            % functions are bound to the post tick. Note that the order in
+            % which the functions are executed does not depend on the order
+            % of the code here, but is instead defined in the post tick
+            % order (see also
+            % https://wiki.tum.de/display/vhab/5.+Timer+and+Execution+Order
+            % for more information on the execution order)
+            
+            % Bind execution of the update function to the post tick
             this.hBindPostTickUpdate();
             
-            % therefore we also update the mass of this phase
+            % if we want to update the phase, we also have to update the
+            % mass within the phase, in case that is not triggered by
+            % anything else
             this.registerMassupdate();
             
             % and trigger branch solver updates in post tick for all
-            % branches because their boundary conditions changed
+            % branches because their boundary conditions changed (e.g. the
+            % pressure of this phase changed, thus changing the boundary
+            % condition and overall delta pressure for the branches)
             this.setBranchesOutdated();
             
             % We also tell the P2Ps and manips to update
@@ -354,23 +430,14 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
             % We also ensure that the time step is recalculated
             this.setOutdatedTS();
+            
+            % set the boolean falg to true that this phase will be updated
+            % in the post tick
+            this.bUpdateRegistered = true;
         end
         
-        function setTemperature(this, oCaller, fTemperature)
-            % This function can only be called from the ascociated capacity
-            % (TO DO: Implement the check) and ensure that the temperature
-            % calculated in the thermal capacity is identical to the phase
-            % temperature (by using a set function in the capacity that
-            % always calls this function as well)
-            if ~isa(oCaller, 'thermal.capacity')
-                this.throw('setTemperature', 'The setTemperature function of the phase class can only be used by capacity objects. Please do not try to set the temperature directly, as this would lead to errors in the thermal solver');
-            end
-                
-            this.fTemperature = fTemperature;
-            
-        end
-        %% Setting of time step properties
         function setTimeStepProperties(this, tTimeStepProperties)
+            %% Setting of time step properties
             % currently the possible time step properties that can be set
             % by the user are:
             %
@@ -394,12 +461,25 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             %               values during time step calculation. Values
             %               smaller than 10^-iPrecision will be rounded to
             %               0 and not result in smaller time steps
+            % fMassErrorLimit:  sets the maximum mass that is generated per
+            %               tick when too much mass of a specific substance
+            %               is taken out of the phase. Lower limits will
+            %               reduce the afMassGenerated value but slow down
+            %               the simulation!
+            % fMaximumInitialMass:  This value sets the maximum mass that
+            %               will initally enter a phase after its mass was
+            %               zero. If e.g. a storeroom is modelled which
+            %               frequently is completly emptied and then many
+            %               kg of mass are added again to the empty
+            %               storeroom this value should be high, as
+            %               otherwise a slow ramp up of the time step will
+            %               occur
             %
             % In order to define these provide a struct with the fieldnames
             % as described here to this function for the values that you
             % want to set
             
-            csPossibleFieldNames = {'rMaxChange', 'arMaxChange', 'fMaxStep', 'fMinStep', 'fFixedTimeStep', 'iTimeStepPrecision'};
+            csPossibleFieldNames = {'rMaxChange', 'arMaxChange', 'fMaxStep', 'fMinStep', 'fFixedTimeStep', 'iTimeStepPrecision', 'fMassErrorLimit', 'fMaximumInitialMass'};
             
             % In case the struct reference for the partial mass change is
             % used the arMaxChange vector for the internal calculations has
@@ -461,32 +541,70 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             this.setOutdatedTS();
         end
         
-        % Catch 'bind' calls, so we can set a specific boolean property to
-        % true so the .trigger() method will only be called if there are
-        % callbacks registered.
         function [ this, unbindCallback ] = bind(this, sType, callBack)
+            %% bind
+            % Catch 'bind' calls, so we can set a specific boolean property
+            % to true so the .trigger() method will only be called if there
+            % are callbacks registered.
             [ this, unbindCallback ] = bind@event.source(this, sType, callBack);
             
-            % Only do for set
+            % for the triggers specific to phases we set the corresponding
+            % boolean properties to true if anything binds anything to
+            % them. Only if the boolean for the event is true the event is
+            % actually triggered
             if strcmp(sType, 'massupdate_post')
                 this.bTriggerSetMassUpdateCallbackBound = true;
             elseif strcmp(sType, 'update_post')
                 this.bTriggerSetUpdateCallbackBound = true;
             end
         end
+        
+        
+        function fPressure = get.fPressure(this)
+            %% get.fPressure
+            % Since the pressure is a dependent property but some child
+            % classes require a different calculation approach for
+            % the pressure this function only defines the function name
+            % which is used to calculate the pressure (since child classes
+            % cannot overload this function).
+            fPressure = this.get_fPressure();
+        end
     end
 
+    methods (Access = {?thermal.capacity, ?matter.phase})
+        % The setTemperature function of the phase class can only be used
+        % by capacity objects. Please do not try to set the temperature
+        % directly, as this would lead to errors in the thermal solver
+        function setTemperature(this, fTemperature)
+            %% SetTemperature
+            % INTERNAL FUNCTION!
+            % This function can only be called from the ascociated capacity
+            % to set the temperature of the phase!
+            this.fTemperature = fTemperature;
+        end
+    end
+    
     %% Methods for handling manipulators
     methods
-
         function hRemove = addManipulator(this, oManip)
+            %% addManipulator
+            % function to add a manipulator to this phase. The necessary
+            % inputs are:
+            % oManip: a valid manipulator object
+            % The outputs are:
+            % hRemove: a handle which can be used to remove the manipulator
+            % from the phase
 
             sManipType = [];
 
-            if     isa(oManip, 'matter.manips.volume'),               sManipType = 'volume';
-            elseif isa(oManip, 'matter.manips.temperature'),          sManipType = 'temperature';
-            elseif isa(oManip, 'matter.manips.substance.flow'),       sManipType = 'substance';
-            elseif isa(oManip, 'matter.manips.substance.stationary'), sManipType = 'substance';
+            if	isa(oManip, 'matter.manips.volume')
+                sManipType = 'volume';
+                % Increment the number of manipulators
+                this.iVolumeManipulators = this.iVolumeManipulators + 1;
+            elseif isa(oManip, 'matter.manips.substance')
+                sManipType = 'substance';
+                % Increment the number of manipulators
+                this.iSubstanceManipulators = this.iSubstanceManipulators + 1;
             end
 
             if ~isempty(this.toManips.(sManipType))
@@ -496,12 +614,33 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Set manipulator
             this.toManips.(sManipType) = oManip;
             
-            % Increment the number of manipulators
-            this.iManipulators = this.iManipulators + 1;
 
             % Remove fct call to detach manipulator
             hRemove = @() this.detachManipulator(sManipType);
 
+        end
+        
+        function [ hSetProperty ] = bindSetProperty(this, sPropertyName)
+            %% bindSetProperty
+            % INTERNAL FUNCTION! is called by the manips to allow them
+            % access to otherwise protected phase properties.
+            % This function is used to provide access to the internal
+            % Properties of a phase, which allows to overwrite parameters.
+            % Since overwriting parameters can lead to inconsistencies if
+            % done incorrectly the setProperty function itself is private
+            % and this function checks whether the parameter that is
+            % supposed to be set is a valid parameter. Valid parameters
+            % which can be overwritten by manipulators are:
+            % fVolume, fPressure, fDensity
+            %
+            % The temperature specifically cannot be changed by this
+            % function because it is a thermal domain property!
+            csValidProperties = {'fVolume', 'fMassToPressure', 'fDensity'};
+            if ~any(strcmp(sPropertyName, csValidProperties))
+                 error(['The function BindSetProperty was provided the unknown input parameter: ', sPropertyName, ' please view the help of the function for possible input parameters']);
+            end
+                
+            hSetProperty = @(xNewValue) this.setProperty(sPropertyName, xNewValue);
         end
     end
 
@@ -511,6 +650,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
     % the store's bSealed attr, so nothing can be changed later.
     methods
         function addProcEXME(this, oProcEXME)
+            %% addProcEXME
             % Adds a exme proc, i.e. a port. Returns a function handle to
             % the this.setAttribute method (actually the one of the derived
             % class) which allows manipulation of all set protected
@@ -521,20 +661,22 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             end
 
             if ~isa(oProcEXME, [ 'matter.procs.exmes.' this.sType ])
+                % check if the exme is of the correct type to connect with
+                % this phase
                 this.throw('addProcEXME', [ 'Provided object ~isa matter.procs.exmes.' this.sType ]);
             elseif ~isempty(oProcEXME.oPhase)
+                % check if the exme is already connected to another phase
                 this.throw('addProcEXME', 'Processor has already a phase set as parent.');
             elseif isfield(this.toProcsEXME, oProcEXME.sName)
+                % check if an exme with this name is already present
                 this.throw('addProcEXME', 'Proc %s already exists.', oProcEXME.sName);
-            elseif strcmp(oProcEXME.sName, 'default')
-                this.throw('addProcEXME', 'Default EXMEs are not allowed any more!');
             end
 
             this.toProcsEXME.(oProcEXME.sName) = oProcEXME;
         end
 
-        % Moved to public methods, sometimes external access required
         function [ afTotalInOuts, mfInflowDetails ] = getTotalMassChange(this)
+            %% getTotalMassChange
             % Get vector with total mass change through all EXME flows in
             % [kg/s].
             %
@@ -568,10 +710,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 oExme = this.coProcsEXME{iI};
                 [ fFlowRate, arFlowPartials, afProperties ] = oExme.getFlowData();
                 
-                % If the flow rate is empty, then the exme is not
-                % connected, so we can skip it and move on to the next one.
-                if isempty(fFlowRate), continue; end
-                
                 % Now we add the total mass flows per substance to the
                 % mfTotalFlows matrix.
                 mfTotalFlows(iI, :) = fFlowRate * arFlowPartials;
@@ -602,31 +740,21 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             end
         end
         
-    end
-
-
-    %% Finalize methods
-    methods
-
         function seal(this)
-            
-            % Preset mass and time step logging attributes
-            % iPrecision ^ 2 is more or less arbitrary
-            iStore = this.oTimer.iPrecision ^ 2;
+            %% seal
+            % INTERNAL METHOD! This is called by the sealMatterStructure
+            % function of the container
+            % Seales the phase and prevents further changes to it regarding
+            % exmes etc. Only IF exmes are allowed to change after this, to
+            % allow e.g. a human to move through a habitat.
             
             % Bind the .update method to the timer, with a time step of 0
             % (i.e. smallest step), will be adapted after each .update
-            %this.setTimeStep = this.oTimer.bind(@(~) this.update(), 0);
             this.setTimeStep = this.oTimer.bind(@(~) this.registerUpdate(), 0, struct(...
                 'sMethod', 'update', ...
                 'sDescription', 'The .update method of a phase', ...
                 'oSrcObj', this ...
             ));
-            
-            this.afMassLog = ones(1, iStore) * this.fMass;
-            this.afLastUpd = 0:(1/(iStore-1)):1;%ones(1, iStore) * 0.00001;
-            
-            this.rHighestMaxChangeDecrease = this.oStore.oContainer.tSolverParams.rHighestMaxChangeDecrease;
             
             % Max time step
             this.fMaxStep = this.oStore.oContainer.tSolverParams.fMaxTimeStep;
@@ -663,27 +791,42 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
     end
 
     %% Internal, protected methods
+    % These methods can only be called by the phase or its child classes.
+    % This is necessary because calling them from somewhere else could lead
+    % to inconsistent results
     methods (Access = protected)
 
         function this = massupdate(this, ~)
-            % This method updates the mass and temperature related
-            % properties of the phase. It takes into account all in- and
-            % outflowing matter streams via the exme processors connected
-            % to the phase, including the ones associated with p2p
-            % processors. It also gets the mass changes from substance
-            % manipulators. The new temperature is based on the thermal
-            % energy of the in- and outflow. After completing the update of
-            % fMass, afMass and fTemperature this method sets the phase's timestep
-            % outdated, so it will be recalculated during the post-tick.
-            % Additionally, if this phase is set as 'sycned', this method
-            % will set all branches connected to exmes connected to this
-            % phase to outdated, also causing a recalculation in the
-            % post-tick.
+            %% massupdate
+            % INTERNAL METHOD! This method can only be executed in the post
+            % tick, if a user wants to execute a massupdate the
+            % registerMassupdate function of the phase should be used to
+            % trigger the post tick update in the current tick!
+            %
+            % This method updates the mass related properties of the phase.
+            % It takes into account all in- and outflowing matter streams
+            % via the exme processors connected to the phase, including the
+            % ones associated with p2p processors. It also gets the mass
+            % changes from substance manipulators. After completing the
+            % update of fMass, afMass, arPartialMass and other related
+            % properties this method sets the phase's timestep outdated, so
+            % it will be recalculated during the post-tick. Additionally,
+            % if this phase is set as 'sycned', this method will set all
+            % branches connected to exmes of this phase to outdated, also
+            % causing a recalculation in the post-tick.
+            % Note that the temperature will not be updated here, as the
+            % update of the temperature is handled in the thermal domain.
+            % However, since a change in a mass branch triggers a mass
+            % update and a temperature update in the thermal domain, the
+            % temperature will be update if a mass update is called (but
+            % there is no direct connection between the two domains)
             
             fTime     = this.oTimer.fTime;
             fLastStep = fTime - this.fLastMassUpdate;
             
-            % Return if no time has passed
+            % Return if no time has passed. Since the mass transfer is
+            % always a flowrate multiplied with an elapsed time we do not
+            % have to recalculate everything
             if fLastStep == 0
                 % This is necessary to ensure the TS is set outdated for
                 % cases where flow phases are handled (as they can change
@@ -691,6 +834,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % updated, which is after the initial mass updates)
                 this.setOutdatedTS();
                 return;
+                % Note that also setting branches outdated here would lead
+                % to infinite loops within the timer and is therefore not
+                % possible!
             end
             
             if ~base.oDebug.bOff, this.out(tools.debugOutput.INFO, 1, 'exec', 'Execute massupdate in %s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName }); end
@@ -702,8 +848,13 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
             % All in-/outflows in [kg/s] and multiply with curernt time
             % step, also get the inflow rates / temperature / heat capacity
-            %SPEED OPT - value saved in last calculateTimeStep, still valid
-            %[ afTotalInOuts, mfInflowDetails ] = this.getTotalMassChange();
+            %SPEED OPT - value saved in last calculateTimeStep are still
+            % valid as any change in these values would trigger a time step
+            % recalculation. Also if they did change (which can trigger
+            % this update) we still want to use the old values, because we
+            % first have to move the mass according to the old values. See
+            % https://wiki.tum.de/display/vhab/6.+Mass+Balance for detailed
+            % information on this
             afTotalInOuts = this.afCurrentTotalInOuts;
             
             if ~base.oDebug.bOff, this.out(1, 2, 'total-fr', 'Total flow rate in %s-%s: %.20f', { this.oStore.sName, this.sName, sum(afTotalInOuts) }); end
@@ -726,15 +877,17 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             this.afMass =  this.afMass + afTotalInOuts;
 
             % Now we check if any of the masses has become negative. This
-            % can happen for two reasons, the first is just MATLAB rounding
-            % errors causing barely negative numbers (e-14 etc.) The other
-            % is an error in the programming of one of the procs/solvers.
+            % can happen when more mass of a specific substance is taken
+            % out of the phase than is currently present within it. The
+            % calculateTimeStep function limits this effect to 1e-8 kg per
+            % tick.            
             % In any case, we don't interrupt the simulation for this, we
-            % just log the negative masses and set them to zero in the
-            % afMass array. The sum of all mass lost is shown in the
-            % command window in the post simulation summary.
+            % just log the masses and set them to zero in the afMass array.
+            % Since overwriting a negative mass with zero effectivly
+            % generates mass the generated mass values are stored in
+            % afMassGenerated and provided as output at the end of the
+            % simulation
             abNegative = this.afMass < 0;
-
             if any(abNegative)
                 this.afMassGenerated(abNegative) = this.afMassGenerated(abNegative) - this.afMass(abNegative);
                 this.afMass(abNegative) = 0;
@@ -745,15 +898,20 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 end
                 
             end
-
-            %%%% Now calculate the new total heat capacity for the
-            %%%% asscociated capacity
-            this.oCapacity.setTotalHeatCapacity(this.fMass * this.oCapacity.fSpecificHeatCapacity);
-            
             % Update total mass
             this.fMass = sum(this.afMass);
+
+            % Now calculate the new total heat capacity for the
+            % asscociated capacity (the specific heat capacity is updated
+            % based on changes in pressure/tenperature etc as it is only
+            % indirectly influenced by the mass)
+            this.oCapacity.setTotalHeatCapacity(this.fMass * this.oCapacity.fSpecificHeatCapacity);
             
-            % Partial masses
+            % Update the partial masses. In case this is a normal phase the
+            % partial masses are simply this.afMass/this.fMass. Otherwise
+            % we trigger the event update_partials which is handled in the
+            % subclass matter.phases.flow.flow and calculates the partial
+            % mass based on the current inflows
             if ~this.bFlow
                 if this.fMass > 0
                     this.arPartialMass = this.afMass / this.fMass;
@@ -764,7 +922,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 this.trigger('update_partials');
             end
             
-            this.setBranchesOutdated([],true);
+            % we set all branches connected with this phase to outdated
+            this.setBranchesOutdated();
             
             this.setP2PsAndManipsOutdated();
             
@@ -776,9 +935,25 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             if this.bTriggerSetMassUpdateCallbackBound
             	this.trigger('massupdate_post');
             end
+            
+            % massupdate is finished, therefore a massupdate is no longer
+            % registered
+            this.bRegisteredMassupdate = false;
         end
         
         function this = update(this)
+            %% update
+            % INTERNAL FUNCTION! This method can only be executed in the
+            % post tick, if a user wants to execute an update the
+            % registerUpdate function of the phase should be used to
+            % trigger the post tick update in the current tick!
+            %
+            % This function updates matte related properties of the phase,
+            % like the pressure and the molar mass. More specific update
+            % functions for specific phases can be included in child
+            % classes (e.g. the matter.phases.gas class implements specific
+            % update calculation)
+            
             % Only update if not yet happened at the current time.
             if (this.oTimer.fTime <= this.fLastUpdate) || (this.oTimer.fTime < 0)
                 if ~base.oDebug.bOff, this.out(2, 1, 'update', 'Skip update in %s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName }); end
@@ -788,8 +963,12 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
             if ~base.oDebug.bOff, this.out(2, 1, 'update', 'Execute update in %s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName }); end
             
-            % Store update time
-            this.fLastUpdate = this.oTimer.fTime;
+            
+            % If it is a flow phase, we also trigger an update of the
+            % partial masses to ensure that they are correct
+            if this.bFlow
+            	this.trigger('update_partials');
+            end
             
             % Cache current fMass / afMass so they represent the values at
             % the last phase update. Needed in phase time step calculation.
@@ -799,25 +978,25 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Now update the matter properties
             this.fMolarMass = this.oMT.calculateMolarMass(this.afMass);
             
-            % we check against the timestep and only do
-            % the calculation if it hasn't been done before.
+            % we check against the timestep and only do the calculation if
+            % it hasn't been done before. Additional checks if the matter
+            % properties changed sufficiently to make a matter table update
+            % of the property necessary are performed within the function
             if ~(this.oTimer.fTime == this.oCapacity.fLastTotalHeatCapacityUpdate)
-                bRecalculate = true;
-            else
-                bRecalculate = false;
-            end
-
-            if bRecalculate
-                % Our checks have concluded, that we have to recalculate
-                % the specific heat capacity for this phase. To do that, we
-                % call a phase type specific method. 
                 this.oCapacity.updateSpecificHeatCapacity();
             end
             
-            if this.bFlow
-            	this.trigger('update_partials');
-            end
+            % The update is finished, therefore we set the flag to false
+            % that this phase will be updated in the post tick
+            this.bUpdateRegistered = false;
             
+            % save the update time to a property to check if we already
+            % update at this time
+            this.fLastUpdate = this.oTimer.fTime;
+            
+            % Now we trigger an update_post event which allows other
+            % objects/functions to bind themself to the update of this
+            % phase
             if this.bTriggerSetUpdateCallbackBound
             	this.trigger('update_post');
             end
@@ -825,26 +1004,40 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         end
         
         function detachManipulator(this, sManip)
-            
-            %CHECK several manipulators possible?
+            %% detachManipulator
+            % INTERNAL FUNCTION! This function cannot be accessed directly,
+            % as it is created and passed out on the creation of the manip,
+            % to ensure that the correct manip is removed!
+            %
+            % this function can be used to remove a manipulator from the
+            % system. It is returned as function handle with the necessary
+            % inputs upon adding the manipulator to the phase, therefore
+            % the function is protected and cannot be accessed any other
+            % way
             this.toManips.(sManip) = [];
-            
         end
 
-        function setBranchesOutdated(this, ~, bSynced)
+        function setBranchesOutdated(this)
+            %% setBranchesOutdated
+            % INTERNAL FUNCTION! This is triggered by the massupdate
+            % function of the phase and triggering it through other means
+            % as well could (depending on the use case) lead to infinite
+            % loops in the execution. Therefore access is restricted, but
+            % the user can trigger a massupdate using the
+            % registerMassUpdate function also if the branches should be
+            % outdated!
+            %
+            % This function is used to set the Branches connected to this
+            % phase outdated in case relevant phase parameters have changed            
             
-            if nargin < 3
-                bSynced = false;
-            end
-            
-            % If the phase is synced, it can be a flow_node for which we
-            % have to set the outflows outdated even if they have already
-            % been set outdated in this tick! Since the input branches can
-            % change the partial mass composition of the flow nodes and the
-            % execution order between input and output branches is
-            % initially not defined
+            % If the phase is a flow phase it can be necessary to set the
+            % outgoing branches outdated even if this has already happened
+            % before in this tick! Since the input branches can change the
+            % partial mass composition of the flow nodes and the execution
+            % order between input and output branches is initially not
+            % defined
             if this.fLastSetOutdated >= this.oTimer.fTime
-                if bSynced
+                if this.bFlow
                     bUpdateOutFlow = true;
                 else
                     return;
@@ -854,7 +1047,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             end
             
             this.fLastSetOutdated = this.oTimer.fTime;
-            
             
             % Loop through exmes / flows and set outdated, i.e. request
             % recalculation of flow rate.
@@ -887,14 +1079,30 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             end
         end
         
-        function setP2PsAndManipsOutdated(this, ~)
+        function setP2PsAndManipsOutdated(this)
+            %% setP2PsAndManipsOutdated
+            % INTERNAL FUNCTION! This is triggered by the massupdate
+            % function of the phase and triggering it through other means
+            % as well could (depending on the use case) lead to infinite
+            % loops in the execution. Therefore access is restricted, but
+            % the user can trigger a massupdate using the
+            % registerMassUpdate function also if the P2Ps/Manips should be
+            % outdated!
+            %
+            % this function is used to set all manipualtors and P2Ps
+            % outdated, which tells them to perform a post tick update
             
-            if this.iProcsP2P > 0 || this.iManipulators > 0
-                
-                if ~isempty(this.toManips.substance)
-                    this.toManips.substance.registerUpdate();
-                end
-
+            % To improve sim speed for phases without any manip we check
+            % the iManipualtors property
+            if this.iSubstanceManipulators > 0
+                this.toManips.substance.registerUpdate();
+            end
+            if this.iVolumeManipulators > 0
+                this.toManips.volume.registerUpdate();
+            end
+            % same as for the manips, for improved sim speed we first check
+            % if there are P2Ps
+            if this.iProcsP2P > 0
                 % Call p2ps.flow update methods (if not yet called)
                 for iP = 1:this.iProcsP2P
                     % That check would make more sense within the flow p2p
@@ -908,49 +1116,58 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                         this.coProcsP2P{iP}.registerUpdate();
                     end
                 end
-                
             end
-
         end
         
         function setOutdatedTS(this)
+            %% setOutdatedTS
+            % INTERNAL FUNCTION! This function is called by the
+            % registerUpdate function
+            %
             % Setting this to true multiple times in the timer is no
             % problem, therefore no check required
             this.hBindPostTickTimeStep();
         end
-
-        function setAttribute(this, sAttribute, xValue)
-            % Internal method that needs to be copied to every child.
-            % Required to enable the phase class to adapt values on the
-            % child through processors.
-
-            this.(sAttribute) = xValue;
-        end
-
-        function [ bSuccess, txValues ] = setParameter(this, sParamName, xNewValue)
-            % Helper for executing internal processors.
-            %
-            % setParameter parameters:
-            %   sParamName  - attr/param to set
-            %   xNewValue   - value to set param to
-            %   setValue    - function handle to set the struct returned by
-            %                 the processor (params key, value).
+        
+        % since the fPressure property is accessed by get.fPressure this
+        % function should be protected as it should not be used directly.
+        % It cannot be private because that prevent the function from
+        % beeing overwritten by child classes
+        function fPressure = get_fPressure(this)
+            %% get_fPressure
+            % defines how to calculate the dependent fPressure property.
+            % Can be overloaded by child classes which require a different
+            % calculation (e.g. flow phases)
+            fMassSinceUpdate = this.fCurrentTotalMassInOut * (this.oStore.oTimer.fTime - this.fLastMassUpdate);
             
-            bSuccess = false;
-            txValues = [];
-            
-            this.setAttribute(sParamName, xNewValue);
-            this.registerUpdate();
-
+            fPressure = this.fMassToPressure * (this.fMass + fMassSinceUpdate);
         end
     end
-
-    %% Implementation-specific methods
-    methods (Sealed)
-        % Seems like we need to do that for heterogeneous, if we want to
-        % compare the objects in the mixin array with one object ...
-        function varargout = eq(varargin)
-            varargout{:} = eq@base(varargin{:});
+    methods (Access = private)
+        % Only the phase itself should have access to this function. Access
+        % by other functions is handled through specific bind/unbind
+        % callbacks
+        function setProperty(this, sPropertyName, xNewValue)
+            %% setProperty
+            % INTERNAL FUNCTION! Can only be used by manips and for those
+            % the access is provided through the bindSetProperty function!
+            %
+            % This function can be used to set otherwise internal
+            % parameters of a phase. This is necessary for example to
+            % adjust the volume of phases (e.g. if a gas, liquid, solid
+            % phase are all in one store and more liquid is added etc).
+            % This function can in principle be used to set any property,
+            % however the call necessary 
+            %
+            % setParameter parameters:
+            %   sPropertyName   - name of the property that should be set
+            %                     (e.g. fVolume)
+            %   xNewValue       - value to which the property should be set
+            
+            this.(sPropertyName) = xNewValue;
+            % if a parameter of the phase changed, we must recalculate
+            % everything else
+            this.registerUpdate();
         end
     end
 end

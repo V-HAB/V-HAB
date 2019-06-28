@@ -203,7 +203,15 @@ classdef branch < base & event.source
         
         bFinalLoop = false;
         
+        % A flag to decide if the solver is already outdated or not
         bRegisteredOutdated = false;
+        
+        % In recursive calls within the post tick where the solver itself
+        % triggers outdated calls up to the point where it is set outdated
+        % again itself it is possible for the solver to get stuck with a
+        % true bRegisteredOutdated flag. To prevent this we also store the
+        % last time at which we registered an update
+        fLastSetOutdated = -1;
     end
     
     properties (SetAccess = private, GetAccess = protected) %, Transient = true)
@@ -345,6 +353,9 @@ classdef branch < base & event.source
         % them.
         bTriggerUpdateCallbackBound = false;
         bTriggerRegisterUpdateCallbackBound = false;
+        
+        % The current time step of the solver in seconds
+        fTimeStep;
     end
     
     
@@ -675,14 +686,12 @@ classdef branch < base & event.source
         
         function registerUpdate(this, ~)
             % this function registers an update
-            % TO DO: provide more information on this in the wiki
-            if ~base.oDebug.bOff, this.out(1, 1, 'reg-post-tick', 'Multi-Solver - register outdated? [%i]', { ~this.bRegisteredOutdated }); end
             
-            if this.bRegisteredOutdated
+            if ~(this.oTimer.fTime > this.fLastSetOutdated) && this.bRegisteredOutdated
                 return;
             end
             
-            this.bRegisteredOutdated = true;
+            if ~base.oDebug.bOff, this.out(1, 1, 'reg-post-tick', 'Multi-Solver - register outdated? [%i]', { ~this.bRegisteredOutdated }); end
             
             for iB = 1:this.iBranches
                 for iE = 1:2
@@ -700,6 +709,8 @@ classdef branch < base & event.source
             this.hBindPostTickUpdate();
             this.hBindPostTickTimeStepCalculation();
             
+            this.bRegisteredOutdated = true;
+            this.fLastSetOutdated = this.oTimer.fTime;
         end
         
         function calculateTimeStep(this)
@@ -740,7 +751,7 @@ classdef branch < base & event.source
             % maximum allowable time step. However, temperature changes are
             % neglected here so in some cases this limitation might not be
             % sufficient
-            fTimeStep = inf;
+            this.fTimeStep = inf;
             if ~isempty(this.tBoundaryConnection)
                 csBoundaries = fieldnames(this.tBoundaryConnection);
                 if length(csBoundaries) > 1
@@ -788,21 +799,21 @@ classdef branch < base & event.source
 
                                 % 0 Means we have reached equalization, therefore this can also
                                 % be ignored for max time step condition
-                                if fNewStep < fTimeStep && fNewStep ~= 0
-                                    fTimeStep = fNewStep;
+                                if fNewStep < this.fTimeStep && fNewStep ~= 0
+                                    this.fTimeStep = fNewStep;
                                 end
                             end
                         end
                     end
                 end
             end
-            if fTimeStep < this.fMinimumTimeStep
-                fTimeStep = this.fMinimumTimeStep;
+            if this.fTimeStep < this.fMinimumTimeStep
+                this.fTimeStep = this.fMinimumTimeStep;
             end
             
-            this.out(1,1,'Multi-Solver','New Time Step: %e', {fTimeStep});
+            this.out(1,1,'Multi-Solver','New Time Step: %e', {this.fTimeStep});
             
-            this.setTimeStep(fTimeStep);
+            this.setTimeStep(this.fTimeStep, true);
         end
     end
 end

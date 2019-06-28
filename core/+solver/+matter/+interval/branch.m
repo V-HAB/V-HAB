@@ -154,8 +154,8 @@ classdef branch < solver.matter.base.branch
             
             % Calculating the pressure differences between the connected
             % phases
-            [ fPressureLeft,  ~ ] = oExmeL.getPortProperties();
-            [ fPressureRight, ~ ] = oExmeR.getPortProperties();
+            [ fPressureLeft,  ~ ] = oExmeL.getExMeProperties();
+            [ fPressureRight, ~ ] = oExmeR.getExMeProperties();
             
             fPressureDifference = fPressureLeft - fPressureRight;
             
@@ -325,8 +325,8 @@ classdef branch < solver.matter.base.branch
             fNewMassChangeLeft = oLeft.fCurrentTotalMassInOut + this.fFlowRate - fFlowRate;
             fNewMassChangeRight = oRight.fCurrentTotalMassInOut - this.fFlowRate + fFlowRate;
             
-            [ fPressureLeft,  ~ ] = this.oBranch.coExmes{1}.getPortProperties();
-            [ fPressureRight, ~ ] = this.oBranch.coExmes{2}.getPortProperties();
+            [ fPressureLeft,  ~ ] = this.oBranch.coExmes{1}.getExMeProperties();
+            [ fPressureRight, ~ ] = this.oBranch.coExmes{2}.getExMeProperties();
             
             fPressureDifference = fPressureLeft - fPressureRight;
             

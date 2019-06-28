@@ -27,9 +27,15 @@ classdef branch < base & event.source
     end
     
     properties (SetAccess = private, GetAccess = protected)
-        % Handle bound to the specific solver which can be used to set the
-        % flowrate
+        % A flag to decide if the solver is already outdated or not
         bRegisteredOutdated = false;
+        
+        % In recursive calls within the post tick where the solver itself
+        % triggers outdated calls up to the point where it is set outdated
+        % again itself it is possible for the solver to get stuck with a
+        % true bRegisteredOutdated flag. To prevent this we also store the
+        % last time at which we registered an update
+        fLastSetOutdated = -1;
     end
     
     properties (SetAccess = private, GetAccess = public)
@@ -138,7 +144,7 @@ classdef branch < base & event.source
         function registerUpdate(this, ~)
             % This functions registers a post tick update for this branch
             % in the timer. The post tick level is specified by the solver
-            if this.bRegisteredOutdated
+            if ~(this.oBranch.oTimer.fTime > this.fLastSetOutdated) && this.bRegisteredOutdated
                 return;
             end
             
@@ -159,6 +165,7 @@ classdef branch < base & event.source
             if ~base.oDebug.bOff, this.out(1, 1, 'registerUpdate', 'Registering update() method on post tick for solver for branch %s', { this.oBranch.sName }); end
             
             this.bRegisteredOutdated = true;
+            this.fLastSetOutdated = this.oBranch.oTimer.fTime;
             
             % this finally binds the update function to the specified post
             % tick level
