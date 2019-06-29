@@ -149,7 +149,7 @@ classdef Photobioreactor < vsys
             %high carbon dioxide content air for better transport through
             %membrane into medium. Be aware of possibly too high
             %concentrations of carbon dioxide.
-            this.toStores.ReactorAir.createPhase('gas', 'HighCO2Air', 0.1, struct('O2',5000, 'CO2', 59000), 293, 0.5); %TODO maybe increase the volume of this when the
+            this.toStores.ReactorAir.createPhase('gas', 'HighCO2Air', 0.5, struct('O2',5000, 'CO2', 59000), 293, 0.5);
             
             %% air interfaces
             % air interface to cabin
@@ -265,7 +265,7 @@ classdef Photobioreactor < vsys
             
             %air supply from cabin, constant flow
             solver.matter.manual.branch(this.toBranches.Air_From_Cabin);
-            this.toBranches.Air_From_Cabin.oHandler.setFlowRate(-0.01);
+            this.toBranches.Air_From_Cabin.oHandler.setFlowRate(-0.1);
             
             %air back to cabin. changed from flwo to PBR through consumed CO2 or
             %produced oxygen
@@ -282,7 +282,21 @@ classdef Photobioreactor < vsys
             %media system.
             solver.matter.manual.branch(this.toBranches.Urine_from_Cabin); %residual does not seem to work here. workaround with two manuals that are set equally.
             
+            arMaxChange = zeros(1,this.oMT.iSubstances);
+            arMaxChange(this.oMT.tiN2I.H2O) = 0.1;
+            arMaxChange(this.oMT.tiN2I.CO2) = 0.1;
+            arMaxChange(this.oMT.tiN2I.O2)  = 0.1;
+            tTimeStepProperties.arMaxChange =arMaxChange;
+            tTimeStepProperties.rMaxChange = 0.05;
             
+            this.toStores.ReactorAir.toPhases.HighCO2Air.setTimeStepProperties(tTimeStepProperties)
+            
+            tTimeStepProperties = struct();
+            tTimeStepProperties.fFixedTimeStep = 20;
+            
+            this.toStores.MediumMaintenance.toPhases.NO3Supply.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.MediumMaintenance.toPhases.WaterSupply.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.MediumMaintenance.toPhases.UrineSupplyBuffer.setTimeStepProperties(tTimeStepProperties);
             
             this.setThermalSolvers();
             

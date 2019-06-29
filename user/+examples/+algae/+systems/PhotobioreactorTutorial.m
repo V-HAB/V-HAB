@@ -177,7 +177,6 @@ classdef PhotobioreactorTutorial< vsys
             matter.store(this, 'UrineStorage', 1);
             oUrinePhase = matter.phases.mixture(this.toStores.UrineStorage, 'Urine', 'liquid', struct('C2H6O2N2', 0.059, 'H2O', 1.6), 295, 101325);
             
-            
             % store for  feces storage
             matter.store(this, 'FecesStorage', 1);
             oFecesPhase = matter.phases.mixture(this.toStores.FecesStorage, 'Feces', 'solid', struct('C42H69O13N5', 0.032, 'H2O', 0.1), 295, 101325);
@@ -304,6 +303,13 @@ classdef PhotobioreactorTutorial< vsys
         
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
+            
+            % For storage phases we set a fixed time step of 20 seconds
+            tTimeStepProperties.fFixedTimeStep = 20;
+            
+            this.toStores.UrineStorage.toPhases.Urine.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.FecesStorage.toPhases.Feces.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.PotableWaterStorage.toPhases.PotableWater.setTimeStepProperties(tTimeStepProperties);
             
             this.setThermalSolvers();
         end

@@ -1,4 +1,4 @@
-classdef CO2Pump < matter.procs.p2ps.flow
+classdef CO2Pump < matter.procs.p2ps.stationary
     %CO2PUMP moves CO2 from the cabin air intrface into the high CO2
     %content chamber of the PBR that supplies the algae. 
     
@@ -16,7 +16,7 @@ classdef CO2Pump < matter.procs.p2ps.flow
         
         
         function this = CO2Pump (oStore, sName, sExmePhaseIntoP2P, sExmePhaseOutofP2P,oSystem)
-            this@matter.procs.p2ps.flow(oStore, sName, sExmePhaseIntoP2P, sExmePhaseOutofP2P);
+            this@matter.procs.p2ps.stationary(oStore, sName, sExmePhaseIntoP2P, sExmePhaseOutofP2P);
             this.oSystem = oSystem;
             
             %% control parameters
@@ -37,8 +37,10 @@ classdef CO2Pump < matter.procs.p2ps.flow
            
         end
         
-        function calculateFlowRate(this, ~, ~, ~, ~)
-            
+    end
+    
+    methods (Access = protected)
+        function update(this)
             this.fCurrentPP = this.oOut.oPhase.afPP(this.oMT.tiN2I.CO2);
             %hysteresis behavior: only start when below start Partial
             %Pressure and only end when above endpp. update object property
@@ -64,15 +66,6 @@ classdef CO2Pump < matter.procs.p2ps.flow
             %% Set Flow Rate and update time of last execution for next calculation
             %tell that this matter should be removed
             this.setMatterProperties(fFlowRate, this.arExtractPartials);
-
-        end   
-        
-    end
-    
-    methods (Access = protected)
-        function update(~)
-            % this must be here since the normal V-HAB logic tries to
-            % call the update
         end
     end
 end

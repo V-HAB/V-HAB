@@ -39,11 +39,6 @@ classdef GrowthMediumChanges < matter.manips.substance.stationary
         function update(this)
             this.fTimeStep = this.oPhase.fTimeStep; %%[s]prediction to future time step. if calculated last time step is used (fTime-fLastExec), then errors and tiny time steps result.
             this.fLastExecTimeStep = this.oTimer.fTime - this.fLastExec; %%[s]passed since last execution
-            %set all to 0 to delete old values
-            afPartialFlowRates = zeros(1, this.oMT.iSubstances); %kg/s
-            
-            
-            
             
             %% Photosynthesis
             %the function that is called here calculates the mass increase

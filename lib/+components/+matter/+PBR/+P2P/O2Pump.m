@@ -38,9 +38,10 @@ classdef O2Pump < matter.procs.p2ps.stationary
 
             
         end
-        
-        function calculateFlowRate(this, ~, ~, ~, ~)
-            
+    end
+    
+    methods (Access = protected)
+        function update(this)
             this.fCurrentPP = this.oOut.oPhase.afPP(this.oMT.tiN2I.O2);
             %hysteresis behavior: only start when above start partial pressure and only end
             %when above end partial pressure
@@ -63,15 +64,6 @@ classdef O2Pump < matter.procs.p2ps.stationary
             %% Set Flow Rate and update time of last execution for next calculation
             %tell that this matter should be removed
             this.setMatterProperties(fFlowRate, this.arExtractPartials);
- 
-        end      
-        
-    end
-    
-    methods (Access = protected)
-        function update(~)
-            % this must be here since the normal V-HAB logic tries to
-            % call the update
         end
     end
 end
