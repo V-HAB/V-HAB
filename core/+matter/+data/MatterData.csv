@@ -289,3 +289,20 @@ COH2,UrineRest,solid,0.03002598,,,999.1,4188.5,,,,0
 NO3minus,Nitrate,liquid,0.0620049,,,804,1860,,, ,-1
 BMIMAc,IonicLiquid1,liquid,0.198266,,,1052.59,1059.2,,,,,Yates et al 2017 (ICES-2017-20)
 EMIMAc,IonicLiquid2,liquid,0.170212,,,1098,1000,,,,,estimation
+NH4OH,AmmoniumHydroxide,liquid,0.03504,,,880,2458.23,,,
+HNO3,NitricAcid,liquid,0.0630128,,,1512.9,1737.74,,,
+HNO2,NitrousAcid,liquid,0.0470134,,,1000,969.94,,,
+NH3_AEP,Ammonia,gas,0.01703052,195.42,239.81,0.717,2165,,,
+NH3_AEPI,Ammonia,gas,0.01703052,195.42,239.81,0.717,2165,,,
+COH4N2_AES,Urea,liquid,0.0600553,,,1320,1545.076,,,
+COH4N2_AESI,Urea,liquid,0.0600553,,,1320,1545.076,,,
+NH4OH_BES,AmmoniumHydroxide,liquid,0.03504,,,880,2458.23,,,
+NH4OH_BESI,AmmoniumHydroxide,liquid,0.03504,,,880,2458.23,,,
+HNO2_BEP,NitrousAcid,liquid,0.0470134,,,1000,969.94,,,
+HNO2_BEPI,NitrousAcid,liquid,0.0470134,,,1000,969.94,,,
+HNO2_CES,NitrousAcid,liquid,0.0470134,,,1000,969.94,,,
+HNO2_CESI,NitrousAcid,liquid,0.0470134,,,1000,969.94,,,
+HNO3_CEP,NitricAcid,liquid,0.0630128,,,1512.9,1737.74,,,
+HNO3_CEPI,NitricAcid,liquid,0.0630128,,,1512.9,1737.74,,,
+NH3_BES,Ammonia,gas,0.01703052,195.42,239.81,0.717,2165,,,
+NH3_BESI,Ammonia,gas,0.01703052,195.42,239.81,0.717,2165,,,

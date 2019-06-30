@@ -760,7 +760,7 @@ classdef logger < simulation.monitor
                     for iError = 1:length(csError)
                         fprintf(csError{iError});
                     end
-                    error(sInitialError);
+                    rethrow(sInitialError);
                 end
                 
                 % Now we check it it is shorter than the width of mfLog

@@ -53,6 +53,8 @@ classdef (Abstract) substance < matter.manip
             % oPhase:   Phase object in which this manip is located
             this@matter.manip(sName, oPhase);
             
+            this.afPartialFlows = zeros(1, this.oPhase.oMT.iSubstances);
+            
             this.hBindPostTickUpdate = this.oTimer.registerPostTick(@this.update, 'matter', 'substanceManips');
         end
     end
