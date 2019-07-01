@@ -87,8 +87,8 @@ classdef setup < simulation.infrastructure
             % logger for vacuum flow removal
             oLogger.addValue('Example.toChildren.HFC.toBranches.VacuumSupply.aoFlows(1,1)', 'afPartialPressure(this.oMT.tiN2I.CO2)', 'Pa', 'Partial Pressure CO2 IN VACUUM');
             oLogger.addValue('Example.toChildren.HFC.toBranches.VacuumRemoval.aoFlows(1,1)', 'afPartialPressure(this.oMT.tiN2I.CO2)', 'Pa', 'Partial Pressure CO2 OUT VACUUM')
-            oLogger.addValue('Example.toStores.VacuumSupply.toPhases.vacuum', 'afPP(this.oMT.tiN2I.CO2)', 'Pa', 'Partial Pressure CO2 in VACUUM Supply');
-            oLogger.addValue('Example.toStores.VacuumRemoval.toPhases.vacuum', 'afPP(this.oMT.tiN2I.CO2)', 'Pa', 'Partial Pressure CO2 in VACUUM Removal');
+            oLogger.addValue('Example.toStores.VacuumSupply.toPhases.vacuum', 'afMassChange(this.oMT.tiN2I.CO2)', 'kg', 'Cumulative Mass of provided CO2 in VACUUM Supply');
+            oLogger.addValue('Example.toStores.VacuumRemoval.toPhases.vacuum', 'afMassChange(this.oMT.tiN2I.CO2)', 'kg', 'Cumulative Mass of collected CO2 in VACUUM Removal');
             
             % logger for residence time and mass flow rate in the
             % Adsorption Processor for one cell
