@@ -1,0 +1,62 @@
+FPC_Gas_MC = 
+
+     General model:
+     FPC_Gas_MC(x) = a*(Re^b)*(Sc^c)*Const*x
+     Coefficients (with 95% confidence bounds):
+       a =       1.024  (0.8273, 1.221)
+     Problem parameters:
+       Re =       100.2
+       Sc =   5.121e+06
+       Const =     0.01514
+       c =      0.3333
+       b =         0.5
+
+FPC_Gas_MC_GOF = 
+
+           sse: 2.946257484963615e+04
+       rsquare: 0.921194920426941
+           dfe: 4
+    adjrsquare: 0.921194920426941
+          rmse: 85.823328485960246
+
+HFC_Gas_MC = 
+
+     General model:
+     HFC_Gas_MC(x) = a*(Re^b)*(Sc^c)*Const*x
+     Coefficients (with 95% confidence bounds):
+       a =       5.584  (4.854, 6.314)
+     Problem parameters:
+       Re =     0.04025
+       Sc =   5.121e+06
+       Const =     0.06525
+       c =      0.3333
+       b =      0.6667
+
+HFC_Gas_MC_GOF = 
+
+           sse: 8.782179533296436e+04
+       rsquare: 0.958802715834824
+           dfe: 4
+    adjrsquare: 0.958802715834824
+          rmse: 1.481737116807198e+02
+
+IC3_Gas_MC = 
+
+     General model:
+     IC3_Gas_MC(x) = a*(Re^b)*(Sc^c)*Const*x
+     Coefficients (with 95% confidence bounds):
+       a =        2.26  (2.059, 2.462)
+     Problem parameters:
+       Re =       10.92
+       Sc =   5.121e+06
+       Const =     0.01758
+       c =      0.3333
+       b =         0.5
+
+IC3_Gas_MC_GOF = 
+
+           sse: 5.707191160399608e+04
+       rsquare: 0.971163710528144
+           dfe: 4
+    adjrsquare: 0.971163710528144
+          rmse: 1.194486412689530e+02
