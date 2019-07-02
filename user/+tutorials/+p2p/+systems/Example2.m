@@ -13,7 +13,7 @@ classdef Example2 < vsys
             this@vsys(oParent, sName, 60);
             
             % Creating a store, volume 10m^3
-            matter.store(this, 'Atmos', 10);
+            matter.store(this, 'Atmos', 10, false);
             
             % Creating normal air (standard atmosphere) for 20m^3. Will
             % have 2 bar of pressure because the store is actually smaller.

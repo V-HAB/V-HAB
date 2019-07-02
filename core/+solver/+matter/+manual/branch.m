@@ -51,7 +51,7 @@ classdef branch < solver.matter.base.branch
             % Registering the solver with the timer provides a function as
             % output that can be used to bind the post tick update in a
             % tick resulting in the post tick calculation to be executed
-            this.hBindPostTickUpdate      = this.oBranch.oTimer.registerPostTick(@this.update, 'matter' , 'solver');
+            this.hBindPostTickUpdate = this.oBranch.oTimer.registerPostTick(@this.update, 'matter' , 'solver');
             
             this.setTimeStep(this.fTimeStep);
             
@@ -63,6 +63,8 @@ classdef branch < solver.matter.base.branch
             if this.bMassTransferActive
                 warning(['Manual solver ', this.oBranch.sName, ' is currently transferring a fixed amount of mass, set the new flowrate after this is finished']);
                 return
+            elseif isempty(fFlowRate)
+                this.throw('Setting an empty flowrate for manual branch %s in system %s', this.oBranch.sName, this.oBranch.oContainer.sName);
             end
             
             this.fRequestedFlowRate = fFlowRate;
@@ -79,6 +81,8 @@ classdef branch < solver.matter.base.branch
             if this.bMassTransferActive
                 warning(['Manual solver ', this.oBranch.sName, ' is currently transferring a fixed amount of mass, set the new flowrate after this is finished']);
                 return
+            elseif isempty(fVolumetricFlowRate)
+                this.throw('Setting an empty volumetric flowrate for manual branch %s in system %s', this.oBranch.sName, this.oBranch.oContainer.sName);
             end
             
             this.fRequestedVolumetricFlowRate = fVolumetricFlowRate;
@@ -105,6 +109,9 @@ classdef branch < solver.matter.base.branch
             
             if fTime == 0
                 error(['Stop joking, nothing can happen instantly. Manual solver ', this.oBranch.sName, ' was provided 0 time to transfer mass']);
+            end
+            if isempty(fMass) || isempty(fTime)
+                this.throw('Setting an empty mass transfer for manual branch %s in system %s', this.oBranch.sName, this.oBranch.oContainer.sName);
             end
             this.fTimeStep = fTime;
             this.bMassTransferActive = true;
@@ -138,9 +145,16 @@ classdef branch < solver.matter.base.branch
             elseif ~isempty(this.fRequestedVolumetricFlowRate)
                 
                 if this.fRequestedVolumetricFlowRate >= 0
-                    fDensity = this.oBranch.coExmes{1}.oPhase.fDensity;
+                    oPhase = this.oBranch.coExmes{1}.oPhase;
                 else
-                    fDensity = this.oBranch.coExmes{2}.oPhase.fDensity;
+                    oPhase = this.oBranch.coExmes{2}.oPhase;
+                end
+                % During initialization it is possible that the phase
+                % fDensity property is empty
+                if isempty(oPhase.fDensity)
+                    fDensity = this.oMT.calculateDensity(oPhase);
+                else
+                    fDensity = oPhase.fDensity;
                 end
 
                 this.fRequestedFlowRate = this.fRequestedVolumetricFlowRate *  fDensity;
@@ -149,6 +163,10 @@ classdef branch < solver.matter.base.branch
 
                 this.setTimeStep(this.fTimeStep);
             
+                % we have to reset the requested volumetric flowrate to
+                % empty now, otherwise setting a mass flow rate in a later
+                % tick would be ignored
+                this.fRequestedVolumetricFlowRate = [];
             end
             
             update@solver.matter.base.branch(this, this.fRequestedFlowRate);

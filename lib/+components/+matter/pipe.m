@@ -156,9 +156,10 @@ classdef pipe < matter.procs.f2f
                     end
                 catch
                     this.fDynamicViscosity = 17.2 / 10^6;
-                    %TODO Make this a low level debug output once the
-                    %infrastructure for it exists.
-                    %this.warn('solverDeltas', 'Error calculating dynamic viscosity in pipe (%s - %s). Using default value instead: %f [Pa s].\n', this.oBranch.sName, this.sName, this.fDynamicViscosity);
+                
+                    if ~base.oDebug.bOff
+                        this.out(3,1,'dynamic-viscosity-fall-back','Error calculating dynamic viscosity in pipe (%s - %s). Using default value instead: %f [Pa s].',{this.oBranch.sName, this.sName, this.fDynamicViscosity});
+                    end
                 end
             else
                 this.fDynamicViscosity = 17.2 / 10^6;
@@ -179,9 +180,10 @@ classdef pipe < matter.procs.f2f
             end
             if this.fDynamicViscosity == 0
                 this.fDynamicViscosity = 17.2 / 10^6;
-                %TODO Make this a low level debug output once the
-                %infrastructure for it exists.
-                %this.warn('solverDeltas', 'Error calculating dynamic viscosity in pipe (%s - %s). Using default value instead: %f [Pa s].\n', this.oBranch.sName, this.sName, this.fDynamicViscosity);
+                
+                if ~base.oDebug.bOff
+                    this.out(3,1,'dynamic-viscosity-fall-back','Error calculating dynamic viscosity in pipe (%s - %s). Using default value instead: %f [Pa s].',{this.oBranch.sName, this.sName, this.fDynamicViscosity});
+                end
             end
 
             fDeltaPressure = functions.calculateDeltaPressure.Pipe (this.fDiameter, this.fLength, fFlowSpeed, this.fDynamicViscosity, fDensity, this.fRoughness, 0);

@@ -28,16 +28,18 @@ classdef Example < vsys
             createMatterStructure@vsys(this);
             
             % Creating a store
-            matter.store(this, 'WaterTank_1', 2, false);
+            matter.store(this, 'WaterTank_1', 2);
             
             % Creating a second store
-            matter.store(this, 'WaterTank_2', 2, false);
+            matter.store(this, 'WaterTank_2', 2);
+            
+            fDensityH2O = this.oMT.calculateDensity('liquid', struct('H2O', 100), 293, 101325);
             
             % Adding a phase with liquid water to the store
             oWaterPhase1 = matter.phases.mixture(this.toStores.WaterTank_1, ...  Store in which the phase is located
                                                 'Water_Phase', ...        Phase name
                                                 'liquid',...
-                                                struct('H2O', 100), ...   Phase contents
+                                                struct('H2O', fDensityH2O * 0.1), ...   Phase contents
                                                 0.1,...
                                                 293.15, ...                Phase temperature
                                                 101325);                 % Phase pressure
@@ -48,7 +50,7 @@ classdef Example < vsys
             oWaterPhase2 = matter.phases.mixture(this.toStores.WaterTank_2, ...   Store in which the phase is located
                                                 'Water_Phase', ...         Phase name
                                                 'liquid',...
-                                                struct('H2O', 100), ...      Phase contents
+                                                struct('H2O', fDensityH2O * 0.1), ...      Phase contents
                                                 0.1,...
                                                 293.15, ...                Phase temperature
                                                 101325);                 % Phase pressure
@@ -56,7 +58,25 @@ classdef Example < vsys
             % Now we had a gas phase without any connections to fill the
             % remaining volume of the store
             this.toStores.WaterTank_1.createPhase('air', 2 - oWaterPhase1.fVolume, 293.15, 0.5, 1e5);
-            this.toStores.WaterTank_2.createPhase('air', 2 - oWaterPhase2.fVolume, 293.15, 0.5, 1.1e5);                     
+            oAir2 = this.toStores.WaterTank_2.createPhase('air', 2 - oWaterPhase2.fVolume, 293.15, 0.5, 1.1e5);                     
+            
+            % There are two options to calculate the volume distribution
+            % within a store automatically. Either the standard definition
+            % of phases that are compressible/incompressible can be used by
+            % using the store function addStandardVolumeManipulators. In
+            % that case only gases are considered compressible (and
+            % mixtures with phase type gas)
+            this.toStores.WaterTank_1.addStandardVolumeManipulators();
+            
+            % Alternativly the corresponding manipulators to identify a
+            % phase as compressible can be added directly to the phases, to
+            % allow the user to define what is compressible and what is
+            % incompressible
+            matter.manips.volume.StoreVolumeCalculation.compressibleMedium([oAir2.sName, '_CompressibleManip'], oAir2);
+            matter.manips.volume.StoreVolumeCalculation.compressibleMedium([oWaterPhase2.sName, '_CompressibleManip'], oWaterPhase2);
+            % An incompressible phase could be defined with the following
+            % definition:
+            % matter.manips.StoreVolumeCalculation.incompressibleMedium([oWaterPhase2.sName, '_CompressibleManip'], oWaterPhase2);
             
             % We also add two stores containing air
             matter.store(this, 'AirTank_1', 2);

@@ -94,6 +94,12 @@ classdef table < base
         % defined in the matter table and contains the entry true for each
         % substance that can absorb something else
         abAbsorber;
+        
+        % This struct allows the conversion of shortcut to name
+        tsS2N;
+        
+        % and this vice versa
+        tsN2S;
     end
     
     %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -133,6 +139,13 @@ classdef table < base
                     % The return command ends the constructor method
                     return;
                 end
+                
+            else
+                % Even though the MatterData file does not exist, we still
+                % need to capture the current state of the files in the
+                % V-HAB directory. So we'll do the initial scan of the
+                % matter data and matter table directories here. 
+                tools.fileChecker.checkForChanges(fullfile('core','+matter','+data'),'MatterTable');
             end
             
             % Notify user that generating the matter data will take some time.
@@ -183,7 +196,8 @@ classdef table < base
             % this.
             this.afMolarMass = zeros(1, this.iSubstances);
             this.tiN2I       = struct();
-            
+            this.tsS2N       = struct();
+            this.tsN2S       = struct();
             % Now we go through all substances in the 'MatterData'
             % worksheet and fill the ttxMatter struct
             for iI = 1:this.iSubstances
@@ -198,7 +212,9 @@ classdef table < base
                 this.ttxMatter.(this.csSubstances{iI}).bIndividualFile = false;
                 
                 % Adding an entry to the name to index struct.
-                this.tiN2I.(this.csSubstances{iI}) = iI;
+                this.tiN2I.(this.csSubstances{iI})  = iI;
+                this.tsS2N.(this.csSubstances{iI})  = tSubstance.sName;
+                this.tsN2S.(tools.normalizePath(tSubstance.sName))       = this.csSubstances{iI};
                 
                 % If the molar mass of the substance is not directly
                 % provided by the 'MatterData' worksheet, we try to
@@ -297,53 +313,17 @@ classdef table < base
             
             
             %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Adding nutritional data %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % Importing additional data %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
-            % The actual substances are also included in 'MatterData.csv',
-            % this part of the code adds the nutritional data to these
-            % substances.
-            
-            % read from .csv file
-            this.ttxNutrientData = importNutrientData();
-            
-            % get all edible substances
-            this.csEdibleSubstances = fieldnames(this.ttxNutrientData);
-            
-            %%%%%%%%%%%%
-            % WARNING! %
-            %%%%%%%%%%%%
-            
-            % right now, Drybean has been substituted with values from
-            % Kidney Beans and Redbeets have been substituted with Beets.
-            % BVAD uses those substances but they are not listed on the
-            % USDA Food Database as of time of writing.
-            % Nutrients are always linked to the USDA NDB No. (iUSDAID in
-            % the file), so check that if unsure!
-            
-            %%%%%%%%%%%%
-            
-            % loop over all edible substances
-            for iJ = 1:length(this.csEdibleSubstances)
-                try
-                    if strcmp(this.csEdibleSubstances{iJ}, this.csSubstances{this.tiN2I.(this.csEdibleSubstances{iJ})})
-                        this.ttxMatter.(this.csEdibleSubstances{iJ}).txNutrientData = this.ttxNutrientData.(this.csEdibleSubstances{iJ});
-                    end
-                catch
-                    % substance not represented in matter table, but not an
-                    % issue as long as this food type is not used in sim
-                end
-            end
-            
-            %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Adding absorber data %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            
-            % The actual substances are also included in 'MatterData.csv',
-            % this part of the code adds the absorber data to these
-            % substances.
+            % All substances in the matter table are included in the
+            % 'MatterData.csv' file with their basic information. In some
+            % cases, however, additional information is required for a
+            % substance. The following functions import these data into the
+            % matter table. 
+            importNutrientData(this);
             importAbsorberData(this);
-            
+            importAntoineData(this);
             
             %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Saving the data %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -362,25 +342,6 @@ classdef table < base
             % matter table and the data has been saved for future use.
             % Let the simulations begin!
             
-        end
-        
-        %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % Helper methods %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function csSubstanceList = getSubstancesFromVector(this, mfSubstances)
-            csSubstanceList = this.asI2N(mfSubstances ~= 0);
-        end
-        
-        function mbAreInside = areSubstancesInVector(this, csSubstances, mfSubstances)
-            csSubstanceList = this.getSubstancesFromVector(mfSubstances);
-            if ~iscell(csSubstances)
-                csSubstances = {csSubstances};
-            end
-            iNumSubstances = numel(csSubstances);
-            mbAreInside = false(iNumSubstances, 1);
-            for i = 1:iNumSubstances
-                mbAreInside(i) = any(strcmp(csSubstances{i}, csSubstanceList));
-            end
         end
     end
     

@@ -124,8 +124,8 @@ classdef branch < solver.matter.base.branch
             %        a hydraulic diameter and update fHydrDiam.
             fCoeff = sum(afPosHydrDiam * this.fCoeffFR ./ afHydrLength);
             
-            fPressureLeft  = this.oBranch.coExmes{1}.getPortProperties();
-            fPressureRight = this.oBranch.coExmes{2}.getPortProperties();
+            fPressureLeft  = this.oBranch.coExmes{1}.getExMeProperties();
+            fPressureRight = this.oBranch.coExmes{2}.getExMeProperties();
             
             fFlowRate = fCoeff * (fPressureLeft - fPressureRight + fPressureRises);
             %TODO see above

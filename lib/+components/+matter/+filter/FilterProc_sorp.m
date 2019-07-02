@@ -58,7 +58,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
         % Time variables
         fCurrentSorptionTime = 0;            % exact time for the calculation (slightly behind timer due remains of the numerical scheme) [s]
         fTimeDifference      = 0;            % time remains due to the subdivision of the numerical time steps         
-        fTimeStep            = 0;            % (real) time to simulate [s]        
+        fElapsedTime         = 0;            % (real) time to simulate [s]        
         fLastExec            = 0;            % saves the time of the last execution of the calculation. 
                                              %  => Take care to set correctly when using multiple sorption processors
         
@@ -386,7 +386,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
 %             end 
             
             % Calculating the timestep
-            this.fTimeStep = this.oStore.oTimer.fTime - this.fLastExec + this.fTimeDifference;        %[s]
+            this.fElapsedTime = this.oStore.oTimer.fTime - this.fLastExec + this.fTimeDifference;        %[s]
             
             
             
@@ -395,9 +395,10 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
             % or right after a bed switch. To avoid problems later on,
             % we'll just skip this execution and try next time. 
             if fFlowRateIn < 0
-                %TODO make this a very low level debugging output once the
-                %debug class is implemented
-                fprintf('%i\t(%.7fs)\t%s: Skipping adsorption calculation because of negative flow rate.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
+                if ~base.oDebug.bOff
+                    this.out(3,1,'skipping-adsorption','%s: Skipping adsorption calculation because of negative flow rate', {this.oStore.sName});
+                end
+                
                 return;
             end
             
@@ -450,9 +451,10 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
             % the pressure here can be zero. It should only be zero for one
             % timestep, so we'll just skip this one.
             if this.fSorptionPressure <= 0 
-                %TODO make this a very low level debugging output once the
-                %debug class is implemented
-                fprintf('%i\t(%.7fs)\t%s: Skipping adsorption calculation because of zero or negative pressure.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
+                if ~base.oDebug.bOff
+                    this.out(3,1,'skipping-adsorption','%s: Skipping adsorption calculation because zero or negative pressure', {this.oStore.sName});
+                end
+                
                 return;
             end
 
@@ -470,9 +472,9 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
             fTransportTimeStep = this.fDeltaX^2 / (this.fFluidVelocity * this.fDeltaX + 2 * fAxialDispersion_D_l);
             % BUT: calculated time step needs to be smaller than current vhab time step
             
-            if this.fTimeFactor_1 * fTransportTimeStep >= this.fTimeStep
+            if this.fTimeFactor_1 * fTransportTimeStep >= this.fElapsedTime
                 return
-%                 fTransportTimeStep = this.fTimeStep / this.fTimeFactor_1;
+%                 fTransportTimeStep = this.fElapsedTime / this.fTimeFactor_1;
             end
             
             % Make reaction time constant a multiple of transport time constant
@@ -481,10 +483,10 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
             % TO DO: Timefactor 1 is used to reduce the number of
             % iTimePoints while keeping the reaction time step constant
             % (see solve section for followup comment)
-            afDiscreteTime = (this.fCurrentSorptionTime : (this.fTimeFactor_1 * fTransportTimeStep) : this.fCurrentSorptionTime + this.fTimeStep);   
+            afDiscreteTime = (this.fCurrentSorptionTime : (this.fTimeFactor_1 * fTransportTimeStep) : this.fCurrentSorptionTime + this.fElapsedTime);   
             % Number of numerical time grid points
             iTimePoints = length(afDiscreteTime);  
-            this.fTimeDifference = this.fTimeStep - (afDiscreteTime(end) - afDiscreteTime(1));        
+            this.fTimeDifference = this.fElapsedTime - (afDiscreteTime(end) - afDiscreteTime(1));        
             
             % Initialize matrices for dispersive transport
             mfMatrix_A = zeros(this.iNumGridPoints);

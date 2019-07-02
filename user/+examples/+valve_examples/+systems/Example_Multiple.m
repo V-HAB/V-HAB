@@ -169,16 +169,16 @@ classdef Example_Multiple < vsys
                 end
                 
                 if ~this.toProcsF2F.Valve_12.bOpen && ~this.toProcsF2F.Valve_23.bOpen
-                    this.toProcsF2F.Valve_12.setOpened();
+                    this.toProcsF2F.Valve_12.setOpen(true);
                     
                 elseif this.toProcsF2F.Valve_12.bOpen && ~this.toProcsF2F.Valve_23.bOpen
-                    this.toProcsF2F.Valve_23.setOpened();
+                    this.toProcsF2F.Valve_23.setOpen(true);
                     
                 elseif ~this.toProcsF2F.Valve_12.bOpen && this.toProcsF2F.Valve_23.bOpen
-                    this.toProcsF2F.Valve_23.setClosed();
+                    this.toProcsF2F.Valve_23.setOpen(false);
                     
                 else % both open
-                    this.toProcsF2F.Valve_12.setClosed();
+                    this.toProcsF2F.Valve_12.setOpen(false);
                     
                 end
                 
@@ -187,32 +187,18 @@ classdef Example_Multiple < vsys
             elseif this.oTimer.fTime > (1800 - this.fTimeStep) && this.oTimer.fTime < 5400
                 if this.fTimeStep ~= 5
                     this.setTimeStep(5);
-                else
-                    
-                    % -1800 to + 1800
-                    fRange = this.oTimer.fTime - 1800 - 1800; % Time minus start time minus half of duration
-                    rInc   = abs(fRange / 1800); % 1 -> 0 -> 1
-                    
-                    this.toProcsF2F.Valve_12.setFlowCoefficient(this.afFlowCoeffs(1) * min([ 1 / rInc, 1000 ]));
-                    this.toProcsF2F.Valve_23.setFlowCoefficient(this.afFlowCoeffs(2) * rInc);
-                    
-                    if mod(this.oTimer.iTick, 10) == 0
-                        %fprintf('[%i] %f / %f\n', this.oTimer.iTick, this.toProcsF2F.Valve_12.fFlowCoefficient, this.toProcsF2F.Valve_23.fFlowCoefficient)
-                    end
                 end
                 
-            % SOmething to reset?
+            % Something to reset?
             else
                 if this.fTimeStep ~= 100
                     this.setTimeStep(100);
                 end
                 
                 
-                if ~this.toProcsF2F.Valve_12.bOpen, this.toProcsF2F.Valve_12.setOpened(); end;
-                if ~this.toProcsF2F.Valve_23.bOpen, this.toProcsF2F.Valve_23.setOpened(); end;
+                if ~this.toProcsF2F.Valve_12.bOpen, this.toProcsF2F.Valve_12.setOpen(true); end
+                if ~this.toProcsF2F.Valve_23.bOpen, this.toProcsF2F.Valve_23.setOpen(true); end
                 
-                if this.toProcsF2F.Valve_12.fFlowCoefficient ~= this.afFlowCoeffs(1), this.toProcsF2F.Valve_12.setFlowCoefficient(this.afFlowCoeffs(1)); end;
-                if this.toProcsF2F.Valve_23.fFlowCoefficient ~= this.afFlowCoeffs(2), this.toProcsF2F.Valve_23.setFlowCoefficient(this.afFlowCoeffs(2)); end;
             end
         end
         

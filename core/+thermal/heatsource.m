@@ -1,8 +1,8 @@
 classdef heatsource < base & event.source
-    %HEATSOURCE A heat source that is connected to a matter object
+    %HEATSOURCE A heat source that is connected to a thermal capacity object
     %   Via the fHeatFlow property the inner energy of the connected matter
     %   object will be changed accordingly. If the power is changed via the
-    %   setPower() method, the thermal container this heat source belongs
+    %   setPower() method, the thermal capacity this heat source belongs
     %   to is tainted and an update of the thermal solver is bound to the
     %   post-tick. This thermal solver update is however only triggered, if
     %   the change in power is greater than one milliwatt. This is to
@@ -13,8 +13,12 @@ classdef heatsource < base & event.source
     end
     
     properties (SetAccess = protected, GetAccess = public)
+        % Current heat flow of this heat source. For negative values it is
+        % actually a heat sink and cools the capacity
         fHeatFlow = 0; % [W]
         
+        % Object reference to the capacity in which this heat source is
+        % located
         oCapacity;
     end
     
@@ -31,6 +35,11 @@ classdef heatsource < base & event.source
     methods
         
         function this = heatsource(sName, fHeatFlow)
+            % create a heat source, as optional parameter the initial heat
+            % flow of the heat source can be set. Note that after creating
+            % the heat source, it will not yet do anything, it first has to
+            % be added to a capacity using the addHeatSource function of
+            % the capacity
             this.sName  = sName;
             
             if nargin > 1
@@ -39,34 +48,40 @@ classdef heatsource < base & event.source
         end
         
         function setHeatFlow(this, fHeatFlow)
-            % We only need to trigger an update of the whole thermal solver
-            % if the power has actually changed by more than one milliwatt.
-            if ~isempty(this.hTriggerSolverUpdate) && this.fHeatFlow ~= fHeatFlow && abs(this.fHeatFlow - fHeatFlow) > 1e-3
-                this.hTriggerSolverUpdate();
-            end
+            % This function can be used to change the heat flow of this
+            % heat source. The only input parameter is:
+            % fHeatFlow: Heat Flow in [W]
             
+            % store the previous heat flow as old heat flow and provide it
+            % as possible input for other functions bound to the update
+            % trigger of this heat flow
             fHeatFlowOld   = this.fHeatFlow;
             this.fHeatFlow = fHeatFlow;
             
-            this.oCapacity.setOutdatedTS();
+            % Tell the capacity that its time step is now outdated as a
+            % heat flow has changed
+            if this.fHeatFlow ~= fHeatFlowOld
+                this.oCapacity.setOutdatedTS();
+            end
             
+            % If anything is bound to this trigger of this heat source, we
+            % trigger an event to tell other objects/functions that this
+            % heat source was updated
             if this.bTriggerUpdateCallbackBound
                 this.trigger('update', struct('fHeatFlowOld', fHeatFlowOld, 'fHeatFlow', fHeatFlow));
             end
         end
         
-        function setUpdateCallBack(this, oThermalSolver)
-            this.hTriggerSolverUpdate = @oThermalSolver.registerUpdate;
-        end
-        
         function setCapacity(this, oCapacity)
+            % Function to tell this heat source what its connected capacity
+            % is. This should be used directly, instead it is used by the
+            % addHeatSource function of the capacity
             if isempty(this.oCapacity)
                 this.oCapacity = oCapacity;
             else
                 this.throw('setCapacity', 'Heatsource already has a capacity object');
             end
         end
-        
         
         % Catch 'bind' calls, so we can set a specific boolean property to
         % true so the .trigger() method will only be called if there are

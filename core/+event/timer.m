@@ -3,21 +3,19 @@ classdef timer < base
     % contains the logic to decide when the next update should occur and
     % handles post tick updates! 
     
+    % Thou shall not have any other timers beside me... There can only be
+    % one timer object, so the SetAccess for all properties is private. 
     properties (SetAccess = private, GetAccess = public)
         % Minimum time step, no individual time steps shorter than this one
         % possible.
         fMinimumTimeStep = 1e-8;  % [s]
-        
         
         % "Accuracy" of simulation - represent the number of digits after
         % the decimal sign which are considered valid in the simulation
         % itself. For example for the value of 20 all values smaller than
         % 10^-20 will be rounded to zero
         iPrecision = 20;
-    end
     
-    properties (SetAccess = protected, GetAccess = public)
-        
         % Current time
         fTime = 0;
         
@@ -27,19 +25,16 @@ classdef timer < base
         % Start time
         fStart = 0;
         
-        % Timer active?
-        bRun = false;
-        
         % Callbacks - cell array with all callbacks
         cCallBacks = {};
         
         % Time steps for callbacks
-        afTimeStep = [];
+        afTimeSteps = [];
         
         % Last execution time for each callback
         afLastExec = [];
         
-        % Optional payload for each callback.
+        % Optional payload for each callback
         ctPayload = {};
         
         % Time steps == -1 --> execute when timer executes, NOT in global
@@ -67,12 +62,12 @@ classdef timer < base
         % definition, allowing the user to bind specific functions to be
         % executed either before or after a specific calculation
         txPostTicks = struct('matter', struct(...
-                                'store_update', cell.empty(),...
                                 'phase_massupdate', cell.empty(),...
+                                'volumeManips', cell.empty(),...
                                 'phase_update', cell.empty(),...
                                 'solver', cell.empty(),...
                                 'P2Ps', cell.empty(),...
-                                'manips', cell.empty(),...
+                                'substanceManips', cell.empty(),...
                                 'multibranch_solver', cell.empty(),...
                                 'residual_solver', cell.empty()),...
                              ...
@@ -81,7 +76,6 @@ classdef timer < base
                              ...
                              'thermal', struct(...
                                 'capacity_temperatureupdate', cell.empty(),...
-                                'capacity_update', cell.empty(),...
                                 'solver', cell.empty(),...
                                 'heatsources', cell.empty(),...
                                 'multibranch_solver', cell.empty(),...
@@ -95,24 +89,27 @@ classdef timer < base
         % are stored in this property to allow looping through them with
         % for loops. 
         csPostTickGroups;
+        
         % This struct has the post tick groups as fields, and each field
         % contains a cell array with the fieldnames of the corresponding
         % post tick levels (again to enable for loops)
         tcsPostTickLevel;
+        
         % These two properties can be used to translate the first two
         % indices from one of the three dimensional arrays (chPostTicks and
-        % mbPostTickControl) into the corresponding post tick group and
+        % cabPostTickControl) into the corresponding post tick group and
         % level. For example the entries chPostTicks{2,3,:} are from the
         % second post tick group (electrical) and the third post tick level
         % (in this case post_circuit). Remember that for each level defined
         % in the struct above a pre_ and post_ level is added!
         
-        % this struct contains the post tick groups as fieldnames and the
+        % This struct contains the post tick groups as fieldnames and the
         % value of each field corresponds to the execution order of that
         % group. So if a group has the value 3 in this property it means
         % that it is the third post tick group that is executed
         tiPostTickGroup;
-        % this struct again has the post tick groups as fieldnames and each
+        
+        % This struct again has the post tick groups as fieldnames and each
         % group has the post tick levels as further field. Each level then
         % contains the execution order of the corresponding level. If a
         % post tick level has an value of 10 here it means that it is the
@@ -129,21 +126,21 @@ classdef timer < base
         % is the third dimension.
         chPostTicks;
         
-        % mbPostTickControl is a three dimensional boolean array. The first
-        % dimension represents the post tick groups with the indices
-        % corresponding to the values from the tiPostTickGroup struct. The
-        % second dimension represents the post tick levels with the indices
-        % corresponding to the values from the tiPostTickLevel struct. The
-        % indices of the boolean vector correspond to the indices from the
-        % respective cell array in txPostTick (or chPostTicks) and if the
-        % boolean value is true the function from the corresponding cell
-        % will be executed during the post tick calculation. As for
-        % txPostTick the entries of the vector are only added once during
-        % the registration of a post tick and after that only the values
-        % changes
-        mbPostTickControl;
+        % cabPostTickControl is a two dimensional cell with a boolean array
+        % at each index. The first dimension represents the post tick
+        % groups with the indices corresponding to the values from the
+        % tiPostTickGroup struct. The second dimension represents the post
+        % tick levels with the indices corresponding to the values from the
+        % tiPostTickLevel struct. The indices of the boolean vector
+        % correspond to the indices from the respective cell array in
+        % txPostTick (or chPostTicks) and if the boolean value is true the
+        % function from the corresponding cell will be executed during the
+        % post tick calculation. As for txPostTick the entries of the
+        % vector are only added once during the registration of a post tick
+        % and after that only the values changes
+        cabPostTickControl;
         
-        % in order to decide whether a newly bound post tick is from an
+        % In order to decide whether a newly bound post tick is from an
         % earlier group and level as the one we are currently execution
         % these two properties store the corresponding number from
         % tiPostTickGroup and tiPostTickLevel for the currently executing
@@ -158,27 +155,38 @@ classdef timer < base
         
     end
     
+    properties (SetAccess = protected, GetAccess = public)
+        % This flag is used to decide if the timer should execute all
+        % callbacks with bound time steps in the current tick. This can be
+        % used to resynchronize call backs and reduce the number of
+        % required ticks for a simulation
+        bSynchronizeExecuteCallBack = false;
+    end
+    
     methods
-        function this = timer(fTimeStep, fStart)
-            % Global time step? Default value passed on by simulation.m is
-            % 1e-8 seconds
-            if nargin >= 1 && ~isempty(fTimeStep)
-                this.fMinimumTimeStep = fTimeStep;
+        function this = timer(fMinimumTimeStep, fStart)
+            % Parsing the minimum timestep input argument, if it is given
+            if nargin >= 1 && ~isempty(fMinimumTimeStep)
+                this.fMinimumTimeStep = fMinimumTimeStep;
             end
             
+            % Parsing the start time input argument, if it is given
             if nargin >= 2 && ~isempty(fStart)
                 this.fStart = fStart;
                 this.fTime  = fStart;
             else
-                % Set time to -1 * time step -> first step is init!
+                % Set time to -1 * time step -> first step is for initialization
                 this.fTime = -1 * this.fMinimumTimeStep;
             end
             
+            % Getting the field names of the post tick entries
             csBasicPostTickGroups = fieldnames(this.txPostTicks);
             
+            % Initializing some local variables for later use
             iPostTickGroups = length(csBasicPostTickGroups);
             iPostTickLevels = 0;
-            % we want a nicely ordered struct where the order of the fields
+            
+            % We want a nicely ordered struct where the order of the fields
             % also represents the execution order in V-HAB, for that
             % purpose we create a new struct with the same order of the
             % property txPostTicks but add a pre_ and post_ field for every
@@ -196,7 +204,7 @@ classdef timer < base
                     txPostTicksFull.(csBasicPostTickGroups{iPostTickGroup}).(csPostTicks{iPostTick})            = cell.empty();
                     txPostTicksFull.(csBasicPostTickGroups{iPostTickGroup}).(['post_', csPostTicks{iPostTick}]) = cell.empty();
                 end
-                % now we can store the fieldnames of both levels of the
+                % Now we can store the fieldnames of both levels of the
                 % structs in the properties to make looping trough them
                 % easier and faster
                 csFullLevels = fieldnames(txPostTicksFull.(csBasicPostTickGroups{iPostTickGroup}));
@@ -211,105 +219,121 @@ classdef timer < base
                     this.tiPostTickLevel.(csBasicPostTickGroups{iPostTickGroup}).(csFullLevels{iPostTickLevelFull}) = iPostTickLevelFull;
                 end
             end
+            
             % And finally the newly created complete structs are set as the
-            % new properties
+            % new properties, where cabPostTickControl and csPostTickGroups
+            % are not structs, but cells that are more performant to use
+            % when actually executing the callbacks.
             this.txPostTicks = txPostTicksFull;
-            this.mbPostTickControl = logical.empty(iPostTickGroups,iPostTickLevels,0);
+            this.cabPostTickControl = cell(iPostTickGroups,iPostTickLevels);
             this.csPostTickGroups = fieldnames(this.txPostTicks);
         end
 
-
         function setMinStep(this, fMinStep)
+            %SETMINSTEP Sets the minimum time step of the solver
             this.fMinimumTimeStep = fMinStep;
             this.fTime            = -1 * this.fMinimumTimeStep;
         end
         
+        function synchronizeCallBacks(this)
+            %% synchronizeCallBacks
+            % tells the timer to execute all callbacks which have time
+            % steps registered at the timer to resynchronize them
+            this.bSynchronizeExecuteCallBack = true;
+        end
+        
         function setSimulationPrecision(this, iPrecision)
-            % This function allows the user to set the overall precision of
-            % the V-HAB Simulation. All flowrates smaller than the
-            % precision (regardless of matter, thermal or electrical
-            % domain) will be rounded to zero. The precision represent the
-            % number of digits after the decimal sign which are considered
-            % valid in the simulation itself. For example for the value of
-            % 20 all values smaller than 10^-20 will be rounded to zero
+            %SETSIMULATIONPRECISION Allows the user to set the overall precision of the V-HAB Simulation
+            % All flowrates smaller than the precision (regardless of
+            % matter, thermal or electrical domain) will be rounded to
+            % zero. The precision represent the number of digits after the
+            % decimal sign which are considered valid in the simulation
+            % itself. For example for the value of 20 all values smaller
+            % than 10^-20 will be rounded to zero
             this.iPrecision = iPrecision;
         end
         
-        function go(this)
-            % Run the timer
+        function [ hSetTimeStep, hUnbind ] = bind(this, hCallBack, fTimeStep, tInputPayload)
+            %BIND Registers a callback with the timer object to be executed
+            %   The provided hCallBack handle will be executed at the given
+            %   fTimeStep. The tInputPayload struct is mainly for debugging
+            %   purposes, its content will be used to provide input for the
+            %   out() method in the base class. 
             
-            this.bRun = true;
+            % Initializing a local variable for the payload with the
+            % allowed struct fields, the first three should always be
+            % provided, though. 
+            tPayload = struct('oSrcObj', [], 'sMethod', [], 'sDescription', [], 'cAdditional', {{}});
             
-            % Normal step
-            this.run();
-        end
-        
-        function step(this)
-            % Normal step
-            this.run();
-        end
-        
-        function stop(this)
-            % Pause / stop the timer - current step is however completely
-            % finished and all callbacks executed
-            
-            this.bRun = false;
-        end
-        
-        
-        function [ setTimeStep, unbind ] = bind(this, callBack, fTimeStep, tPayload)
-            % Bind a callback
-            
-            % Payload?
-            tPayloadDef = struct('oSrcObj', [], 'sMethod', [], 'sDescription', [], 'cAdditional', {{}});
-            
-            if nargin >= 4 && isstruct(tPayload)
-                csFields = fieldnames(tPayloadDef);
+            % Check if a payload was provided and if it is a struct.
+            if nargin >= 4 && isstruct(tInputPayload)
+                % Getting a struct with the allowed field names
+                csPayloadFields = fieldnames(tPayload);
                 
-                for iF = 1:length(csFields)
-                    if ~isfield(tPayload, csFields{iF}), continue; end
+                % Looping through all allowed fields of the payload
+                for iField = 1:length(csPayloadFields)
                     
-                    tPayloadDef.(csFields{iF}) = tPayload.(csFields{iF});
+                    % If the field doesn't exist in the provided input
+                    % payload, we skip ahead to the next possible field.
+                    if ~isfield(tInputPayload, csPayloadFields{iField})
+                        continue
+                    end
+                    
+                    % The field exists, so we copy its contents to the
+                    % actual payload struct.
+                    tPayload.(csPayloadFields{iField}) = tInputPayload.(csPayloadFields{iField});
                 end
             else
-                % At least some info?
-                try %#ok
-                    tPayloadDef.oSrcObj = evalin('caller', 'this');
+                % No payload was provided or it was not a struct, so we try
+                % to get at least the source object by polling the 'this'
+                % variable in the caller object.
+                try %#ok No catch block because what would we do?
+                    tPayload.oSrcObj = evalin('caller', 'this');
                 end
                 
-                tPayloadDef.sMethod = func2str(callBack);
+                % The callback must be provided, so we'll always have that.
+                tPayload.sMethod = func2str(hCallBack);
             end
             
-            
             % Get index for new callback
-            iIdx = length(this.afTimeStep) + 1;
+            iIdx = length(this.afTimeSteps) + 1;
             
-            % Callback and last execution time
-            this.cCallBacks{iIdx} = callBack;
-            this.afLastExec(iIdx) = -inf; % preset with -inf -> always execute in first exec!
-            this.ctPayload{iIdx}  = tPayloadDef;
+            % Add the callback to the cCallBacks property
+            this.cCallBacks{iIdx} = hCallBack;
             
-            % Time step - provided or use the global
+            % Setting the afLastExec property for this specific callback.
+            % Is initialized with -inf so it is always executed during the
+            % first step after binding. After that first step, the last
+            % execution time will be logged here. 
+            this.afLastExec(iIdx) = -inf;
+            
+            % Adding the per-callback payload struct to the appropriate
+            % property
+            this.ctPayload{iIdx}  = tPayload;
+            
+            % Setting the time step for this callback using either the one
+            % the caller provided or the minimum time step.
             if nargin >= 3 
-                this.afTimeStep(iIdx) = fTimeStep;
+                this.afTimeSteps(iIdx) = fTimeStep;
             else
-                this.afTimeStep(iIdx) = this.fMinimumTimeStep;
+                this.afTimeSteps(iIdx) = this.fMinimumTimeStep;
             end
             
             % Return the callbacks - protected methods, wrapped so that the
             % parameter for the callback to adjust is always properly set
-            %setTimeStep = @(fTimeStep) this.setTimeStep(iIdx, fTimeStep);
-            %setTimeStep = @(varargin) this.setTimeStep(iIdx, varargin{:});
-            setTimeStep = @(fTimeStep, bReset) this.setTimeStep(iIdx, fTimeStep, nargin >= 2 && bReset);
+            hSetTimeStep = @(fTimeStep, bReset) this.setTimeStep(iIdx, fTimeStep, nargin >= 2 && bReset);
             
-            unbind      = @()          this.unbind(iIdx);
+            % Set the unbind callback as the return variabel
+            hUnbind = @() this.unbind(iIdx);
             
             
-            % Find dependent timed callbacks (when timer executes)
-            this.abDependent = this.afTimeStep == -1;
+            % Update the property that lists the dependent timed callbacks,
+            % these always execute when the timer executes.
+            this.abDependent = this.afTimeSteps == -1;
         end
         
         function hSetPostTick = registerPostTick(this, hCallBackFunctionHandle, sPostTickGroup, sPostTickLevel)
+            %REGISTERPOSTTICK Registers a post tick function handle
             % This function must be used to initialy register all post tick
             % updates at the timer. This enables the usage of a (mostly)
             % static cell array for the post tick and a boolean vector for
@@ -326,24 +350,29 @@ classdef timer < base
             % sPostTickLevel: Specifies the post tick update level e.g. 
             % post_phase_update for a post tick update after the phase
             % update function
+            
+            % Adding the function handle to the struct of post ticks
             this.txPostTicks.(sPostTickGroup).(sPostTickLevel){end+1} = hCallBackFunctionHandle;
             
-            % This index represents the index of the corresponding
-            % cell/boolean array in txPostTicks/tbPostTickControl. The
-            % value must be unchanged for the whole simulation as it is the
-            % link between the specific function binding the post tick and
-            % the timer. Therefore the index is directly set as input value
-            % for the setPostTick function allowing the caller to simply
-            % use that function without inputs thus ensuring the correct
-            % values are used.
+            % The following three indexs represent the indexes of the
+            % corresponding cell/boolean array in txPostTicks and
+            % tbPostTickControl. The value must remain unchanged for the
+            % entire simulation as it is the link between the specific
+            % function binding the post tick and the timer. Therefore the
+            % indexes are directly set as input value for the
+            % bindPostTick() method below, allowing the caller to simply
+            % use the created function handle without inputs thus ensuring
+            % the correct values are used.
             iPostTickNumber = length(this.txPostTicks.(sPostTickGroup).(sPostTickLevel));
-            
             iPostTickGroup = this.tiPostTickGroup.(sPostTickGroup);
             iPostTickLevel = this.tiPostTickLevel.(sPostTickGroup).(sPostTickLevel);
             
+            % Addin the callback to the cell property
             this.chPostTicks{iPostTickGroup, iPostTickLevel, iPostTickNumber} = hCallBackFunctionHandle;
             
-            this.mbPostTickControl(iPostTickGroup, iPostTickLevel, iPostTickNumber) = false;
+            % Initializing the appropriate item in the cabPostTickControl
+            % cell with a logical false, so it is not executed at first.
+            this.cabPostTickControl{iPostTickGroup, iPostTickLevel}(iPostTickNumber) = false;
             
             % To allow the user to easily set the post tick that was
             % registered we return a function handle which already contains
@@ -352,7 +381,8 @@ classdef timer < base
         end
         
         function bindPostTick(this, iPostTickGroup, iPostTickLevel, iPostTickNumber)
-            % this function is used to bind a post tick update for the
+            %BINDPOSTTICK Activates a specific post tick callback
+            % This function is used to bind a post tick update for the
             % calling object and the corresponding post tick group and post
             % tick level. This only works if the post tick was registered
             % at the timer beforehand using the registerPostTick function
@@ -372,30 +402,76 @@ classdef timer < base
             % number should be stored in a property of the calling object
             % and provided to this function call
             
-            % here we only have to set the boolean value to true! Note we
+            % Here we only have to set the boolean value to true! Note we
             % do not require any checks if this should be done or not,
             % because they likely take about as much time as just setting
             % the value to true and setting it true mutliply times does not
             % break anything. Note that any calculation put in here takes
             % abnormally long to calculate because of the context changes!
-            this.mbPostTickControl(iPostTickGroup, iPostTickLevel, iPostTickNumber) = true;
+            this.cabPostTickControl{iPostTickGroup, iPostTickLevel}(iPostTickNumber) = true;
+        end
+    
+        function unbind(this, iCB)
+            %UNBIND Unbinds a callback 
+            % iCB is the index in the according properties storing the
+            % callbacks
+            
+            this.cCallBacks(iCB)  = [];
+            this.afTimeStep(iCB)  = [];
+            this.abDependent(iCB) = [];
+            this.afLastExec(iCB)  = [];
+            this.ctPayload(iCB)   = [];
+
         end
     end
     
     
-    methods (Access = protected)
-        function unbind(this, iCB)
-            % Unbind a callback - iCB is the index in the according
-            % attributes storing the callbacks
+    % The setTimeStep() method should only be accessible to the timer
+    % itself, so we set the access to private.
+    methods (Access = private)
+    
+        function setTimeStep(this, iCB, fTimeStep, bResetLastExecuted)
+            % Set time step for a specific call back. Protected method, is
+            % returned upon .bind!
             
-            this.cCallBacks(iCB) = [];
-            this.afTimeStep(iCB) = [];
-            this.afLastExec(iCB) = [];
-            this.ctPayload(iCB)  = [];
+            % Find dependent timed callbacks (when timer executes)
+            this.abDependent(iCB) = (fTimeStep == -1);
+            
+            
+            if ~isempty(fTimeStep)
+                if fTimeStep < 0, fTimeStep = 0; end
+                
+                this.afTimeSteps(iCB) = fTimeStep;
+            else
+                this.afTimeSteps(iCB) = 0;
+            end
+            
+            % If bResetLastExecuted is true, the time the registered call-
+            % back was last executed will be updated to the current time.
+            if nargin >= 4 && ~isempty(bResetLastExecuted) && bResetLastExecuted && (this.afLastExec(iCB) ~= this.fTime)
+                
+                this.afLastExec(iCB) = this.fTime;
+            end
         end
         
-        function run(this)
+    end
+    
+    
+    % Only the simulation.infrastructore object is allowed to call the
+    % tick() method, so we restrict the access here. 
+    methods (Access = {?simulation.infrastructure})
+        
+        function tick(this)
             % Advance the timer one (global) time step
+                        
+            % Check if the minimum time step is sufficiently large to
+            % ensure a continoues time progress, if not increase it. This
+            % is necessary for example for long simulations, where
+            % otherwise the minimum time step can become smaller than
+            % floating point precision compared to the total sim time.
+            while (this.fTime + this.fMinimumTimeStep) == this.fTime
+                this.fMinimumTimeStep = 10 * this.fMinimumTimeStep;
+            end
             
             % If time is -1 the min. time step - first tick, advance to zero
             %if this.fTime == (-1 * this.fTimeStep)
@@ -407,7 +483,7 @@ classdef timer < base
                 % current time step for every system that is not dependent,
                 % i.e. that has a 'real' time step set, not -1 which means that
                 % it is executed every timer tick.
-                fNextExecutionTime = min((this.afLastExec(~this.abDependent) + this.afTimeStep(~this.abDependent)));
+                fNextExecutionTime = min((this.afLastExec(~this.abDependent) + this.afTimeSteps(~this.abDependent)));
                 
                 % fNextExecutionTime is an absolute time, so subtract the
                 % current time to get the time step for this tick
@@ -429,7 +505,18 @@ classdef timer < base
             % Find all cb's indices whose last exec + time step <= fTime
             % Dependent systems have -1 as time step - therefore this
             % should always be true!
-            abExec = (this.afLastExec + this.afTimeStep) <= this.fTime;
+            abExec = (this.afLastExec + this.afTimeSteps) <= this.fTime;
+            
+            % The user can trigger the execution of all callbacks at once,
+            % by using the synchronizeCallBacks function. This can help
+            % reduce the amount of ticks in a simulation
+            if this.bSynchronizeExecuteCallBack
+                % tells the timer to executa all call backs
+                abExec = true(1, length(this.afTimeSteps));
+                
+                this.bSynchronizeExecuteCallBack = false;
+            end
+            
             aiExec  = find(abExec);
             
             %% Execute callbacks
@@ -438,7 +525,7 @@ classdef timer < base
             for iE = 1:length(aiExec)
                 this.cCallBacks{aiExec(iE)}(this);
                 
-                if ~base.oLog.bOff
+                if ~base.oDebug.bOff
                     tPayload = this.ctPayload{aiExec(iE)};
 
                     this.out(1, 1, 'exec', 'Exec callback %i: %s', { aiExec(iE) func2str(this.cCallBacks{aiExec(iE)}) });
@@ -461,9 +548,8 @@ classdef timer < base
             this.afLastExec(abExec) = this.fTime;
             
             
-            if ~base.oLog.bOff
+            if ~base.oDebug.bOff
                 this.out(1, 1, 'post-tick', 'Running post-tick tasks!');
-                this.out(1, 2, 'post-tick-num', 'Amount of cbs: %i\t', { this.aiPostTickMax });
             end
             
             %% Execute Post Ticks
@@ -506,8 +592,8 @@ classdef timer < base
                         % set to true for example). For the same reason we
                         % have to get the abExecutePostTicks in each
                         % iteration of the loop
-                        while any(this.mbPostTickControl(iPostTickGroup, iPostTickLevel, :))
-                            abExecutePostTicks = this.mbPostTickControl(iPostTickGroup, iPostTickLevel, :);
+                        while any(this.cabPostTickControl{iPostTickGroup, iPostTickLevel})
+                            abExecutePostTicks = this.cabPostTickControl{iPostTickGroup, iPostTickLevel};
 
                             % Now we store the cell array containing the
                             % function handles for easier access
@@ -517,21 +603,17 @@ classdef timer < base
                             % in this tick
                             aiPostTicksToExecute = find(abExecutePostTicks);
                             % Then we can loop through all of these indices
-                            % (only the once that should be executed) and
+                            % (only the ones that should be executed) and
                             % call their functions
                             for iIndex = 1:sum(abExecutePostTicks)
                                 iPostTick = aiPostTicksToExecute(iIndex);
-                                % We set the post tick control for this post
-                                % tick to false, before we execute the post
-                                % tick, to allow rebinding of other post ticks
-                                % in the level during the execution of the
-                                % level
+        
                                 chCurrentPostTicks{iPostTick}();
                                 % The booelans are set to false after the
                                 % calculation to prevent the currently
                                 % executing post tick from binding an
                                 % update directly again
-                                this.mbPostTickControl(iPostTickGroup, iPostTickLevel, iPostTick) = false;
+                                this.cabPostTickControl{iPostTickGroup, iPostTickLevel}(iPostTick) = false;
                             end
                         end
                     end
@@ -542,10 +624,10 @@ classdef timer < base
                 % post ticks where set during execution of the previous
                 % ones, and if that is the case we iterate the post tick
                 % calculations
-                bExecutePostTicks = any(any(any(this.mbPostTickControl(1:end-1,:,:))));
+                bExecutePostTicks = any(any(cellfun(@(cCell) any(cCell), this.cabPostTickControl(1:end-1,:))));
             end
             
-            %% TIme Step post physics calculation
+            %% Time Step post physics calculation
             %To ensure that the time step calculation is only performed
             %once at the end of the post tick calculation it is perfomed
             %outside of the while loop
@@ -561,21 +643,20 @@ classdef timer < base
                 % the fly while we are executing this level, we use a
                 % while loop to execute the post ticks till all are
                 % executed
-                while any(this.mbPostTickControl(iPostTickGroup, iPostTickLevel, :))
-                    abExecutePostTicks = this.mbPostTickControl(iPostTickGroup, iPostTickLevel, :);
+                while any(this.cabPostTickControl{iPostTickGroup, iPostTickLevel})
+                    abExecutePostTicks = this.cabPostTickControl{iPostTickGroup, iPostTickLevel};
 
                     chCurrentPostTicks = this.chPostTicks(iPostTickGroup, iPostTickLevel,:);
 
                     aiPostTicksToExecute = find(abExecutePostTicks);
                     for iIndex = 1:sum(abExecutePostTicks)
                         iPostTick = aiPostTicksToExecute(iIndex);
-                        % We set the post tick control for this post
-                        % tick to false, before we execute the post
-                        % tick, to allow rebinding of other post ticks
-                        % in the level during the execution of the
-                        % level
+                        
                         chCurrentPostTicks{iPostTick}();
-                        this.mbPostTickControl(iPostTickGroup, iPostTickLevel, iPostTick) = false;
+                        % The booelans are set to false after the
+                        % calculation to prevent the currently executing
+                        % post tick from binding an update directly again
+                        this.cabPostTickControl{iPostTickGroup, iPostTickLevel}(iPostTick) = false;
                     end
                 end
             end
@@ -585,36 +666,6 @@ classdef timer < base
             % are currently executing
             this.iCurrentPostTickGroup = 0;
             this.iCurrentPostTickLevel = 0;
-            
-            % check for bRun -> if true, execute this.step() again!
-            if this.bRun
-                this.run();
-            end
-            
-        end
-        
-        function setTimeStep(this, iCB, fTimeStep, bResetLastExecuted)
-            % Set time step for a specific call back. Protected method, is
-            % returned upon .bind!
-            
-            % Find dependent timed callbacks (when timer executes)
-            this.abDependent(iCB) = (fTimeStep == -1);
-            
-            
-            if ~isempty(fTimeStep)
-                if fTimeStep < 0, fTimeStep = 0; end
-                
-                this.afTimeStep(iCB) = fTimeStep;
-            else
-                this.afTimeStep(iCB) = 0;
-            end
-            
-            % If bResetLastExecuted is true, the time the registered call-
-            % back was last executed will be updated to the current time.
-            if nargin >= 4 && ~isempty(bResetLastExecuted) && bResetLastExecuted && (this.afLastExec(iCB) ~= this.fTime)
-                
-                this.afLastExec(iCB) = this.fTime;
-            end
         end
     end
 end

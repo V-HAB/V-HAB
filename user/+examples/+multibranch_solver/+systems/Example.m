@@ -4,7 +4,7 @@ classdef Example < vsys
     
     properties (SetAccess = protected, GetAccess = public)
         fPipeLength   = 0.5;
-        fPipeDiameter = 0.001; %% for 3/5 mm overflow of warnings
+        fPipeDiameter = 0.01; %% for 3/5 mm overflow of warnings
         
         oManual;
     end

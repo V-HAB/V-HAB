@@ -8,9 +8,7 @@ classdef PlantManipulator < matter.manips.substance.stationary
         iEdibleWetBiomass;
         iInedibleWetBiomass;
         
-        fTotalError = 0;
         afTotalTransformedMass;
-        fLastExec = 0;
     end
     
     methods
@@ -22,20 +20,24 @@ classdef PlantManipulator < matter.manips.substance.stationary
             this.iInedibleWetBiomass = this.oMT.tiN2I.([this.oParent.txPlantParameters.sPlantSpecies, 'InedibleWet']);
             
             this.afTotalTransformedMass = zeros(1,this.oMT.iSubstances);
-            this.afPartialFlows = zeros(1,this.oMT.iSubstances);
+            
+            this.registerUpdate();
         end
         
+    end
+        
+    methods (Access = protected)
         function update(this)
             
             if this.oTimer.fTime <= 60
+                afPartialFlows = zeros(1, this.oMT.iSubstances);
+                update@matter.manips.substance.stationary(this, afPartialFlows);
                 return;
             end
             
-            fTimeStep = this.oTimer.fTime - this.fLastExec;
+            fElapsedTime = this.oTimer.fTime - this.fLastExec;
             
-            fError = sum(this.afPartialFlows);
-            this.fTotalError = this.fTotalError + (fError * fTimeStep);
-            this.afTotalTransformedMass = this.afTotalTransformedMass + (this.afPartialFlows * fTimeStep);
+            this.afTotalTransformedMass = this.afTotalTransformedMass + (this.afPartialFlows * fElapsedTime);
             
             
             this.oParent.update();
@@ -127,8 +129,6 @@ classdef PlantManipulator < matter.manips.substance.stationary
             if abs(fBalanceCulture) > 1e-10
                 keyboard()
             end
-            
-            this.fLastExec = this.oTimer.fTime;
         end
     end
 end

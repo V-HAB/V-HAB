@@ -28,7 +28,12 @@ classdef Crew_Respiratory_Simulator_CO2 < matter.procs.p2ps.stationary
             this.arExtractPartials(this.oMT.tiN2I.CO2)   = 1;
             
         end
+        function setCrew(this, mbCrewMembers)
+            this.mbCrewMembers = mbCrewMembers;
+        end
+    end
         
+    methods (Access = protected)
         function update(this)
             
             iCrewMembers = sum(this.mbCrewMembers);
@@ -46,9 +51,6 @@ classdef Crew_Respiratory_Simulator_CO2 < matter.procs.p2ps.stationary
             % the phase itself are used (i.e. extracting all species
             % equally).
             this.setMatterProperties(fFlowRate, this.arExtractPartials);
-        end
-        function setCrew(this, mbCrewMembers)
-            this.mbCrewMembers = mbCrewMembers;
         end
     end
 end

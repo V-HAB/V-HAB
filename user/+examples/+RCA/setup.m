@@ -25,7 +25,7 @@ classdef setup < simulation.infrastructure
             this@simulation.infrastructure('RCA_Development_Simulation', ptConfigParams, tSolverParams, ttMonitorConfig);
 
             % Creating a Test object
-            tutorials.RCA.systems.Example(this.oSimulationContainer, 'Test');      
+            examples.RCA.systems.Example(this.oSimulationContainer, 'Test');      
             
             % Simulation length - stop when specific time in sim is reached
             % or after specific amount of ticks (bUseTime true/false).

@@ -1,68 +1,38 @@
 classdef stationary < matter.procs.p2p
-    %STATIONARY A P2P processor for a phase where the volumetric flow
-    %through the phase is significantly smaller than its volume or even
-    %zero.
+    %STATIONARY A P2P processor where the flowrate does not depend on the
+    % mass flows passing through the connected phases, or where the phase
+    % mass is much larger and the mass flows affecting it only have a minor
+    % impact on it within one tick. The flowrate of the stationary P2P is
+    % only calculated once and then is assumed to be constant for the rest
+    % of the tick. The flow P2P would recalculate it iterativly within one
+    % tick
     
-    properties (SetAccess = protected, GetAccess = protected)
-        
+    % to easier discern between P2Ps that are stationary and do not change
+    % within one tick and flow p2ps where the p2p flowrate must be
+    % recalculated in every tick, a constant property is defined
+    properties (Constant)
+        % Boolean property to decide if this is a stationary or flow P2P
+        bStationary = true;
     end
-    
-    properties (SetAccess = private, GetAccess = public)
-        
-    end
-    
-    
     
     methods
-        function this = stationary(varargin)
-            this@matter.procs.p2p(varargin{:});
-            
-            if this.oIn.oPhase.bFlow && this.oOut.oPhase.bFlow
-                % P2Ps of this type are intended to be used in conjunction
-                % with normal or boundary phases. If a flow phase is
-                % connected to this use a flow p2p instead
-                this.throw('p2p', 'The stationary P2P %s has a flow phase as either input or output. No side of the P2P can be a flow phase! For flow phases use flow P2Ps!', this.sName);
-            end
-            
-        end
-    end
-    
-    
-    
-    %% Internal helper methods
-    methods (Access = protected)
-        function [ mfMass, tiDir ] = getMasses(this)
-            % Return matrix with masses of each species, first row is oIn,
-            % second row is oOut phase. Returns a struct with fields 'in'
-            % and 'out' containing 1 or 2 depending on the direction of the
-            % flow rate, i.e. the actual 'inflow' phase.
-            
-            mfMass = [ this.oIn.oPhase.afMass; this.oOut.oPhase.afMass ];
-            
-            if this.fFlowRate >= 0
-                tiDir = struct('in', 1, 'out', 2);
-            else
-                tiDir = struct('in', 2, 'out', 1);
-            end
-        end
-        
-        
-        
-        function setMatterProperties(this, fFlowRate, arPartials)
-            if nargin < 3, arPartials = []; end
-            
-            this.fLastUpdate = this.oStore.oTimer.fTime;
-            
-            % The phase that called update already did matterupdate, but 
-            % set the fLastUpd to curr time so doesn't do that again
-            this.oIn.oPhase.registerMassupdate();
-            this.oOut.oPhase.registerMassupdate();
-            
-            % Set matter properties. Calculates molar mass, heat capacity,
-            % etc.
-            setMatterProperties@matter.procs.p2p(this, fFlowRate, arPartials);
+        function this = stationary(oStore, sName, sPhaseAndPortIn, sPhaseAndPortOut)
+            %% stationary p2p class constructor
+            % the stationary P2P does not check for flow or other phases,
+            % as it can be used in either case!
+            %
+            % Required Inputs:
+            % oStore:   Store object in which the P2P is located
+            % sName:    Name of the processor
+            % sPhaseAndPortIn and sPhaseAndPortOut:
+            %       Combination of Phase and Exme name in dot notation:
+            %       phase.exme as a string. The in side is considered from
+            %       the perspective of the P2P, which means in goes into
+            %       the P2P but leaves the phase, which might be confusing
+            %       at first. So for a positive flowrate the mass is taken
+            %       from the in phase and exme!
+            this@matter.procs.p2p(oStore, sName, sPhaseAndPortIn, sPhaseAndPortOut);
             
         end
     end
 end
-

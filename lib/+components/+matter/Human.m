@@ -9,6 +9,8 @@ classdef Human < vsys
         
         fVO2_max; % ml/kg/min
         
+        iNumberOfHumans = 1;
+        
         fHumanMass;
         fHumanHeight;
         
@@ -60,6 +62,8 @@ classdef Human < vsys
         requestFood;
         oFoodBranch;
         
+        oHeatSource;
+        
         %% Variables just for plotting 
         fOxygenDemandNominal;
         fOxygenDemandSleep;
@@ -67,13 +71,19 @@ classdef Human < vsys
     end
     
     methods
-        function this = Human(oParent, sName, bMale, fAge, fHumanMass, fHumanHeight, txCrewPlaner, trInitialFoodComposition)
+        function this = Human(oParent, sName, bMale, fAge, fHumanMass, fHumanHeight, txCrewPlaner, iNumberOfHumans, trInitialFoodComposition)
             
             this@vsys(oParent, sName, 60);
             
             eval(this.oRoot.oCfgParams.configCode(this));
             
             if nargin > 7
+                this.iNumberOfHumans = iNumberOfHumans;
+            end
+            
+            this.fFecesSolidProduction = this.fFecesSolidProduction * this.iNumberOfHumans;
+            
+            if nargin > 8
                 this.trInitialFoodComposition = trInitialFoodComposition;
             else
                 % standard food composition based on the composition
@@ -102,12 +112,16 @@ classdef Human < vsys
             % female, calculate the basic energy demand
             if bMale
                 % Equation for metabolic consumption of a human male
-                % according to NASA BVAD TP-2015-218570 page 43
-                this.fBasicFoodEnergyDemand = 10^6 * (622 - 9.53 * fAge + 1.25*(15.9 * fHumanMass + 539.6 * fHumanHeight))/(0.238853*10^3);
+                % according to NASA BVAD TP-2015-218570 page 43, however as
+                % exercise is considered seperatly an activity factor of 1
+                % is used
+                this.fBasicFoodEnergyDemand = this.iNumberOfHumans * 10^6 * (622 - 9.53 * fAge + 1*(15.9 * fHumanMass + 539.6 * fHumanHeight))/(0.238853*10^3);
             else
                 % Equation for metabolic consumption of a human female
-                % according to NASA BVAD TP-2015-218570 page 43
-                this.fBasicFoodEnergyDemand = 10^6 * (354 - 6.91 * fAge + 1.25*(9.36 * fHumanMass + 726 * fHumanHeight))/(0.238853*10^3);
+                % according to NASA BVAD TP-2015-218570 page 43, however as
+                % exercise is considered seperatly an activity factor of 1
+                % is used
+                this.fBasicFoodEnergyDemand = this.iNumberOfHumans * 10^6 * (354 - 6.91 * fAge + 1*(9.36 * fHumanMass + 726 * fHumanHeight))/(0.238853*10^3);
             end
             
             % Since the feces are also modelled as a chemical reaction that
@@ -171,7 +185,7 @@ classdef Human < vsys
                 end
             end
             
-            this.fHumanMass     = fHumanMass;
+            this.fHumanMass     = this.iNumberOfHumans * fHumanMass;
             this.fHumanHeight   = fHumanHeight;
             
             this.txCrewPlaner = txCrewPlaner;
@@ -287,9 +301,9 @@ classdef Human < vsys
             % for fat, proteins and carbohydrates the human initially has 7
             % day worth of these stored, based on the defined initial food
             % composition
-            fFatMass            = 7 * this.trInitialFoodComposition.Fat          * this.fBasicFoodEnergyDemand / this.tfEnergyContent.Fat;
-            fProteinMass        = 7 * this.trInitialFoodComposition.Protein      * this.fBasicFoodEnergyDemand / this.tfEnergyContent.Protein;
-            fCarbohydrateMass   = 7 * this.trInitialFoodComposition.Carbohydrate * this.fBasicFoodEnergyDemand / this.tfEnergyContent.Carbohydrate;
+            fFatMass            = this.iNumberOfHumans * 7 * this.trInitialFoodComposition.Fat          * this.fBasicFoodEnergyDemand / this.tfEnergyContent.Fat;
+            fProteinMass        = this.iNumberOfHumans * 7 * this.trInitialFoodComposition.Protein      * this.fBasicFoodEnergyDemand / this.tfEnergyContent.Protein;
+            fCarbohydrateMass   = this.iNumberOfHumans * 7 * this.trInitialFoodComposition.Carbohydrate * this.fBasicFoodEnergyDemand / this.tfEnergyContent.Carbohydrate;
             
             % not an actual representation of the masses inside the human,
             % only the masses that humans consume/produce
@@ -300,7 +314,7 @@ classdef Human < vsys
             % Creating Stores
             matter.store(this, 'Human', fVolumeHuman + fVolumeUrine + fVolumeFeces + fVolumeLung + fVolumeStomach ); 
 
-            oHumanPhase = matter.phases.mixture(this.toStores.Human, 'HumanPhase', 'liquid', tfMassesHuman, fVolumeHuman, fHumanTemperature, 101325); 
+            oHumanPhase = matter.phases.mixture(this.toStores.Human, 'HumanPhase', 'solid', tfMassesHuman, fHumanTemperature, 101325); 
             
             this.afInitialMassHuman = oHumanPhase.afMass;
             
@@ -317,7 +331,7 @@ classdef Human < vsys
             % add a manip that converts food to metabolism products
             components.matter.Manips.ManualManipulator(this, 'DigestionSimulator', oHumanPhase);
             
-            oStomachPhase = matter.phases.mixture(this.toStores.Human, 'Stomach', 'liquid', tfMassesStomach, fVolumeStomach, fHumanTemperature, 101325);
+            oStomachPhase = matter.phases.mixture(this.toStores.Human, 'Stomach', 'liquid', tfMassesStomach, fHumanTemperature, 101325);
             
             matter.procs.exmes.mixture(oStomachPhase, 'Food_In');
             matter.procs.exmes.mixture(oStomachPhase, 'Food_Out_Internal');
@@ -333,10 +347,6 @@ classdef Human < vsys
             cAirHelper = matter.helper.phase.create.air_custom(this.toStores.Human, fVolumeLung, struct('CO2', 0.0062),  fHumanTemperature, 0.4, 101325);
             oAirPhase = matter.phases.flow.gas(this.toStores.Human, 'Air', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             
-            oCapacityAir = oAirPhase.oCapacity;
-            oHeatSource = thermal.heatsource('Heater', 0);
-            oCapacityAir.addHeatSource(oHeatSource);
-            
             matter.procs.exmes.gas(oAirPhase, 'O2_Out');
             matter.procs.exmes.gas(oAirPhase, 'CO2_In');
             matter.procs.exmes.gas(oAirPhase, 'Humidity_In');
@@ -344,14 +354,14 @@ classdef Human < vsys
             matter.procs.exmes.gas(oAirPhase, 'Air_Out'); %IF
             
             % Urine Phase
-            oBladderPhase = matter.phases.mixture(this.toStores.Human, 'Urine', 'liquid', tfMassesUrine, fVolumeUrine, fHumanTemperature, 101325); 
+            oBladderPhase = matter.phases.mixture(this.toStores.Human, 'Urine', 'liquid', tfMassesUrine, fHumanTemperature, 101325); 
             this.afInitialMassUrine = oBladderPhase.afMass;
             
             matter.procs.exmes.mixture(oBladderPhase, 'Urine_Out');
             matter.procs.exmes.mixture(oBladderPhase, 'Urine_In_Internal');
             
             % Feces phase
-            oFecesPhase = matter.phases.mixture( this.toStores.Human, 'Feces', 'solid', tfMassesFeces, fVolumeFeces, fHumanTemperature, 101325); 
+            oFecesPhase = matter.phases.mixture( this.toStores.Human, 'Feces', 'solid', tfMassesFeces, fHumanTemperature, 101325); 
             this.afInitialMassFeces = oFecesPhase.afMass;
             
             matter.procs.exmes.mixture(oFecesPhase, 'Feces_In_Internal');
@@ -376,8 +386,16 @@ classdef Human < vsys
             matter.branch(this, 'Human.Urine_Out',          {}, 'Urine_Out'           ,'Urine_Out');
             matter.branch(this, 'Human.Potable_Water_In',	{}, 'Potable_Water_In'    ,'Potable_Water_In');
             
-           
          end
+        
+        function createThermalStructure(this)
+            createThermalStructure@vsys(this);
+            % to prevent small time steps because the food is at a
+            % different temperature than the human, we set a constant
+            % temperature heat source for the stomach
+            oConstantTemperatureHeatSource = components.thermal.heatsources.ConstantTemperature('StomachConstantTemperature');
+            this.toStores.Human.toPhases.Stomach.oCapacity.addHeatSource(oConstantTemperatureHeatSource);
+        end
         
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
@@ -386,6 +404,7 @@ classdef Human < vsys
             solver.matter.manual.branch(this.toBranches.Feces_Out);
             solver.matter.manual.branch(this.toBranches.Urine_Out);
             solver.matter.manual.branch(this.toBranches.Air_In);
+            
             solver.matter.residual.branch(this.toBranches.Air_Out);
             
             if ~isempty(this.requestFood)
@@ -393,9 +412,20 @@ classdef Human < vsys
                 oResidual.setPositiveFlowDirection(false);
             end
             
-            tTimeStepProperties.fFixedTimeStep = 20;
+            tTimeStepProperties.fFixedTimeStep = this.fTimeStep;
             
-            this.toStores.Human.toPhases.Stomach.setTimeStepProperties(tTimeStepProperties);
+            % set time steps. The phases use the same time step as the
+            % system for a fixed time step. The time step calculation
+            % prevents mass balance errors and unphyiscal properties also
+            % for fixed time steps
+            csStoreNames = fieldnames(this.toStores);
+            for iStore = 1:length(csStoreNames)
+                for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
+                    oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
+                    
+                    oPhase.setTimeStepProperties(tTimeStepProperties);
+                end
+            end
                 
             this.setThermalSolvers();
             
@@ -415,6 +445,9 @@ classdef Human < vsys
             this.connectIF('Feces_Out',         varargin{5});
             this.connectIF('Urine_Out',         varargin{6});
             
+            %% Add a way for the human to release heat into the cabin
+            this.oHeatSource = thermal.heatsource([this.sName, '_Heater'], 0);
+            this.toBranches.Air_In.coExmes{2}.oPhase.oCapacity.addHeatSource(this.oHeatSource);
         end
         
         function bindRequestFoodFunction(this, requestFood)
@@ -432,14 +465,11 @@ classdef Human < vsys
             
             afHumidityP2PFlowRates = zeros(1,this.oMT.iSubstances);
             afHumidityP2PFlowRates(this.oMT.tiN2I.H2O) = this.tHumanMetabolicValues.(this.csStates{iState + 1}).fWaterVapor + this.tHumanMetabolicValues.(this.csStates{iState + 1}).fSweat;
-            this.toStores.Human.toProcsP2P.CrewHumidityProduction.setFlowRate(afHumidityP2PFlowRates);
+            this.toStores.Human.toProcsP2P.CrewHumidityProduction.setFlowRate(this.iNumberOfHumans .* afHumidityP2PFlowRates);
             
             % TO DO: find dynamic way to calculate human thermal heat
-            % release simply and a beater way to introduce that heat into
-            % the habitat. Currently the air the human breathes out is
-            % heated up, but that results in unrealistically high air
-            % temperatures
-            this.toStores.Human.toPhases.Air.oCapacity.toHeatSources.Heater.setHeatFlow(this.tHumanMetabolicValues.(this.csStates{iState + 1}).fDryHeat)
+            % release simply
+            this.oHeatSource.setHeatFlow(this.iNumberOfHumans * this.tHumanMetabolicValues.(this.csStates{iState + 1}).fDryHeat)
             
         end
         
@@ -784,11 +814,6 @@ classdef Human < vsys
             % sets the airflowrate into the human to a value that ~4% of
             % the Oxygen in the air is consumed
             this.toBranches.Air_In.oHandler.setFlowRate(- (this.fOxygenDemand/0.04)/this.toBranches.Air_In.coExmes{2}.oPhase.arPartialMass(this.oMT.tiN2I.O2));
-            
-            for iPhase = 1:this.toStores.Human.iPhases
-                this.toStores.Human.aoPhases(iPhase).registerUpdate();
-            end
-            
         end
     end
 end

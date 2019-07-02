@@ -16,7 +16,7 @@ classdef setup < simulation.infrastructure
         % Constructor function
         function this = setup(varargin) 
             
-            ttMonitorConfig.oMassBalanceObserver.sClass = 'simulation.monitors.massbalance_observer';
+            ttMonitorConfig.oMassBalanceObserver.sClass = 'simulation.monitors.massbalanceObserver';
             fAccuracy = 1e-8;
             fMaxMassBalanceDifference = inf;
             bSetBreakPoints = false;
@@ -144,7 +144,7 @@ classdef setup < simulation.infrastructure
             % visible or not. The default is visible. 
             
             %tPlotOptions = struct('csUnitOverride', {{ 'all left' }});
-            tPlotOptions = struct('csUnitOverride', {{ {'°C'}, {'g/s','-'} }});
+            tPlotOptions = struct('csUnitOverride', {{ {'degC'}, {'g/s','-'} }});
             tPlotOptions.tLineOptions.('fr_co2').csColor = 'g';
             tPlotOptions.tLineOptions.('Nonsense').csColor = 'y';
             tPlotOptions.bLegend = false;
@@ -178,7 +178,32 @@ classdef setup < simulation.infrastructure
             coPlots{2,1} = oPlotter.definePlot({'"Branch Flow Rate"'}, 'Flowrate', tPlotOptions);
             oPlotter.defineFigure(coPlots, 'Tank Temperatures');
             
-
+            % For 'quick and dirty' logging and plotting, helpers may be
+            % used such as the one found in
+            % simuation.helper.logger.flowProperties. This helper will log
+            % all temperatures, all pressures, all masses and all flow
+            % rates in a provided system. In order to plot these in a
+            % somewhat organized way, we might want to group them together
+            % by unit. To do that, the tPlotOptions struct can contain a
+            % struct called tFilter that then contains the filtering
+            % information. Below an example is given where we only plot
+            % temperatures, so filtering by the unit string 'K'.
+            
+            % First we need to get the log indexes of all items in the
+            % logger. 
+            ciIndexes = tools.convertArrayToCell(1:this.toMonitors.oLogger.iNumberOfLogItems);
+            
+            % Now we set the tPlotOptions struct
+            tPlotOptions = struct();
+            tPlotOptions.tFilter = struct('sUnit','K');
+            
+            % Creating the plot object 
+            coPlots = {oPlotter.definePlot(ciIndexes,'Temperatures',tPlotOptions)};
+            
+            % And finally another figure.
+            oPlotter.defineFigure(coPlots, 'All Temperatures');
+            
+            % Doing the actual plotting. 
             oPlotter.plot();
         end
         

@@ -41,11 +41,6 @@ classdef fan < matter.procs.f2f
         % Boolean variable determining if the fan is turned on at all
         bTurnedOn;
         
-        % Direction of the flow the fan is trying to produce. Default
-        % direction is left to right -> iBlowDirection = 1. For right to
-        % left -> iBlowDirection = -1;
-        iBlowDirection = 1;
-        
         % Power Consumtion of the fan in [W]
         fPowerConsumtionFan = 0;
         
@@ -75,7 +70,9 @@ classdef fan < matter.procs.f2f
             'fTestPressure',    29649, ...      Pa
             'fTestTemperature',   294.26, ...   K
             'fTestGasConstant',   287.058, ...  J/kgK
-            'fTestDensity',         0.3510 ...  kg/m3
+            'fTestDensity',         0.3510, ... kg/m3
+            'fZeroCrossingUpper',   0.007, ...  m^3/s
+            'fZeroCrossingLower',   0.0048 ...  m^3/s
             );
         
         % Boolean variable to enable or disable the pressure rise at the
@@ -85,17 +82,22 @@ classdef fan < matter.procs.f2f
         %TODO should implement this better and make it use the gradual rise
         %after each shutdown, not just at the beginning of a simulation.
         bUsePressureRise = false;
-    end
-    
-    properties (SetAccess = private, GetAccess = private)
-        % A reference to the incoming flow object. This is used to
-        % calculate the properties of the inflowing gas.
-        oFlowIn;
         
+        % Maximum delta pressure of the fan at the current speed setpoint
+        fMaximumDeltaPressure;
+        
+        % Maximum volumetric flow rate of the fan at the current speed
+        % setpoint. 
+        fMaximumVolumetricFlowRate;
+        
+        % Maximum upper and lower volumetric flow rates of this fan with
+        % the given characteristic. 
+        fMaxFlowRateUpper;
+        fMaxFlowRateLower;
     end
     
     methods
-        function this = fan(oContainer, sName, fSpeedSetpoint, sDirection, tCharacteristic)
+        function this = fan(oContainer, sName, fSpeedSetpoint, tCharacteristic)
             % Constructor 
             % Required inputs: 
             % oContainer        Reference to the matter container this f2f
@@ -119,22 +121,22 @@ classdef fan < matter.procs.f2f
             % tells solvers that this component produces a pressure rise
             this.bActive = true;
             
-            this.fSpeedSetpoint = fSpeedSetpoint;
-            
-            if strcmp(sDirection, 'Left2Right')
-                this.iBlowDirection = 1;
-            elseif strcmp(sDirection, 'Right2Left')
-                this.iBlowDirection = -1;
-            else
-                this.throw('fan','Illegal value for the direction parameter of the fan. The input may only be ''Left2Right'' or ''Right2Left''.');
-            end
-            
             % If a specific characteristic is used, read in the data and
             % override the defaults
-            if nargin > 4
+            if nargin > 3
                 this.tCharacteristic = tCharacteristic;
             end
             
+            % Calculating the maximum flow rates for the upper and lower
+            % speeds, which is where the delta pressure is zero. So here we
+            % have to find the zero crossing of the fan characteristics and
+            % interpolate between them. The second input parameter to the
+            % fzero() function is the starting point for the interpolation.
+            this.fMaxFlowRateUpper = fzero(this.tCharacteristic.calculateUpperDeltaP, this.tCharacteristic.fZeroCrossingUpper);
+            this.fMaxFlowRateLower = fzero(this.tCharacteristic.calculateLowerDeltaP, this.tCharacteristic.fZeroCrossingLower);
+            
+            % Setting the fan speed
+            this.setFanSpeed(fSpeedSetpoint);
             
             % Support these two solver architectures - hydr used by the
             % linear solver, fct by the iterative.
@@ -154,6 +156,45 @@ classdef fan < matter.procs.f2f
             this.oBranch.setOutdated();
         end
         
+        function setFanSpeed(this, fFanSpeed)
+            %SETFANSPEED Sets a new speed setpoint
+            
+            % Setting the property
+            this.fSpeedSetpoint = fFanSpeed;
+            
+            % Calculating the maximum delta pressure for this speed. This
+            % occurs when the volumetric flow rate is zero. 
+            this.fMaximumDeltaPressure = this.calculateDeltaPressure(0);
+            
+            % Calculating the maximum volumetric flow rate for the fan at
+            % this speed.
+            this.fMaximumVolumetricFlowRate = this.fMaxFlowRateLower + ...
+                (this.fSpeedSetpoint - this.tCharacteristic.fSpeedLower) / ...
+                (this.tCharacteristic.fSpeedUpper - this.tCharacteristic.fSpeedLower) * ...
+                (this.fMaxFlowRateUpper - this.fMaxFlowRateLower);
+        end
+        
+        function fDeltaPressure = calculateDeltaPressure(this, fVolumetricFlowRate)
+            % Since the characteristic only has two specific speeds, we
+            % need to interpolate between them.
+            
+            % Calculating the delta pressure for the lower end of the
+            % characteristic
+            fDeltaPressureLower  = this.tCharacteristic.calculateLowerDeltaP(fVolumetricFlowRate);
+            
+            % Calculating the delta pressure for the upper end of the
+            % characteristic
+            fDeltaPressureHigher = this.tCharacteristic.calculateUpperDeltaP(fVolumetricFlowRate);
+            
+            % Interpolating between the two using the fan speeds as a
+            % linear reference.
+            fDeltaPressure = fDeltaPressureLower + ...
+                (this.fSpeedSetpoint - this.tCharacteristic.fSpeedLower ) / ...
+                (this.tCharacteristic.fSpeedUpper - this.tCharacteristic.fSpeedLower) * ...
+                (fDeltaPressureHigher - fDeltaPressureLower);
+            
+        end
+        
         
         function fDeltaPressure = solverDeltas(this, fFlowRate)
             
@@ -170,81 +211,43 @@ classdef fan < matter.procs.f2f
                 return;
             end
             
-            % We're setting the incoming flow with respect to the blow
-            % direction. Technically this should be done with respect to
-            % the flow rate, taking whichever flow is the actual incoming
-            % flow. This has some repercussions in the solver however,
-            % since it also determines, which flow and therefore pressure
-            % will be used to calculate the volumetric flow rate. If the
-            % flow rate switches directions between calls of solverDeltas()
-            % a different flow with a much different pressure will be used
-            % to calculate the volumetric flow rate. This leads to
-            % instabilities in the flow rate solver. Therefore we use the
-            % one that is the inflow if the flow rate through the fan is in
-            % the same direction as the fan is blowing. The opposite case
-            % only happens rarely, so the error made here should be fairly
-            % small.
-            if isempty(this.oFlowIn)
-                % This line of code takes quite some time to execute, so
-                % we'll only do it once at the very beginning. We can't do
-                % this in the constructor, because there the getFlows()
-                % method will only return an empty flow object because it
-                % hasn't been set yet. This is done when the branch this
-                % fan is contained in is created. 
-                [ this.oFlowIn, ~ ] = this.getFlows(this.iBlowDirection);
-            end
+            [ oFlowIn, ~ ] = this.getFlows(fFlowRate);
             
-            % Calculating the density of the incoming flowing matter:
-            fDensity = this.oFlowIn.getDensity();
-            
-            % We need to check, if the flow rate is positive or negative
-            % and set our iFlowDir variable accordingly.
-            if fFlowRate < 0
-                iFlowDir = -1;
+            % Calculating the density of the incoming flowing matter
+            fDensity = oFlowIn.getDensity();
+                    
+            % If the flow rate is zero or smaller, the fan will simply
+            % output the maximum delta pressure
+            if fFlowRate <= 0
+                % pressure rises are negative
+                fDeltaPressure = -this.fMaximumDeltaPressure;
             else
-                iFlowDir = 1;
-            end
-            
-            % To be able to use the functions of the characteristics, as a
-            % next step, the matter flow needs to be calculated into a
-            % volumetric flow. Luckily, every flow has a method for that!
-            fVolumetricFlowRate = this.oFlowIn.calculateVolumetricFlowRate(fFlowRate);
-            
-            % Now we use the characteristic functions to calculate the
-            % delta pressure at the two different fan speeds depending on
-            % the volumetric flow rate
-            fDeltaPressureLower  = this.tCharacteristic.calculateLowerDeltaP(fVolumetricFlowRate);
-            
-            fDeltaPressureHigher = this.tCharacteristic.calculateUpperDeltaP(fVolumetricFlowRate);
-            
-            % Now we can interpolate between the two
-            fInterpolatedDeltaPressure = fDeltaPressureLower + ...
-                (this.fSpeedSetpoint - this.tCharacteristic.fSpeedLower ) / ...
-                (this.tCharacteristic.fSpeedUpper - this.tCharacteristic.fSpeedLower) * ...
-                (fDeltaPressureHigher - fDeltaPressureLower);
-            
-            % Considering the influence of the density:
-            fDensityCorrectedDeltaPressure = fInterpolatedDeltaPressure *  (fDensity / this.tCharacteristic.fTestDensity);
-            
-            % Setting the correct sign to respect the iterative solver's
-            % directivity. If the direction of the flow and the direction
-            % of the fan are pointing in the same direction (are both
-            % positive or negative), then the fan produces a pressure rise.
-            % Pressure rises are negative in the world of the iterative
-            % solver, hence the '* (-1)'. If the two are not aligned (fan
-            % is blowing against a flow but is not powerful enough, so
-            % there is backflow), the fan produces a pressure drop.
-            fDeltaPressure = fDensityCorrectedDeltaPressure * this.iBlowDirection * iFlowDir * (-1);
-            
-            % If it is turned on, we gradually increase the pressure at the
-            % start of a simulation over a time period of one second. This
-            % is done to prevent solver issues caused by a large pressure
-            % spike. 
-            if this.bUsePressureRise
-                fRiseTime = 1;
-                if this.oTimer.fTime < fRiseTime
-                    fDeltaPressure = fDeltaPressure * (-1 * ((this.oTimer.fTime - fRiseTime) / fRiseTime)^2 + 1);
+                % To be able to use the functions of the characteristics,
+                % as a next step, the mass flow needs to be converted into
+                % a volumetric flow. Luckily, every flow has a method for
+                % that!
+                fVolumetricFlowRate = oFlowIn.calculateVolumetricFlowRate(fFlowRate);
+                
+                % Calculating the delta pressure generated by the fan
+                % according to the characteristic
+                fInterpolatedDeltaPressure = this.calculateDeltaPressure(fVolumetricFlowRate);
+                
+                % The way the fan characteristic looks like, the delta
+                % pressure actually becomes negative if the flow rate is
+                % higher than the maximum volumetric flow rate. This makes
+                % sense physically, because if the fan is flowed through
+                % faster than it can blow, it becomes a flow restriction
+                % causing a pressure drop. 
+                if fInterpolatedDeltaPressure < 0 
+                    fInterpolatedDeltaPressure = 0;
                 end
+                
+                % Considering the influence of the density:
+                fDensityCorrectedDeltaPressure = fInterpolatedDeltaPressure *  (fDensity / this.tCharacteristic.fTestDensity);
+
+                % Pressure rises are negative in V-HAB solvers, so we
+                % need to change the sign.
+                fDeltaPressure = fDensityCorrectedDeltaPressure * (-1);
             end
             
             % We might want to log this value, so we set the property
@@ -257,8 +260,8 @@ classdef fan < matter.procs.f2f
             % flow speed of the fan, the pressure difference becomes
             % negative. We still will produce a positive temperature change
             % though. 
-            fDeltaTemperature = abs(fDensityCorrectedDeltaPressure) / fDensity / ...
-                this.oFlowIn.fSpecificHeatCapacity / this.fInternalEfficiency * ...
+            fDeltaTemperature = abs(fDeltaPressure) / fDensity / ...
+                oFlowIn.fSpecificHeatCapacity / this.fInternalEfficiency * ...
                 this.fPowerFactor;
             
             % In case something went wrong, we'll just set the termpature
@@ -269,13 +272,24 @@ classdef fan < matter.procs.f2f
             
             % Calculating the heat flow produced by the fan that is
             % imparted onto the gas flow.
-            this.fHeatFlow = abs(fFlowRate) * this.oFlowIn.fSpecificHeatCapacity * fDeltaTemperature;
+            this.fHeatFlow = abs(fFlowRate) * oFlowIn.fSpecificHeatCapacity * fDeltaTemperature;
             
             % Calculating Power consumed by the fan in [W]
             if fFlowRate > 0
-                this.fPowerConsumtionFan = (fDensityCorrectedDeltaPressure * fVolumetricFlowRate) / this.fElectricalEfficiency;
+                this.fPowerConsumtionFan = (fDeltaPressure * fVolumetricFlowRate) / this.fElectricalEfficiency;
             else
                 this.fPowerConsumtionFan = 0;
+            end
+            
+            % If it is turned on, we gradually increase the
+            % pressure at the start of a simulation over a time
+            % period of one second. This is done to prevent solver
+            % issues caused by a large pressure spike.
+            if this.bUsePressureRise
+                fRiseTime = 1;
+                if this.oTimer.fTime < fRiseTime
+                    fDeltaPressure = fDeltaPressure * (-1 * ((this.oTimer.fTime - fRiseTime) / fRiseTime)^2 + 1);
+                end
             end
             
         end

@@ -92,21 +92,21 @@ classdef PlantCulture < vsys
     end
     
     methods
-        function this = PlantCulture(oParent, txInput, fUpdateFrequency, fPlantTimeInit)
+        function this = PlantCulture(oParent, sName, fUpdateFrequency, txInput, fPlantTimeInit)
             % In order to initialize the plant culture at a specific later
             % time you have to provide the value of that time in
             % fPlantTimeInit in seconds and the txInput struct requires the
             % additional field mfPlantMassInit which is vector with the
             % first entry as edible biomass in kg and the second entry as
             % inedible biomass in kg, at the time of plant initialization
-            this@vsys(oParent, txInput.sCultureName, fUpdateFrequency);
+            this@vsys(oParent, sName, fUpdateFrequency);
             
             % just to let old definitions operate without requiring rework
             if isfield(txInput, 'fH')
                 txInput.fPhotoperiod = txInput.fH;
             end
             
-            if (nargin >= 4)
+            if (nargin >= 5)
                 this.fPlantTimeInit = fPlantTimeInit;
             else
                 this.fPlantTimeInit = 0;
@@ -152,7 +152,7 @@ classdef PlantCulture < vsys
             createMatterStructure@vsys(this);
             %% Create Store, Phases and Processors
             
-            matter.store(this, 'Plant_Culture', 10.1);
+            matter.store(this, 'Plant_Culture', 10000.1);
             
             % TO DO: Specify volumes of the phases individually!!! and
             % simply make the store mass the sum of it. Also maybe make a
@@ -177,7 +177,6 @@ classdef PlantCulture < vsys
                 struct(...                                              % phase contents    [kg]
                 ([this.txPlantParameters.sPlantSpecies, 'EdibleWet']), fEdibleMass,...
                 ([this.txPlantParameters.sPlantSpecies, 'InedibleWet']), fInedibleMass), ...
-                5, ...                                                 % volume    [m^3]
                 293.15, ...                                             % phase temperature [K]
                 101325);
             
@@ -191,7 +190,6 @@ classdef PlantCulture < vsys
                 struct('CO2', 0.1, 'O2', 0.1, 'H2O', 0.5, 'Nutrients', 0.01,...
                 ([this.txPlantParameters.sPlantSpecies, 'EdibleWet']), 0.1,...
                 ([this.txPlantParameters.sPlantSpecies, 'InedibleWet']), 0.1), ...
-                5, ...                                                 % volume    [m^3]
                 293.15, ...                                             % phase temperature [K]
                 101325);
             
@@ -268,14 +266,22 @@ classdef PlantCulture < vsys
             
             % add branches to solvers            
             solver.matter.manual.branch(this.toBranches.Atmosphere_In);
-            solver.matter.residual.branch(this.toBranches.Atmosphere_Out);
+            
+            tSolverProperties.fMaxError = 1e-6;
+            tSolverProperties.iMaxIterations = 100;
+            tSolverProperties.fMinimumTimeStep = 1;
+            tSolverProperties.iIterationsBetweenP2PUpdate = 20;
+            
+            oSolver = solver.matter_multibranch.iterative.branch(this.toBranches.Atmosphere_Out, 'complex');
+            oSolver.setSolverProperties(tSolverProperties);
+            
 
             solver.matter.manual.branch(this.toBranches.WaterSupply_In);
             solver.matter.manual.branch(this.toBranches.NutrientSupply_In);
             solver.matter.manual.branch(this.toBranches.Biomass_Out);
             
             % initialize flowrates
-            this.toBranches.Atmosphere_In.oHandler.setFlowRate(-0.1);
+            this.toBranches.Atmosphere_In.oHandler.setFlowRate(-0.01 * this.txInput.fGrowthArea);
             
             this.toBranches.WaterSupply_In.oHandler.setFlowRate(0);
             this.toBranches.NutrientSupply_In.oHandler.setFlowRate(0);
@@ -294,11 +300,13 @@ classdef PlantCulture < vsys
                     tTimeStepProperties.arMaxChange =arMaxChange;
                     tTimeStepProperties.fMaxStep = this.fTimeStep;
                     
-                    this.toStores.(csStoreNames{iStore}).fDefaultTimeStep = this.fTimeStep;
-                    
                     oPhase.setTimeStepProperties(tTimeStepProperties)
                 end
             end
+            
+            clear tTimeStepProperties
+            tTimeStepProperties.fFixedTimeStep = this.fTimeStep;
+            this.toStores.Plant_Culture.toPhases.Plants.setTimeStepProperties(tTimeStepProperties);
             
             %% Assign thermal solvers
             this.setThermalSolvers();
@@ -312,6 +320,8 @@ classdef PlantCulture < vsys
             this.connectIF('WaterSupply_FromIF_In', sIF3);
             this.connectIF('NutrientSupply_FromIF_In', sIF4);
             this.connectIF('Biomass_ToIF_Out', sIF5);
+            
+            this.oAtmosphere = this.toBranches.Atmosphere_In.coExmes{2}.oPhase;
         end
         function update(this)
             
@@ -405,9 +415,6 @@ classdef PlantCulture < vsys
             end
             
             this.fLastExec = this.oTimer.fTime;
-        end
-        function setReferenceAtmosphere(this, oAtmosphere)
-            this.oAtmosphere = oAtmosphere;
         end
     end
     

@@ -40,13 +40,14 @@ classdef FlowPhase < matter.phases.gas
                        
             % Compute equilibrium pressure of saturated water vapor above
             % aqueous solutions of LiCl
-            this.fPressure = fPi25 * (fA + fB * ftheta) * pH2O;
+            fPressure = fPi25 * (fA + fB * ftheta) * pH2O;
             
             % pressure cannot be negative
-            if this.fPressure < 0
-                this.fPressure = 0;
+            if fPressure < 0
+                fPressure = 0;
             end
     
+            this.fMassToPressure = fPressure / this.fMass;
         end
         
     end

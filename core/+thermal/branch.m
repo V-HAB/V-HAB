@@ -1,26 +1,36 @@
 classdef branch < base.branch
     % Thermal base branch class definition. Here all basic properties and
-    % methodes that all thermal branches require are defined
+    % methodes that all thermal branches require are defined. Domain
+    % independent definitions are inherited from the base branch.
     
     properties (SetAccess = protected)
         
         % The thermal conductivity of the branch
         fConductivity; % [W/K] or [W/K^4] depending on the child class
         
-        fHeatFlow = 0;
+        % The currently transmitted heat flow through this branch
+        fHeatFlow = 0;  % [W]
         
+        % Array containing the temperature between each conductor and
+        % exmes. For example if a branch contains two conductors the array
+        % will have 3 etnries describing the following temperatures:
+        % LeftExme - afTemperatures(1) - coConductors(1) - afTemperatures(2) - coConductors(2) - afTemperatures(3) - RightExme
         afTemperatures;
         
-        % Object array containing a reference to the conductor objects
+        % Object cell array containing a reference to the conductor objects
         % inside this branch
         coConductors = cell(0,0);
+        % Integer providing the number of conductors in this branch,
+        % usefull for looping through the conductors
         iConductors;
         
         % Matter object which solves the matter flow rate of this thermal
         % branch. Can either be a matter.branch or a p2p processor
         oMatterObject;
         
-        % Do we need to trigger the setHeatFlow event?
+        % Falg to decide if we need to trigger the setHeatFlow event. If
+        % nothing is bound to this event, it is not triggered saving
+        % calculation time
         bTriggersetHeatFlowCallbackBound = false;
         
         % If the RIGHT side of the branch is an interface (i.e. i/f to the
@@ -29,20 +39,16 @@ classdef branch < base.branch
         iIfConductors;
     end
     
-    properties (SetAccess = private, GetAccess = public)
-        % heat flow handler - only one can be set!
-        oHandler;
-    end
-    
     methods
         
         function this = branch(oContainer, xLeft, csProcs, xRight, sCustomName, oMatterObject)
             % The thermal branch uses the same definition as the matter
-            % branch, just with thermal object. A matter phase with the
+            % branch, just with thermal object. A store with the
             % respective thermal exme is required as interface on both the
-            % left and right side and multiple conductors of the same type
-            % (Advective, Conduction/Convective, Radiative) can be defined
-            % in csProcs (similar to f2f procs on the matter side)
+            % left (xLeft) and right (xRight) side and multiple conductors
+            % of the same type (Advective, Conduction/Convective,
+            % Radiative) can be defined in csProcs (similar to f2f procs on
+            % the matter side)
             %
             % Can be called with either stores/ports or interface names
             % (all combinations possible). Connections are always done from
@@ -59,9 +65,7 @@ classdef branch < base.branch
                 this.oMatterObject = oMatterObject;
             end
             
-            
-            
-            %% Adding the branch to our matter.container
+            %% Adding the branch to our container
             this.oContainer.addThermalBranch(this);
             
             % Counting the number of conductors in the branch
@@ -70,7 +74,7 @@ classdef branch < base.branch
         end
         
         function createProcs(this, csProcs)
-            %% Loop through conductor procs
+            %% Loop through conductor procs and add them to this branch
             for iI = 1:length(csProcs)
                 sProc = csProcs{iI};
                 
@@ -83,7 +87,7 @@ classdef branch < base.branch
         end
         
         function setOutdated(this)
-            % Can be used by phases or conductors processors to request recalc-
+            % Can be used by capacities or conductors to request recalc-
             % ulation of the flow rate, e.g. after some internal parameters
             % changed.
             
@@ -98,44 +102,37 @@ classdef branch < base.branch
         end
         
         function setIfLength(this, iLength)
+            % This function is used in case the branch is a system -
+            % subsystem interface to tell the other branch how many
+            % conductors are present in the other IF branch
             this.iIfConductors = iLength;
         end
         
         function setConductors(this, coConductors)
+            % This function is used for branches which describe an
+            % interface to combine the two branches of the IF into one
+            % complete branch with all conductors
             this.coConductors = coConductors;
             this.iConductors = length(this.coConductors);
         end
         
-        function setHeatFlow = registerHandlerHeatFlow(this, oHandler)
-            % Only one handler can be registered
-            %   and gets a fct handle to the internal setHeatFlow method.
-            %   One solver obj per branch, atm no possibility for de-
-            %   connect that one.
-            
-            if ~isempty(this.oHandler)
-                this.throw('registerHandlerFR', 'Can only set one handler!');
-            end
-            
-            this.oHandler = oHandler;
-            
-            setHeatFlow   = @this.setHeatFlow;
-        end
-        
         function [ this, unbindCallback ] = bind(this, sType, callBack)
+            % Overwrite the general bind function to be able and write
+            % specific trigger flags
             [ this, unbindCallback ] = bind@event.source(this, sType, callBack);
             
-            % Only do for set
+            % Only for setHeatFlow we set the Trigger to true which tells
+            % us that we actually have to trigger this. Otherwise it is not
+            % triggered saving calculation time
             if strcmp(sType, 'setHeatFlow')
                 this.bTriggersetHeatFlowCallbackBound = true;
             end
         end
         
-    end
-    
-    methods (Access = protected)
-        
         function setHeatFlow(this, fHeatFlow, afTemperatures)
-            
+            % The solver calls this function to set the fHeatFlow and
+            % afTemperatures values of the branch based on its internal
+            % calculations.
             if this.abIf(1), this.throw('setHeatFlow', 'Left side is interface, can''t set flowrate on this branch object'); end
             
             
@@ -148,18 +145,23 @@ classdef branch < base.branch
                 this.coExmes{iE}.oCapacity.registerUpdateTemperature();
             end
             
+            % set the new heat flow
             this.fHeatFlow = fHeatFlow;
             
-            
-            this.bOutdated = false;
-            
+            % set new temperature vector
             this.afTemperatures = afTemperatures;
             
+            % now we are no longer outdated, but up-to-date
+            this.bOutdated = false;
+            
+            % if any call is bound to the setHeatFlow trigger of the branch
+            % we execute the trigger, otherwise it is skipped
             if this.bTriggersetHeatFlowCallbackBound
                 this.trigger('setHeatFlow');
             end
         end
     end
+    
     methods (Sealed = true)
         function seal(this)
             % Seal aoFlows, get FR func handle

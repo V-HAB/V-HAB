@@ -13,12 +13,16 @@ classdef ManualP2P < matter.procs.p2ps.stationary
         
         afFlowRates;
         
-        fLastExec;
-        
         bMassTransferActive = false;
         fMassTransferStartTime;
         fMassTransferTime;
         
+    end
+    
+    properties (SetAccess = private, GetAccess = protected)
+        % function handle registered at the timer object that allows this
+        % phase to set a time step, which is then enforced by the timer
+        setTimeStep;
     end
     
     methods
@@ -26,23 +30,14 @@ classdef ManualP2P < matter.procs.p2ps.stationary
             this@matter.procs.p2ps.stationary(oStore, sName, sPhaseAndPortIn, sPhaseAndPortOut);
 
             this.oParent = oParent;
-        end
-        
-        function update(this, ~) 
-            % Since the flowrate is set manually no update required, the
-            % function still has to be here since it is called within V-HAB
-            if this.bMassTransferActive && (this.fMassTransferStartTime + this.fMassTransferTime) < this.oTimer.fTime
-                fTimeStep = (this.fMassTransferStartTime + this.fMassTransferTime) - this.oTimer.fTime;
-                this.oIn.oPhase.oStore.setNextTimeStep(fTimeStep);
-            end
             
-            if this.bMassTransferActive && this.oTimer.fTime >= (this.fMassTransferStartTime + this.fMassTransferTime)
-                
-                arPartialFlowRates = zeros(1,this.oMT.iSubstances);
-                fFlowRate = 0;
-                this.setMatterProperties(fFlowRate, arPartialFlowRates);
-                this.bMassTransferActive = false;
-            end
+            this.setTimeStep = this.oTimer.bind(@(~) this.registerUpdate(), 0, struct(...
+                'sMethod', 'update', ...
+                'sDescription', 'The .update method of a manual P2P', ...
+                'oSrcObj', this ...
+            ));
+            % initialize the time step to inf
+            this.setTimeStep(inf, true);
         end
         
         function setFlowRate(this, afPartialFlowRates)
@@ -98,10 +93,31 @@ classdef ManualP2P < matter.procs.p2ps.stationary
                 arPartialFlowRates = this.afFlowRates/fFlowRate;
             end
             
-            this.oIn.oPhase.oStore.setNextTimeStep(fTime);
+            % we use true to reset the last time the time step for this
+            % manip was bound
+            this.setTimeStep(fTime, true);
             
             % extract specified substance with desired flow rate
             this.setMatterProperties(fFlowRate, arPartialFlowRates);
+        end
+    end
+    methods (Access = protected)
+        function update(this, ~) 
+            % Since the flowrate is set manually no update required, the
+            % function still has to be here since it is called within V-HAB
+            if this.bMassTransferActive && (this.fMassTransferStartTime + this.fMassTransferTime) < this.oTimer.fTime
+                fTimeStep = (this.fMassTransferStartTime + this.fMassTransferTime) - this.oTimer.fTime;
+                this.setTimeStep(fTimeStep, true);
+            end
+            
+            if this.bMassTransferActive && this.oTimer.fTime >= (this.fMassTransferStartTime + this.fMassTransferTime)
+                
+                arPartialFlowRates = zeros(1,this.oMT.iSubstances);
+                fFlowRate = 0;
+                this.setMatterProperties(fFlowRate, arPartialFlowRates);
+                this.bMassTransferActive = false;
+                this.setTimeStep(inf, true);
+            end
         end
     end
 end

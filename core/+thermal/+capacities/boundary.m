@@ -1,45 +1,48 @@
 classdef boundary < thermal.capacity
-    % a boundary capacity that models a infinite large capacity with
-    % setable temperature
-        
-    properties (SetAccess = protected) %, Abstract)
-        
-    end
+    %BOUNDARY A capacity with an infinitely large heat capacity
+    %   The temperature of this capacity is constant and should only be
+    %   changed using the setBoundaryTemperature() method. The
+    %   updateTemperature() and updateSpecificHeatCapacity() methods of the
+    %   parent class are overloaded to do nothing.
     
     methods
-        
         function this = boundary(oPhase, fTemperature)
-            %CAPACITY Create new thermal capacity object
-            %   Create a new capacity with a name and associated phase
-            %   object. Capacities are generated automatically together
-            %   with phases and all thermal calculations are performed here
+            % Calling the parent class constructor
             this@thermal.capacity(oPhase, fTemperature);
             
-            this.fTotalHeatCapacity     = inf;
-            
+            % Since this is a boundary capacity, its temperature should
+            % never change. This is equivalent to an infinite heat
+            % capacity, so that is exactly what we are setting here. 
+            this.fTotalHeatCapacity = inf;
+            this.fSpecificHeatCapacity = inf;
         end
         
         function setBoundaryTemperature(this, fTemperature)
-            % external function to set the boundary temperature
+            % External function to set the boundary temperature
             this.setTemperature(fTemperature);
-            
-            this.fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(this.oPhase);
-            this.fTotalHeatCapacity = this.oPhase.fMass * this.fSpecificHeatCapacity;
         end
         
-        function updateTemperature_post(this, ~)
-            % use fCurrentHeatFlow to calculate the temperature change
-            % since the last execution fLastTemperatureUpdate
-           
+        function updateTemperature(this, ~)
+            % Overloaded function, calculates some time step values and
+            % sets the current one outdated. 
+            
             fTime     = this.oTimer.fTime;
             fLastStep = fTime - this.fLastTemperatureUpdate;
             
             this.fLastTemperatureUpdate     = fTime;
             this.fTemperatureUpdateTimeStep = fLastStep;
             
+            % Capacity sets new time step (registered with parent store,
+            % used for all phases of that store)
+            this.setOutdatedTS();
+            
             if this.bTriggerSetUpdateTemperaturePostCallbackBound
             	this.trigger('updateTemperature_post');
             end
+        end
+        
+        function updateSpecificHeatCapacity(~)
+            % Overloaded function, does nothing
         end
     end
 end

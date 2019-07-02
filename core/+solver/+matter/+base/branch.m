@@ -27,9 +27,15 @@ classdef branch < base & event.source
     end
     
     properties (SetAccess = private, GetAccess = protected)
-        % Handle bound to the specific solver which can be used to set the
-        % flowrate
+        % A flag to decide if the solver is already outdated or not
         bRegisteredOutdated = false;
+        
+        % In recursive calls within the post tick where the solver itself
+        % triggers outdated calls up to the point where it is set outdated
+        % again itself it is possible for the solver to get stuck with a
+        % true bRegisteredOutdated flag. To prevent this we also store the
+        % last time at which we registered an update
+        fLastSetOutdated = -1;
     end
     
     properties (SetAccess = private, GetAccess = public)
@@ -88,7 +94,7 @@ classdef branch < base & event.source
             end
             
             % Branch allows only one solver to take control
-            this.setBranchFR = this.oBranch.registerHandlerFR(this);
+            this.setBranchFR = this.oBranch.registerHandler(this);
             
             this.setTimeStep = this.oBranch.oTimer.bind(@this.executeUpdate, inf, struct(...
                 'sMethod', 'executeUpdate', ...
@@ -122,7 +128,7 @@ classdef branch < base & event.source
     
     methods (Access = private)
         function executeUpdate(this, ~)
-            if ~base.oLog.bOff, this.out(1, 1, 'executeUpdate', 'Call massupdate on both branches, depending on flow rate %f', { this.oBranch.fFlowRate }); end
+            if ~base.oDebug.bOff, this.out(1, 1, 'executeUpdate', 'Call massupdate on both branches, depending on flow rate %f', { this.oBranch.fFlowRate }); end
             
             % if the mass branch is outdated it means the flowrate changed,
             % which requires us to update the corresponding thermal branch
@@ -138,7 +144,7 @@ classdef branch < base & event.source
         function registerUpdate(this, ~)
             % This functions registers a post tick update for this branch
             % in the timer. The post tick level is specified by the solver
-            if this.bRegisteredOutdated
+            if ~(this.oBranch.oTimer.fTime > this.fLastSetOutdated) && this.bRegisteredOutdated
                 return;
             end
             
@@ -153,12 +159,14 @@ classdef branch < base & event.source
             % Allows other functions to register an event to this trigger
             % and provides the post tick level for the ones who register
             if this.bTriggerRegisterUpdateCallbackBound
-                this.trigger('register_update', struct('iPostTickPriority', this.iPostTickPriority));
+                this.trigger('register_update');
             end
 
-            if ~base.oLog.bOff, this.out(1, 1, 'registerUpdate', 'Registering .update method on post tick prio %i for solver for branch %s', { this.iPostTickPriority, this.oBranch.sName }); end
+            if ~base.oDebug.bOff, this.out(1, 1, 'registerUpdate', 'Registering update() method on post tick for solver for branch %s', { this.oBranch.sName }); end
             
             this.bRegisteredOutdated = true;
+            this.fLastSetOutdated = this.oBranch.oTimer.fTime;
+            
             % this finally binds the update function to the specified post
             % tick level
             this.hBindPostTickUpdate();
@@ -169,7 +177,7 @@ classdef branch < base & event.source
             % and subsequently CALL THE PARENT METHOD by
             % update@solver.matter.base.branch(this);
             
-            if ~base.oLog.bOff, this.out(1, 1, 'update', 'Setting flow rate %f for branch %s', { fFlowRate, this.oBranch.sName }); end
+            if ~base.oDebug.bOff, this.out(1, 1, 'update', 'Setting flow rate %f for branch %s', { fFlowRate, this.oBranch.sName }); end
             
             this.fLastUpdate = this.oBranch.oTimer.fTime;
             
