@@ -1,107 +1,124 @@
 classdef source < handle
-    % provides the framework for other classes to use events. If any class
-    % wants to use .bind or .trigger functions it has to inherit from this
-    % class! For documentation regarding events visit:
+    %SOURCE provides the framework for other classes to use events. 
+    % If any class wants to use .bind or .trigger functions it has to
+    % inherit from this class! For documentation regarding events visit:
     % https://wiki.tum.de/pages/viewpage.action?pageId=41593225
     
-    properties (Access = private)
-        iCounter = 0;
-        
-        cxLastReturn = {};
-        bNewLastReturn = false;
-    end
-    
+    % These properties are only used internally and should not be
+    % changeably by child classes, so their SetAccess is private.
     properties (SetAccess = private, GetAccess = public)
+        % A struct containing cells with one cell per trigger. The cells
+        % then contain all of the actual callbacks for each trigger. 
         tcEventCallbacks = struct();
-        pcEventCallbacks;
         
+        % A boolean variable indicating if the object that derives from
+        % this class has callbacks at all. This is a performance measure,
+        % so we don't have to do all of the stuff in trigger() only to find
+        % out, there's nothing to do. 
         bHasCallbacks = false;
         
-        tEventObject;
+        % A struct containing the information for a default, empty event.
+        % Must be initialized in the constructor.
+        tDefaultEvent;
     end
     
     methods
+        
         function this = source()
-            this.pcEventCallbacks = containers.Map();
-            
-            
-            this.tEventObject = struct(...
+            % Initializing the default, empty event object. 
+            this.tDefaultEvent = struct(...
                 'sType', [], ...
                 'oCaller', this, ...
-                'tData', [], ...
-                'addReturnValue', @this.addReturn ...
-            );
+                'tData', [] ...
+                );
             
         end
         
-        % sType refers to event name, possibly hierachical (e.g.
-        % schedule.exercise.bicycle); must not contain underscores
-        function [ this, unbindCallback ] = bind(this, sType, callBack)
-            % Create struct for callback if it doesn't exist yet
-            if ~isfield(this.tcEventCallbacks, sType)
-                this.tcEventCallbacks.(sType) = {};
+        function [ this, hUnbindCallback ] = bind(this, sName, hCallBack)
+            %BIND Binds a function handle to the event with the given name
+            % sName cen be hierachical (e.g. schedule.exercise.bicycle);
+            % must not contain underscores
+        
+            % Create struct entry for callback if it doesn't exist yet
+            if ~isfield(this.tcEventCallbacks, sName)
+                this.tcEventCallbacks.(sName) = {};
             end
             
-            this.tcEventCallbacks.(sType){end+1} = callBack;
+            % Adding the callback to the struct entry
+            this.tcEventCallbacks.(sName){end+1} = hCallBack;
             
+            % Setting the bHasCallbacks property to true
             this.bHasCallbacks = true;
             
-            unbindCallback = @() this.unbind(sType, length(this.tcEventCallbacks.(sType)));
+            % Returning the unbind callback
+            hUnbindCallback = @() this.unbind(sName, length(this.tcEventCallbacks.(sName)));
+            
         end
         
+        function unbind(this, sName, iId)
+            %UNBIND Removes a callback from this object
+            % The name and ID of the callback to be removed is generated
+            % automatically in the bind() method and passed back to the
+            % binding entity. 
+            this.tcEventCallbacks.(sName)(iId) = [];
+        end
         
-        function unbind(this, sType, iId)            
-            this.tcEventCallbacks.(sType)(iId) = [];
+        function unbindAllEvents(this)
+            % this function can be used to unbind all callbacks that the
+            % current object had registered. This is helpfull for example
+            % if something like a manipulator is detached from a phase and
+            % then moved somewhere else. In that case removing all
+            % callbacks makes sense, as most likely everything for the
+            % object has changed. If any callback should still be present,
+            % it must be readded afterwards
+            this.tcEventCallbacks = struct();
         end
     end
     
     methods (Access = protected)
+        % The trigger method is protected so only the objects that derive
+        % from this class can call it themselves and not some random object
+        % from the outside.
         
-        
-        function addReturn(this, xVal)
-            this.cxLastReturn{end + 1} = xVal;
-            this.bNewLastReturn = true;
-        end
-        
-        function cReturn = trigger(this, sType, tData)
+        function trigger(this, sName, tData)
+            %TRIGGER Triggers the exection of all callbacks registered to the event called sName
             
+            % If there are no callbacks associated with this object, we can
+            % just return without doing anything. 
             if ~this.bHasCallbacks
-                cReturn = {};
-                return;
+                return
             end            
             
+            % If no data struct is given, we set the local variable to
+            % empty. 
             if nargin < 3, tData = []; end
             
-            % Copy from default event obj
-            oEvent = this.tEventObject;
+            % Copy struct from default event
+            tEvent = this.tDefaultEvent;
             
-            oEvent.sType = sType;
-            oEvent.tData = tData;
+            % Setting the name of the event
+            tEvent.sType = sName;
             
+            % Setting the data payload
+            tEvent.tData = tData;
+            
+            % It may be that this object has callbacks, but not necessarily
+            % for the exact trigger being executed here. So we check if
+            % there is even a field with the trigger name and only then do
+            % we get the cell with callbacks. 
             try
-                cCallbackCell = this.tcEventCallbacks.(sType);
+                cCallbackCell = this.tcEventCallbacks.(sName);
             catch
-                cReturn = {};
-                return;
+                return
             end
             
-            cReturn = cell(1, length(cCallbackCell));
-            
+            % Last thing to do here is to loop through all of the callbacks
+            % and actually execute them. 
             for iC = 1:length(cCallbackCell)
-                callBack = cCallbackCell{iC};
+                cCallbackCell{iC}(tEvent);
                 
-                callBack(oEvent);
-                
-                if this.bNewLastReturn
-                    cReturn{iC} = this.cxLastReturn{end};
-
-                    this.cxLastReturn(end) = {};
-
-                    if isempty(this.cxLastReturn)
-                        this.bNewLastReturn = false;
-                    end
-                end
             end
+            
         end
     end
 end

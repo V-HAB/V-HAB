@@ -17,7 +17,7 @@ classdef FoodStore < matter.store
             % volume for the human interface phases
             this@matter.store(oParentSys, sName, fVolume + 1);
             
-            matter.phases.mixture(this, 'Food', 'solid', tfFood, fVolume, this.oMT.Standard.Temperature, this.oMT.Standard.Pressure);
+            matter.phases.mixture(this, 'Food', 'solid', tfFood, this.oMT.Standard.Temperature, this.oMT.Standard.Pressure);
             
             this.oParent = oParentSys;
         end
@@ -26,7 +26,7 @@ classdef FoodStore < matter.store
             
             this.iHumans = this.iHumans + 1;
             
-            oPhase = matter.phases.flow.mixture(this, ['Food_Output_', num2str(this.iHumans)], 'solid', [], 1e-4, this.oMT.Standard.Temperature, this.oMT.Standard.Pressure);
+            oPhase = matter.phases.flow.mixture(this, ['Food_Output_', num2str(this.iHumans)], 'solid', [], this.oMT.Standard.Temperature, this.oMT.Standard.Pressure);
             
             matter.procs.exmes.mixture(this.toPhases.Food,     ['FoodPrepOut_', num2str(this.iHumans)]);
             matter.procs.exmes.mixture(oPhase,     ['FoodPrepIn_', num2str(this.iHumans)]);
@@ -53,31 +53,26 @@ classdef FoodStore < matter.store
             
             txResults = this.oMT.calculateNutritionalContent(this.toPhases.Food);
             
-            % calculate mass transfer for the P2P
-            if nargin > 4
-                
-                
-                keyboard()
-                trComposition;
-                afEnergy = fEnergy ;
-                
-                afPartialMasses = 0;
+            if txResults.EdibleTotal.Mass == 0
+                afPartialMasses = zeros(1, this.oMT.iSubstances);
+                disp(['A Human is going hungry because there is nothing edible left in store ', this.sName])
             else
-                afPartialMasses = (this.toPhases.Food.arPartialMass * (txResults.EdibleTotal.Mass / txResults.EdibleTotal.TotalEnergy) * fEnergy);
+                % calculate mass transfer for the P2P
+                if nargin > 4
+
+
+                    keyboard()
+                    trComposition;
+                    afEnergy = fEnergy ;
+
+                    afPartialMasses = 0;
+                else
+                    afPartialMasses = (this.toPhases.Food.arPartialMass * (txResults.EdibleTotal.Mass / txResults.EdibleTotal.TotalEnergy) * fEnergy);
+                end
             end
-            
             % Check if sufficient food of the demanded composition is
             % available
             oP2P.setMassTransfer(afPartialMasses, fTime);
         end
-    end
-    
-    methods (Access = protected)
-        
-        function setVolume(this)
-            % Overwriting the matter.store setVolume which would give both
-            % gas phases the full volume.
-        end
-        
     end
 end

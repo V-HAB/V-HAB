@@ -53,7 +53,9 @@ classdef AbsorberExample < matter.procs.p2ps.stationary & event.source
             % is extracted.
             this.arExtractPartials(this.oMT.tiN2I.(this.sSubstance)) = 1;
         end
-        
+    end
+    
+    methods (Access = protected)
         function update(this)
             
             %disp(this.oStore.oTimer.iTick);

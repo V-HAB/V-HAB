@@ -19,11 +19,11 @@ classdef setup < simulation.infrastructure
             
             % Possible to change the constructor paths and params for the
             % monitors
-            ttMonitorConfig.oTimeStepObserver.sClass = 'simulation.monitors.timestep_observer';
+            ttMonitorConfig.oTimeStepObserver.sClass = 'simulation.monitors.timestepObserver';
             ttMonitorConfig.oTimeStepObserver.cParams = { 0 };
             ttMonitorConfig.oLogger.cParams = {true};
             
-%             ttMonitorConfig.oMassBalanceObserver.sClass = 'simulation.monitors.massbalance_observer';
+%             ttMonitorConfig.oMassBalanceObserver.sClass = 'simulation.monitors.massbalanceObserver';
 %             fAccuracy = 1e-8;
 %             fMaxMassBalanceDifference = inf;
 %             bSetBreakPoints = false;
@@ -39,6 +39,8 @@ classdef setup < simulation.infrastructure
             % specific amount of ticks (bUseTime true/false).
             this.fSimTime = 3600 * 50; % In seconds
             this.bUseTime = true;
+            
+            base.oDebug.toggleOutputState();
         end
         
         function configureMonitors(this)
@@ -140,6 +142,25 @@ classdef setup < simulation.infrastructure
             
                 end
             end
+            
+            iLabel = 1;
+            csHeaterLabel = cell(1,2*iCellNumber5A);
+            for iBed = 1:2
+                for iCell = 1:iCellNumber5A
+                    csHeaterLabel{iLabel} = ['Absorber Heater Power Bed ', num2str(iBed),' Cell ',num2str(iCell)];
+                    oLog.addValue(['Example:c:CDRA:s:Zeolite5A_',num2str(iBed),'.toPhases.Absorber_',num2str(iCell),'.oCapacity.toHeatSources.AbsorberHeater_',num2str(iCell)],  'fHeatFlow',	'W',    csHeaterLabel{iLabel});
+                    
+                    iLabel = iLabel + 1;
+                end
+            end
+            sLogSum = '';
+            for iHeater = 1:iLabel-1
+                sLogSum = [sLogSum, '"', csHeaterLabel{iHeater}, '" + '];
+            end
+            sLogSum(end-2 : end) = '';
+            
+            oLog.addVirtualValue(sLogSum, 'W', 'CDRA Heater Power');
+            
         end
         
         function plot(this) % Plotting the results
@@ -148,7 +169,7 @@ classdef setup < simulation.infrastructure
             close all
           
             try
-                this.toMonitors.oLogger.readDataFromMat;
+                this.toMonitors.oLogger.readFromMat;
             catch
                 disp('no data outputted yet')
             end
@@ -226,13 +247,13 @@ classdef setup < simulation.infrastructure
                 end
             end
             
-%             coPlot = cell(3,2);
-%             for iType = 1:3
-%                 for iBed = 1:2
-%                      coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_Pressure(iType,iBed,1:miCellNumber(iType)), [csType{iType}, num2str(iBed), ' Pressure'], tPlotOptions);
-%                 end
-%             end
-%             oPlotter.defineFigure(coPlot,  'CDRA Pressure');
+            coPlot = cell(3,2);
+            for iType = 1:3
+                for iBed = 1:2
+                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_Pressure(iType,iBed,1:miCellNumber(iType)), [csType{iType}, num2str(iBed), ' Pressure'], tPlotOptions);
+                end
+            end
+            oPlotter.defineFigure(coPlot,  'CDRA Pressure');
             
             
             coPlot = cell(3,2);
@@ -342,7 +363,7 @@ classdef setup < simulation.infrastructure
             clear tPlotOptions
             tPlotOptions.sTimeUnit  = 'hours';
             
-            coPlot = cell(3,3);
+            coPlot = cell(4,3);
             coPlot{1,1} = oPlotter.definePlot({'"CDRA CO2 InletFlow"', '"CDRA H2O InletFlow"', '"CDRA CO2 OutletFlow"', '"CDRA H2O OutletFlow"'}, 'CDRA In- and Outlet Flows', tPlotOptions);
             coPlot{1,2} = oPlotter.definePlot({'"Condensate Flowrate CHX"'}, 'CHX Condensate Flowrate', tPlotOptions);
             coPlot{1,3} = oPlotter.definePlot({'"Partial Pressure CO2"'}, 'Partial Pressure CO2 Habitat',tPlotOptions);
@@ -352,13 +373,41 @@ classdef setup < simulation.infrastructure
             coPlot{3,1} = oPlotter.definePlot({'"Temperature CHX"', '"Temperature TCCV"'}, 'Temperatures in CHX',tPlotOptions);
             coPlot{3,2} = oPlotter.definePlot({'"Pressure CHX"', '"Pressure TCCV"'}, 'Pressure in CHX', tPlotOptions);
             coPlot{3,3} = oPlotter.definePlot({'"Partial Pressure H2O TCCV"', '"Partial Pressure CO2 TCCV"'}, 'Partial Pressure H2O and CO2 TCCV', tPlotOptions);
+            coPlot{4,3} = oPlotter.definePlot({'"CDRA Heater Power"'}, 'CDRA Heater Power', tPlotOptions);
+            
             
             oPlotter.defineFigure(coPlot,  'Plots');
             
             oPlotter.plot();
             
+            %% Plot energy demand over timer
+            oLogger = this.toMonitors.oLogger;
+            
+            for iVirtualLog = 1:length(oLogger.tVirtualValues)
+                if strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel, 'CDRA Heater Power')
+                    
+                    mfCDRA_HeaterPower = oLogger.tVirtualValues(iVirtualLog).calculationHandle(oLogger.mfLog);
+                    
+                end
+            end
+            afTimeSteps = (oLogger.afTime(2:end) - oLogger.afTime(1:end-1));
+            
+            iLogs = length(oLogger.afTime);
+            
+            mfCDRA_EnergyDemand = zeros(iLogs,1);
+            for iLog = 2:iLogs
+                mfCDRA_EnergyDemand(iLog) = sum(afTimeSteps(1:iLog-1)' .* mfCDRA_HeaterPower(2:iLog));
+            end
+            
+            figure()
+            plot(oLogger.afTime./3600, mfCDRA_EnergyDemand)
+            xlabel('Time in h')
+            ylabel('Energy in J')
+            title('CDRA Energy Demand')
+            grid on
+            
             %% Get Test Data:
-            iFileID = fopen(strrep('+tutorials/+CDRA/+TestData/CDRA_Test_Data.csv','/',filesep), 'r');
+            iFileID = fopen(strrep('+examples/+CDRA/+TestData/CDRA_Test_Data.csv','/',filesep), 'r');
             
             [FilePath,~,~,~] = fopen(iFileID);
             

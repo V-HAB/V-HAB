@@ -33,8 +33,6 @@ classdef setup < simulation.infrastructure
             %% Logging Setup
             oLogger = this.toMonitors.oLogger;
             
-            oLogger.add('Greenhouse', 'flow_props');
-            
             % Find the plant cultures to log
             csCultures = {};
             oGreenhouse = this.oSimulationContainer.toChildren.Greenhouse;

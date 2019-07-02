@@ -69,7 +69,7 @@ classdef Example1 < vsys
             tutorials.p2p.components.AbsorberExample(this.toStores.Filter, 'filterproc', 'FlowPhase.In_P2P', 'FilteredPhase.Out_P2P', fSubstance, fCapacity);
             
             % Adding a fan
-            components.matter.fan(this, 'Fan', 40000, 'Left2Right');
+            components.matter.fan(this, 'Fan', 40000);
             
             % Adding pipes to connect the components
             components.matter.pipe(this, 'Pipe_1', 0.5, 0.005);

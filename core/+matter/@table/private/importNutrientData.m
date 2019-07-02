@@ -1,4 +1,4 @@
-function [ ttxImportNutrientData ] = importNutrientData()
+function importNutrientData(this)
 % this function reads the PlantParameters.csv file
 
     % At first we'll just read the first line of the file, this determines
@@ -205,13 +205,45 @@ function [ ttxImportNutrientData ] = importNutrientData()
             % Since none of the substances in the "Matter Data" worksheet
             % will enable interpolation of their properties, we can just
             % set the variable to false here.
-            %TODO Might not need this, so commented, remove if sure. 
-            %ttxImportNutrientData.(csSubstances{iI}).bInterpolations = false;
+            ttxImportNutrientData.(csSubstances{iI}).bInterpolations = false;
             
             % Finally we add the tColumns and tUnits structs to every 
             % substance
             ttxImportNutrientData.(csSubstances{iI}).tColumns = tColumns;
             ttxImportNutrientData.(csSubstances{iI}).tUnits   = tUnits;
+        end
+    end
+    
+    % Now that we've gathered all of the information from the CSV file, it
+    % is time to write it to the actual ttxMatterData property of the
+    % matter table object. 
+    
+    % Getting and setting the names of all edible substances
+    this.csEdibleSubstances = fieldnames(ttxImportNutrientData);
+    
+    %%%%%%%%%%%%
+    % WARNING! %
+    %%%%%%%%%%%%
+    
+    % right now, Drybean has been substituted with values from
+    % Kidney Beans and Redbeets have been substituted with Beets.
+    % BVAD uses those substances but they are not listed on the
+    % USDA Food Database as of time of writing.
+    % Nutrients are always linked to the USDA NDB No. (iUSDAID in
+    % the file), so check that if unsure!
+    
+    %%%%%%%%%%%%
+    
+    % loop over all edible substances
+    for iJ = 1:length(this.csEdibleSubstances)
+        try
+            if strcmp(this.csEdibleSubstances{iJ}, this.csSubstances{this.tiN2I.(this.csEdibleSubstances{iJ})})
+                this.ttxMatter.(this.csEdibleSubstances{iJ}).txNutrientData = ttxImportNutrientData.(this.csEdibleSubstances{iJ});
+            end
+        catch
+            % substance not represented in matter table, but not an
+            % issue as long as this food type is not used in sim
+            this.warn('importNutrientData','The food type ''%s'' is not in the MatterData.csv file. It''s properties will therfore not be added to the matter table.', this.csEdibleSubstances{iJ});
         end
     end
 end

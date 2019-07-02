@@ -1,6 +1,7 @@
 function [ cParams, sDefaultPhase ] = SuitAtmosphere(oStore, fVolume, fTemperature, rRH, fPressure)
-%SUITATMOSPHERE helper to create a matter phase with a standard space suit
-%   atmosphere using 99.9% oxygen and 0.1% carbon dioxide.
+%SUITATMOSPHERE Creates a matter phase with a standard space suit atmosphere
+%   Atmosphere will have 100% oxygen plus any given humidity at any given
+%   pressure.
 %   If just volume given, created as a 100% oxygen atmosphere at 28900 Pa, 
 %   20°C and 0% relative humidity.
 %
@@ -41,16 +42,16 @@ if rRH
     % p V = m / M * R_m * T -> mol mass in g/mol so divide p*V=n*R*T;
     
     %calculate total mass
-    fMassGes = (fPressure) * fVolume * ((fMolarFractionH2O * fMolarMassH2O + (1 - fMolarFractionH2O) * fMolarMassO2)) / fRm / fTemperature; 
+    fTotalMass = (fPressure) * fVolume * ((fMolarFractionH2O * fMolarMassH2O + (1 - fMolarFractionH2O) * fMolarMassO2)) / fRm / fTemperature; 
     
     % calculate dry air mass
-    fMass = fMassGes * (1 - fMassFractionH2O); 
+    fDryMass = fTotalMass * (1 - fMassFractionH2O); 
     
 else
-    fMass = fPressure * fVolume * fMolarMassO2 / fRm / fTemperature;
+    fDryMass = fPressure * fVolume * fMolarMassO2 / fRm / fTemperature;
     
     % Need to set this to zero in case of dry gas
-    fMassGes = 0;
+    fTotalMass = 0;
     fMassFractionH2O = 0;
 end
 
@@ -93,13 +94,10 @@ else
     fMassFractionH2O = 0;
 end
 % Matter composition
-tfMass = struct(...
-    'O2',  0.999 * fMass, ...
-    'CO2', 0.001 * fMass ...
-    );
+tfMass = struct('O2', fDryMass);
 
 % Calculate H2O mass if present 
-tfMass.H2O = fMassGes * fMassFractionH2O; 
+tfMass.H2O = fTotalMass * fMassFractionH2O; 
 
 % Create cParams for a whole matter.phases.gas standard phase. If user does
 % not want to use all of them, can just use

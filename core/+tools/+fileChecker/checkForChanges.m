@@ -35,6 +35,7 @@ if isempty(tSavedInfo)
         bFirstCall = true;
         bFirstRun = false;
     else
+        bFirstCall = true;
         bFirstRun = true;
     end
 else
@@ -113,8 +114,7 @@ if ~bFirstRun
     sFileOrFolderString = tools.normalizePath(sFileOrFolderPath);
     
     % Splitting the string into a cell array
-    %TODO: |tools.normalizePath| preserves a prefix so no hack required here
-    csFieldNames = strsplit(sFileOrFolderString, {'__', '_aa', '_p_'});
+    csFieldNames = strsplit(sFileOrFolderString, {'__', '_aaat_', '_p_'});
     
     % If there is only one element in the array, this means that either
     % a new folder is being added, or we are beginnig a search in the

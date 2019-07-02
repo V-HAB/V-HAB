@@ -197,9 +197,10 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
             % If this method has already been called during this time step,
             % we don't have to execute it again. 
             if this.oStore.oTimer.fTime == this.fLastExec
-                %TODO make this a very low level debugging output once the
-                    %debug class is implemented
-                    fprintf('%i\t(%.7fs)\t%s: Skipping adsorption calculation because time step is zero.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
+                if ~base.oDebug.bOff
+                    this.out(3,1,'skipping-adsorption','%s: Skipping adsorption calculation because time step is zero', {this.oStore.sName});
+                end
+                
                 return;
             end
 
@@ -343,9 +344,10 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
             % the pressure here can be zero. It should only be zero for one
             % timestep, so we'll just skip this one.
             if this.fSorptionPressure <= 0 
-                %TODO make this a very low level debugging output once the
-                %debug class is implemented
-                fprintf('%i\t(%.7fs)\tRCA %s: Skipping adsorption calculation because of zero or negative pressure.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
+                if ~base.oDebug.bOff
+                    this.out(3,1,'skipping-adsorption','%s: Skipping adsorption calculation because of zero or negative pressure', {this.oStore.sName});
+                end
+                
                 return;
             end
 
@@ -371,9 +373,10 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
                 
                 % BUT: calculated time step needs to be smaller than current vhab time step
                 if this.fTimeFactor_1 * fTransportTimeStep >= this.fTimeStep
-                    %TODO Turn this into a very low level debug output once
-                    %the debug class is implemented
-                    %fprintf('%i\t(%f)\tRCA %s: Skipping because inner time step is larger than external timestep.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
+                    if ~base.oDebug.bOff
+                        this.out(3,1,'skipping-adsorption','%s: Skipping adsorption calculation because inner time step is larger than external timestep', {this.oStore.sName});
+                    end
+                    
                     return;
                 end
                 
@@ -393,15 +396,16 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
             % avoid this, we'll just skip this iteration if  the number of
             % time points exceeds 100,000.
             if iTimePoints > 100000
-                % TODO Turn this into a very low level debug output once
-                % the debug class is implemented
-                fprintf('%i\t(%.7fs)\tRCA %s: Skipping because number of internal time steps exceeds 100,000. (Steps: %i)\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName, iTimePoints);
+                if ~base.oDebug.bOff
+                    this.out(3,1,'skipping-adsorption','%s: Skipping adsorption calculation because number of internal time steps exceeds 100,000', {this.oStore.sName});
+                end
+                
                 return;
             end
             
-            % TODO Turn this into a very low level debug output once the
-            % debug class is implemented
-            %fprintf('%i\t(%.7fs)\tRCA %s: Passed all checks! Now performing absorbtion calculation.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
+            if ~base.oDebug.bOff
+                this.out(5,1,'adsorption-proceeding','%s: Passed all checks! Now performing absorbtion calculation', {this.oStore.sName});
+            end
             
             % Initialize matrices for dispersive transport
             mfMatrix_A = zeros(this.iNumGridPoints);

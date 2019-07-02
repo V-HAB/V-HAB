@@ -5,18 +5,15 @@ classdef branch < solver.thermal.base.branch
 % are assumed to be in a row between the two capacities, if you want to
 % model a parallel heat transfer use multiple branches!
     
-    properties (SetAccess = private, GetAccess = public)
-        
-        % Actual time between flow rate calculations
-        fTimeStep = inf;
-        
-        fSolverHeatFlow = 0;
-        
-    end
-    
-    
     methods
         function this = branch(oBranch)
+            % creat a basic thermal solver which can solve heat transfer
+            % for convective and conductive or radiative conductors. Note
+            % that it is not possibe to combine convective/conductive
+            % conductors and radiative conductors in one solver, you have
+            % to seperate these heat transfers so that the
+            % convective/conductive part and the radiative part are solved
+            % seperatly
             this@solver.thermal.base.branch(oBranch, 'basic');
             
             % Now we register the solver at the timer, specifying the post
@@ -27,6 +24,7 @@ classdef branch < solver.thermal.base.branch
             % tick resulting in the post tick calculation to be executed
             this.hBindPostTickUpdate = this.oBranch.oTimer.registerPostTick(@this.update, 'thermal' , 'solver');
             
+            % and update the solver to initialize everything
             this.update();
         end
         
@@ -34,26 +32,33 @@ classdef branch < solver.thermal.base.branch
     
     methods (Access = protected)
         function update(this)
+            % update the thermal solver
             
+            % we update the conductors in the branch and identify any
+            % radiative conductors (all others are considered conductive,
+            % because the heat transfer for them scales with T while
+            % radiative heat transfer scales with T^4)
             afResistances = zeros(1,this.oBranch.iConductors);
             bRadiative    = false;
             bConductive   = false;
             
             for iConductor = 1:this.oBranch.iConductors
-                
                 if this.oBranch.coConductors{iConductor}.bRadiative
                     bRadiative = true;
                 else
                     bConductive = true;
                 end
-                
                 afResistances(iConductor) = this.oBranch.coConductors{iConductor}.update();
             end
             
+            % check if both types are present in the branch at the same
+            % time, which is currently not possible
             if bRadiative && bConductive
                 this.throw('branch', 'Basic thermal solver cannot calculate conductive/convective and radiative heat transfer at the same time, please use two different branches or use a different solver');
             end
             
+            % for conductive/convective heat transfer we use delta T with
+            % T1 - T2, for radiative we use T1^4 - T2^4
             if bConductive
                 fDeltaTemperature = this.oBranch.coExmes{1}.oCapacity.fTemperature - this.oBranch.coExmes{2}.oCapacity.fTemperature;
             
@@ -67,18 +72,20 @@ classdef branch < solver.thermal.base.branch
             % parallel resistances use multiple branches
             fTotalThermalResistance = sum(afResistances);
 
-            this.fSolverHeatFlow = fDeltaTemperature / fTotalThermalResistance;
+            % calculate the heat flow
+            fHeatFlow = fDeltaTemperature / fTotalThermalResistance;
             
-            this.oBranch.coExmes{1}.setHeatFlow(this.fSolverHeatFlow);
-            this.oBranch.coExmes{2}.setHeatFlow(this.fSolverHeatFlow);
+            % set heat flows
+            this.oBranch.coExmes{1}.setHeatFlow(fHeatFlow);
+            this.oBranch.coExmes{2}.setHeatFlow(fHeatFlow);
             
-            % the temperatures between the conductors are not required, but
-            % it is possible to define a different thermal branch that
-            % calculates them, e.g. to calculate the wall temperature in a
-            % heat exchanger
+            % the temperatures between the conductors are not always
+            % required. If it is of interest to model various temperatures
+            % multiple thermal branches for each step of the heat transfer
+            % can be used e.g. to calculate the wall temperature in a heat
+            % exchanger
             afTemperatures = []; 
-            update@solver.thermal.base.branch(this, this.fSolverHeatFlow, afTemperatures);
-            
+            update@solver.thermal.base.branch(this, fHeatFlow, afTemperatures);
         end
     end
 end

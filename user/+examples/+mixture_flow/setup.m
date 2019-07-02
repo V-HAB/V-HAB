@@ -46,6 +46,9 @@ classdef setup < simulation.infrastructure
                 oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'afMass(this.oMT.tiN2I.CO2)',	'kg', [csStores{iStore}, ' CO_2 Mass']);
             end
             
+            oLog.addValue('Example.toStores.WaterTank_1.toPhases.WaterTank_1_Phase_2',	'fPressure','Pa', 'Water Tank 1 Air Pressure');
+            oLog.addValue('Example.toStores.WaterTank_2.toPhases.WaterTank_2_Phase_2',	'fPressure','Pa', 'Water Tank 2 Air Pressure');
+                
             csBranches = fieldnames(this.oSimulationContainer.toChildren.Example.toBranches);
             for iBranch = 1:length(csBranches)
                 oLog.addValue(['Example.toBranches.', csBranches{iBranch}],             'fFlowRate',    'kg/s', [csBranches{iBranch}, ' Flowrate']);
@@ -76,6 +79,8 @@ classdef setup < simulation.infrastructure
                 
                 csCO2Masses{iStore} = ['"', csStores{iStore}, ' CO_2 Mass"'];
             end
+            csPressures{end+1} = '"Water Tank 1 Air Pressure"';
+            csPressures{end+1} = '"Water Tank 2 Air Pressure"';
             
             csBranches = fieldnames(this.oSimulationContainer.toChildren.Example.toBranches);
             csFlowRates = cell(length(csBranches),1);

@@ -178,12 +178,7 @@ if txMatterForSubstance.bIndividualFile
     txMatterForSubstanceAndTypeAndAggregate = txMatterForSubstanceAndType.(sPhaseStructName);
 end
 
-% If one would like to debug this function, set the following variable to
-% true. This will gather some additional information in the sReportString
-% variable.
-bDebug = false;
-
-if bDebug == true
+if ~base.oDebug.bOff
     % For debugging purposes, we'll get the unit names for the two
     % dependencies and put them into shorter-named variables for better
     % code readability.
@@ -318,7 +313,7 @@ if txMatterForSubstance.bIndividualFile
                 filename = strrep('data\MatterData.mat', '\', filesep);
                 save(filename, 'this', '-v7');
             end
-            if bDebug == true
+            if ~base.oDebug.bOff
                 sReportString = 'One dependency in range. Tried to get value by interpolation.';
             end
         else
@@ -327,7 +322,7 @@ if txMatterForSubstance.bIndividualFile
             % minimum or maximum value, so we'll just take that.
             iRowsFirst = txMatterForSubstanceAndTypeAndAggregate.mfData(:,iColumnFirst) == fFirstDepValue;
             fProperty = txMatterForSubstanceAndTypeAndAggregate.mfData((txMatterForSubstanceAndTypeAndAggregate.mfData(iRowsFirst,iColumnFirst) == fFirstDepValue), iColumn);
-            if bDebug == true
+            if ~base.oDebug.bOff
                 sReportString = ['The value given for ',sFirstDepName,' (',num2str(tParameters.fFirstDepValue),') is out of range. Tried to get best value in range.'];
             end
             
@@ -340,7 +335,7 @@ if txMatterForSubstance.bIndividualFile
             % the case, we abort and give the appropriate error message.
             if length(fProperty) > 1
                 fProperty = NaN;
-                if bDebug == true
+                if ~base.oDebug.bOff
                     sReportString = 'The property you are looking for is dependent on more than one value. Please add more dependencies to the call of findProperty().';
                 end
             end
@@ -442,7 +437,7 @@ if txMatterForSubstance.bIndividualFile
             save(filename, 'this', '-v7');
         end
         
-        if bDebug == true
+        if ~base.oDebug.bOff
             % Doing some nice user interface output messages.
             if ~(abOutOfRange(1) || abOutOfRange(2))
                 sReportString = 'Both dependencies in range. Tried to get value by interpolation.';
@@ -488,7 +483,7 @@ else
         if isempty(fProperty) || isnan(fProperty)
             this.throw('findProperty', 'Error using findProperty. The matter data for %s (%s) does not include a value for %s.', sSubstance, sPhaseType, sProperty);
         else
-            if bDebug == true
+            if ~base.oDebug.bOff
                 sReportString = 'Just took the value from the ''Matter Data'' worksheet.';
             end
         end
@@ -501,17 +496,11 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if isnan(fProperty) || isempty(fProperty)
-    if bDebug == true
-        this.warn('findProperty', 'Error using findProperty. No valid value for %s %s of %s (%s) found in matter table. %s\n', sTypeString, sProperty, sSubstance, sPhaseType, sReportString);
-        %     keyboard();
+    if ~base.oDebug.bOff
         this.throw('findProperty', 'Error using findProperty. No valid value for %s %s of %s (%s) found in matter table. %s\n', sTypeString, sProperty, sSubstance, sPhaseType, sReportString);
     else
-        this.warn('findProperty', 'Error using findProperty. No valid value for %s %s of %s (%s) found in matter table.\n', sTypeString, sProperty, sSubstance, sPhaseType);
-        %     keyboard();
         this.throw('findProperty', 'Error using findProperty. No valid value for %s %s of %s (%s) found in matter table.\n', sTypeString, sProperty, sSubstance, sPhaseType);
-
     end
-    
 end
 
 end

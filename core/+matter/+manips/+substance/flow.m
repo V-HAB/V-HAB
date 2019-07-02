@@ -1,14 +1,14 @@
-classdef flow < matter.manips.substance
+classdef (Abstract) flow < matter.manips.substance
     % flow manipulator which can be used inside of flow phases to calculate
     % mass transformations
     
-    properties (SetAccess = protected)
-        % Changes in partial masses in kg/s
-        afPartialFlows;
-    end
-    
     methods
         function this = flow(sName, oPhase)
+            %% flow class constructor
+            % creates a new flow manipulator
+            % Inputs:
+            % sName:    Name for this manip
+            % oPhase:   Phase object in which this manip is located
             this@matter.manips.substance(sName, oPhase);
             
             if ~this.oPhase.bFlow
@@ -18,18 +18,6 @@ classdef flow < matter.manips.substance
                 this.throw('manip', 'The flow manip %s is not located in a flow phase. For normal phases use stationary manips!', this.sName);
             end
         end
-        
-        function update(this, afPartialFlows)
-            % Checking if any of the flow rates being set are NaNs. It is
-            % necessary to do this here so the origin of NaNs can be found
-            % easily during debugging. 
-            if any(isnan(afPartialFlows))
-                error('Error in manipulator %s. Some of the flow rates are NaN.', this.sName);
-            end
-            
-            this.afPartialFlows = afPartialFlows;
-        end
-        
     end
     
     methods (Abstract)
@@ -46,4 +34,3 @@ classdef flow < matter.manips.substance
         calculateConversionRate(this, afInFlowRates, aarInPartials);
     end
 end
-

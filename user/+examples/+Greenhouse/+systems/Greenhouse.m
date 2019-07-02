@@ -18,7 +18,7 @@ classdef Greenhouse < vsys
             
             % Custom name you want to give this specific culture, select a 
             % name that is easy for you to identify
-            tInput(1).sCultureName     = 'MyLettuceCulture';
+            tInput(1).sName            = 'MyLettuceCulture';
             % Name of the plant species, has to fit the names defined in 
             % lib/+components/*PlantModuleV2/+plantparameters/PlantParameters.csv
             tInput(1).sPlantSpecies    = 'Lettuce';
@@ -49,7 +49,7 @@ classdef Greenhouse < vsys
             % to the tInput struct (because we loop over them below).
             % Otherwise you can simply create individual input structs and
             % define the PlantCulture.m multiple times without a loop
-            tInput(2).sCultureName     = 'MySweetpotatoCulture';
+            tInput(2).sName            = 'MySweetpotatoCulture';
             tInput(2).sPlantSpecies    = 'Sweetpotato';
             tInput(2).fGrowthArea      = 5; % m^2
             tInput(2).fHarvestTime     = 120; % days
@@ -64,8 +64,9 @@ classdef Greenhouse < vsys
             for iCulture = 1:length(tInput)
                 components.matter.PlantModuleV2.PlantCulture(...
                         this, ...                   % parent system reference
-                        tInput(iCulture), ...       % input for specific culture
-                        this.fTimeStep);            % Time step initially used for this culture in [s]
+                        tInput(iCulture).sName,...
+                        this.fTimeStep,...          % Time step initially used for this culture in [s]
+                        tInput(iCulture));          % input for specific culture
             end
         end
         
@@ -92,7 +93,6 @@ classdef Greenhouse < vsys
             for iChild = 1:length(this.csChildren)
                 % culture object gets assigned using its culture name 
                 if isa(this.toChildren.(this.csChildren{iChild}), 'components.matter.PlantModuleV2.PlantCulture')
-                    this.toChildren.(this.csChildren{iChild}).setReferenceAtmosphere(oAtmosphere);
                     csPlantCultures{length(csPlantCultures)+1} = this.csChildren{iChild};
                 end
             end
@@ -183,14 +183,14 @@ classdef Greenhouse < vsys
             matter.store(this, 'LeakageBuffer', 1e3);
             
             % add phase to leakage buffer store
-            oLeakageBuffer = matter.phases.gas(...
+            oLeakageBuffer = matter.phases.boundary.gas(...
                 this.toStores.LeakageBuffer, ...        % store containing phase
                 'LeakageBuffer', ...                    % phase name
                 struct(...                              % phase contents    [kg]
-                'N2', 1e-3,...
-                'CO2', 1e-3), ...
+                ), ...
                 1e3, ...                                % phase volume      [m^3]
-                fTemperatureInit);                      % phase temperature [K]
+                3,...                                   % phase temperature [K]
+                0);                                     % phase pressure [Pa]
                 
             % add exmes
             matter.procs.exmes.gas(oLeakageBuffer, 'Leakage_In_FromAtmosphere');
@@ -349,14 +349,14 @@ classdef Greenhouse < vsys
             
             %% Create Biomass Split P2P
             
-            oConstantP2P = components.matter.P2Ps.ConstantMassP2P(this, ...
+            oConstantP2P = components.matter.P2Ps.ConstantMassP2P(...
                 this.toStores.BiomassSplit, ...
                 'EdibleInedible_Split_P2P', ...
                 'BiomassEdible.EdibleInedible_Split_P2P_Out', ...
                 'BiomassInedible.EdibleInedible_Split_P2P_In',...
                 csInedibleBiomass, 1);
             
-            oConstantP2P.fTimeStep = 3600;
+            oConstantP2P.setTimeStepProperties(3600);
             %% Create Branches
             
             % create leakage branch
@@ -414,10 +414,15 @@ classdef Greenhouse < vsys
                 for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
                     oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
                     oPhase.setTimeStepProperties(tTimeStepProperties);
-                    this.toStores.(csStoreNames{iStore}).fDefaultTimeStep = this.fTimeStep;
                 end
             end
-
+            
+            clear tTimeStepProperties
+            tTimeStepProperties.rMaxChange = inf;
+            this.toStores.BiomassSplit.toPhases.BiomassInedible.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.BiomassSplit.toPhases.BiomassEdible.setTimeStepProperties(tTimeStepProperties);
+            
+            clear tTimeStepProperties
             arMaxChange = zeros(1,this.oMT.iSubstances);
             arMaxChange(this.oMT.tiN2I.H2O) = 0.05;
             arMaxChange(this.oMT.tiN2I.CO2) = 0.05;

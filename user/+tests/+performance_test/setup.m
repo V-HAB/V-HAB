@@ -12,10 +12,9 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams) % Constructor function
-            ttMonitorConfig = struct();
+        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig) % Constructor function
             
-            this@simulation.infrastructure('Tutorial_Simple_Flow', ptConfigParams, tSolverParams, ttMonitorConfig);
+            this@simulation.infrastructure('Test_Performance', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             tests.performance_test.systems.Example(this.oSimulationContainer, 'Example');
             

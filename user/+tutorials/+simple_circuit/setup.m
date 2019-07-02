@@ -9,47 +9,22 @@ classdef setup < simulation.infrastructure
     %   - provide methods for plotting the results
     
     properties
+        % A cell containing all log items
+        ciLogValues;
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams) % Constructor function
-            
-            % vhab.exec always passes in ptConfigParams, tSolverParams
-            % If not provided, set to empty containers.Map/struct
-            % Can be passed to vhab.exec:
-            %
-            % ptCfgParams = containers.Map();
-            % ptCfgParams('Tutorial_Simple_Flow/Example') = struct('fPipeLength', 7);
-            % vhab.exec('tutorials.simple_flow.setup', ptCfgParams);
-            
-            
-            % By Path - will overwrite (by definition) CTOR value, even 
-            % though the CTOR value is set afterwards!
-            %%%ptConfigParams('Tutorial_Simple_Flow/Example') = struct('fPipeLength', 7);
-            
-            
-            % By constructor
-            %%%ptConfigParams('tutorials.simple_flow.systems.Example') = struct('fPipeLength', 5, 'fPressureDifference', 2);
-            
-            % Possible to change the constructor paths and params for the
-            % monitors
-            ttMonitorConfig = struct();
-            
-            %%%ttMonitorConfig.oConsoleOutput = struct('cParams', {{ 50 5 }});
-            
-            %tSolverParams.rUpdateFrequency = 0.1;
-            %tSolverParams.rHighestMaxChangeDecrease = 100;
+        % Constructor function
+        function this = setup(ptConfigParams, tSolverParams)
             
             % First we call the parent constructor and tell it the name of
             % this simulation we are creating.
-            this@simulation.infrastructure('Tutorial_Simple_Circuit', ptConfigParams, tSolverParams, ttMonitorConfig);
+            this@simulation.infrastructure('Tutorial_Simple_Circuit', ptConfigParams, tSolverParams, struct());
             
             % Creating the 'Example' system as a child of the root system
             % of this simulation. 
             tutorials.simple_circuit.systems.Example(this.oSimulationContainer, 'Example');
             
-            % This is an alternative to providing the ttMonitorConfig above
-            %this.toMonitors.oConsoleOutput.setReportingInterval(10, 1);
             
             %% Simulation length
             % Stop when specific time in simulation is reached or after 
@@ -59,27 +34,43 @@ classdef setup < simulation.infrastructure
             this.bUseTime = true;
         end
         
+        % Logging function
         function configureMonitors(this)
-            
             %% Logging
+            % To make the code more legible, we create a local variable for
+            % the logger object.
+
+            oLog = this.toMonitors.oLogger;
+
             % Creating a cell setting the log items. You need to know the
             % exact structure of your model to set log items, so do this
             % when you are done modelling and ready to run a simulation. 
-            
-            oLog = this.toMonitors.oLogger;
-            
-            oLog.add('Example', 'electrical_properties');
+            this.ciLogValues = oLog.add('Example', 'electricalProperties');
         
-
-            %% Define plots
         end
         
         function plot(this) % Plotting the results
-            
+            % First we get a handle to the plotter object associated with
+            % this simulation.
             oPlotter = plot@simulation.infrastructure(this);
             
-%             oPlotter.definePlotAllWithFilter('V', 'Voltages');
-%             oPlotter.definePlotAllWithFilter('A', 'Currents');
+            % Defining a filter for voltages
+            %tPlotOptions = struct('tUnitFilter', struct('sUnit','V'));
+            tPlotOptions = struct(); 
+            % Creating the voltage plot
+            coPlots{1,1} = oPlotter.definePlot(this.ciLogValues, 'Voltages', tPlotOptions);
+            
+            % Defining a filter for currents
+            %tPlotOptions = struct('tUnitFilter', struct('sUnit','A'));
+            tPlotOptions = struct(); 
+            % Creating the current plot
+            coPlots{2,1} = oPlotter.definePlot(this.ciLogValues, 'Currents', tPlotOptions);
+            
+            % Defining the figure
+            oPlotter.defineFigure(coPlots, 'Results');
+            
+            % Plotting 
+            oPlotter.plot();
         end
         
     end

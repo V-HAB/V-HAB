@@ -94,7 +94,13 @@ classdef CCAA < vsys
             this.fCoolantTemperature = fCoolantTemperature;
             % Struct containing basic atmospheric values used in the phase
             % initialization for the CCAA
-            this.tAtmosphere = tAtmosphere;
+            if isempty(tAtmosphere)
+                this.tAtmosphere.fTemperature = this.oMT.Standard.Temperature;
+                this.tAtmosphere.fRelHumidity = 0.5;
+                this.tAtmosphere.fPressure    = this.oMT.Standard.Pressure;
+            else
+                this.tAtmosphere = tAtmosphere;
+            end
             
             % The Carbon Dioxide Removal Assembly (CDRA) can only be used
             % together with a CCAA, however a CCAA can also be used without
@@ -226,10 +232,13 @@ classdef CCAA < vsys
             %  Creating the flowpaths between the Components
             %  Creating the flowpath out of this subsystem ('store.exme', {'f2f-processor', 'f2f-processor'}, 'system level port name')
             
+            components.matter.pipe(this, 'Pipe_TCCV', 1, 0.1, 2e-3);
+            components.matter.pipe(this, 'Pipe_CHX', 1, 0.1, 2e-3);
+            
             matter.branch(this, 'TCCV.Port_In',                     {},             'CCAA_In',                  'CCAA_In_FromCabin');	% Creating the flowpath into this subsystem
             matter.branch(this, 'TCCV.Port_Out_1',                  {'CCAA_CHX_1'}, 'CHX.Flow_In',              'TCCV_CHX');
-            matter.branch(this, 'CHX.Flow_Out_Gas',                 {},             'CCAA_CHX_Air_Out',         'CHX_Cabin');
-            matter.branch(this, 'TCCV.Port_Out_2',                  {},             'CCAA_TCCV_Air_Out',       	'TCCV_Cabin');
+            matter.branch(this, 'CHX.Flow_Out_Gas',                 {'Pipe_CHX'},   'CCAA_CHX_Air_Out',         'CHX_Cabin');
+            matter.branch(this, 'TCCV.Port_Out_2',                  {'Pipe_TCCV'},  'CCAA_TCCV_Air_Out',       	'TCCV_Cabin');
             matter.branch(this, 'CHX.Flow_Out_Liquid',              {},             'CCAA_CHX_Condensate_Out',  'Condensate_Out');      % Creating the water flowpath out of this subsystem
             matter.branch(this, 'CoolantStore.Flow_In_Coolant',     {},             'CCAA_CoolantIn',           'Coolant_In');
             matter.branch(this, 'CoolantStore.Flow_Out_Coolant',    {'CCAA_CHX_2'}, 'CCAA_CoolantOut',          'Coolant_Out');
@@ -240,19 +249,20 @@ classdef CCAA < vsys
             if ~isempty(this.sCDRA)
                 matter.branch(this, 'CHX.Flow_Out_Gas2',            {},                         'CCAA_CHX_to_CDRA_Out',     'CHX_CDRA');
             end
+            
         end
              
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
             % Creating the flowpath into this subsystem
             solver.matter.manual.branch(this.toBranches.CCAA_In_FromCabin);
-            solver.matter.manual.branch(this.toBranches.TCCV_CHX);
+            solver.matter.manual.branch(this.toBranches.TCCV_Cabin);
             solver.matter.manual.branch(this.toBranches.Condensate_Out);
             solver.matter.manual.branch(this.toBranches.Coolant_In);
             solver.matter.manual.branch(this.toBranches.Coolant_Out);
             
-            solver.matter.residual.branch(this.toBranches.TCCV_Cabin);
-            solver.matter.residual.branch(this.toBranches.CHX_Cabin);
+            aoMultiSolverBranches = [this.toBranches.TCCV_CHX, this.toBranches.CHX_Cabin];
+            solver.matter_multibranch.iterative.branch(aoMultiSolverBranches, 'complex');
             
             if ~isempty(this.sCDRA)
                 solver.matter.manual.branch(this.toBranches.CHX_CDRA);
@@ -290,9 +300,9 @@ classdef CCAA < vsys
             % percentage of flow entering the CHX
             fFlowPercentageCHX = this.Interpolation(fNew_TCCV_Angle);
             % Gets the two flow rates exiting the TCCV
-            fTCCV_To_CHX_FlowRate = fFlowPercentageCHX*(fInFlow+fInFlow2);
+            fTCCV_To_CHX_FlowRate = (1 - fFlowPercentageCHX) * (fInFlow+fInFlow2);
 
-            this.toBranches.TCCV_CHX.oHandler.setFlowRate(fTCCV_To_CHX_FlowRate);
+            this.toBranches.TCCV_Cabin.oHandler.setFlowRate(fTCCV_To_CHX_FlowRate);
             
             if this.bActive == 1
                 %% Setting of initial flow rates
@@ -335,6 +345,8 @@ classdef CCAA < vsys
                 this.connectIF('CCAA_CHX_Condensate_Out' , sInterface4);
                 this.connectIF('CCAA_CoolantIn' , sInterface5);
                 this.connectIF('CCAA_CoolantOut' , sInterface6);
+                
+                this.oAtmosphere = this.toBranches.CCAA_In_FromCabin.coExmes{2}.oPhase;
             elseif nargin == 8
                 % Case of a CDRA connected to the CCAA
                 this.connectIF('CCAA_In' , sInterface1);
@@ -344,16 +356,13 @@ classdef CCAA < vsys
                 this.connectIF('CCAA_CoolantIn' , sInterface5);
                 this.connectIF('CCAA_CoolantOut' , sInterface6);
                 this.connectIF('CCAA_CHX_to_CDRA_Out' , sInterface7);
+                
+                this.oAtmosphere = this.toBranches.CCAA_In_FromCabin.coExmes{2}.oPhase;
+                this.oParent.toChildren.(this.sCDRA).setReferencePhase(this.oAtmosphere);
             else
                 error('CCAA Subsystem was given the wrong number of interfaces')
             end
-        end
-        
-        % Function used to set the reference cabin phase. This is necessary
-        % for the CCAA to know the current humidity in the cabin and
-        % correctly control the flow rate through the CHX.
-        function setReferencePhase(this, oPhase)
-                this.oAtmosphere = oPhase;
+            
         end
         
         function setNumericalParameters(this, fTempChange, fPercentChange)
@@ -395,9 +404,9 @@ classdef CCAA < vsys
             % percentage of flow entering the CHX
             fFlowPercentageCHX = this.Interpolation(fNew_TCCV_Angle);
             % Gets the two flow rates exiting the TCCV
-            fTCCV_To_CHX_FlowRate = fFlowPercentageCHX*(fInFlow+fInFlow2);
+            fTCCV_To_Cabin_FlowRate = (1 - fFlowPercentageCHX) * (fInFlow+fInFlow2);
 
-            this.toBranches.TCCV_CHX.oHandler.setFlowRate(fTCCV_To_CHX_FlowRate);
+            this.toBranches.TCCV_Cabin.oHandler.setFlowRate(fTCCV_To_Cabin_FlowRate);
         end
     end
     
@@ -495,10 +504,11 @@ classdef CCAA < vsys
             % percentage of flow entering the CHX
             fFlowPercentageCHX = this.Interpolation(fNew_TCCV_Angle);
             % Gets the two flow rates exiting the TCCV
-            fTCCV_To_CHX_FlowRate = fFlowPercentageCHX*(fInFlow+fInFlow2);
+            fTCCV_To_Cabin_FlowRate = (1 - fFlowPercentageCHX) * (fInFlow+fInFlow2);
 
-            this.toBranches.TCCV_CHX.oHandler.setFlowRate(fTCCV_To_CHX_FlowRate);
+            this.toBranches.TCCV_Cabin.oHandler.setFlowRate(fTCCV_To_Cabin_FlowRate);
             
+            fTCCV_To_CHX_FlowRate = (fInFlow+fInFlow2) - fTCCV_To_Cabin_FlowRate;
             if ~isempty(this.sCDRA)
                 if fTCCV_To_CHX_FlowRate >= this.fCDRA_FlowRate
                     this.toBranches.CHX_CDRA.oHandler.setFlowRate(this.fCDRA_FlowRate);

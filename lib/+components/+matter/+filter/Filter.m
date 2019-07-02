@@ -143,7 +143,7 @@ classdef Filter < vsys
             % A special filter store has to be used for the filter to
             % prevent the gas phase volume from beeing overwritten since
             % more than one gas phase is used to implement several cells
-            components.matter.filter.components.FilterStore(this, this.sName, (this.tGeometry.fFlowVolume + this.tGeometry.fAbsorberVolume));
+            matter.store(this, this.sName, (this.tGeometry.fFlowVolume + this.tGeometry.fAbsorberVolume));
             
             % The filter and flow phase total masses provided in the
             % tInitialization struct have to be divided by the number of
@@ -439,7 +439,7 @@ classdef Filter < vsys
             end
                     
             % Sets the update time step to the same as the filter
-            this.setTimeStep(this.toStores.Filter.fTimeStep);
+            this.setTimeStep(min(this.toStores.Filter.aoPhases(:).fTimeStep));
         end
         function updateInterCellFlowratesDynamic(this, ~)
             % this function is used to calculate the flowrates between the

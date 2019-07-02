@@ -36,14 +36,9 @@ classdef Example < vsys
             createMatterStructure@vsys(this);
             
             % Atmos - Capacity
-            fVolume = 1e10;
-            matter.store(this, 'Space', 1e10);
+            matter.store(this, 'Space', Inf);
             
-            tfPartialPressure = struct('N2', 0);
-            fTemperature      = 3;
-            rRelativeHumidity = 0;
-
-            this.toStores.Space.createPhase('gas', 'vacuum',  fVolume, tfPartialPressure, fTemperature, rRelativeHumidity);
+            this.toStores.Space.createPhase('vacuum','VacuumPhase');
             
             % Creating a store, volume 1 m^3
             fZeoliteMass = 4;
@@ -52,7 +47,7 @@ classdef Example < vsys
             matter.store(this, 'Tank_1', 1 + fSolidVolume);
             
             % Filtered phase
-            matter.phases.mixture(this.toStores.Tank_1, 'FilteredPhase', 'solid', tfMasses, fSolidVolume, 293.15, 1e5); 
+            matter.phases.mixture(this.toStores.Tank_1, 'FilteredPhase', 'solid', tfMasses, 293.15, 1e5); 
             
             % Adding a phase to the store 'Tank_1', 1 m^3 air at 20 deg C
             oGasPhase = this.toStores.Tank_1.createPhase('air', 'Tank1Air', 1, 293.15);
@@ -110,7 +105,7 @@ classdef Example < vsys
             
             oCapacitySolidTank_1 = this.toStores.Tank_1.toPhases.FilteredPhase.oCapacity;
             
-            oCapacitySpace = this.toStores.Space.toPhases.vacuum.oCapacity;
+            oCapacitySpace = this.toStores.Space.toPhases.VacuumPhase.oCapacity;
             
             oCapacityTank_2 = this.toStores.Tank_2.toPhases.Tank2Air.oCapacity;
             oHeatSource = thermal.heatsource('Heater', 0);
@@ -191,7 +186,7 @@ classdef Example < vsys
             fHeatFlow = 100 * sin(this.oTimer.fTime/10);
             this.toStores.Tank_1.toPhases.Tank1Air.oCapacity.toHeatSources.Heater.setHeatFlow(fHeatFlow)
             
-            if ~base.oLog.bOff, this.out(2, 1, 'exec', 'Exec vsys %s', { this.sName }); end
+            if ~base.oDebug.bOff, this.out(2, 1, 'exec', 'Exec vsys %s', { this.sName }); end
         end
         
      end

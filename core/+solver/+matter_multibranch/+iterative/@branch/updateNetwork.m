@@ -33,74 +33,22 @@ function updateNetwork(this, bForceP2Pcalc)
                 
                 oCurrentBranch   = this.aoBranches(iB);
                 
-                fFlowRate = this.afFlowRates(iB);
-                
                 % it must ensured that all branches upstream of the current
                 % branch are already update and the phase partial masses
                 % are set correctly for this to work!
-                if fFlowRate < 0
-                    coCurrentProcExme = oCurrentBranch.coExmes(1);
-                elseif fFlowRate > 0
-                    coCurrentProcExme = oCurrentBranch.coExmes(2);
-                else
-                    coCurrentProcExme = oCurrentBranch.coExmes;
-                end
                 
+                % TO DO: Find a way to prevent us from having to update
+                % each of the two phases for the branch, while also
+                % allowing cases where e.g. a flow is used with a manual
+                % branch as input, a P2P inside the flow node and a
+                % multisolver branch as output
+                coCurrentProcExme = oCurrentBranch.coExmes;
                 % if the flowrate is zero we update both phases, to be sure
                 % to update all P2Ps
                 for iPhase = 1:length(coCurrentProcExme)
                     oPhase = coCurrentProcExme{iPhase}.oPhase;
                     
-                    iInflowBranches = 0;
-                    
-                    afInFlowRates = zeros(oPhase.iProcsEXME + oPhase.iProcsP2P, 1);
-                    aarInPartials = zeros(oPhase.iProcsEXME + oPhase.iProcsP2P, this.oMT.iSubstances);
-                    for iExme = 1:oPhase.iProcsEXME
-                        
-                        oProcExme = oPhase.coProcsEXME{iExme};
-                        
-                        % At first skip the P2Ps, we first have to
-                        % calculate all flowrates except for the P2Ps, then
-                        % calculate the P2Ps and then consider the
-                        % necessary changes made by the P2P
-                        if oProcExme.bFlowIsAProcP2P
-                            continue;
-                        end
-                        
-                        oBranch = oProcExme.oFlow.oBranch;
-                        
-                        % If the branch is not part of this network solver
-                        % consider it as constant boundary flowrate. TO DO:
-                        % check this condition!
-                        if ~this.piObjUuidsToColIndex.isKey(oBranch.sUUID)
-                            [ fFlowRate, arFlowPartials, ~ ] = oProcExme.getFlowData();
-                            
-                            % Dynamically solved branch - get CURRENT flow
-                            % rate (last iteration), not last time step
-                            % flow rate!!
-                        else
-                            
-                            % Find branch index
-                            iBranchIdx = find(this.aoBranches == oBranch, 1);
-                            
-                            fFlowRate = oProcExme.iSign * this.afFlowRates(iBranchIdx);
-                            
-                            if fFlowRate > 0
-                                if this.afFlowRates(iBranchIdx) >= 0
-                                    arFlowPartials = oBranch.coExmes{1}.oPhase.arPartialMass;
-                                else
-                                    arFlowPartials = oBranch.coExmes{2}.oPhase.arPartialMass;
-                                end
-                            end
-                        end
-                        
-                        % Only for INflows
-                        if fFlowRate > 0
-                            iInflowBranches = iInflowBranches + 1;
-                            afInFlowRates(iExme, 1) = fFlowRate;
-                            aarInPartials(iExme, :) = arFlowPartials;
-                        end
-                    end
+                    [afInFlowRates, aarInPartials] = this.getPhaseInFlows(oPhase);
                     
                     if oPhase.bFlow
                         
@@ -116,13 +64,41 @@ function updateNetwork(this, bForceP2Pcalc)
                         end
                         
                         if bForceP2Pcalc
+                            
                             for iProcP2P = 1:oPhase.iProcsP2P
                                 oProcP2P = oPhase.coProcsP2P{iProcP2P};
                                 
-                                % Update the P2P! (not with update function
-                                % because that is also called at different
-                                % other times!
-                                oProcP2P.calculateFlowRate(afInFlowRates, aarInPartials);
+                                % stationary p2ps are assumed to be
+                                % constant for one tick and are calculated
+                                % before the branch, therefore they do not
+                                % require an update before their flowrate
+                                % is used
+                                if ~oProcP2P.bStationary
+                                    % If the P2P calculations for flow phases
+                                    % are calculated we have to get the in flow
+                                    % rates of the other p2p side
+                                    if oProcP2P.oIn.oPhase ~= oPhase
+                                        oOtherPhase = oProcP2P.oIn.oPhase;
+
+                                        [afInsideInFlowRates, aarInsideInPartials] = this.getPhaseInFlows(oOtherPhase);
+
+                                        afOutsideInFlowRate = afInFlowRates;
+                                        aarOutsideInPartials = aarInPartials; 
+                                    else
+                                        oOtherPhase = oProcP2P.oOut.oPhase;
+
+                                        [afOutsideInFlowRate, aarOutsideInPartials] = this.getPhaseInFlows(oOtherPhase);
+
+                                        afInsideInFlowRates = afInFlowRates;
+                                        aarInsideInPartials = aarInPartials; 
+
+                                    end
+
+                                    % Update the P2P! (not with update function
+                                    % because that is also called at different
+                                    % other times!
+                                    oProcP2P.calculateFlowRate(afInsideInFlowRates, aarInsideInPartials, afOutsideInFlowRate, aarOutsideInPartials);
+                                end
                             end
                         end
                         

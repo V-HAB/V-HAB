@@ -40,18 +40,18 @@ classdef battery < electrical.stores.constantVoltageSource
             %connect to this battery that change their current.
             
             % Get the time that has passed since the last update.
-            fTimeStep = this.oTimer.fTime - this.fLastUpdate;
+            fElapsedTime = this.oTimer.fTime - this.fLastUpdate;
             
             % If the update has already been called, we don't have to do
             % anything, we just return.
-            if fTimeStep == 0
+            if fElapsedTime == 0
                 return;
             end
             
             % Now we calculate the change in charge based in the current
             % out of the positive terminal of this battery and the time
             % that has passed since. 
-            this.fCharge = this.fCharge - fTimeStep / 3600 * this.oPositiveTerminal.oFlow.fCurrent;
+            this.fCharge = this.fCharge - fElapsedTime / 3600 * this.oPositiveTerminal.oFlow.fCurrent;
             
             % If the new charge is zero or smaller, the battery is
             % considered empty. So we set all voltages to zero and display

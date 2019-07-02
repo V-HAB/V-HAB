@@ -6,9 +6,9 @@ function updateBranchLevelNetwork(this, aafPhasePressuresAndFlowRates, afBoundar
     % which results in flows with a flowrate but not partial masses.
     % However, only do this if the flowrates have changed direction or
     % became zero!
-    miBoundaryRows = false(iNewRows,1);
-    miBoundaryRows(1:iStartZeroSumEquations-1) = afBoundaryConditions(1:iStartZeroSumEquations-1) ~= 0;
-    miBoundaryBranches = miNewRowToOriginalRow(miBoundaryRows);
+    mbBoundaryRows = false(iNewRows,1);
+    mbBoundaryRows(1:iStartZeroSumEquations-1) = afBoundaryConditions(1:iStartZeroSumEquations-1) ~= 0;
+    miBoundaryBranches = miNewRowToOriginalRow(mbBoundaryRows);
     
     % get the part of the equation that connects phases and branches (it
     % contains the sum over each variable pressure phase and ensures that

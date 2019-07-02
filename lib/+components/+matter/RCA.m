@@ -144,12 +144,12 @@ classdef RCA < vsys
             % True/false decides if the valve is open or closed and the
             % value to the right is the length of the valve, but that is not
             % important for the further calculation.
-            components.matter.valve(this, 'Valve_1', true , 0.05);
-            components.matter.valve(this, 'Valve_2', true , 0.05);
-            components.matter.valve(this, 'Valve_3', false, 0.05);
-            components.matter.valve(this, 'Valve_4', false, 0.05);
-            components.matter.valve(this, 'Valve_5', false, 0.05);
-            components.matter.valve(this, 'Valve_6', true , 0.05);
+            components.matter.valve(this, 'Valve_1', true);
+            components.matter.valve(this, 'Valve_2', true);
+            components.matter.valve(this, 'Valve_3', false);
+            components.matter.valve(this, 'Valve_4', false);
+            components.matter.valve(this, 'Valve_5', false);
+            components.matter.valve(this, 'Valve_6', true);
             
             %% Adding pipes
             % Adding pipes to connect the components

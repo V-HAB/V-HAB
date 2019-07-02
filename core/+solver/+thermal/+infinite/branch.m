@@ -2,19 +2,15 @@ classdef branch < solver.thermal.base.branch
 % A basic thermal solver which calculates the heat flow through a thermal
 % branch assuming that infinite conductivity is present between the two
 % connected capacities
-    properties (SetAccess = private, GetAccess = public)
-        
-        % Actual time between flow rate calculations
-        fTimeStep = inf;
-        
-        fSolverHeatFlow = 0;
-        
-    end
-    
-    
     methods
         function this = branch(oBranch)
-            this@solver.thermal.base.branch(oBranch, 'basic');
+            % creat a infinite conduction thermal solver specifically
+            % written to model an ideal (no resistance) thermal connection
+            % between two capacities without imposing limitations on the
+            % solver time steps. This is e.g. usefull for small fluid
+            % phases flowing through a solid phase with a high surface area
+            % (as in CDRA)
+            this@solver.thermal.base.branch(oBranch, 'infinite');
             
             % Now we register the solver at the timer, specifying the post
             % tick level in which the solver should be executed. For more
@@ -23,19 +19,24 @@ classdef branch < solver.thermal.base.branch
             % output that can be used to bind the post tick update in a
             % tick resulting in the post tick calculation to be executed
             this.hBindPostTickUpdate = this.oBranch.oTimer.registerPostTick(@this.update, 'thermal' , 'residual_solver');
-                        
+            
+            % we set the residual property to true because the solver must
+            % be update at any small change
             this.bResidual = true;
         end
-        
     end
     
     methods (Access = protected)
         function update(this)
+            % update the thermal solver
             
             oCapacityLeft   = this.oBranch.coExmes{1}.oCapacity;
             oCapacityRight  = this.oBranch.coExmes{2}.oCapacity;
             
-            % Get exme flowrates except for this branch
+            % Get exme heat flows except for this branch as it will be
+            % neglected in the following analysis. The heat flow of this
+            % branch will be calculated to have both capacities change
+            % their temperature by the same amount per second.
             fExmeHeatFlowLeft = 0;
             for iExme = 1:length(oCapacityLeft.aoExmes)
                 if oCapacityLeft.aoExmes(iExme) ~= this.oBranch.coExmes{1}
@@ -50,22 +51,27 @@ classdef branch < solver.thermal.base.branch
                 end
             end
             
-            % get source flowrates
+            % get heat source flowrates for both capacities as we also have
+            % to include these in the analysis for both capacities to
+            % change their temperature identically
             fSourceHeatFlowLeft = 0;
-            for iSource = 1:length(oCapacityLeft.aoHeatSource)
-                fSourceHeatFlowLeft = fSourceHeatFlowLeft + oCapacityLeft.aoHeatSource(iSource).fHeatFlow;
+            for iSource = 1:length(oCapacityLeft.coHeatSource)
+                fSourceHeatFlowLeft = fSourceHeatFlowLeft + oCapacityLeft.coHeatSource{iSource}.fHeatFlow;
             end
             
             fSourceHeatFlowRight = 0;
-            for iSource = 1:length(oCapacityRight.aoHeatSource)
-                fSourceHeatFlowRight = fSourceHeatFlowRight + oCapacityRight.aoHeatSource(iSource).fHeatFlow;
+            for iSource = 1:length(oCapacityRight.coHeatSource)
+                fSourceHeatFlowRight = fSourceHeatFlowRight + oCapacityRight.coHeatSource{iSource}.fHeatFlow;
             end
             
+            % now sum the exme heat flows and source heat flows to get the
+            % total heat flows for the left and right capacity
             fCurrentHeatFlowLeft    = fExmeHeatFlowLeft + fSourceHeatFlowLeft;
             fCurrentHeatFlowRight   = fExmeHeatFlowRight + fSourceHeatFlowRight;
             
+            % check if one of the capacities is a flow phase and set
+            % identifier accordingly to prevent many checks later on
             if oCapacityLeft.oPhase.bFlow
-                
                 oFlowCapacity   = oCapacityLeft;
                 oNormalCapacity = oCapacityRight;
                 
@@ -82,6 +88,12 @@ classdef branch < solver.thermal.base.branch
                 bFlow = false;
             end
             
+            % ensure that not both capacities are flow capacities, as that
+            % would break the calculation
+            if bFlow && oNormalCapacity.oPhase.bFlow
+                error('it is not possible to use an infinite conduction solver with two flow capacities! Currently both %s and %s are flow capacities', oCapacityLeft.sName, oCapacityRight.sName)
+            end
+            
             if bFlow
                 % In the case that one phase is a flow phase it does not
                 % actually have a capacity, but just a capacity flow.
@@ -92,6 +104,8 @@ classdef branch < solver.thermal.base.branch
                 % other phase while change in temperature only occurs in
                 % the normal capacity
                 
+                % first we calculate the specific heat capacity flows of
+                % the different mass flows entering the flow phase
                 mfFlowRate              = zeros(1,oFlowCapacity.iProcsEXME);
                 mfSpecificHeatCapacity  = zeros(1,oFlowCapacity.iProcsEXME);
                 for iExme = 1:oFlowCapacity.iProcsEXME
@@ -105,14 +119,32 @@ classdef branch < solver.thermal.base.branch
                     end
                 end
                 
+                % sum it up to get the total heat capacity flow of the flow
+                % phase
                 fOverallHeatCapacityFlow = sum(mfFlowRate .* mfSpecificHeatCapacity);
                 
+                % now we can calculate what the required heat flow is to
+                % enter the flow capacity so that it has the same
+                % temperature as the other phase. Note that we use the
+                % current flow capacity temperature here, neglecting the
+                % impact of the temperatures of the flows entering the flow
+                % capacity because these are already considered as heat
+                % flows for the corresponding thermal exmes
                 fRequiredFlowHeatFlow = (oNormalCapacity.fTemperature - oFlowCapacity.fTemperature) * fOverallHeatCapacityFlow;
                 
+                % if the flow phase is on the left side we subtract the
+                % current heat flow of the left side from the required heat
+                % flow to calculate the heat flow that still has to
+                % enter/leave that capacity. The negative sign is used
+                % because negative values for the left side result in a
+                % temperature rise, while for the right side positive
+                % values result in a temperature rise. For the right side
+                % the calculation is analogous but with a different sign
+                % and using the current right side heat flow
                 if bLeft
-                    this.fSolverHeatFlow = -(fRequiredFlowHeatFlow - fCurrentHeatFlowLeft);
+                    fHeatFlow = -(fRequiredFlowHeatFlow - fCurrentHeatFlowLeft);
                 else
-                    this.fSolverHeatFlow = fRequiredFlowHeatFlow - fCurrentHeatFlowRight;
+                    fHeatFlow = fRequiredFlowHeatFlow - fCurrentHeatFlowRight;
                 end
                 
             else
@@ -122,10 +154,16 @@ classdef branch < solver.thermal.base.branch
                 % of both capacities.
                 fTemperatureChangePerSecond = (fCurrentHeatFlowLeft + fCurrentHeatFlowRight) / (oCapacityLeft.fTotalHeatCapacity + oCapacityRight.fTotalHeatCapacity);
 
-                % Then the required heat flow for each of the phases is:
+                % Then the required heat flow for each of the phases is
+                % that temperature change multiplied with the corresponding
+                % heat capacity:
                 fRequiredHeatFlowLeft   = fTemperatureChangePerSecond * oCapacityLeft.fTotalHeatCapacity;
 
+                % as the heat flow is passed from one capacity to the
+                % other, we only have to calculate it once and can use it
+                % for both sides.
                 fSolverHeatFlowLeft     = fRequiredHeatFlowLeft  - fCurrentHeatFlowLeft;
+                
                 % Can be used for sanity check, the heat flow on the ohter side
                 % should be identical
                 % fRequiredHeatFlowRight  = fTemperatureChangePerSecond * oCapacityRight.fTotalHeatCapacity;
@@ -144,20 +182,19 @@ classdef branch < solver.thermal.base.branch
                 % all the time)
                 fEqualizationTemperatureChange = (oCapacityLeft.fTemperature - oCapacityRight.fTemperature) / 2;
 
-                this.fSolverHeatFlow = -fSolverHeatFlowLeft + (fEqualizationTemperatureChange * (oCapacityLeft.fTotalHeatCapacity + oCapacityRight.fTotalHeatCapacity) / 2);
+                fHeatFlow = -fSolverHeatFlowLeft + (fEqualizationTemperatureChange * (oCapacityLeft.fTotalHeatCapacity + oCapacityRight.fTotalHeatCapacity) / 2);
                 
             end
             
-            this.oBranch.coExmes{1}.setHeatFlow(this.fSolverHeatFlow);
-            this.oBranch.coExmes{2}.setHeatFlow(this.fSolverHeatFlow);
+            this.oBranch.coExmes{1}.setHeatFlow(fHeatFlow);
+            this.oBranch.coExmes{2}.setHeatFlow(fHeatFlow);
             
             % the temperatures between the conductors are not required, but
             % it is possible to define a different thermal branch that
             % calculates them, e.g. to calculate the wall temperature in a
             % heat exchanger
             afTemperatures = []; 
-            update@solver.thermal.base.branch(this, this.fSolverHeatFlow, afTemperatures);
-            
+            update@solver.thermal.base.branch(this, fHeatFlow, afTemperatures);
         end
     end
 end

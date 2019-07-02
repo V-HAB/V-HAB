@@ -1,0 +1,8 @@
+The CROP model consists of the following subfolders:
+1. "+components": the main components of the model
+2. "+execution": to launch the CROP model with manual input. 
+3. "+systems": the system file "CROP.m"
+4. "+tools": tool-functions that are used in other files
+5. "+validation": files relevant to the data fitting process
+6. "setup.m": the setup file for the simulation of the CROP model
+7. "Graphic presentation of the model structure of C.R.O.P..png"

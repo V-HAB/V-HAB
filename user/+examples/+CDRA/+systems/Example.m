@@ -75,17 +75,12 @@ classdef Example < vsys
             % Adding the subsystem CCAA
             components.matter.CCAA.CCAA(this, 'CCAA', 10, this.fCoolantTemperature, tAtmosphere, sCDRA);
             
-            
-            % name for the asscociated CCAA subsystem, CDRA can only be
-            % used together with a CCAA
-            sCCAA = 'CCAA';
-            
             % Adding the subsystem CDRA
             try
                 tInitialization = oParent.oCfgParams.ptConfigParams('tInitialization');
-                components.matter.CDRA.CDRA(this, 'CDRA', tAtmosphere, sCCAA, tInitialization);
+                components.matter.CDRA.CDRA(this, 'CDRA', tAtmosphere, tInitialization);
             catch
-                components.matter.CDRA.CDRA(this, 'CDRA', tAtmosphere, sCCAA);
+                components.matter.CDRA.CDRA(this, 'CDRA', tAtmosphere);
             end
             eval(this.oRoot.oCfgParams.configCode(this));
             
@@ -110,18 +105,14 @@ classdef Example < vsys
             matter.procs.exmes.gas(oCabinPhase, 'Port_ToCCAA');
             matter.procs.exmes.gas(oCabinPhase, 'Port_FromCCAA_CHX');
             matter.procs.exmes.gas(oCabinPhase, 'Port_FromCCAA_TCCV');
-            matter.procs.exmes.gas(oCabinPhase, 'Port_FromCDRAAirSafe1');
-            matter.procs.exmes.gas(oCabinPhase, 'Port_FromCDRAAirSafe2');
+            
+            matter.procs.exmes.gas( oCabinPhase, 'CDRA_Port_1');
+            
             %Human Exmes
 %             matter.procs.exmes.gas(oCabinPhase, 'O2Out'); 
 %             O2 is not part of the CDRA test case!
             matter.procs.exmes.gas(oCabinPhase, 'CO2In');
             matter.procs.exmes.gas(oCabinPhase, 'HumidityIn');
-            
-            % For the CCAA to function properly the cabin phase to which
-            % the CCAA is attached has to be set as reference
-            this.toChildren.CCAA.setReferencePhase(oCabinPhase);
-            this.toChildren.CDRA.setReferencePhase(oCabinPhase);
             
             % Coolant store for the coolant water supplied to CCAA
             matter.store(this, 'CoolantStore', 1);
@@ -158,7 +149,6 @@ classdef Example < vsys
             % Adding a phase to the store
             oVentedPhase = matter.phases.gas(this.toStores.Vented, 'VentedMass', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             matter.procs.exmes.gas(oVentedPhase, 'Port_1');
-            matter.procs.exmes.gas(oVentedPhase, 'Port_2');
             
             % creates a store to connect the CCAA and the CDRA
             matter.store(this, 'CCAA_CDRA_Connection', 0.1);
@@ -171,11 +161,6 @@ classdef Example < vsys
             oConnectionPhase = matter.phases.flow.gas(this.toStores.CCAA_CDRA_Connection, 'ConnectionPhase', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             matter.procs.exmes.gas( oConnectionPhase, 'Port_1');
             matter.procs.exmes.gas( oConnectionPhase, 'Port_2');
-            matter.procs.exmes.gas( oConnectionPhase, 'Port_3');
-            
-            % Adding a phase to the store
-            matter.procs.exmes.gas( oCabinPhase, 'CDRA_Port_1');
-            matter.procs.exmes.gas( oCabinPhase, 'CDRA_Port_2');
             
             % Adding heat sources to keep the cabin and coolant water at a
             % constant temperature
@@ -193,20 +178,15 @@ classdef Example < vsys
             matter.branch(this, 'CCAA_CoolantOutput', {}, 'CoolantStore.Port_2');
             matter.branch(this, 'CCAA_CHX_to_CDRA_Out', {}, 'CCAA_CDRA_Connection.Port_1');
             
-            matter.branch(this, 'CDRA_Input1', {}, 'CCAA_CDRA_Connection.Port_2');
-            matter.branch(this, 'CDRA_Input2', {}, 'CCAA_CDRA_Connection.Port_3');
-            matter.branch(this, 'CDRA_Output1', {}, 'Cabin.CDRA_Port_1');
-            matter.branch(this, 'CDRA_Output2', {}, 'Cabin.CDRA_Port_2');
-            matter.branch(this, 'CDRA_Airsafe1', {}, 'Cabin.Port_FromCDRAAirSafe1');
-            matter.branch(this, 'CDRA_Airsafe2', {}, 'Cabin.Port_FromCDRAAirSafe2');
-            matter.branch(this, 'CDRA_Vent1', {}, 'Vented.Port_1');
-            matter.branch(this, 'CDRA_Vent2', {}, 'Vented.Port_2');
+            matter.branch(this, 'CDRA_Input', {}, 'CCAA_CDRA_Connection.Port_2');
+            matter.branch(this, 'CDRA_Output', {}, 'Cabin.CDRA_Port_1');
+            matter.branch(this, 'CDRA_Vent', {}, 'Vented.Port_1');
             
             % now the interfaces between this system and the CCAA subsystem
             % are defined
             this.toChildren.CCAA.setIfFlows('CCAAinput', 'CCAA_CHX_Output', 'CCAA_TCCV_Output', 'CCAA_CondensateOutput', 'CCAA_CoolantInput', 'CCAA_CoolantOutput', 'CCAA_CHX_to_CDRA_Out');
             
-            this.toChildren.CDRA.setIfFlows('CDRA_Input1', 'CDRA_Input2', 'CDRA_Output1', 'CDRA_Output2', 'CDRA_Vent1', 'CDRA_Vent2', 'CDRA_Airsafe1', 'CDRA_Airsafe2');
+            this.toChildren.CDRA.setIfFlows('CDRA_Input', 'CDRA_Output', 'CDRA_Vent');
             
             %%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -448,6 +428,7 @@ classdef Example < vsys
                 this.toStores.Cabin.toProcsP2P.CrewCO2Prod.setCrew([1,1,1]);
             end
             
+            this.oTimer.synchronizeCallBacks();
         end
         
     end

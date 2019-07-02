@@ -50,14 +50,4 @@ classdef Filter < matter.store
             
         end
     end
-
-    methods (Access = protected)
-        function setVolume(this, ~)
-            % Overwriting the matter.store setVolume which would give both
-            % gas phases the full volume. Could be adapted to include the
-            % porosity or something from the absorber.
-            this.aoPhases(1).setVolume(0.01);
-            this.aoPhases(2).setVolume(0.01);
-        end
-    end
 end

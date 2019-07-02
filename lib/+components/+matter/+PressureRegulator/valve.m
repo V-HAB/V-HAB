@@ -19,7 +19,7 @@ classdef valve < matter.procs.f2f
         % mass of diaphragm
         fMassDiaphragm = 0.01;                          % [kg]
         % simulation timestep value, get from branch
-        fTimeStep = 0;                                  % [s]
+        fElapsedTime = 0;                                  % [s]
         % time at timestep n
         fTimeOld = 0;                                   % [s]
         % set time interval to change setpoint each x seconds
@@ -134,15 +134,15 @@ classdef valve < matter.procs.f2f
             this.afSSM_VectorU = [fPressureReference; fPressureChamber; this.fXSetpoint];
             
             % set the missing matrix values
-            this.mfSSM_MatrixA(3, 3) = this.fTPT1 / (this.fTPT1 + this.fTimeStep);
+            this.mfSSM_MatrixA(3, 3) = this.fTPT1 / (this.fTPT1 + this.fElapsedTime);
             
-            this.mfSSM_MatrixB(2, :) = [(this.fAreaDiaphragm * this.fTimeStep) / this.fMassDiaphragm; ...
-                                       -(this.fAreaDiaphragm * this.fTimeStep) / this.fMassDiaphragm; ...
-                                       (this.fCSpring * this.fTimeStep) / this.fMassDiaphragm];
+            this.mfSSM_MatrixB(2, :) = [(this.fAreaDiaphragm * this.fElapsedTime) / this.fMassDiaphragm; ...
+                                       -(this.fAreaDiaphragm * this.fElapsedTime) / this.fMassDiaphragm; ...
+                                       (this.fCSpring * this.fElapsedTime) / this.fMassDiaphragm];
             
-            this.mfSSM_MatrixE(2, 1) = (this.fCSpring * this.fTimeStep) / this.fMassDiaphragm;
-            this.mfSSM_MatrixE(1, 2) = -this.fTimeStep;
-            this.mfSSM_MatrixE(3, 1) = -(1 / ((this.fTPT1 / this.fTimeStep) + 1));
+            this.mfSSM_MatrixE(2, 1) = (this.fCSpring * this.fElapsedTime) / this.fMassDiaphragm;
+            this.mfSSM_MatrixE(1, 2) = -this.fElapsedTime;
+            this.mfSSM_MatrixE(3, 1) = -(1 / ((this.fTPT1 / this.fElapsedTime) + 1));
             
             % solve implicit linear equation system E*x_n+1 = A*x_n + B*u
             this.afSSM_VectorXNew = this.mfSSM_MatrixE \ (this.mfSSM_MatrixA * this.afSSM_VectorXOld + this.mfSSM_MatrixB * this.afSSM_VectorU);
@@ -203,9 +203,9 @@ classdef valve < matter.procs.f2f
                 return;
             end
             % Get timestep of simualtion
-            this.fTimeStep = (this.oBranch.oContainer.oTimer.fTime - this.fTimeOld);
+            this.fElapsedTime = (this.oBranch.oContainer.oTimer.fTime - this.fTimeOld);
             
-            if this.fTimeStep <= 0
+            if this.fElapsedTime <= 0
                 return;
             end
             

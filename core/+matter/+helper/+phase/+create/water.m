@@ -16,11 +16,11 @@ if nargin < 4, fPressure    = 28300; end
 tParameters = struct();
         tParameters.sSubstance = 'H2O';
         tParameters.sProperty = 'Density';
-        tParameters.sFirstDepName = 'Pressure';
-        tParameters.fFirstDepValue = fPressure;
+        tParameters.sFirstDepName = 'Temperature';
+        tParameters.fFirstDepValue = fTemperature;
         tParameters.sPhaseType = 'liquid';
-        tParameters.sSecondDepName = 'Temperature';
-        tParameters.fSecondDepValue = fTemperature;
+        tParameters.sSecondDepName = 'Pressure';
+        tParameters.fSecondDepValue = fPressure;
         tParameters.bUseIsobaricData = true;
         
 fDensity = oStore.oMT.findProperty(tParameters);

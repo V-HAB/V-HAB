@@ -202,6 +202,16 @@ classdef branch < base & event.source
         iLastWarn = -1000;
         
         bFinalLoop = false;
+        
+        % A flag to decide if the solver is already outdated or not
+        bRegisteredOutdated = false;
+        
+        % In recursive calls within the post tick where the solver itself
+        % triggers outdated calls up to the point where it is set outdated
+        % again itself it is possible for the solver to get stuck with a
+        % true bRegisteredOutdated flag. To prevent this we also store the
+        % last time at which we registered an update
+        fLastSetOutdated = -1;
     end
     
     properties (SetAccess = private, GetAccess = protected) %, Transient = true)
@@ -209,7 +219,6 @@ classdef branch < base & event.source
         % method (loadobj) to be implemented in this class, so when the
         % simulation is re-loaded from a .mat file, the properties are
         % reset to their proper values.
-        bRegisteredOutdated = false;
         
         hBindPostTickUpdate;
         hBindPostTickTimeStepCalculation;
@@ -294,9 +303,6 @@ classdef branch < base & event.source
         afFlowRates;
         arPartialsFlowRates;
         
-        % Temporary - active flow f2f procs - pressure rise (or drop)
-        afTmpPressureRise;
-        
         % Matrix that translated the index of a branch from aoBranches to a
         % row in the solution matrix
         miBranchIndexToRowID;
@@ -317,6 +323,39 @@ classdef branch < base & event.source
         % the update level calculation
         mbExternalBoundaryBranches;
         iNumberOfExternalBoundaryBranches = 0;
+        
+        fInitializationFlowRate;
+        
+        % This boolean array identifies those branches that are to be
+        % checked for choked flow conditions. Since this is a fairly
+        % complex calculation, it can be turned on and off per branch,
+        % rather than globally. To enable this functionality, just pass the
+        % branch object you want to montior to the
+        % activateChokedFlowChecking() method of this class.
+        abCheckForChokedFlow;
+        
+        % This boolean array contains all branches that contain a choked
+        % flow for a given iteration of the solver.
+        abChokedBranches;
+        
+        % This cell contains the pressure drop values for each branch with
+        % a choked flow. We need these values as inputs to the
+        % setBranchFlowRate callback. The values for the pressure
+        % differences are calculated in the
+        % updatePressureDropCoefficients() method of this class.
+        cafChokedBranchPressureDiffs;
+        
+        % As a performance enhancement, these booleans are set to true once
+        % a callback is bound to the 'update' and 'register_update'
+        % triggers, respectively. Only then are the triggers actually sent.
+        % This saves quite some computational time since the trigger()
+        % method takes some time to execute, even if nothing is bound to
+        % them.
+        bTriggerUpdateCallbackBound = false;
+        bTriggerRegisterUpdateCallbackBound = false;
+        
+        % The current time step of the solver in seconds
+        fTimeStep;
     end
     
     
@@ -335,17 +374,18 @@ classdef branch < base & event.source
             
             this.aoBranches = aoBranches;
             this.iBranches  = length(this.aoBranches);
+            this.abCheckForChokedFlow = false(this.iBranches,1);
+            this.abChokedBranches = false(this.iBranches,1);
+            this.cafChokedBranchPressureDiffs = cell(this.iBranches,1);
             this.mbExternalBoundaryBranches = zeros(this.iBranches,1);
             this.oMT        = this.aoBranches(1).oMT;
             this.oTimer     = this.aoBranches(1).oTimer;
             
             % Preset
-            this.afTmpPressureRise = zeros(1, this.iBranches);
-            
             this.chSetBranchFlowRate = cell(1, this.iBranches);
             
             for iB = 1:this.iBranches 
-                this.chSetBranchFlowRate{iB} = this.aoBranches(iB).registerHandlerFR(this);
+                this.chSetBranchFlowRate{iB} = this.aoBranches(iB).registerHandler(this);
                 
                 this.aoBranches(iB).bind('outdated', @this.registerUpdate);
             end
@@ -361,8 +401,8 @@ classdef branch < base & event.source
             % before the tick ends. Therefore residual solvers should only be
             % used as input with a boundary phase inbetween that reaches the
             % necessary pressure to supply the system the correct flowrate
-            this.hBindPostTickUpdate      = this.oTimer.registerPostTick(@this.update, 'matter' , 'multibranch_solver');
-            this.hBindPostTickTimeStepCalculation = this.oTimer.registerPostTick(@this.calculateTimeStep,      'post_physics' , 'timestep');
+            this.hBindPostTickUpdate = this.oTimer.registerPostTick(@this.update, 'matter', 'multibranch_solver');
+            this.hBindPostTickTimeStepCalculation = this.oTimer.registerPostTick(@this.calculateTimeStep, 'post_physics', 'timestep');
             
             this.initialize();
         end
@@ -431,6 +471,153 @@ classdef branch < base & event.source
                 this.(sField) = tSolverProperties.(sField);
             end
         end
+        
+        function [ this, unbindCallback ] = bind(this, sType, callBack)
+            [ this, unbindCallback ] = bind@event.source(this, sType, callBack);
+            
+            if strcmp(sType, 'update')
+                this.bTriggerUpdateCallbackBound = true;
+            
+            elseif strcmp(sType, 'register_update')
+                this.bTriggerRegisterUpdateCallbackBound = true;
+            
+            end
+        end
+        
+        function activateChokedFlowChecking(this, oBranch)
+            % Activates the choked flow checking for the branch object that
+            % has been passed to this function. 
+            
+            % Finding the branch object in our aoBranches array
+            iBranch = find(this.aoBranches == oBranch, 1);
+            
+            % If it is present, we set the appropriate field in the
+            % abCheckForChokedFlow property to true. Otherwise we let the
+            % user know.
+            if ~isempty(iBranch)
+                this.abCheckForChokedFlow(iBranch) = true;
+            else
+                % Getting the custom name if it is set, otherwise use the
+                % standard name.
+                if ~isempty(oBranch.sCustomName)
+                    sName = oBranch.sCustomName;
+                else
+                    sName = oBranch.sName;
+                end
+                
+                % Throwing up the error message.
+                this.throw('ActivateChokedFlow','Could not activate choked flow checking for branch ''%s'' because it is not part of this multi-branch solver.',sName);
+            end
+        end
+        
+        function [ bChokedFlow, fChokedFlowRate, iChokedProc, fPressureDiff ] = checkForChokedFlow(this, iBranch)
+            % Checks a specified branch for possible choked flow. 
+            % 
+            % Input argument is the index of the branch in the aoBranches
+            % property of this class. 
+            % 
+            % Output arguments are: 
+            % 
+            % - bChokedFlow:     A boolean indicating if the flow in this
+            %                    branch is choked at all.
+            %
+            % - fChokedFlowRate: Mass flow rate of the choked flow.
+            % 
+            % - iChokedProc:     Index of the processor in the branch with
+            %                    the smallest hydraulic diameter, thus
+            %                    causing the flow to be choked.
+            % 
+            % - fPressureDiff:   Pressure difference between the two phases
+            %                    that the branch connects. This is returned
+            %                    to enable the calculation of the
+            %                    individual pressure differences for each
+            %                    processor in the branch.
+            % 
+            
+            % First we get the reference to the branch
+            oBranch = this.aoBranches(iBranch);
+            
+            % Now we need the pressure difference across the branch. First
+            % we get the two phase objects.
+            oPhaseLeft  = oBranch.coExmes{1}.oPhase;
+            oPhaseRight = oBranch.coExmes{2}.oPhase;
+            
+            % Getting the current pressures of both phases.
+            fPressureLeft  = oPhaseLeft.fMass  * oPhaseLeft.fMassToPressure;
+            fPressureRight = oPhaseRight.fMass * oPhaseRight.fMassToPressure;
+            
+            % Determining which pressure is higher and saving the index.
+            [ fUpstreamPressure, iPhaseIndex ] = max([fPressureLeft, fPressureRight]);
+            fDownstreamPressure = min([fPressureLeft, fPressureRight]);
+            
+            % Calculating the pressure difference. Always positive!
+            fPressureDiff = fUpstreamPressure - fDownstreamPressure;
+            
+            % We need to calculate the adiabatic index for the critical
+            % pressure calculation below. 
+            fAdiabaticIndex = this.oMT.calculateAdiabaticIndex(oBranch.coExmes{iPhaseIndex}.oPhase);
+            
+            % Now we can calculate the critical pressure for this branch. 
+            fCriticalPressure = fUpstreamPressure * (2 / (fAdiabaticIndex + 1))^(fAdiabaticIndex / (fAdiabaticIndex - 1));
+            
+            % If the downstream pressure is smaller or equal to the
+            % critical pressure, the flow is choked. Otherwise we just
+            % return. 
+            if fDownstreamPressure <= fCriticalPressure
+                bChokedFlow = true;
+            else
+                bChokedFlow = false;
+                fChokedFlowRate = 0;
+                iChokedProc = 0;
+                return;
+            end
+            
+            % This part is only reached if the flow is actually choked.
+            
+            % We now need to find out which of the processors in the branch
+            % has the smallest hydraulic diameter, because that is where
+            % the choked flow will occur. First we initialize an array.
+            afHydraulicDiameters = zeros(oBranch.iFlowProcs, 1);
+            
+            % Now we loop through all processors and record their diameter.
+            % NOTE: All involved processors must implement this manually,
+            % it is not part of the standard f2f processor. That's why we
+            % include a check here to make sure it works. 
+            for iProc = 1:oBranch.iFlowProcs
+                oProc = oBranch.aoFlowProcs(iProc);
+                try
+                    afHydraulicDiameters(iProc) = oProc.fDiameter;
+                catch 
+                    this.throw('ChokedFlowCheck','The processor ''%s'' does not have a ''fDiameter'' property. In order to support the checkForChokedFlow() method it must be implemented.', oProc.sName);
+                end
+            end
+            
+            % Finding the minimum diameter and the index of the processor
+            % that has it. 
+            [ fMinimumDiameter, iChokedProc ] = min(afHydraulicDiameters);
+            
+            % Now we calculate the choked flow rate. First we need the area
+            % of the choked processor.
+            fMinimumArea = pi * (fMinimumDiameter/2)^2;
+            
+            % The discharge coefficient is itself dependent on the mass
+            % flow we are trying to calculate here. In order to avoid doing
+            % this whole calculation iteratively, we just set it to 0.9.
+            % This value was found several times in various examples
+            % online, but would be a point of future optimization. 
+            fDischargeCoefficient = 0.9;
+            
+            % Finally we can calculate the mass flow rate. This is based on
+            % the equation found in Wikipedia (yeah, I know...) here:
+            % https://en.wikipedia.org/wiki/Choked_flow#Mass_flow_rate_of_a_gas_at_choked_conditions
+            % I tried to find a better source with a simple explanation,
+            % but decided not to spend any more time on this. So:
+            % NOTE: The source of the following equations is Wikipedia and
+            % may not be correct. Should make sure it's good at some point.
+            fChokedFlowRate = fDischargeCoefficient * fMinimumArea * sqrt(fAdiabaticIndex * oBranch.coExmes{iPhaseIndex}.oPhase.fDensity * fUpstreamPressure * (2/(fAdiabaticIndex+1))^((fAdiabaticIndex + 1)/(fAdiabaticIndex - 1)));
+            
+        end
+       
     end
     
     
@@ -461,7 +648,7 @@ classdef branch < base & event.source
                             iColIndex = iColIndex + 1;
 
                             this.piObjUuidsToColIndex(oPhase.sUUID) = iColIndex;
-                            this.poColIndexToObj(iColIndex)     = oPhase;
+                            this.poColIndexToObj(iColIndex) = oPhase;
                         end
                         
                     % 'Real' phase - boundary condition
@@ -480,8 +667,12 @@ classdef branch < base & event.source
                 oBranch = this.aoBranches(iBranch);
                 
                 this.piObjUuidsToColIndex(oBranch.sUUID) = iColIndex;
-                this.poColIndexToObj(iColIndex)     = oBranch;
+                this.poColIndexToObj(iColIndex) = oBranch;
                 
+                oBranch.bind('outdated', @this.registerUpdate);
+                if oBranch.bOutdated
+                    this.registerUpdate();
+                end
                 % Init
                 this.chSetBranchFlowRate{iBranch}(0, []);
                 
@@ -495,14 +686,12 @@ classdef branch < base & event.source
         
         function registerUpdate(this, ~)
             % this function registers an update
-            % TO DO: provide more information on this in the wiki
-            if ~base.oLog.bOff, this.out(1, 1, 'reg-post-tick', 'Multi-Solver - register outdated? [%i]', { ~this.bRegisteredOutdated }); end
             
-            if this.bRegisteredOutdated
+            if ~(this.oTimer.fTime > this.fLastSetOutdated) && this.bRegisteredOutdated
                 return;
             end
             
-            this.bRegisteredOutdated = true;
+            if ~base.oDebug.bOff, this.out(1, 1, 'reg-post-tick', 'Multi-Solver - register outdated? [%i]', { ~this.bRegisteredOutdated }); end
             
             for iB = 1:this.iBranches
                 for iE = 1:2
@@ -510,9 +699,18 @@ classdef branch < base & event.source
                 end
             end
             
+            % Allows other functions to register an event to this trigger
+            if this.bTriggerRegisterUpdateCallbackBound
+                this.trigger('register_update');
+            end
+
+            if ~base.oDebug.bOff, this.out(1, 1, 'registerUpdate', 'Registering update() method on the multi-branch solver.'); end
+            
             this.hBindPostTickUpdate();
             this.hBindPostTickTimeStepCalculation();
             
+            this.bRegisteredOutdated = true;
+            this.fLastSetOutdated = this.oTimer.fTime;
         end
         
         function calculateTimeStep(this)
@@ -520,7 +718,21 @@ classdef branch < base & event.source
             % Bound to a post tick level after the residual branches.
             % Then all external flowrates are fix for this tick as well and
             % the calculated time step is definitly correct!
-            %
+            
+            % In order to assure a smooth startup of the simulated system,
+            % we set the minimum time step for the first 12 ticks. There
+            % are many systems that include checks for fTime == 0, so by
+            % slowly starting the solver we get rid of weird effects
+            % regarding solver time step jumps right at the beginning. 
+            if this.oTimer.iTick < 13
+                this.setTimeStep(this.fMinimumTimeStep);
+                if ~base.oDebug.bOff
+                    this.out(1,1,'Multi-Solver','Setting Minimum Time Step: %e', {this.fMinimumTimeStep});
+                    this.out(1,2,'Multi-Solver','Setting the minimum time step for the first 12 ticks ensures smooth startup of the simulation.', {});
+                end
+                return;
+            end
+            
             % Now check for the maximum allowable time step with the
             % current flow rate (the pressure differences in the branches
             % are not allowed to change their sign within one tick)
@@ -534,12 +746,12 @@ classdef branch < base & event.source
             end
             
             % This calculation compares the mass change of only the
-            % connected boundary phases, which actually exchange masse. For
+            % connected boundary phases, which actually exchange mass. For
             % them the total mass change is compared to calculate the
             % maximum allowable time step. However, temperature changes are
             % neglected here so in some cases this limitation might not be
             % sufficient
-            fTimeStep = inf;
+            this.fTimeStep = inf;
             if ~isempty(this.tBoundaryConnection)
                 csBoundaries = fieldnames(this.tBoundaryConnection);
                 if length(csBoundaries) > 1
@@ -587,18 +799,21 @@ classdef branch < base & event.source
 
                                 % 0 Means we have reached equalization, therefore this can also
                                 % be ignored for max time step condition
-                                if fNewStep < fTimeStep && fNewStep ~= 0
-                                    fTimeStep = fNewStep;
+                                if fNewStep < this.fTimeStep && fNewStep ~= 0
+                                    this.fTimeStep = fNewStep;
                                 end
                             end
                         end
                     end
                 end
             end
-            if fTimeStep < this.fMinimumTimeStep
-                fTimeStep = this.fMinimumTimeStep;
+            if this.fTimeStep < this.fMinimumTimeStep
+                this.fTimeStep = this.fMinimumTimeStep;
             end
-            this.setTimeStep(fTimeStep);
+            
+            this.out(1,1,'Multi-Solver','New Time Step: %e', {this.fTimeStep});
+            
+            this.setTimeStep(this.fTimeStep, true);
         end
     end
 end
