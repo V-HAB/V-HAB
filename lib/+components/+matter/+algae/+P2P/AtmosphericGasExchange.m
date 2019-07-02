@@ -158,7 +158,7 @@ classdef AtmosphericGasExchange < matter.procs.p2ps.stationary
             this.fTargetMolesOfSubstanceInMedium = this.fTargetSubstanceInWaterConcentration * (this.oStore.toPhases.GrowthMedium.afMass(this.oMT.tiN2I.H2O)/1000); %[mol] 
  
                  %calculate time passed since last update
-                fTimeStep = this.oTimer.fTime - this.fLastExec; %s
+                fElapsedTime = this.oTimer.fTime - this.fLastExec; %s
             
             %% determine flow rate without or with a membrane (see two if cases)
             if strcmp(this.sMembraneMaterial, 'none')
@@ -177,7 +177,7 @@ classdef AtmosphericGasExchange < matter.procs.p2ps.stationary
                
                 
                 %ensure that no negative time step is used
-                if fTimeStep <= 0
+                if fElapsedTime <= 0
                     return %returns to invoking function
                 end
                 % calculate and set the required flow rate kg/s by dividing the
@@ -188,7 +188,7 @@ classdef AtmosphericGasExchange < matter.procs.p2ps.stationary
                 % currently more substance  in the solution than the target
                 % concentration and the substance must flow from the medium to
                 % the air resulting in a negative flow rate.
-                fFlowRate = this.fMassDifference / fTimeStep; %[kg/s]
+                fFlowRate = this.fMassDifference / fElapsedTime; %[kg/s]
                 
                 
             else

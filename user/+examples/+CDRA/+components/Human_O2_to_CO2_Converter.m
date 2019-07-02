@@ -19,9 +19,9 @@ classdef Human_O2_to_CO2_Converter < matter.manips.substance.stationary
     methods (Access = protected)
         function update(this)
             
-            fTimeStep = this.oPhase.oStore.oTimer.fTime-this.fLastUpdate;
+            fElapsedTime = this.oPhase.oStore.oTimer.fTime-this.fLastUpdate;
             
-            if fTimeStep <= 0
+            if fElapsedTime <= 0
                 return
             end
             
@@ -34,8 +34,8 @@ classdef Human_O2_to_CO2_Converter < matter.manips.substance.stationary
             %a human breathes out
             fO2MassFlow = this.oPhase.toProcsEXME.O2In.oFlow.fFlowRate;
             
-            arPartialFlowRates(tiN2I.CO2)   =  fO2MassFlow;%fO2Mass/fTimeStep;
-            arPartialFlowRates(tiN2I.O2)   = -fO2MassFlow;%-fO2Mass/fTimeStep;
+            arPartialFlowRates(tiN2I.CO2)   =  fO2MassFlow;%fO2Mass/fElapsedTime;
+            arPartialFlowRates(tiN2I.O2)   = -fO2MassFlow;%-fO2Mass/fElapsedTime;
             
             update@matter.manips.substance.flow(this, arPartialFlowRates);
             

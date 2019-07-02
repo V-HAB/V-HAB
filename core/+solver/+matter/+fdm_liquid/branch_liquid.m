@@ -384,10 +384,6 @@ classdef branch_liquid < solver.matter.base.branch
                 fMassFlow = sum(this.mMassFlowOld)/length(this.mMassFlowOld);
                 update@solver.matter.base.branch(this, fMassFlow);
                 
-                %tells the stores when to update
-                this.oBranch.coExmes{1, 1}.oPhase.oStore.setNextExec(this.oBranch.oContainer.oTimer.fTime+fTimeStep);
-                this.oBranch.coExmes{2, 1}.oPhase.oStore.setNextExec(this.oBranch.oContainer.oTimer.fTime+fTimeStep);
-                
                 for k = 1: length(this.oBranch.aoFlowProcs)
                     this.oBranch.aoFlowProcs(1,k).update();
                 end

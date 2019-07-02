@@ -91,17 +91,17 @@ classdef (Abstract) substance < matter.manip
             %% Calculates the mass error for this manipulator
             % First we calculate how much time has passed since the update
             % was last called
-            fTimeStep = this.oTimer.fTime - this.fLastExec;
+            fElapsedTime = this.oTimer.fTime - this.fLastExec;
             % To save calculation time we only perform the error
             % calculation if time has passed, since otherwise the added
             % error would be zero anyway
-            if fTimeStep > 0
+            if fElapsedTime > 0
                 % then we calculate the total error of the current (not the
                 % new) flow rates in kg/s
                 fError = sum(this.afPartialFlows);
                 % Now we add the created error in kg (kg/s * s) to the total
                 % error produced in earlier time steps
-                this.fTotalError = this.fTotalError + (fError * fTimeStep);
+                this.fTotalError = this.fTotalError + (fError * fElapsedTime);
                 % to perform the next error calculation correctly now set the
                 % update time
                 this.fLastExec = this.oTimer.fTime;

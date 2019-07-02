@@ -34,6 +34,9 @@ classdef constantVoltageSource < electrical.store
             %CALCULATETIMESTEP Sets the default, fixed time step 
             this.hSetTimeStep(this.fFixedTimeStep);
             
+            % For information we also set the time step property to this
+            % value
+            this.fTimeStep = this.fFixedTimeStep;
         end
         
     end

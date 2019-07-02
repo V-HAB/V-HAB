@@ -35,9 +35,9 @@ classdef PlantManipulator < matter.manips.substance.stationary
                 return;
             end
             
-            fTimeStep = this.oTimer.fTime - this.fLastExec;
+            fElapsedTime = this.oTimer.fTime - this.fLastExec;
             
-            this.afTotalTransformedMass = this.afTotalTransformedMass + (this.afPartialFlows * fTimeStep);
+            this.afTotalTransformedMass = this.afTotalTransformedMass + (this.afPartialFlows * fElapsedTime);
             
             
             this.oParent.update();
