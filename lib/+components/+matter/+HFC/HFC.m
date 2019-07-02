@@ -43,17 +43,11 @@ classdef HFC < vsys
     
     methods
         function this = HFC(oParent, sName, fTimeStep, txInput, tInitializationOverwrite)
+                       
+           this@vsys(oParent, sName, fTimeStep);
            
-%             oParent = tInputParameters.oParent;
-%             sName = tInputParameter.sName;
-            
-            this@vsys(oParent, sName, fTimeStep);
-            
-%             this.fEstimatedMassTransferCoefficient = tInputParameters.fEstimatedMassTransferCoefficient;
-%             this.tAtmosphere = tInputParameters.tAtmosphere;
-           
-            this.fEstimatedMassTransferCoefficient = this.oParent.fEstimatedMassTransferCoefficient;
-            this.tAtmosphere.fPressure      = txInput.fPressure;
+           this.fEstimatedMassTransferCoefficient = this.oParent.fEstimatedMassTransferCoefficient;
+           this.tAtmosphere.fPressure      = txInput.fPressure;
            this.tAtmosphere.fTemperature    = txInput.fTemperature;
            this.tAtmosphere.rRelHumidity    = txInput.rRelHumidity;
            this.tAtmosphere.fCO2Percent     = txInput.fCO2Percent;
@@ -83,29 +77,27 @@ classdef HFC < vsys
             % hardcoded input parameters / design choice
             % FIBERS (inside the fibers is the "Lumen")
             % NOTE: if accessing other research papers, they may word the
-            % "Lumen" as the "Tube" side.
-            this.tGeometry.Fiber.fCount          = this.txInput.fCount;
-            
-            this.tGeometry.Fiber.fCount          = 118;         % #
-            this.tGeometry.Fiber.fInnerDiameter  = 0.00039116;  % [m]
-            this.tGeometry.Fiber.fThickness      = 0.00014;     % [m]
-            this.tGeometry.Fiber.fLength         = 0.1524;      % [m] (length of HFC tubes and fibers)
-            fPorosity = 1;
+            % "Lumen" as the "Tube" side.            
+            this.tGeometry.Fiber.fCount             = this.txInput.Fiber.fCount;            % #
+            this.tGeometry.Fiber.fInnerDiameter     = this.txInput.Fiber.fInnerDiameter;    % [m]
+            this.tGeometry.Fiber.fThickness         = this.txInput.Fiber.fThickness;        % [m]
+            this.tGeometry.Fiber.fLength            = this.txInput.Fiber.fLength;           % [m] (length of HFC tubes and fibers)
+            this.tGeometry.Fiber.fPorosity          = this.txInput.Fiber.fPorosity;         % [ratio]
             
             % TUBE (inside the tube but outside of the fibers is the "Shell")
-            this.tGeometry.Tube.fCount              = 1;        % #
-            this.tGeometry.Tube.fInnerDiameter      = 0.03683;  % [m]
-            this.tGeometry.Tube.fThickness          = 0.01524;  % [m]
+            this.tGeometry.Tube.fCount              = this.txInput.Tube.fCount;             % #
+            this.tGeometry.Tube.fInnerDiameter      = this.txInput.Tube.fInnerDiameter;     % [m]
+            this.tGeometry.Tube.fThickness          = this.txInput.Tube.fThickness;         % [m]
             
             % GEOMETRY CELL-WISE DISCRETIZATION
-            iCellNumber = 3;    % # of length-wise computational cells
-            iTubeNumber = 2;    % THIS SHOULD ALWAYS BE 2 PER SUBSYSTEM
-                                % 1 tube to absorb, the 2nd to desorb
+            iCellNumber = this.txInput.iCellNumber;     % # of length-wise computational cells
+            iTubeNumber = this.txInput.iTubeNumber;     % THIS SHOULD ALWAYS BE 2 PER SUBSYSTEM
+                                                        % 1 tube to absorb, the 2nd to desorb
             
             tInitialization.Shell.fTemperature = 303.15;    % [K]
             % Assumed water mol fraction initialization
-            rWaterVolFraction = .04;        % vol water / vol mixture
-            fReservoirSizeIncreaseFactor = 100; 
+            rWaterVolFraction = this.txInput.rWaterVolFraction;        % vol water / vol mixture
+            fReservoirSizeIncreaseFactor = this.txInput.fReservoirSizeIncreaseFactor; 
             % the reservoir must be bigger than the total absorber volume
             % by at least a factor of 2 (2 tubes). This factor determines
             % the overall mass of liquid present and how quickly
@@ -114,9 +106,9 @@ classdef HFC < vsys
             
             % Define the standard values used for pipes of BRANCHES
             % NOTE: These values have not been verified or considered at all
-            fPipelength         = 1;
-            fPipeDiameter       = 0.01;
-            fFrictionFactor     = 2e-4;
+            fPipeLength         = this.txInput.fPipelength;
+            fPipeDiameter       = this.txInput.fPipeDiameter;
+            fFrictionFactor     = this.txInput.fFrictionFactor;
             
             %% INTERNAL CALCULATIONS
             % DISCRETIZATION
@@ -156,7 +148,7 @@ classdef HFC < vsys
             % allow for air to exchange through
             this.tGeometry.Fiber.fPackingFactor = this.tGeometry.Fiber.fCount * (this.tGeometry.Fiber.fOuterDiameter^2) / (this.tGeometry.Tube.fInnerDiameter^2);
             this.tGeometry.Fiber.fPackingDensity = 4 * this.tGeometry.Fiber.fCount * this.tGeometry.Fiber.fOuterDiameter / (this.tGeometry.Tube.fInnerDiameter^2);            
-            this.tGeometry.Fiber.fContactArea = fPorosity * this.tGeometry.Fiber.fSurfaceAreaShellTotal;
+            this.tGeometry.Fiber.fContactArea = this.tGeometry.Fiber.fPorosity * this.tGeometry.Fiber.fSurfaceAreaShellTotal;
 
             fILVolume = this.tGeometry.Tube.fVolumeShell * (1 - rWaterVolFraction);
             fWaterVolume = this.tGeometry.Tube.fVolumeShell * rWaterVolFraction;
@@ -378,18 +370,18 @@ classdef HFC < vsys
                     % drops between the branches (though pressure drops are
                     % not known exactly from experiments).
                     if iCell == 1
-                        components.matter.HFC.subsystems.components.Filter_F2F(this, [sName,'_Flow_FrictionProc_',num2str(iCell)], this.tGeometry.Fiber.mfFrictionFactor(iCell));
-                        components.matter.HFC.subsystems.components.Filter_F2F(this, [sName,'_Filter_FrictionProc_',num2str(iCell)], this.tGeometry.Tube.mfFrictionFactor(iCell));
+                        components.matter.HFC.components.Filter_F2F(this, [sName,'_Flow_FrictionProc_',num2str(iCell)], this.tGeometry.Fiber.mfFrictionFactor(iCell));
+                        components.matter.HFC.components.Filter_F2F(this, [sName,'_Filter_FrictionProc_',num2str(iCell)], this.tGeometry.Tube.mfFrictionFactor(iCell));
                     elseif iCell ~= 1
                         % branch between the current and the previous cell
                         % for the FLOW flow nodes
-                        components.matter.HFC.subsystems.components.Filter_F2F(this, [sName,'_Flow_FrictionProc_',num2str(iCell)], this.tGeometry.Fiber.mfFrictionFactor(iCell));
+                        components.matter.HFC.components.Filter_F2F(this, [sName,'_Flow_FrictionProc_',num2str(iCell)], this.tGeometry.Fiber.mfFrictionFactor(iCell));
                         oBranch = matter.branch(this, [sName,'.Flow_Outflow_',num2str(iCell-1)], {[sName, '_Flow_FrictionProc_',num2str(iCell)]}, [sName,'.Flow_Inflow_',num2str(iCell)], [sName, '_Flow',num2str(iCell-1),'toFlow',num2str(iCell)]);
                         this.tMassNetwork.(['InternalGasBranches_', sName])(iCell-1) = oBranch;
                         
                         % branch between the current and previous cell for
                         % the FILTER flow nodes (Absorber)
-                        components.matter.HFC.subsystems.components.Filter_F2F(this, [sName,'_Filter_FrictionProc_',num2str(iCell)], this.tGeometry.Tube.mfFrictionFactor(iCell));
+                        components.matter.HFC.components.Filter_F2F(this, [sName,'_Filter_FrictionProc_',num2str(iCell)], this.tGeometry.Tube.mfFrictionFactor(iCell));
                         oBranch = matter.branch(this, [sName,'.Filter_Outflow_',num2str(iCell-1)], {[sName, '_Filter_FrictionProc_',num2str(iCell)]}, [sName,'.Filter_Inflow_',num2str(iCell)], [sName, '_Filter',num2str(iCell-1),'toFilter',num2str(iCell)]);
                         this.tMassNetwork.(['InternalLiquidBranches_', sName])(iCell-1) = oBranch;
                     end
@@ -399,13 +391,13 @@ classdef HFC < vsys
             %% DEFINITION OF INTERFACE BRANCHES
                        
             % apparently there needs to be a pipe present in each branch
-            components.matter.pipe(this, 'Pipe_HFC_Inflow', fPipelength, fPipeDiameter, fFrictionFactor);
-            components.matter.pipe(this, 'Pipe_HFC_Outflow', fPipelength, fPipeDiameter, fFrictionFactor);
-            components.matter.pipe(this, 'Pipe_Vacuum_Inflow', fPipelength, fPipeDiameter, fFrictionFactor);
-            components.matter.pipe(this, 'Pipe_Vacuum_Outflow', fPipelength, fPipeDiameter, fFrictionFactor);
-            components.matter.pipe(this, 'Pipe_IL_Return', fPipelength, fPipeDiameter, fFrictionFactor);
-            components.matter.pipe(this, 'Pipe_IL_Recirculation', fPipelength, fPipeDiameter, fFrictionFactor);
-            components.matter.pipe(this, 'Pipe_IL_Outflow', fPipelength, fPipeDiameter, fFrictionFactor);
+            components.matter.pipe(this, 'Pipe_HFC_Inflow', fPipeLength, fPipeDiameter, fFrictionFactor);
+            components.matter.pipe(this, 'Pipe_HFC_Outflow', fPipeLength, fPipeDiameter, fFrictionFactor);
+            components.matter.pipe(this, 'Pipe_Vacuum_Inflow', fPipeLength, fPipeDiameter, fFrictionFactor);
+            components.matter.pipe(this, 'Pipe_Vacuum_Outflow', fPipeLength, fPipeDiameter, fFrictionFactor);
+            components.matter.pipe(this, 'Pipe_IL_Return', fPipeLength, fPipeDiameter, fFrictionFactor);
+            components.matter.pipe(this, 'Pipe_IL_Recirculation', fPipeLength, fPipeDiameter, fFrictionFactor);
+            components.matter.pipe(this, 'Pipe_IL_Outflow', fPipeLength, fPipeDiameter, fFrictionFactor);
             
             % Processed air inlet (CO2-laden) and outlet (CO2-free)
             sBranchName = 'HFC_Air_Out_1';
