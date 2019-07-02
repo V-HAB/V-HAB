@@ -196,6 +196,12 @@ else
         % step set for this phase, we use this instead.
         if fNewStep > this.fMaxStep
             fNewStep = this.fMaxStep;
+            
+            % If debugging is on, we display the info
+            if ~base.oDebug.bOff
+                this.out(2, 1, 'max-time-step', 'Phase %s-%s-%s setting maximum time step of %.16f', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, fNewStep }); 
+            end
+            
         % If the time step is smaller than the set minimal time step for the
         % phase the minimal time step is used (standard case is that fMinStep
         % is 0, but the user can set it to a different value). Note that 0 does
@@ -203,6 +209,11 @@ else
         % step of the overall simulation to be used
         elseif fNewStep < this.fMinStep
             fNewStep = this.fMinStep;
+            
+            % If debugging is on, we display the info
+            if ~base.oDebug.bOff
+                this.out(2, 1, 'min-time-step', 'Phase %s-%s-%s setting maximum time step of %.16f', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, fNewStep }); 
+            end
         end
 
         % Now we add debugging outputs which can be turned on or off
