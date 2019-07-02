@@ -93,8 +93,11 @@ classdef timestepObserver < simulation.monitor
                 
                 elseif isa(oCaller, 'matter.manips.volume.flow')
                     csReports{iIndex} = ['In the system ', oCaller.oPhase.oStore.oContainer.sName, ' in Store ''', oCaller.oPhase.oStore.sName, ''', Phase ''', oCaller.oPhase.sName,''', in the flow volume manipulator ''', oCaller.sName, ''' a minimal time step of ' num2str(fMinStep), ' seconds was used in Simulation Tick ', num2str(oTimer.iTick)];
+                
+                elseif isa(oCaller, 'matter.procs.p2p')
+                    csReports{iIndex} = ['In the system ', oCaller.oStore.oContainer.sName, ' in Store ''', oCaller.oStore.sName, ''' in the p2p ''', oCaller.sName, ''' a minimal time step of ' num2str(fMinStep), ' seconds was used in Simulation Tick ', num2str(oTimer.iTick)];
                 end
-                    
+                
                 if isempty(csReports{iIndex})
                     warning('you came accros an unknown object that binds time steps, please check the oCaller object and add it to the list above with a report string to enable debugging')
                 end

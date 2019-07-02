@@ -13,8 +13,6 @@ classdef ManualP2P < matter.procs.p2ps.stationary
         
         afFlowRates;
         
-        fLastExec;
-        
         bMassTransferActive = false;
         fMassTransferStartTime;
         fMassTransferTime;

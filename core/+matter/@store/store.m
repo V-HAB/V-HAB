@@ -128,6 +128,7 @@ classdef store < base
             % can also be used to find the ExMe at a store in any other
             % case
             
+            iIdx = [];
             % loop through phases and compare the toProcsEXME struct which
             % contains the name of all exmes for that phase as fieldname
             for iI = 1:length(this.aoPhases)
