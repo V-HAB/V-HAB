@@ -674,10 +674,14 @@ classdef capacity < base & event.source
             % - Store the overall heat flow in the fCurrentHeatFlow property
             % - calculate the allowed time step based on the phase
             %   temperature max change
-            
-            fExmeHeatFlow = 0;
-            for iExme = 1:length(this.aoExmes)
-                fExmeHeatFlow = fExmeHeatFlow + (this.aoExmes(iExme).iSign * this.aoExmes(iExme).fHeatFlow);
+            try
+                fExmeHeatFlow = sum([this.aoExmes.iSign] .* [this.aoExmes.fHeatFlow]);
+            catch oError
+                if ~isempty(this.aoExmes)
+                    rethrow(oError)
+                else 
+                    fExmeHeatFlow = 0;
+                end
             end
             
             % For constant temperature heat sources, we have to recalculate
