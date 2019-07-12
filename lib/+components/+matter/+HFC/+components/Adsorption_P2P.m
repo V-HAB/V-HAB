@@ -5,6 +5,9 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
     % and temperature-dependant properties.
     % 
     % orignial creator: Jordan Holquist --> jholquist@gmail.com
+    % for references, see:
+    % M:\02-Forschung\01-Projekte_aktuell\V-HAB\References\HFC & Ionic
+    % Liquids on the TUM LRT Staff Server Repository.
     %
     % ways to improve this P2P:
     % include   - thermal solvers (issue: no verification data)
