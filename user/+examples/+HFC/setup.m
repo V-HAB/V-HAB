@@ -115,7 +115,7 @@ classdef setup < simulation.infrastructure
             coPlots{1,2} = oPlotter.definePlot({'"Partial Pressure CO2 IN FLOW"', '"Partial Pressure CO2 OUT FLOW"'}, 'Partial Pressures CO2 in FLOW');
             
             coPlots2{1,1} = oPlotter.definePlot({'"Residence Time"'}, 'Residence Time');
-            coPlots2{1,2} = oPlotter.definePlot({'"Mass transfer coefficient of CO2"','"Experimental mass transfer coefficient of CO2"', '"HenrysConstant_times_Kliquid"','"Henrys Constant"'}, 'Mass transfer coefficient of CO2');            
+            coPlots2{1,2} = oPlotter.definePlot({'"Mass transfer coefficient of CO2"','"Experimental mass transfer coefficient of CO2"', '"Henrys Constant"'}, 'Mass transfer coefficient of CO2');            
             coPlots2{1,3} = oPlotter.definePlot({'"Henrys Constant"'}, 'Henrys Constant');
             
             coPlots3{1,1} = oPlotter.definePlot({'"Partial Mass CO2 in IL OUT FLOW"'} , 'CO2 in IL from Reservoir');
@@ -135,7 +135,7 @@ classdef setup < simulation.infrastructure
             coPlots5{1,1} = oPlotter.definePlot({'"Partial Pressure CO2 IN VACUUM"', '"Partial Pressure CO2 OUT VACUUM"'}, 'Partial Pressures CO2 Flow in VACUUM');
             coPlots5{1,2} = oPlotter.definePlot({'"Cumulative Mass of provided CO2 in VACUUM Supply"', '"Cumulative Mass of collected CO2 in VACUUM Removal"'}, 'Cumulative Mass of collected CO2 in VACUUM');
             
-            coPlots6{1,1} = oPlotter.definePlot({'"Experimental mass transfer coefficient of CO2"','"Henrys Constant"','"Mass transfer coefficient of CO2"','"HenrysConstant_times_Kliquid"','"Enhancement Factor"'}, 'Mass Transfor Factors');
+            coPlots6{1,1} = oPlotter.definePlot({'"Experimental mass transfer coefficient of CO2"','"Henrys Constant"','"Mass transfer coefficient of CO2"'}, 'Mass Transfor Factors');
             
             % Creating a figure containing the three plots. By passing in a
             % struct with the 'bTimePlot' field set to true, we create an
