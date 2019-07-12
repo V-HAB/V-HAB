@@ -3,6 +3,8 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
     % CO2 and H2O) into an absorber bed of amine/ionic liquid. It uses
     % substance-specific functions to calculate water content, CO2 content,
     % and temperature-dependant properties.
+    % 
+    % orignial creator: Jordan Holquist --> jholquist@gmail.com
     %
     % ways to improve this P2P:
     % include   - thermal solvers (issue: no verification data)
@@ -25,15 +27,12 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
     %           - improved desorption model
     %           - improved vacuum or pump model & data tracking (plot)
 
-    % equation, implemented in the matter table, to calculate the possible
-    % equilibrium loading for the substances and then uses the linear
-    % driving force (LDF) assumption to calculate the current adsorption or
-    % desorption flowrate for the different substances. Since adsorption
-    % and desorption can both take place at the same time for different
-    % substances the adsorption P2P must be used in conjuction with a
-    % desorption P2P. The full calculation for the flowrates takes place in
-    % this P2P and the desorption flowrates are simply set from here for
-    % the desorption P2P. This allows the modelling of an arbitrary number
+    % Uses the linear driving force (LDF) assumption to calculate the 
+    % current adsorption or desorption flowrate for the different substances. 
+    % Since adsorption and desorption can both take place at the same time 
+    % for different substances the adsorption P2P must be used in conjuction 
+    % with a desorption P2P. The full calculation for both flowrates takes 
+    % place in this P2P. This allows the modelling of an arbitrary number
     % of adsorbing and desorbing substances with only two P2Ps.
     %
     % The P2P is intended to be used in a discretized adsorber bed with
