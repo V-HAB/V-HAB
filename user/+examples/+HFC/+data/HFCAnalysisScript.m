@@ -1,5 +1,5 @@
 doLoadData  = 1;
-doMarinate  = 1;
+doMarinate  = 0;
 doPlotData  = 1;
 
 %% Housekeeping
@@ -19,10 +19,16 @@ if(doLoadData)
 fprintf('Loading Data: ')
 tic
 %% Import COZIR data
-[UpTime_2,UpCO2_2]  = importCO2file('April-04-2017-upstrm2.csv',3,1220);
-[UpTime_1,UpCO2_1]  = importCO2file('April-05-2017 - upstrm.csv',3,2060);
-[DnTime_2,DnCO2_2]  = importCO2file('April-04-2017-dwnstrm2.csv',3,1217);
-[DnTime_1,DnCO2_1]  = importCO2file('April-05-2017 - dwnstrm.csv',3,2098);
+sFileID = strrep('+examples/+HFC/+data/April-04-2017-upstrm2.csv','/',filesep);
+[UpTime_2,UpCO2_2]  = examples.HFC.data.importCO2file(sFileID,3,1220);
+% UpTime_2(1:106) = [];
+sFileID = strrep('+examples/+HFC/+data/April-05-2017 - upstrm.csv','/',filesep);
+[UpTime_1,UpCO2_1]  = examples.HFC.data.importCO2file(sFileID,3,2060);
+sFileID = strrep('+examples/+HFC/+data/April-04-2017-dwnstrm2.csv','/',filesep);
+[DnTime_2,DnCO2_2]  = examples.HFC.data.importCO2file(sFileID,3,1217);
+% DnTime_2(1:102) = [];
+sFileID = strrep('+examples/+HFC/+data/April-05-2017 - dwnstrm.csv','/',filesep);
+[DnTime_1,DnCO2_1]  = examples.HFC.data.importCO2file(sFileID,3,2098);
 UpTime              = [UpTime_2;UpTime_1];
 UpCO2               = [UpCO2_2;UpCO2_1];
 DnTime              = [DnTime_2;DnTime_1];
@@ -91,7 +97,9 @@ Delta_E = sqrt(((PPM2T.*DnCO2_C./(UpCO2_C.^2)).^2).*(UpCO2_E.^2)+...
 % Delta_E = UpCO2_E + DnCO2_E; Old Equation  
 
 %% Load Model Data
-load('..\..\03 Analysis\Matlab Code\AllCharData.mat','HFC_Gas_M');
+sFileID = strrep('+examples/+HFC/+data/AllCharData.mat','/',filesep);
+load(sFileID);
+% load('..\..\03 Analysis\Matlab Code\AllCharData.mat','HFC_Gas_M');
 toc
 end
 
@@ -121,8 +129,8 @@ StartTime   = datetime(2017,4,4,13,37,37);
 EndTime     = datetime(2017,4,4,13,51,27);
 iStart      = find(abs(Time_C-StartTime)<=seconds(1));
 iEnd        = find(abs(Time_C-EndTime)<=seconds(1));
-GasFlow(1,:)= [0.2,wmean(Delta_C(iStart:iEnd),UpCO2_n(iStart:iEnd)+...
-                   DnCO2_n(iStart:iEnd)),wmean(UpCO2_C(iStart:iEnd),...
+GasFlow(1,:)= [0.2,examples.HFC.data.wmean(Delta_C(iStart:iEnd),UpCO2_n(iStart:iEnd)+...
+                   DnCO2_n(iStart:iEnd)),examples.HFC.data.wmean(UpCO2_C(iStart:iEnd),...
                    UpCO2_n(iStart:iEnd))];
 GasErr(1,:) = [0.02,sum(Delta_E(iStart:iEnd))/(iEnd-iStart),...
                    sum(UpCO2_E(iStart:iEnd))/(iEnd-iStart)];               
@@ -132,8 +140,8 @@ StartTime   = datetime(2017,4,4,14,01,30);
 EndTime     = datetime(2017,4,4,14,12,49);
 iStart      = find(abs(Time_C-StartTime)<=seconds(1));
 iEnd        = find(abs(Time_C-EndTime)<=seconds(1));
-GasFlow(2,:)= [0.3,wmean(Delta_C(iStart:iEnd),UpCO2_n(iStart:iEnd)+...
-                   DnCO2_n(iStart:iEnd)),wmean(UpCO2_C(iStart:iEnd),...
+GasFlow(2,:)= [0.3,examples.HFC.data.wmean(Delta_C(iStart:iEnd),UpCO2_n(iStart:iEnd)+...
+                   DnCO2_n(iStart:iEnd)),examples.HFC.data.wmean(UpCO2_C(iStart:iEnd),...
                    UpCO2_n(iStart:iEnd))];
 GasErr(2,:) = [0.02,sum(Delta_E(iStart:iEnd))/(iEnd-iStart),...
                    sum(UpCO2_E(iStart:iEnd))/(iEnd-iStart)];     
@@ -143,8 +151,8 @@ StartTime   = datetime(2017,4,4,14,16,35);
 EndTime     = datetime(2017,4,4,14,29,09);
 iStart      = find(abs(Time_C-StartTime)<=seconds(1));
 iEnd        = find(abs(Time_C-EndTime)<=seconds(1));
-GasFlow(3,:)= [0.4,wmean(Delta_C(iStart:iEnd),UpCO2_n(iStart:iEnd)+...
-                   DnCO2_n(iStart:iEnd)),wmean(UpCO2_C(iStart:iEnd),...
+GasFlow(3,:)= [0.4,examples.HFC.data.wmean(Delta_C(iStart:iEnd),UpCO2_n(iStart:iEnd)+...
+                   DnCO2_n(iStart:iEnd)),examples.HFC.data.wmean(UpCO2_C(iStart:iEnd),...
                    UpCO2_n(iStart:iEnd))];
 GasErr(3,:) = [0.02,sum(Delta_E(iStart:iEnd))/(iEnd-iStart),...
                    sum(UpCO2_E(iStart:iEnd))/(iEnd-iStart)];                   
@@ -154,8 +162,8 @@ StartTime   = datetime(2017,4,5,10,26,53);
 EndTime     = datetime(2017,4,5,10,41,58);
 iStart      = find(abs(Time_C-StartTime)<=seconds(1));
 iEnd        = find(abs(Time_C-EndTime)<=seconds(1));
-GasFlow(4,:)= [0.5,wmean(Delta_C(iStart:iEnd),UpCO2_n(iStart:iEnd)+...
-                   DnCO2_n(iStart:iEnd)),wmean(UpCO2_C(iStart:iEnd),...
+GasFlow(4,:)= [0.5,examples.HFC.data.wmean(Delta_C(iStart:iEnd),UpCO2_n(iStart:iEnd)+...
+                   DnCO2_n(iStart:iEnd)),examples.HFC.data.wmean(UpCO2_C(iStart:iEnd),...
                    UpCO2_n(iStart:iEnd))];
 GasErr(4,:) = [0.02,sum(Delta_E(iStart:iEnd))/(iEnd-iStart),...
                    sum(UpCO2_E(iStart:iEnd))/(iEnd-iStart)];                   
@@ -165,8 +173,8 @@ StartTime   = datetime(2017,4,5,10,44,28);
 EndTime     = datetime(2017,4,5,11,02,04);
 iStart      = find(abs(Time_C-StartTime)<=seconds(1));
 iEnd        = find(abs(Time_C-EndTime)<=seconds(1));
-GasFlow(5,:)= [0.6,wmean(Delta_C(iStart:iEnd),UpCO2_n(iStart:iEnd)+...
-                   DnCO2_n(iStart:iEnd)),wmean(UpCO2_C(iStart:iEnd),...
+GasFlow(5,:)= [0.6,examples.HFC.data.wmean(Delta_C(iStart:iEnd),UpCO2_n(iStart:iEnd)+...
+                   DnCO2_n(iStart:iEnd)),examples.HFC.data.wmean(UpCO2_C(iStart:iEnd),...
                    UpCO2_n(iStart:iEnd))];
 GasErr(5,:) = [0.02,sum(Delta_E(iStart:iEnd))/(iEnd-iStart),...
                    sum(UpCO2_E(iStart:iEnd))/(iEnd-iStart)];                   
