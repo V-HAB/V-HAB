@@ -46,6 +46,7 @@ classdef HFC < vsys
                        
            this@vsys(oParent, sName, fTimeStep);
            
+           % adding the inputs to the HFC system
            this.fEstimatedMassTransferCoefficient = this.oParent.fEstimatedMassTransferCoefficient;
            this.tAtmosphere.fPressure      = txInput.fPressure;
            this.tAtmosphere.fTemperature    = txInput.fTemperature;
@@ -138,7 +139,8 @@ classdef HFC < vsys
             this.tGeometry.Tube.fCrossSectionInlet  = 2*((pi/4)*((0.364)*2.54/100)^2);                                            % [m^2]
             this.tGeometry.Tube.fHydraulicDiameter  = (this.tGeometry.Tube.fInnerDiameter^2 - (this.tGeometry.Fiber.fCount * (this.tGeometry.Fiber.fOuterDiameter^2))) / (this.tGeometry.Fiber.fCount * (this.tGeometry.Fiber.fOuterDiameter));
             % this.tGeometry.Tube.fCrossSectionInlet  = 6.33e-5; [m^2]
-            % cross section area of two inlet ports to shell
+            % cross section area of two inlet ports to shell (alternative
+            % area estimate)
             this.tGeometry.Tube.fCrossSectionShell  = (pi/4)*this.tGeometry.Tube.fInnerDiameter^2 - this.tGeometry.Fiber.fCrossSectionFiberTotal;   % m^2
             % fVolumeShell is the fluid in the shell for flow volume calculations
             this.tGeometry.Tube.fVolumeShell        = this.tGeometry.Tube.fCrossSectionShell * this.tGeometry.Fiber.fLength;      % [m^3]
@@ -150,12 +152,13 @@ classdef HFC < vsys
             this.tGeometry.Fiber.fPackingDensity = 4 * this.tGeometry.Fiber.fCount * this.tGeometry.Fiber.fOuterDiameter / (this.tGeometry.Tube.fInnerDiameter^2);            
             this.tGeometry.Fiber.fContactArea = this.tGeometry.Fiber.fPorosity * this.tGeometry.Fiber.fSurfaceAreaShellTotal;
 
-            fILVolume = this.tGeometry.Tube.fVolumeShell * (1 - rWaterVolFraction);
-            fWaterVolume = this.tGeometry.Tube.fVolumeShell * rWaterVolFraction;
+            % Set the initial amount of IL and water
+            fILVolume = this.tGeometry.Tube.fVolumeShell * (1 - rWaterVolFraction);     % [m^3]
+            fWaterVolume = this.tGeometry.Tube.fVolumeShell * rWaterVolFraction;        % [m^3]
             fILDensity = this.oMT.calculateDensity('liquid', struct('BMIMAc', 1), this.tAtmosphere.fTemperature, this.tAtmosphere.fPressure); % [kg/m^3] density of [BMIM][Ac]
             fWaterDensity = this.oMT.calculateDensity('liquid', struct('H2O', 1), this.tAtmosphere.fTemperature, this.tAtmosphere.fPressure); % [kg/m^3]
-            fILMass = fILDensity * fILVolume;
-            fWaterMass = fWaterDensity * fWaterVolume;
+            fILMass = fILDensity * fILVolume;               % [kg]
+            fWaterMass = fWaterDensity * fWaterVolume;      % [kg]
             tInitialization.Shell.tfMassAbsorber = struct('BMIMAc', fILMass, 'H2O', fWaterMass);
               
             % generate reservoir for the IL between the absorber/desorber
@@ -170,6 +173,7 @@ classdef HFC < vsys
                 this.tAtmosphere.fPressure);                                % fPressure: Pressure of matter in phase
 
             fTypeIL = 0;    % initialization
+            % check to see which IL is being used, [BMIM][Ac] or [EMIM][Ac]
             if oReservoir.arPartialMass(this.oMT.tiN2I.BMIMAc) > 0 && oReservoir.arPartialMass(this.oMT.tiN2I.EMIMAc) == 0
                 fTypeIL = 1;
             elseif oReservoir.arPartialMass(this.oMT.tiN2I.EMIMAc) > 0 && oReservoir.arPartialMass(this.oMT.tiN2I.BMIMAc) == 0
@@ -177,6 +181,7 @@ classdef HFC < vsys
             else
                 error('IL mixtures are not supported')
             end
+            % load the proper curve fits to equilibrium data for the IL
             this.tEquilibriumCurveFits = components.matter.HFC.functions.calculateEquilibriumCurveFits(fTypeIL);
 
             mfMassTransferCoefficient = zeros(1,this.oMT.iSubstances);
@@ -232,9 +237,9 @@ classdef HFC < vsys
             % abbreviated local variables for clarity of code
             fAbsorberVolume = this.tGeometry.Tube.fVolumeShell;     % [m^3]
             fFlowVolume = this.tGeometry.Fiber.fVolumeLumenTotal;   % [m^3]
-            fPressure = this.tAtmosphere.fPressure;
+            fPressure = this.tAtmosphere.fPressure;                 % [Pa]
             % TODO: Change this upon implementation of thermal factors
-            fTemperatureAbsorber = this.tAtmosphere.fTemperature;
+            fTemperatureAbsorber = this.tAtmosphere.fTemperature;   % [K]
     
             % There are ALWAYS two tubes to an HFC system:
             % Tube 1: Absorption tube - CO2 is extracted from process gas
@@ -439,19 +444,23 @@ classdef HFC < vsys
                     % bypass flow mode of the experiment
                     fVolumetricFlowRate(ii,1) = 0;
                 elseif ii >= 365 && ii < 638
-                    % 0.2 SLPM (from experiment) conversion to non-standard atmosphere
+                    % 0.2 SLPM (from experiment) conversion to non-standard
+                    % atmosphere. Actual units: [m^3/s]
                     fVolumetricFlowRate(ii,1) = (0.2*(this.tAtmosphere.fTemperature/273.15)*(101325/this.tAtmosphere.fPressure))/60000;
                 elseif ii >= 638 && ii < 803
-                    % 0.3 SLPM (from experiment) conversion to non-standard atmosphere
+                    % 0.3 SLPM (from experiment) conversion to non-standard
+                    % atmosphere. Actual units: [m^3/s]
                     fVolumetricFlowRate(ii,1) = (0.3*(this.tAtmosphere.fTemperature/273.15)*(101325/this.tAtmosphere.fPressure))/60000;
                 elseif ii >= 803
-                    % 0.4 SLPM (from experiment) conversion to non-standard atmosphere
+                    % 0.4 SLPM (from experiment) conversion to non-standard
+                    % atmosphere. Actual units: [m^3/s]
                     fVolumetricFlowRate(ii,1) = (0.4*(this.tAtmosphere.fTemperature/273.15)*(101325/this.tAtmosphere.fPressure))/60000;
                 end
             end
             
-            CCO2Up = yCO2Up .* fPressure ./ this.oMT.Const.fUniversalGas ./ this.tAtmosphere.fTemperature;
-            CCO2Dn = yCO2Dn .* fPressure ./ this.oMT.Const.fUniversalGas ./ this.tAtmosphere.fTemperature;
+            CCO2Up = yCO2Up .* fPressure ./ this.oMT.Const.fUniversalGas ./ this.tAtmosphere.fTemperature;  % [mol/m^3]
+            CCO2Dn = yCO2Dn .* fPressure ./ this.oMT.Const.fUniversalGas ./ this.tAtmosphere.fTemperature;  % [mol/m^3]
+            % [mol/m^2/s]
             this.tEstimate.afMassTransferCoefficientExperimental = log(yCO2Up./yCO2Dn) ./ (yCO2Up-yCO2Dn) ./ fPressure .* this.oMT.Const.fUniversalGas .* this.tAtmosphere.fTemperature .* fVolumetricFlowRate./this.tGeometry.Fiber.fContactArea .* (CCO2Up-CCO2Dn);
         end
 
@@ -479,8 +488,8 @@ classdef HFC < vsys
             solver.matter.manual.branch(this.toBranches.Reservoir_IL_Out);
             solver.matter.manual.branch(this.toBranches.VacuumSupply);
             % TO DO: set to the proper value or add a pump
-            this.toBranches.Reservoir_IL_Out.oHandler.setVolumetricFlowRate(1.51e-6);
-            this.toBranches.VacuumSupply.oHandler.setVolumetricFlowRate(1e-4);
+            this.toBranches.Reservoir_IL_Out.oHandler.setVolumetricFlowRate(1.51e-6);   % [m^3/s]
+            this.toBranches.VacuumSupply.oHandler.setVolumetricFlowRate(1e-4);          % [m^3/s]
             
             % Set solver properties
             tSolverProperties.fMaxError = 1e-3;

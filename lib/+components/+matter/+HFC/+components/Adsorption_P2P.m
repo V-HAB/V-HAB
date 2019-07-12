@@ -1,6 +1,30 @@
 classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
     % This a P2P processor to model the uptake of gaseous substances (e.g.
-    % CO2 and H2O) into an absorber bed of zeolite/amine/ionic liquid. It uses the toth
+    % CO2 and H2O) into an absorber bed of amine/ionic liquid. It uses
+    % substance-specific functions to calculate water content, CO2 content,
+    % and temperature-dependant properties.
+    %
+    % ways to improve this P2P:
+    % include   - thermal solvers (issue: no verification data)
+    %           - specific heat capacity vs. water & temp.
+    %               NOTE: Roemich et al (2012) has data vs. water and temp.
+    %           - heat of absorption of CO2 
+    %               NOTE: Shiflett and Yokozeki (2012) Table 8
+    %           - heat of absorption of H2O
+    %               NOTE: Rocha & Siflett (2019)
+    %           - better phase equilibrium calculation for CO2 & H2O in ILs
+    %               NOTE: Stevanovic et al (2012) has data at low ppCO2 with
+    %               and without water present (water affects CO2 solubility)
+    %               AND Ziobrowski and Rotkegel (2017) have some supporting
+    %               data that may be used to test this effect with BMIMAc and
+    %               EMIMAc ILs. Roemich et al (2012) and Passos et al (2014)
+    %               have data and equations on H2O phase equilibrium. Baj
+    %               et al (2015) have max. absorption estimates of CO2 as
+    %               function of H2O in BMIMAc.
+    %               
+    %           - improved desorption model
+    %           - improved vacuum or pump model & data tracking (plot)
+
     % equation, implemented in the matter table, to calculate the possible
     % equilibrium loading for the substances and then uses the linear
     % driving force (LDF) assumption to calculate the current adsorption or
@@ -57,9 +81,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
         oShell;
         tEquilibriumCurveFits;
         fHenrysConstant = 0;
-        fKlTimesHd;
         fEstimatedMassTransferCoefficient;
-        fEA = 0;
  
         fLumenResidenceTime = 0;
         fShellResidenceTime = 0;
@@ -172,18 +194,19 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             
             %% mass transfer coefficient calculation
             this.tGeometry.mfMassTransferCoefficient = zeros(1,this.oMT.iSubstances);
-            fMolarVolumeCO2_NBP = 33.3;   % [cm^3/mol] NBP = normal boiling point (Morgan 2005)
+            fMolarVolumeCO2_NBP = 33.3;     % [cm^3/mol] NBP = normal boiling point (Morgan 2005)
             fMolarVolumeH2O_NBP = 18.798;   % [cm^3/mol]
             fNullDiffusivityCO2 = 1E-4 * 2.66E-3 / (fShellViscosity^0.66 * fMolarVolumeCO2_NBP^1.04);   % [m^2/s]
-            fDiffusionEnergy = 30.74;   % [kJ/mol]
+            fDiffusionEnergy = 30.74;       % [kJ/mol] for BMIMAc
+            % fDiffusionEnergy = 27.91 [kJ/mol] for EMIMAc
             
             % Arrhenius model of CO2 diffusion coefficient
-            % [m^2/s]
+            % [m^2/s], see Santos, Albo, and Irabien (2014)
             fDiffusivityCO2 = fNullDiffusivityCO2 .* exp(-fDiffusionEnergy/this.oMT.Const.fUniversalGas/fLumenTemperature);
             
             % local variables for H2O diffusion calculation (maybe make
             % this into a separate function)
-            fShellTemperature = fLumenTemperature;  % [K] (wrong, but ok for now)
+            fShellTemperature = fLumenTemperature;  % [K] (wrong, but ok for now without thermal model)
             H0 = 18*this.oMT.Const.fBoltzmann*fShellTemperature;
             H1 = 40*this.oMT.Const.fBoltzmann*fShellTemperature;
             S1 = 38*this.oMT.Const.fBoltzmann;
@@ -191,13 +214,22 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             afShellMolFractions    = (this.oShell.oPhase.arPartialMass ./ this.oMT.afMolarMass) ./ sum(this.oShell.oPhase.arPartialMass ./ this.oMT.afMolarMass);
             
             % Arrhenius (Temperature) & Water content model of H2O
-            % diffusion coefficient
-            % [m^2/s]
+            % diffusion coefficient [m^2/s]
+            % source: Bayles et al (2019)
+            % assumption: IM (imidazolium) cation, no interaction from Ac anion
             fDiffusivityH2O = fBaylesConstant .* exp(-H0/this.oMT.Const.fBoltzmann/fShellTemperature) .* exp((H1/this.oMT.Const.fBoltzmann/fShellTemperature - S1/this.oMT.Const.fBoltzmann).*afShellMolFractions(this.oMT.tiN2I.H2O));
+            % ESTIMATE: 1.7 x10^-11 [m^2/s] in BMIMAc at 294.85K, 77.8 mol% H2O, Rocha and Shiflett (2019)
+            % ESTIMATE: 2.8 x10^-11 [m^2/s] in BMIMAc at 303.15K, 78.1 mol% H2O, Rocha and Shiflett (2019)
             % ALTERNATIVE CALCULATION
+            % (Following Morgan et al (2005)
             % fDiffusivityH2O = 1E-4 * 2.66E-3 / (fShellViscosity^0.66 * fMolarVolumeH2O_NBP^1.04);
             
             % GENERAL EQUATIONS
+            % these equations are used in some form in MOST hollow fiber
+            % contactor papers, of which there are many in the VHAB/HFC
+            % references. The exact coefficients are the hard part to
+            % estimate. The X-Hab team made a tool to estimate fFitCoeffA,
+            % but fFitCoeffB and fFitCoeffC were left untouched.
             % Sh = a * Re^b * Sc^c (sherwood number)
             % k = Sh * DCO2 / od (mass transfer coefficient)
             fReynoldsNumber = this.tGeometry.Tube.fHydraulicDiameter ...
@@ -207,10 +239,11 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             fSchmidtNumberH2O = fShellKinematicViscosity / fDiffusivityH2O;
             
             % Fitting Coefficients Experimentally Determined
-            % from X-Hab paper, fFitCoeffA = 5.58
-            % from my calculation with their fit tool and updated params
-
+            % FROM X-Hab paper, fFitCoeffA = 5.58
+            % FROM my calculation with their fit tool and updated params
             % fFitCoeffA = 0.5714
+            % to use this tool, use HFCModelCalibration.m in
+            % VHAB/STEPS/+users/+examples/+HFC/HFCModelCalibration.m
             fFitCoeffA = 12.83;
             fFitCoeffB = 0.67;
             fFitCoeffC = 0.33;
@@ -273,12 +306,11 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             % Currently uses flow moles.
             % HENRY'S CONSTANT:
             % See Costa Gomes and Lepre (2017) for calculation of this
-            % H = 77 is for pure BMIMAc, so it is multiplied by ratio of
+            % H = 77.8 is for pure BMIMAc, so it is multiplied by ratio of
             % how much BMIMAc is present in the shell assuming linear
-            % dependence on molar ratio. Results look decent.
+            % dependence on molar ratio. This is a simplification.
+            % Results look decent.
             this.fHenrysConstant = 77.8 .* arShellFractions(this.oMT.tiN2I.BMIMAc);  % TESTING
-            this.fKlTimesHd = this.fHenrysConstant .* this.tGeometry.mfMassTransferCoefficient(this.oMT.tiN2I.CO2);
-            this.fEA = this.fEstimatedMassTransferCoefficient ./ this.fKlTimesHd;
 
             fEQDeltaWaterVaporPressure = afPP(this.oMT.tiN2I.H2O) - fWaterEQPressure;
             fEQDeltaWaterVaporMols = fEQDeltaWaterVaporPressure .* fLumenVolume ./ this.oMT.Const.fUniversalGas ./ fLumenTemperature;
@@ -343,7 +375,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 this.mfFlowRates = 0;
             else
                 if afPP(this.oMT.tiN2I.CO2) > fEquilibriumCO2Pressure
-                    % still more CO2 capacity in shell
+                    % if there is still more CO2 capacity in shell
                     if this.bDesorption == false
                         % absorber function (Tube 1)
                         % then the Lumen CO2 IS absorbed into the Shell
@@ -367,7 +399,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                         mfFlowRatesDesorption = fDesorptionFlowRate .* arPartialsDesorption;
                     end
                 else
-                    % shell is full of CO2, can only desorb
+                    % if shell is full of CO2, can only desorb
                     if this.bDesorption == false
                         % absorber function (Tube 1)
                         % then the Lumen CO2 is NOT absorbed into the Shell

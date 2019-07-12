@@ -3,9 +3,7 @@ classdef Example < vsys
     %hollow fiber contactor (HFC) for CO2 removal from a simulated cabin or
     %from AETHER (CU Boulder experimental gas rig)
     
-    properties
-        tAtmosphere;
-        
+    properties        
         tTestData;
         
         txInput;
@@ -33,7 +31,7 @@ classdef Example < vsys
             % DATA INITIALIZATIONS
             % ATMOSPHERE INITIALIZATIONS
             this.txInput.fTemperature = 303.15;      % [K]
-            this.txInput.rRelHumidity = 0.5;         % [ ] ratio
+            this.txInput.rRelHumidity = 0.2;         % [ ] ratio
             this.txInput.fPressure = 8.41e4;         % [Pa]
             this.txInput.fCO2Percent = 0.005;        % [%]
             
@@ -53,9 +51,10 @@ classdef Example < vsys
             % GEOMETRY CELL-WISE DISCRETIZATION
             this.txInput.iCellNumber = 3;    % # of length-wise computational cells
             this.txInput.iTubeNumber = 2;    % THIS SHOULD ALWAYS BE 2 PER SUBSYSTEM
-                                        % 1 tube to absorb, the 2nd to desorb
+                                             % 1 tube to absorb, the 2nd to desorb
             
             % Assumed water mol fraction initialization
+            % NOTE: this is an estimate, actual water content not measured
             this.txInput.rWaterVolFraction = .04;        % vol water / vol mixture
             this.txInput.fReservoirSizeIncreaseFactor = 100; 
             % the reservoir must be bigger than the total absorber volume
@@ -66,8 +65,8 @@ classdef Example < vsys
             
             % Define the standard values used for pipes of BRANCHES
             % NOTE: These values have not been verified or considered at all
-            this.txInput.fPipelength         = 1;
-            this.txInput.fPipeDiameter       = 0.01;
+            this.txInput.fPipelength         = 1;       % [m]
+            this.txInput.fPipeDiameter       = 0.01;    % [m]
             this.txInput.fFrictionFactor     = 2e-4;
             
             %% LOAD and CONDITION EXPERIMENTAL DATA
@@ -76,6 +75,7 @@ classdef Example < vsys
             sFileID = strrep('+examples/+HFC/+data/April-04-2017-dwnstrm2.csv','/',filesep);
             [afDnTime, afDnCO2] = examples.HFC.importCO2file(sFileID,3,1217);
             
+            % remove pre-test setup data points
             afUpTime(1:106) = [];
             afDnTime(1:102) = [];
             afUpCO2(1:106) = [];
@@ -284,28 +284,35 @@ classdef Example < vsys
                
                 % Update the properties of the boundary phase
                 oBoundary.setBoundaryProperties(tProperties);
-                fContactArea = 0.0379;
+                % hardcoded from X-Hab (2017) data
+                fContactArea = 0.0379;      % [m^2]
                 
                 % Set the flow rates during each regime of the experiment
+                % fVolumetricFlowRate refers to gas through the lumen of
+                % the HFC. It was set in bypass (-1e-8, which gets counted
+                % as 0 in the HFC.m), then at 0.2 SLPM, 0.3 SLPM, 0.4 SLPM.
+                % It is converted to NON-STANDARD m^3/s
                 if this.tTestData.afTime(this.iSwitchCount) <= 2000
-                    fVolumetricFlowRate = -1e-8;                    
-                    CCO2Up = yCO2Up .* fPressure ./ this.oMT.Const.fUniversalGas ./ fTemperature;
-                    CCO2Dn = yCO2Dn .* fPressure ./ this.oMT.Const.fUniversalGas ./ fTemperature;
+                    fVolumetricFlowRate = -1e-8; % [m^3/s]                   
+                    CCO2Up = yCO2Up .* fPressure ./ this.oMT.Const.fUniversalGas ./ fTemperature;   % [mol/m^3]
+                    CCO2Dn = yCO2Dn .* fPressure ./ this.oMT.Const.fUniversalGas ./ fTemperature;   % [mol/m^3]
+                    % Check Gomez-Coma (2014) for this equation to estimate
+                    % mass transfer coefficient frome xperimental data.
                     this.fEstimatedMassTransferCoefficient = log(yCO2Up./yCO2Dn)./(yCO2Up-yCO2Dn)./fPressure.*this.oMT.Const.fUniversalGas.*fTemperature.*-fVolumetricFlowRate./(fContactArea).*(CCO2Up-CCO2Dn);                    
                 elseif 2000 < this.tTestData.afTime(this.iSwitchCount) && this.tTestData.afTime(this.iSwitchCount) <= 3423
-                    fVolumetricFlowRate = -(0.2*(fTemperature/273.15)*(101325/fPressure))/60000;
-                    CCO2Up = yCO2Up .* fPressure ./ this.oMT.Const.fUniversalGas ./ fTemperature;
-                    CCO2Dn = yCO2Dn .* fPressure ./ this.oMT.Const.fUniversalGas ./ fTemperature;
+                    fVolumetricFlowRate = -(0.2*(fTemperature/273.15)*(101325/fPressure))/60000;    % [m^3/s]
+                    CCO2Up = yCO2Up .* fPressure ./ this.oMT.Const.fUniversalGas ./ fTemperature;   % [mol/m^3]
+                    CCO2Dn = yCO2Dn .* fPressure ./ this.oMT.Const.fUniversalGas ./ fTemperature;   % [mol/m^3]
                     this.fEstimatedMassTransferCoefficient = log(yCO2Up./yCO2Dn)./(yCO2Up-yCO2Dn)./fPressure.*this.oMT.Const.fUniversalGas.*fTemperature.*-fVolumetricFlowRate./(fContactArea).*(CCO2Up-CCO2Dn);
                 elseif 3423 < this.tTestData.afTime(this.iSwitchCount) && this.tTestData.afTime(this.iSwitchCount) <= 4360
-                    fVolumetricFlowRate = -(0.3*(fTemperature/273.15)*(101325/fPressure))/60000;
-                    CCO2Up = yCO2Up .* fPressure ./ this.oMT.Const.fUniversalGas ./ fTemperature;
-                    CCO2Dn = yCO2Dn .* fPressure ./ this.oMT.Const.fUniversalGas ./ fTemperature;
+                    fVolumetricFlowRate = -(0.3*(fTemperature/273.15)*(101325/fPressure))/60000;    % [m^3/s]
+                    CCO2Up = yCO2Up .* fPressure ./ this.oMT.Const.fUniversalGas ./ fTemperature;   % [mol/m^3]
+                    CCO2Dn = yCO2Dn .* fPressure ./ this.oMT.Const.fUniversalGas ./ fTemperature;   % [mol/m^3]
                     this.fEstimatedMassTransferCoefficient = log(yCO2Up./yCO2Dn)./(yCO2Up-yCO2Dn)./fPressure.*this.oMT.Const.fUniversalGas.*fTemperature.*-fVolumetricFlowRate./(fContactArea).*(CCO2Up-CCO2Dn);
                 elseif 4360 < this.tTestData.afTime(this.iSwitchCount) 
-                    fVolumetricFlowRate = -(0.4*(fTemperature/273.15)*(101325/fPressure))/60000;
-                    CCO2Up = yCO2Up .* fPressure ./ this.oMT.Const.fUniversalGas ./ fTemperature;
-                    CCO2Dn = yCO2Dn .* fPressure ./ this.oMT.Const.fUniversalGas ./ fTemperature;
+                    fVolumetricFlowRate = -(0.4*(fTemperature/273.15)*(101325/fPressure))/60000;    % [m^3/s]
+                    CCO2Up = yCO2Up .* fPressure ./ this.oMT.Const.fUniversalGas ./ fTemperature;   % [mol/m^3]
+                    CCO2Dn = yCO2Dn .* fPressure ./ this.oMT.Const.fUniversalGas ./ fTemperature;   % [mol/m^3]
                     this.fEstimatedMassTransferCoefficient = log(yCO2Up./yCO2Dn)./(yCO2Up-yCO2Dn)./fPressure.*this.oMT.Const.fUniversalGas.*fTemperature.*-fVolumetricFlowRate./(fContactArea).*(CCO2Up-CCO2Dn);
                 end
                 this.toChildren.HFC.toBranches.HFC_Air_In_1.oHandler.setVolumetricFlowRate(fVolumetricFlowRate);
