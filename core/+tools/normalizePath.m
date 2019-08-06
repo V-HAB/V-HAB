@@ -19,6 +19,14 @@ function sOutputName = normalizePath(sInputPath)
         return;
     end
     
+    % Checking if there are any space characters in the string. This is not
+    % permitted, so we throw an error. 
+    if contains(sInputPath, ' ')
+        error('VHAB:normalizePath', ['The file you are adding\n(%s)\n', ... 
+              'contains space characters in its path. This is not permitted within V-HAB/MATLAB.\n'...
+              'Please change all file and folder names accordingly.'], sInputPath);
+    end
+    
     % The path will contain characters that denote a folder as either a
     % MATLAB package ('+') or a class folder ('@') and operating
     % system-dependent file separator characters ('/' or '\'). These
