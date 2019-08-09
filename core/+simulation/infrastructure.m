@@ -518,7 +518,7 @@ classdef infrastructure < base & event.source
             % Only do this if the user wants to
             if this.bPlayFinishSound
                 % Loading the data for the finishing sound
-                [afSampleData, afSampleRate] = audioread('lib/+special/V-HAB Finish Sound.mp3');
+                [afSampleData, afSampleRate] = audioread('lib/+special/V-HAB_Finish_Sound.mp3');
                 % Playing the finishing sound
                 sound(afSampleData, afSampleRate);
             end

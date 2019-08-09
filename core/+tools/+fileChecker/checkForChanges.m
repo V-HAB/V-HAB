@@ -88,7 +88,7 @@ if ~bFirstRun
         % Before we redo the initial scan, we first have to prepare some
         % things:
         % Tell the user what's going on.
-        disp('FolderStatus.mat file is outdated or corrupt. Repeating initial folder scan.');
+        disp(['FolderStatusFor', sCaller, '.mat', 'file is outdated or corrupt. Repeating initial folder scan.']);
         % Delete the previously saved data file
         delete(sSavePath);
         % Clear the current workspace variable
