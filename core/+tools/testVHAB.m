@@ -622,73 +622,91 @@ end
 
 oPlot = subplot(2,3,1);
 hold(oPlot,'on');
-oBars = bar(mfData(:,1)); %#ok<NASGU>
-% This is currently unsupported by MATLAB. The feature was only added in
-% 2019a, so hopefully it will be extended to bar plots in the future. For
-% now, we need to add a legend at the end.
-%oBars.DataTipTemplate.DataTipRows = dataTipTextRow('Test',csNames);
+oBars = bar(mfData(:,1));
+if ~verLessThan('MATLAB','9.7')
+    oBars.DataTipTemplate.DataTipRows(1) = dataTipTextRow('Test',csNames);
+    oBars.DataTipTemplate.DataTipRows(1).Interpreter = 'none';
+    oBars.DataTipTemplate.DataTipRows(2).Label = 'Ticks';
+end
 title('Ticks');
 coButtons{1, 1}.Callback = {@tools.postprocessing.plotter.helper.undockSubPlot, oPlot, []};
 
 oPlot = subplot(2,3,2);
 hold(oPlot,'on');
-oBars = bar(mfData(:,2)); %#ok<NASGU>
-%oBars.DataTipTemplate.DataTipRows = dataTipTextRow('Test',csNames);
+oBars = bar(mfData(:,2));
+if ~verLessThan('MATLAB','9.7')
+    oBars.DataTipTemplate.DataTipRows(1) = dataTipTextRow('Test',csNames);
+    oBars.DataTipTemplate.DataTipRows(1).Interpreter = 'none';
+    oBars.DataTipTemplate.DataTipRows(2).Label = 'Seconds';
+end
 title('Time');
 ylabel('Simulation Time [s]');
 coButtons{1, 2}.Callback = {@tools.postprocessing.plotter.helper.undockSubPlot, oPlot, []};
 
 oPlot = subplot(2,3,3);
 hold(oPlot,'on');
-oBars = bar(mfData(:,3)); %#ok<NASGU>
-%oBars.DataTipTemplate.DataTipRows = dataTipTextRow('Test',csNames);
+oBars = bar(mfData(:,3));
+if ~verLessThan('MATLAB','9.7')
+    oBars.DataTipTemplate.DataTipRows(1) = dataTipTextRow('Test',csNames);
+    oBars.DataTipTemplate.DataTipRows(1).Interpreter = 'none';
+    oBars.DataTipTemplate.DataTipRows(2).Label = 'Seconds';
+end
 title('Logging');
 ylabel('Logging Time [s]');
 coButtons{1, 3}.Callback = {@tools.postprocessing.plotter.helper.undockSubPlot, oPlot, []};
 
 oPlot = subplot(2,3,4);
 hold(oPlot,'on');
-oBars = bar(mfData(:,4)); %#ok<NASGU>
-%oBars.DataTipTemplate.DataTipRows = dataTipTextRow('Test',csNames);
+oBars = bar(mfData(:,4));
+if ~verLessThan('MATLAB','9.7')
+    oBars.DataTipTemplate.DataTipRows(1) = dataTipTextRow('Test',csNames);
+    oBars.DataTipTemplate.DataTipRows(1).Interpreter = 'none';
+    oBars.DataTipTemplate.DataTipRows(2).Label = 'kg';
+end
 title('Generated Mass');
 ylabel('Mass [kg]');
 coButtons{2, 1}.Callback = {@tools.postprocessing.plotter.helper.undockSubPlot, oPlot, []};
 
 oPlot = subplot(2,3,5);
 hold(oPlot,'on');
-oBars = bar(mfData(:,5)); %#ok<NASGU>
-%oBars.DataTipTemplate.DataTipRows = dataTipTextRow('Test',csNames);
+oBars = bar(mfData(:,5));
+if ~verLessThan('MATLAB','9.7')
+    oBars.DataTipTemplate.DataTipRows(1) = dataTipTextRow('Test',csNames);
+    oBars.DataTipTemplate.DataTipRows(1).Interpreter = 'none';
+    oBars.DataTipTemplate.DataTipRows(2).Label = 'kg';
+end
 title('Mass balance');
 ylabel('Mass [kg]');
 coButtons{2, 2}.Callback = {@tools.postprocessing.plotter.helper.undockSubPlot, oPlot, []};
 
 % In the sixth field of the 2x3 figure, we create a sort of legend. This is
-% done because MATLAB 2019a does not (yet?) support custom data tips for
+% done because MATLAB 2019a does not support custom data tips for
 % each bar in a bar graph. That makes it hard to see, which test is
 % actually represented by each bar, because it only has a number. The
 % legend we are creating here links the number to the name of the test. 
-
-% First creating the plot itself
-oPlot = subplot(2,3,6);
-hold(oPlot,'on');
-oPlot.YTick = [];
-oPlot.XTick = [];
-oPlot.Box = 'on';
-oPlot.Tag = 'LabelPlot';
-title('Legend');
-
-% Now we create a textfield that contains concatenations of each test's
-% index in the csNames cell and their name. 
-csContent = cellfun(@(csNumbers, csText) [csNumbers, ' ', csText], strsplit(num2str(1:length(csNames))), csNames, 'UniformOutput', false);
-oText = text(oPlot, 0.1, 0.1, csContent);
-oText.Interpreter = 'none';
-
-% We want to have the text field nice and centered in the plot, so we have
-% a function for this. We call it here once initially and then bind it to
-% the figure's size changed callback so it is executed everytime the
-% window, and thereby the subplot, is resized. 
-resizeTextField(oFigure, []);
-oFigure.SizeChangedFcn = @resizeTextField;
+if verLessThan('MATLAB','9.7')
+    % First creating the plot itself
+    oPlot = subplot(2,3,6);
+    hold(oPlot,'on');
+    oPlot.YTick = [];
+    oPlot.XTick = [];
+    oPlot.Box = 'on';
+    oPlot.Tag = 'LabelPlot';
+    title('Legend');
+    
+    % Now we create a textfield that contains concatenations of each test's
+    % index in the csNames cell and their name.
+    csContent = cellfun(@(csNumbers, csText) [csNumbers, ' ', csText], strsplit(num2str(1:length(csNames))), csNames, 'UniformOutput', false);
+    oText = text(oPlot, 0.1, 0.1, csContent);
+    oText.Interpreter = 'none';
+    
+    % We want to have the text field nice and centered in the plot, so we
+    % have a function for this. We call it here once initially and then
+    % bind it to the figure's size changed callback so it is executed
+    % everytime the window, and thereby the subplot, is resized.
+    resizeTextField(oFigure, []);
+    oFigure.SizeChangedFcn = @resizeTextField;
+end
 
 % Maximize the figure window to fill the whole screen.
 set(oFigure, 'WindowState', 'maximized');
