@@ -68,7 +68,7 @@ classdef setup < simulation.infrastructure
              % Data is from "Allgemeine und Anorganische Chemie", 3rd
              % Edition, Michael Binnewies, Maik Finze, Manfred Jäckel, Peer
              % Schmidt, Helge Willner, Geoff Rayner-Canham page 262
-            iFileID = fopen(strrep('+examples/+PH_Calculation/Titration Curve.csv','/',filesep), 'r');
+            iFileID = fopen(strrep('+examples/+PH_Calculation/Titration_Curve.csv','/',filesep), 'r');
             
             [FilePath,~,~,~] = fopen(iFileID);
             
