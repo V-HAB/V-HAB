@@ -168,6 +168,14 @@ classdef container < sys
             
             this.iBranches = this.iBranches + length(this.aoBranches);
             
+            % Checking for any unused F2F procs and alerting the user about
+            % it.
+            for iFlow = 1:length(this.csProcsF2F)
+                if isempty(this.toProcsF2F.(this.csProcsF2F{iFlow}).oBranch)
+                    this.warn('sealMatterStructure','You have unused F2F processors: ''%s'' in system ''%s''', this.csProcsF2F{iFlow}, this.sName);
+                end
+            end
+            
             this.bMatterSealed = true;
         end
         
