@@ -83,7 +83,7 @@ if ~ischar(sPhaseType)
     this.throw('table:FindProperty','Phase type must be a string.');
 end
 
-try
+if isfield(tParameters, 'sSecondDepName')
     sSecondDepName = tParameters.sSecondDepName;
     % Check if the input is a string
     if ~ischar(sSecondDepName)
@@ -97,7 +97,7 @@ try
     end
     % Seems the inputs are correct, we have two dependencies
     iDependencies = 2;
-catch
+else
     % The fields for the second dependency are empty, so we only have one.
     iDependencies = 1;
 end
