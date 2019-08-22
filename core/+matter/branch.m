@@ -69,9 +69,9 @@ classdef branch < base.branch
             if nargin < 5
                 sCustomName = [];
             end
-            this@base.branch(oContainer, xLeft, csProcs, xRight, sCustomName, 'matter');
             
-            % Problem. handle right side should be executed after this next section!!
+            % Calling the parent constructor
+            this@base.branch(oContainer, xLeft, csProcs, xRight, sCustomName, 'matter');
             
             % Adding the branch to our matter.container
             this.oContainer.addBranch(this);
