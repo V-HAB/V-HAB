@@ -130,7 +130,7 @@ classdef branch < base & event.source
         function executeUpdate(this, ~)
             if ~base.oDebug.bOff, this.out(1, 1, 'executeUpdate', 'Call massupdate on both branches, depending on flow rate %f', { this.oBranch.fFlowRate }); end
             
-            % if the mass branch is outdated it means the flowrate changed,
+            % If the mass branch is outdated it means the flowrate changed,
             % which requires us to update the corresponding thermal branch
             % as well
             this.oBranch.oThermalBranch.setOutdated();

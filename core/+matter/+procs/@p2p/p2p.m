@@ -57,7 +57,7 @@ classdef (Abstract) p2p < matter.flow & event.source
             this@matter.flow(oStore);
             
             % Phases / ports
-            [ sPhaseIn,  sExMeIn ]  = strtok(sPhaseAndPortIn, '.');
+            [ sPhaseIn,  sExMeIn  ] = strtok(sPhaseAndPortIn,  '.');
             [ sPhaseOut, sExMeOut ] = strtok(sPhaseAndPortOut, '.');
             
             % Find the phases

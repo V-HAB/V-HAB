@@ -136,17 +136,17 @@ classdef liquid < matter.procs.exme
                 fMassTank       = this.oPhase.fMass;
                 
                 this.fTemperature = this.oPhase.fTemperature;
-                fDensityLiquid = fMassTank/fVolumeLiquid;
+                fDensityLiquid = fMassTank / fVolumeLiquid;
                 
                 if strcmp(tTankGeomParams.Shape, 'box') || strcmp(tTankGeomParams.Shape,'Box')
                     fAreaTank = tTankGeomParams.Area;
                     
-                    fHeightTank = fVolumeTank/fAreaTank;
+                    fHeightTank = fVolumeTank / fAreaTank;
                     if fHeightTank < this.fHeightExMe
                         error('the height of the exme is larger than the height of the tank')
                     end
                     
-                    fLiquidLevelTank = fVolumeLiquid/fAreaTank;
+                    fLiquidLevelTank = fVolumeLiquid / fAreaTank;
                     
                     if (fLiquidLevelTank - this.fHeightExMe) >= 0
                         this.fLiquidLevel = fLiquidLevelTank - this.fHeightExMe;
@@ -155,13 +155,14 @@ classdef liquid < matter.procs.exme
                     error('check the name for store geometry')
                 end
                 
-                %calculates the pressure at the exme by using the inherent tank
-                %pressure for 0g and adding the pressure which is created by
-                %gravity
-                this.fPressure = fPressureTank + this.fLiquidLevel*this.fAcceleration*fDensityLiquid;
+                % Calculates the pressure at the exme by using the inherent
+                % tank pressure for 0g and adding the pressure which is
+                % created by gravity
+                this.fPressure = fPressureTank + this.fLiquidLevel * this.fAcceleration * fDensityLiquid;
                 
             else
                 this.fPressure = this.oPhase.fPressure;
+                this.fTemperature = this.oPhase.fTemperature;
             end
         end
     end

@@ -51,12 +51,12 @@ classdef gas < matter.phase
             
             this.fMassToPressure = this.calculatePressureCoefficient();
             
-            this.afPP               = this.oMT.calculatePartialPressures(this);
+            this.afPP = this.oMT.calculatePartialPressures(this);
             
             if this.afPP(this.oMT.tiN2I.H2O)
-                % calculate saturation vapour pressure [Pa];
+                % Calculate saturation vapour pressure
                 fSaturationVapourPressure = this.oMT.calculateVaporPressure(this.fTemperature, 'H2O');
-                % calculate relative humidity
+                % Calculate relative humidity
                 this.rRelHumidity = this.afPP(this.oMT.tiN2I.H2O) / fSaturationVapourPressure;
             else
                 this.rRelHumidity = 0;
@@ -65,8 +65,8 @@ classdef gas < matter.phase
         
         function fMassToPressure = calculatePressureCoefficient(this)
             %% calculatePressureCoefficient
-            % calculate the coefficient from the ideal gas law which
-            % results in the pressure in Pav if multiplied with a mass in
+            % Calculate the coefficient from the ideal gas law which
+            % results in the pressure in Pa if multiplied with a mass in
             % kg. p = m * (R_m * T / M / V)
             % For pressures higher than 10 bar the coefficient is instead
             % calculated by using the matter table (realgas assumption) and
