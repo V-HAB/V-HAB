@@ -27,7 +27,7 @@ classdef Example < vsys
             % the .exec method is called when the oParent.exec() is
             % executed (see this .exec() method - always call exec@vsys as
             % well!).
-            this@vsys(oParent, sName, 10);
+            this@vsys(oParent, sName, -1);
             
             
             %TODO -> DOCUMENT!
@@ -37,7 +37,7 @@ classdef Example < vsys
             
             
             % Adding the subsystem
-            tutorials.subsubsystems.subsystems.MiddleSystem(this, 'MiddleSystem');
+            tutorials.reconnectingExMe.subsystems.MiddleSystem(this, 'MiddleSystem');
             
             
             
@@ -129,6 +129,14 @@ classdef Example < vsys
             % exec(ute) function for this system
             % Here it only calls its parent's exec function
             exec@vsys(this);
+            
+            if this.oTimer.iTick == 100
+                this.toChildren.MiddleSystem.toChildren.SubSystem.toBranches.Filter_Inlet.coExmes{2}.reconnectExMe(this.toStores.Tank_2.toPhases.Tank_2_Phase_1);
+                this.toChildren.MiddleSystem.toChildren.SubSystem.toBranches.Filter_Outlet.coExmes{2}.reconnectExMe(this.toStores.Tank_1.toPhases.Tank_1_Phase_1);
+            end
         end
+        
      end
+    
 end
+

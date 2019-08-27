@@ -102,8 +102,6 @@ classdef (Abstract) branch < base & event.source
         
         % Specifies the type of branch, e.g. matter or thermal
         sType;
-        
-       
     end
     
     methods
