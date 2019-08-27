@@ -170,15 +170,13 @@ classdef branch < base.branch
                 this.aoFlowProcs(end + 1) = this.oContainer.toProcsF2F.(sProc).addFlow(oFlow, 2);
             end
         end
+        
         function setOutdated(this)
             %% matter branch setOutdated
             % Can be used by phases or f2f processors to request recalc-
             % ulation of the flow rate, e.g. after some internal parameters
             % changed (closing a valve).
             
-            % If the flowrate changed, the thermal branch also has to be
-            % recalculated
-            this.oThermalBranch.setOutdated();
             % Only trigger if not yet set
             if ~this.bOutdated
                 this.bOutdated = true;
