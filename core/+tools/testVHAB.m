@@ -52,11 +52,6 @@ if nargin < 3
     bDebugModeOn = false;
 end
 
-% Initializing some counters
-iSuccessfulTests = 0;
-iSkippedTests    = 0;
-iAbortedTests    = 0;
-
 % Boolean that is set to true if we can do this in parallel.
 bParallelExecution = false;
 
@@ -253,126 +248,84 @@ try
 catch
     
 end
+
+% If we are running parallel simulations, we check if anything has changed
+% or if we are forced to execute.
+if bParallelExecution && (bChanged || bForceExecution)
     
-% Only do stuff if we need to
-if bChanged || bForceExecution
+    % Creating an empty array of pollable data queues so we can get
+    % information from the workers and their simulations while they are
+    % running.
+    aoDataQueues = parallel.pool.DataQueue.empty(iNumberOfTests,0);
+    aoResultObjects = parallel.FevalFuture.empty(iNumberOfTests,0);
+    
     % Creating a matter table object. Due to the file system access that is
     % done during the matter table instantiation, this cannot be done within
     % the parallel loop.
     oMT = matter.table();
     
-    % In case we are in parallel execution mode we need to set a
-    % key-value-pair in the ptParams containers.Map called
-    % 'ParallelExecution' with the matter table object as its value. If
-    % we're not in parallel execution mode, this doesn't matter. It just
-    % changes how the matter table object is assigned to the
-    % simulation.infrastructure object.
-    ptParams = containers.Map({'ParallelExecution'}, {oMT});
-    
-    % Go through each item in the struct and see if we can execute a
-    % V-HAB simulation. This parfor loop will be executed in parallel if
-    % the Parallel Computing Toolbox is installed. Otherwise it will act as
-    % a normal for-loop.
-    parfor iI = 1:length(tTests)
-        % Some nice printing for the console output
-        fprintf('\n\n======================================\n');
-        fprintf('Running %s Test\n',strrep(tTests(iI).name,'+',''));
-        fprintf('======================================\n\n');
+    % Looping through all tests and starting a simulation for each of them
+    % using the parfeval() method. 
+    for iTest = 1:iNumberOfTests
         
-        % If the folder has a correctly named 'setup.m' file, we can go
-        % ahead and try to execute it.
-        if exist(fullfile(sTestDirectory, tTests(iI).name, 'setup.m'), 'file')
-            
-            % First we construct the string that is the argument for the
-            % vhab.exec() method.
-            sExecString = ['tests.',strrep(tTests(iI).name,'+',''),'.setup'];
-            
-            % Now we can finally run the simulation, but we need to catch
-            % any errors inside the simulation itself
-            try
-                % Creating the simulation object.
-                oLastSimObj = vhab.sim(sExecString, ptParams, [], []);
+        tools.multiWaitbar(tTests(iTest).name, 0);
+        
+        aoDataQueues(iTest) = parallel.pool.DataQueue;
+        afterEach(aoDataQueues(iTest), @updateWaitBar);
+        
+        % Since we are in parallel execution mode we need to set a
+        % key-value-pair in the ptParams containers.Map called
+        % 'ParallelExecution' with the matter table object and the data
+        % queue as its values. 
+        ptParams = containers.Map({'ParallelExecution'}, {{oMT, aoDataQueues(iTest), iTest}});
+        
+        aoResultObjects(iTest) = parfeval(@runTest, 1, tTests(iTest), ptParams, sTestDirectory, sFolderPath, true, bDebugModeOn);
+        afterEach(aoResultObjects(iTest), @(~) tools.multiWaitbar(tTests(iTest).name, 'Close'), 0);
+    end
+    
+    
+    
+    abActiveSimulations = true(iNumberOfTests,1);
+    iActiveSimulations = iNumberOfTests;
+    
+    while iActiveSimulations
+        
+        aiSimulationIndexes = find(abActiveSimulations);
+        
+        for iSimulation = 1:length(aiSimulationIndexes)
+            iI = aiSimulationIndexes(iSimulation);
+            if any(strcmp(aoResultObjects(iI).State, {'finished','failed'}))
+                abActiveSimulations(iI) = false;
+                iActiveSimulations = iActiveSimulations - 1;
                 
-                % In case the user wants to run the simulations with the
-                % debug mode activated, we toggle that switch now.
-                if bDebugModeOn
-                    oLastSimObj.oDebug.toggleOutputState();
-                end
-                
-                % In case we are performing the tests in parallel we have
-                % to set the reporting interval fairly high, because
-                % otherwise the console would be bombarded with outputs.
-                % This also suppresses the period characters '.' in between
-                % the major console updates.
-                if bParallelExecution
-                    oLastSimObj.toMonitors.oConsoleOutput.setReportingInterval(1000);
-                end
-                
-                % Actually running the simulation
-                oLastSimObj.run();
-                
-                % Done! Let's plot stuff!
-                oLastSimObj.plot();
-                
-                aoFigures = evalin('base', 'aoFigures'); %#ok<PFEVB>
-                
-                % Saving the figures to the pre-determined location
-                tools.saveFigures(sFolderPath, strrep(tTests(iI).name,'+',''), aoFigures);
-                
-                % Closing all windows so we can see the console again. The
-                % drawnow() call is necessary, because otherwise MATLAB would
-                % just jump over the close('all') instruction and run the next
-                % sim. Stupid behavior, but this is the workaround. We only
-                % need to do this when not running in parallel, because
-                % then the windows are not visible. 
-                if ~bParallelExecution
-                    close('all');
-                    drawnow();
-                end
-                
-                % Store information about the simulation duration and
-                % errors. This will be saved later on to allow a comparison
-                % between different version of V-HAB
-                tTests(iI).run.iTicks               = oLastSimObj.oSimulationContainer.oTimer.iTick;
-                tTests(iI).run.fRunTime             = oLastSimObj.toMonitors.oExecutionControl.oSimulationInfrastructure.fRuntimeTick;
-                tTests(iI).run.fLogTime             = oLastSimObj.toMonitors.oExecutionControl.oSimulationInfrastructure.fRuntimeOther;
-                tTests(iI).run.fGeneratedMass       = oLastSimObj.toMonitors.oMatterObserver.fGeneratedMass;
-                tTests(iI).run.fTotalMassBalance    = oLastSimObj.toMonitors.oMatterObserver.fTotalMassBalance;
-                
-                % Since we've now actually completed the simulation, we can
-                % increment the counter of successful tutorials. Also we
-                % can set the string property for the final output.
-                iSuccessfulTests = iSuccessfulTests + 1;
-                tTests(iI).sStatus = 'Successful';
-            catch oException
-                % Something went wrong inside the simulation. So we tell
-                % the user and keep going. The counter for aborted
-                % tutorials is incremented and the string property for the
-                % final output is set accordingly.
-                fprintf('\nEncountered an error in the simulation. Aborting.\n');
-                iAbortedTests = iAbortedTests + 1;
-                tTests(iI).sStatus = 'Aborted';
-                tTests(iI).sErrorReport = getReport(oException);
+                tTests(iI) = fetchOutputs(aoResultObjects(iI));
             end
             
-        else
-            % In case there is no 'setup.m' file, we print this to the
-            % command window, but we don't stop the skript. We increment
-            % the skipped-counter and set the property.
-            disp(['The ',strrep(tTests(iI).name,'+',''),' Tutorial does not have a ''setup.m'' file. Skipping.']);
-            iSkippedTests = iSkippedTests + 1;
-            tTests(iI).sStatus = 'Skipped';
+            
         end
-        
     end
     
-else
-    % Nothing has changed, so we have to set the status for all tests to
-    % 'Not performed'.
-    for iI = 1:length(tTests)
-        tTests(iI).sStatus = 'Not performed';
+elseif bChanged || bForceExecution
+    % We are running all tests in series, not parallel and something has
+    % changed or we are forced to execute. 
+    
+    % We need to pass this to the runTest() function, but only need it for
+    % the parallel execution. So we just create an empty containers.Map.
+    ptParams = containers.Map();
+    
+    % Go through each item in the struct and see if we can execute a V-HAB
+    % simulation.
+    for iTest = 1:iNumberOfTests
+        runTest(tTests(iTest), ptParams, sTestDirectory, sFolderPath, false, bDebugModeOn);
     end
+else
+    % Nothing has changed and we are not being forced to execute, so there
+    % is actually nothing more to do, so we return.
+    return
+    
 end
+
+tools.multiWaitbar('Close All');
 
 % Saving the test data in the TestStatus.mat file
 sPath = fullfile('data', 'TestStatus.mat');
@@ -396,6 +349,12 @@ end
 
 % And now we can get the length of the longest tutorial name
 iColumnWidth = max(aiNameLengths);
+
+% Getting the number of successful, aborted and skipped tests from the
+% struct.
+iSuccessfulTests = sum(arrayfun(@(tArray) strcmp(tArray.sStatus, 'Successful'),tTests));
+iAbortedTests    = sum(arrayfun(@(tArray) strcmp(tArray.sStatus, 'Aborted'),tTests));
+iSkippedTests    = sum(arrayfun(@(tArray) strcmp(tArray.sStatus, 'Skipped'),tTests));
 
 % Printing...
 fprintf('\n\n======================================\n');
@@ -535,6 +494,19 @@ fprintf('======================================\n\n');
 % Outputting the total runtime. 
 disp('Total elapsed time:');
 disp(tools.secs2hms(toc(hTimer)));
+
+
+
+
+    function updateWaitBar(aiInput)
+        iSimulationID = aiInput(1);
+        fCurrentProgress = aiInput(2);
+        
+        % Update the appropriate waitbar graphic.
+        tools.multiWaitbar(tTests(iSimulationID).name, fCurrentProgress);
+    end
+
+
 
 end
 
@@ -794,4 +766,78 @@ function bChanged = checkVHABFile()
             end
         end
     end
+end
+
+function tTest = runTest(tTest, ptParams, sTestDirectory, sFolderPath, bParallelExecution, bDebugModeOn)
+% If the folder has a correctly named 'setup.m' file, we can go ahead and
+% try to execute it.
+if exist(fullfile(sTestDirectory, tTest.name, 'setup.m'), 'file')
+    
+    % First we construct the string that is the argument for the
+    % vhab.exec() method.
+    sExecString = ['tests.',strrep(tTest.name,'+',''),'.setup'];
+    
+    % Now we can finally run the simulation, but we need to catch any
+    % errors inside the simulation itself
+    try
+        % Creating the simulation object.
+        oLastSimObj = vhab.sim(sExecString, ptParams, [], []);
+        
+        % In case the user wants to run the simulations with the debug mode
+        % activated, we toggle that switch now.
+        if bDebugModeOn
+            oLastSimObj.oDebug.toggleOutputState();
+        end
+        
+        % Actually running the simulation
+        oLastSimObj.run();
+        
+        % Done! Let's plot stuff!
+        oLastSimObj.plot();
+        
+        aoFigures = evalin('base', 'aoFigures');
+        
+        % Saving the figures to the pre-determined location
+        tools.saveFigures(sFolderPath, strrep(tTest.name,'+',''), aoFigures);
+        
+        % Closing all windows so we can see the console again. The
+        % drawnow() call is necessary, because otherwise MATLAB would just
+        % jump over the close('all') instruction and run the next sim.
+        % Stupid behavior, but this is the workaround. We only need to do
+        % this when not running in parallel, because then the windows are
+        % not visible.
+        if ~bParallelExecution
+            close('all');
+            drawnow();
+        end
+        
+        % Store information about the simulation duration and errors. This
+        % will be saved later on to allow a comparison between different
+        % versions of V-HAB
+        tTest.run.iTicks            = oLastSimObj.oSimulationContainer.oTimer.iTick;
+        tTest.run.fRunTime          = oLastSimObj.toMonitors.oExecutionControl.oSimulationInfrastructure.fRuntimeTick;
+        tTest.run.fLogTime          = oLastSimObj.toMonitors.oExecutionControl.oSimulationInfrastructure.fRuntimeOther;
+        tTest.run.fGeneratedMass    = oLastSimObj.toMonitors.oMatterObserver.fGeneratedMass;
+        tTest.run.fTotalMassBalance = oLastSimObj.toMonitors.oMatterObserver.fTotalMassBalance;
+        
+        % Since we've now actually completed the simulation we can set the
+        % string property for the final output.
+        tTest.sStatus = 'Successful';
+    catch oException
+        % Something went wrong inside the simulation. So we tell the user
+        % and keep going. The string property for the final output is set
+        % accordingly.
+        fprintf('\nEncountered an error in the simulation. Aborting.\n');
+        tTest.sStatus = 'Aborted';
+        tTest.sErrorReport = getReport(oException);
+    end
+    
+else
+    % In case there is no 'setup.m' file, we print this to the command
+    % window, but we don't stop the skript and we just set the struct field
+    % and leave.
+    disp(['The ',strrep(tTests(iI).name,'+',''),' Tutorial does not have a ''setup.m'' file. Skipping.']);
+    tTest.sStatus = 'Skipped';
+end
+
 end

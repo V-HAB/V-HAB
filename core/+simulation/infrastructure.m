@@ -46,6 +46,10 @@ classdef infrastructure < base & event.source
         % do things differently to account for running on a parallel worker
         % instead of a full MATLAB instance. 
         bParallelExecution = false;
+        
+        iParallelSimulationID;
+        
+        oDataQueue;
     end
     
     % The following properties have private SetAccess due to the
@@ -200,10 +204,18 @@ classdef infrastructure < base & event.source
             % If this simulation is being run individually, we can call the
             % matter table constructor directly.
             if isKey(ptConfigParams, 'ParallelExecution')
-                oMT = ptConfigParams('ParallelExecution');
+                cConfigParams = ptConfigParams('ParallelExecution');
+                
+                oMT = cConfigParams{1};
                 if ~isa(oMT, 'matter.table')
                     this.throw('infrastructure','The provided object is not a matter table.');
                 end
+                
+                this.oDataQueue = cConfigParams{2};
+                
+                this.iParallelSimulationID = cConfigParams{3};
+                
+                this.setSuppressConsoleOutput(true);
                 
                 % Setting the parallel execution flag to true.
                 this.bParallelExecution = true;
@@ -353,6 +365,16 @@ classdef infrastructure < base & event.source
                 
                 % This call performs one single simulation step.
                 this.step();
+                
+                if this.bParallelExecution
+                    if this.bUseTime
+                        fProgress = this.oSimulationContainer.oTimer.fTime / this.fSimTime;
+                    else
+                        fProgress = this.oSimulationContainer.oTimer.iTick / this.iSimTicks;
+                    end
+                    
+                    send(this.oDataQueue, [this.iParallelSimulationID, fProgress]);
+                end
             end
             
             % Only trigger 'finish' if we actually want the console output
