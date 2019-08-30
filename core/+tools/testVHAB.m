@@ -5,8 +5,8 @@ function testVHAB(sCompareToState, bForceExecution, bDebugModeOn)
 %   data/Testrun/ with a timestamp. The only condition for this
 %   to work is that the class file that inherits from simulation.m is on
 %   the top level of the tutorial folder and is called 'setup.m'. If this
-%   is not the case, the function will throw an error. 
-%   
+%   is not the case, the function will throw an error.
+%
 %   If you have the Parallel Computing Toolbox installed this function will
 %   create a parallel pool and execute as many of the tests in parallel as
 %   possible. This significantly speeds up the execution time.
@@ -72,8 +72,8 @@ end
 tTests = tTests(mbIsTest);
 
 % Generating a dynamic folder path so all of our saved data is nice and
-% organized. The folder path will have the following format: 
-% Test/YYYYMMDD_Test_Run_X 
+% organized. The folder path will have the following format:
+% Test/YYYYMMDD_Test_Run_X
 % The number at the end ('X') will be automatically incremented so you
 % don't have to worry about anything.
 sFolderPath = createDataFolderPath();
@@ -87,7 +87,7 @@ bLibChanged   = tools.fileChecker.checkForChanges('lib', 'testVHAB');
 bTestsChanged = tools.fileChecker.checkForChanges('user/+tests', 'testVHAB');
 bVHABChanged  = checkVHABFile();
 
-% Being a UI nerd, I needed to produce a nice dynamic user message here. 
+% Being a UI nerd, I needed to produce a nice dynamic user message here.
 
 % Initializing a boolean array for each of the possibly changed folders and
 % a cell containing their names.
@@ -98,7 +98,7 @@ csWords = {'Core', 'Library', 'Tests'};
 if any([bCoreChanged, bVHABChanged, bLibChanged, bTestsChanged])
     % Global changed status
     bChanged = true;
-
+    
     % Figuring out where the change(s) happened and setting the according
     % fields in the abChanged array to true.
     if bCoreChanged || bVHABChanged
@@ -114,7 +114,7 @@ if any([bCoreChanged, bVHABChanged, bLibChanged, bTestsChanged])
     end
     
     % Depending if one, two or all three changed we construct a
-    % gramatically correct sentence. 
+    % gramatically correct sentence.
     switch sum(abChanged)
         case 1
             sString = [csWords{abChanged}, ' has '];
@@ -125,7 +125,7 @@ if any([bCoreChanged, bVHABChanged, bLibChanged, bTestsChanged])
             sString = [csWords{1}, ', ', csWords{2}, ' and ', csWords{3}, ' have '];
     end
     
-    % Now we can tell the user what's going on. 
+    % Now we can tell the user what's going on.
     fprintf('\n%schanged. All tests will be executed!\n\n', sString);
     
 else
@@ -139,14 +139,13 @@ else
 end
 
 % If we run these using parallel execution, we need to add these fields
-% outside of the parfor loop. 
+% outside of the parfor loop.
 tTests = arrayfun(@(tStruct) tools.addFieldToStruct(tStruct,'run'), tTests);
 tTests = arrayfun(@(tStruct) tools.addFieldToStruct(tStruct,'sStatus'), tTests);
 tTests = arrayfun(@(tStruct) tools.addFieldToStruct(tStruct,'sErrorReport'), tTests);
 
 % Getting the total number of tests.
 iNumberOfTests = length(tTests);
-    
 
 % The Parallel Computing Toolbox assigns for-loop-iterations to the workers
 % based on their order in the tTests struct. (I think.) The assignment is
@@ -332,7 +331,7 @@ sPath = fullfile('data', 'TestStatus.mat');
 save(sPath, 'tTests');
 
 % Now that we're all finished, we can tell the user how well everything
-% went. 
+% went.
 
 % Also, because I am a teeny, tiny bit obsessive about visuals, I'm going
 % to calculate how many blanks I have to insert between the colon and the
@@ -372,7 +371,7 @@ for iI = 1:length(tTests)
     % maximum name length and add two.
     iWhiteSpaceLength = iColumnWidth - length(tTests(iI).name) + 2;
     % Now we make ourselves a string of blanks of the appropriate length
-    % that we can insert into the output in the following line. 
+    % that we can insert into the output in the following line.
     sBlanks = blanks(iWhiteSpaceLength);
     % Tada!
     fprintf('%s:%s%s\n',strrep(tTests(iI).name,'+',''),sBlanks,tTests(iI).sStatus);
@@ -420,11 +419,11 @@ else
             save(sPath, 'tTests');
             % Since there are no data to make comparisons to, we have to
             % set the bChanged variable back to false in order to skip the
-            % code blocks below. 
+            % code blocks below.
             bChanged = false;
             warning('VHAB:testVHAB',['There was no OldTestStatus.mat file, so we created it using the current test data. No comparisons\n',...
-                                     'can be made at this time. You can select ''server'' as the first input argument to this function\n',...
-                                     'to compare your results to the server state.']);
+                'can be made at this time. You can select ''server'' as the first input argument to this function\n',...
+                'to compare your results to the server state.']);
         else
             rethrow(Msg)
         end
@@ -432,7 +431,7 @@ else
 end
 
 % If there were changes and we performed simulations and we have data to
-% make comparisons, we make them now an display them to the user. 
+% make comparisons, we make them now an display them to the user.
 if bChanged
     fprintf('=======================================\n');
     fprintf('=== Time and Mass Error Comparisons ===\n');
@@ -451,7 +450,7 @@ if bChanged
         % The order in which the tests are listed in both structs may be
         % different, so we also loop through all tests in the tOldTests
         % struct and compare the simulation object names. If they don't
-        % match, then a new test has been added. 
+        % match, then a new test has been added.
         for iOldTest = 1:length(tOldTests.tTests)
             % Check if the name of the old tutorial matches the new tutorial,
             % if it does, compare the tutorials
@@ -464,7 +463,7 @@ if bChanged
                 fTimeDiff = tTests(iI).run.fRunTime - tOldTests.tTests(iOldTest).run.fRunTime;
                 mfData(iI,2) = fTimeDiff;
                 fprintf('change in run time compared to old status:            %d\n', fTimeDiff);
-
+                
                 fTimeDiffLog = tTests(iI).run.fLogTime - tOldTests.tTests(iOldTest).run.fLogTime;
                 mfData(iI,3) = fTimeDiffLog;
                 fprintf('change in log time compared to old status:            %d\n', fTimeDiffLog);
@@ -472,10 +471,10 @@ if bChanged
                 fGeneratedMassDiff = tTests(iI).run.fGeneratedMass - tOldTests.tTests(iOldTest).run.fGeneratedMass;
                 mfData(iI,4) = fGeneratedMassDiff;
                 fprintf('change in generated mass compared to old status:      %d\n', fGeneratedMassDiff);
-
+                
                 fTotalMassBalanceDiff = tTests(iI).run.fTotalMassBalance - tOldTests.tTests(iOldTest).run.fTotalMassBalance;
                 mfData(iI,5) = fTotalMassBalanceDiff;
-                fprintf('change in total mass balance compared to old status:  %d\n', fTotalMassBalanceDiff);                
+                fprintf('change in total mass balance compared to old status:  %d\n', fTotalMassBalanceDiff);
             end
         end
         fprintf('--------------------------------------\n');
@@ -491,7 +490,7 @@ fprintf('======================================\n');
 fprintf('======= Finished running tests =======\n');
 fprintf('======================================\n\n');
 
-% Outputting the total runtime. 
+% Outputting the total runtime.
 disp('Total elapsed time:');
 disp(tools.secs2hms(toc(hTimer)));
 
@@ -513,7 +512,7 @@ end
 function plot(mfData, csNames)
 % Creating a figure
 oFigure = figure('Name','Comparisons');
-    
+
 % First we create the panel that will house the buttons.
 fPanelYSize = 0.12;
 fPanelXSize = 0.065;
@@ -655,7 +654,7 @@ coButtons{2, 2}.Callback = {@tools.postprocessing.plotter.helper.undockSubPlot, 
 % done because MATLAB 2019a does not support custom data tips for
 % each bar in a bar graph. That makes it hard to see, which test is
 % actually represented by each bar, because it only has a number. The
-% legend we are creating here links the number to the name of the test. 
+% legend we are creating here links the number to the name of the test.
 if verLessThan('MATLAB','9.7')
     % First creating the plot itself
     oPlot = subplot(2,3,6);
