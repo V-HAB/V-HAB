@@ -215,8 +215,6 @@ classdef infrastructure < base & event.source
                 
                 this.iParallelSimulationID = cConfigParams{3};
                 
-                this.setSuppressConsoleOutput(true);
-                
                 % Setting the parallel execution flag to true.
                 this.bParallelExecution = true;
             else

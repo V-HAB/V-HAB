@@ -147,175 +147,247 @@ tTests = arrayfun(@(tStruct) tools.addFieldToStruct(tStruct,'sErrorReport'), tTe
 % Getting the total number of tests.
 iNumberOfTests = length(tTests);
 
-% The Parallel Computing Toolbox assigns for-loop-iterations to the workers
-% based on their order in the tTests struct. (I think.) The assignment is
-% done prior to the execution and doesn't change after that. That can lead
-% to the situation that several of the longest running simulations are
-% assigned to the same worker, while the shorter simulations are not. The
-% result is only one worker simulating while the others have already
-% finished, negating the whole idea of parallel execution. The code
-% contained in the following try-catch block is an attempt to re-arrange
-% the simulations within the tTests struct so that the longest running
-% simulations are distributed evenly among the workers. This is done by
-% looking at previous test data, meaning the OldTestStatus file must exist,
-% and also figuring out how many workers (i.e. CPU cores) are available on
-% this machine. Then the tTests struct is re-arranged.
-
-% We're enclosing this in a try-catch block so if the OldTestStatus file
-% doesn't exist or the user hasn't installed the Parallel Computing Toolbox
-% the function keeps executing. 
-try
-    % In order to query the parallel pool of workers, we need to start one.
-    % The gcp() function gets the current parallel pool or starts a new
-    % one.
-    oPool = gcp();
+if (bChanged || bForceExecution)
     
-    % If starting the parallel pool worked, we set this boolean to true so
-    % we can make decisions based on its value later on.
-    bParallelExecution = true;
+    % The Parallel Computing Toolbox assigns for-loop-iterations to the workers
+    % based on their order in the tTests struct. (I think.) The assignment is
+    % done prior to the execution and doesn't change after that. That can lead
+    % to the situation that several of the longest running simulations are
+    % assigned to the same worker, while the shorter simulations are not. The
+    % result is only one worker simulating while the others have already
+    % finished, negating the whole idea of parallel execution. The code
+    % contained in the following try-catch block is an attempt to re-arrange
+    % the simulations within the tTests struct so that the longest running
+    % simulations are distributed evenly among the workers. This is done by
+    % looking at previous test data, meaning the OldTestStatus file must exist,
+    % and also figuring out how many workers (i.e. CPU cores) are available on
+    % this machine. Then the tTests struct is re-arranged.
     
-    % Now we can get the number of workers
-    iNumberOfWorkers = oPool.NumWorkers;
-    
-    % Getting the data from a previous test run.
-    tOldTestData = load('data/OldTestStatus.mat','tTests');
-    tOldTestData = tOldTestData.tTests;
-    
-    % Now we need to check if we can use the data. If there are empty runs,
-    % the following arrayfun() call will fail, throwing us out of this
-    % try-catch block.
-    if any(~isempty([tOldTestData.run]))
-        warning('VHAB:testVHAB',['At least one of the tests in the OldTestStatus.mat file has not completed successfully.\n',...
-                                 'This prevents V-HAB from optimizing for parallel execution.']);
+    % We're enclosing this in a try-catch block so if the OldTestStatus file
+    % doesn't exist or the user hasn't installed the Parallel Computing Toolbox
+    % the function keeps executing.
+    try
+        % In order to query the parallel pool of workers, we need to start one.
+        % The gcp() function gets the current parallel pool or starts a new
+        % one.
+        oPool = gcp();
+        
+        % If starting the parallel pool worked, we set this boolean to true so
+        % we can make decisions based on its value later on.
+        bParallelExecution = true;
+        
+        % Now we can get the number of workers
+        iNumberOfWorkers = oPool.NumWorkers;
+        
+        % Getting the data from a previous test run.
+        tOldTestData = load('data/OldTestStatus.mat','tTests');
+        tOldTestData = tOldTestData.tTests;
+        
+        % Now we need to check if we can use the data. If there are empty runs,
+        % the following arrayfun() call will fail, throwing us out of this
+        % try-catch block.
+        if any(~isempty([tOldTestData.run]))
+            warning('VHAB:testVHAB',['At least one of the tests in the OldTestStatus.mat file has not completed successfully.\n',...
+                'This prevents V-HAB from optimizing for parallel execution.']);
+        end
+        
+        % Extracting the run times for each of the simulations.
+        afRunTimes = arrayfun(@(tStruct) tStruct.run.fRunTime, tOldTestData);
+        
+%         % It may be that the number of tests has changed since the last
+%         % execution, so we check for that.
+%         if length(tOldTestData) == iNumberOfTests
+            % First we sort the tTests struct by run time, with the longest
+            % simulation as the first index.
+            [~, aiSortIndexes] = sort(afRunTimes, 'descend');
+            tTests = tTests(aiSortIndexes);
+            
+%             % Initializing an integer array that will contain the new indexes
+%             aiNewSortIndexes = zeros(iNumberOfTests, 1);
+%             
+%             % Now we initialize two counters, one for the current index of
+%             % aiNewSortIndexes and one for the current group. Here a group
+%             % refers to the order of the tests that are performed on each
+%             % individual worker. So group 1 is the first to be executed, group
+%             % two the second and so on. At first, the group and index are
+%             % identical, so we initialize the group at 2.
+%             iCurrentIndex = 1;
+%             iCurrentGroup = 2;
+%             
+%             % To determine the offset between workers within the
+%             % aiNewSortIndexes array, we divide the number of tests by the
+%             % number of workers and round up the result. We later use the
+%             % result as the offset between index steps.
+%             iFixedOffset = ceil(iNumberOfTests/iNumberOfWorkers);
+%             
+%             % Now we loop through all tests and determine their new indexes.
+%             for iI = 1:iNumberOfTests
+%                 % If we have reached the end of the length of the test array,
+%                 % we move into the next group.
+%                 if iCurrentIndex > iNumberOfTests
+%                     iCurrentIndex = iCurrentGroup;
+%                     iCurrentGroup = iCurrentGroup + 1;
+%                 end
+%                 
+%                 % Now we can set the index accordingly and increment the
+%                 % current index variable by the offset.
+%                 aiNewSortIndexes(iCurrentIndex) = iI;
+%                 iCurrentIndex = iCurrentIndex + iFixedOffset;
+%                 
+%             end
+%             
+%             % We're done and the last thing to do is to sort the tTests struct
+%             % using the new order.
+%             tTests = tTests(aiNewSortIndexes);
+%         else
+%             % The number of tests has changed, so we tell the user what's going
+%             % on.
+%             warning('VHAB:testVHAB',['The number of tests has changed in comparison to the data in OldTestStatus.mat.\n',...
+%                 'This means we cannot optimize the execution order of tests for parallel execution.\n',...
+%                 'Once this run of testVHAB() is complete, save the TestStatus.mat file as OldTestStatus.mat.']);
+%         end
+    catch
+        
     end
     
-    % Extracting the run times for each of the simulations.
-    afRunTimes = arrayfun(@(tStruct) tStruct.run.fRunTime, tOldTestData);
-    
-    % It may be that the number of tests has changed since the last
-    % execution, so we check for that.
-    if length(tOldTestData) == iNumberOfTests
-        % First we sort the tTests struct by run time, with the longest
-        % simulation as the first index.
-        [~, aiSortIndexes] = sort(afRunTimes, 'descend');
-        tTests = tTests(aiSortIndexes);
+    % If we are running parallel simulations, we check if anything has changed
+    % or if we are forced to execute.
+    if bParallelExecution
         
-        % Initializing an integer array that will contain the new indexes
-        aiNewSortIndexes = zeros(iNumberOfTests, 1);
+        % Creating an empty array of pollable data queues so we can get
+        % information from the workers and their simulations while they are
+        % running.
+        aoDataQueues = parallel.pool.DataQueue.empty(iNumberOfTests,0);
+        aoResultObjects = parallel.FevalFuture.empty(iNumberOfTests,0);
         
-        % Now we initialize two counters, one for the current index of
-        % aiNewSortIndexes and one for the current group. Here a group
-        % refers to the order of the tests that are performed on each
-        % individual worker. So group 1 is the first to be executed, group
-        % two the second and so on. At first, the group and index are
-        % identical, so we initialize the group at 2. 
-        iCurrentIndex = 1;
-        iCurrentGroup = 2;
+        bCancelled = false;
         
-        % To determine the offset between workers within the
-        % aiNewSortIndexes array, we divide the number of tests by the
-        % number of workers and round up the result. We later use the
-        % result as the offset between index steps.
-        iFixedOffset = ceil(iNumberOfTests/iNumberOfWorkers);
+        %aiResultObjectIDs = zeros(iNumberOfTests, 0);
         
-        % Now we loop through all tests and determine their new indexes.
-        for iI = 1:iNumberOfTests
-            % If we have reached the end of the length of the test array,
-            % we move into the next group. 
-            if iCurrentIndex > iNumberOfTests
-                iCurrentIndex = iCurrentGroup;
-                iCurrentGroup = iCurrentGroup + 1;
-            end
+        % Creating a matter table object. Due to the file system access that is
+        % done during the matter table instantiation, this cannot be done within
+        % the parallel loop.
+        oMT = matter.table();
+        
+        oTimer = timer;
+        oTimer.TimerFcn = @(xInput) updateWaitBar(xInput);
+        
+        oFigure = figure('Name','Control', ...
+            'MenuBar','none');
+        oFigure.Position(3:4) = [200 150];
+        
+        oButton = uicontrol(oFigure, ...
+            'Style', 'Pushbutton', ...
+            'Units', 'normalized', ...
+            'String', 'STOP', ...
+            'ForegroundColor', 'red', ...
+            'FontSize', 20, ...
+            'FontWeight', 'bold');
+        
+        oButton.Units = 'normalized';
+        oButton.Position = [0.25 0.25 0.5 0.5];
+        
+        for iTest = 1:iNumberOfTests
             
-            % Now we can set the index accordingly and increment the
-            % current index variable by the offset.
-            aiNewSortIndexes(iCurrentIndex) = iI;
-            iCurrentIndex = iCurrentIndex + iFixedOffset;
+            tools.multiWaitbar(tTests(iTest).name, 0);
             
         end
         
-        % We're done and the last thing to do is to sort the tTests struct
-        % using the new order. 
-        tTests = tTests(aiNewSortIndexes);
-    else
-        % The number of tests has changed, so we tell the user what's going
-        % on.
-        warning('VHAB:testVHAB',['The number of tests has changed in comparison to the data in OldTestStatus.mat.\n',...
-                                 'This means we cannot optimize the execution order of tests for parallel execution.\n',...
-                                 'Once this run of testVHAB() is complete, save the TestStatus.mat file as OldTestStatus.mat.']);
-    end
-catch
-    
-end
-
-% If we are running parallel simulations, we check if anything has changed
-% or if we are forced to execute.
-if bParallelExecution && (bChanged || bForceExecution)
-    
-    % Creating an empty array of pollable data queues so we can get
-    % information from the workers and their simulations while they are
-    % running.
-    aoDataQueues = parallel.pool.DataQueue.empty(iNumberOfTests,0);
-    aoResultObjects = parallel.FevalFuture.empty(iNumberOfTests,0);
-    
-    % Creating a matter table object. Due to the file system access that is
-    % done during the matter table instantiation, this cannot be done within
-    % the parallel loop.
-    oMT = matter.table();
-    
-    % Looping through all tests and starting a simulation for each of them
-    % using the parfeval() method. 
-    for iTest = 1:iNumberOfTests
+        abActiveSimulations = false(iNumberOfTests,1);
+        iActiveSimulations = 0;
         
-        tools.multiWaitbar(tTests(iTest).name, 0);
-        
-        aoDataQueues(iTest) = parallel.pool.DataQueue;
-        afterEach(aoDataQueues(iTest), @updateWaitBar);
-        
-        % Since we are in parallel execution mode we need to set a
-        % key-value-pair in the ptParams containers.Map called
-        % 'ParallelExecution' with the matter table object and the data
-        % queue as its values. 
-        ptParams = containers.Map({'ParallelExecution'}, {{oMT, aoDataQueues(iTest), iTest}});
-        
-        aoResultObjects(iTest) = parfeval(@runTest, 1, tTests(iTest), ptParams, sTestDirectory, sFolderPath, true, bDebugModeOn);
-        afterEach(aoResultObjects(iTest), @(~) tools.multiWaitbar(tTests(iTest).name, 'Close'), 0);
-    end
-    
-    
-    
-    abActiveSimulations = true(iNumberOfTests,1);
-    iActiveSimulations = iNumberOfTests;
-    
-    while iActiveSimulations
-        
-        aiSimulationIndexes = find(abActiveSimulations);
-        
-        for iSimulation = 1:length(aiSimulationIndexes)
-            iI = aiSimulationIndexes(iSimulation);
-            if any(strcmp(aoResultObjects(iI).State, {'finished','failed'}))
-                abActiveSimulations(iI) = false;
-                iActiveSimulations = iActiveSimulations - 1;
+        % Looping through all tests and starting a simulation for each of them
+        % using the parfeval() method.
+        for iTest = 1:iNumberOfTests
+            
+            if ~bCancelled
+            
+                aoDataQueues(iTest) = parallel.pool.DataQueue;
+                afterEach(aoDataQueues(iTest), oTimer.TimerFcn);
                 
-                tTests(iI) = fetchOutputs(aoResultObjects(iI));
+                % Since we are in parallel execution mode we need to set a
+                % key-value-pair in the ptParams containers.Map called
+                % 'ParallelExecution' with the matter table object and the data
+                % queue as its values.
+                ptParams = containers.Map({'ParallelExecution'}, {{oMT, aoDataQueues(iTest), iTest}});
+                
+                aoResultObjects(iTest) = parfeval(oPool, @runTest, 1, tTests(iTest), ptParams, sTestDirectory, sFolderPath, true, bDebugModeOn);
+                
+                %afterEach(aoResultObjects(iTest), @(~) oTimer.TimerFcn(iTest), 0, 'PassFuture', true);
+                
+                %aiResultObjectIDs(iTest) = aoResultObjects(iTest).ID;
+                
+                
+                %$$$$$$ This doesn't work yet. Need to change stopAllSims in order to handle more than eight sims at the same time.
+                %$$$$$$ The way it is now, it will not completely abort.
+                oButton.Callback = { @stopAllSims, aoResultObjects };
+                
+                iActiveSimulations = iActiveSimulations + 1;
+                
+                abActiveSimulations(iTest) = true;
+            end
+            
+            % Check status of all pool workers
+            % If all are busy, wait
+            % If one or more are idle, break and add next sim
+            
+            % This is supposed to run when the total number of
+            % simulations that are currently supposed to run is higher than
+            % the number of workers, but also when 
+            while iActiveSimulations && (iActiveSimulations == iNumberOfWorkers || iTest == iNumberOfTests)
+                
+                
+                
+                aiSimulationIndexes = find(abActiveSimulations);
+                
+                for iSimulation = 1:length(aiSimulationIndexes)
+                    iI = aiSimulationIndexes(iSimulation);
+                    if strcmp(aoResultObjects(iI).State, 'finished')
+                        abActiveSimulations(iI) = false;
+                        iActiveSimulations = iActiveSimulations - 1;
+                        try
+                            tTests(iI) = fetchOutputs(aoResultObjects(iI));
+                            
+                        catch
+                            tTests(iI).sStatus = 'Cancelled';
+                        end
+                        
+                        oTimer.TimerFcn(iI);
+                        
+                    end
+                end
+            end
+            
+        end
+        
+        
+        close(oFigure);
+        
+        tools.multiWaitbar('Close All');
+        
+        if bCancelled
+            for iTest = 1:iNumberOfTests
+                if isempty(tTests(iTest).sStatus)
+                    tTests(iTest).sStatus = 'Cancelled';
+                end
             end
             
             
         end
-    end
-    
-elseif bChanged || bForceExecution
-    % We are running all tests in series, not parallel and something has
-    % changed or we are forced to execute. 
-    
-    % We need to pass this to the runTest() function, but only need it for
-    % the parallel execution. So we just create an empty containers.Map.
-    ptParams = containers.Map();
-    
-    % Go through each item in the struct and see if we can execute a V-HAB
-    % simulation.
-    for iTest = 1:iNumberOfTests
-        runTest(tTests(iTest), ptParams, sTestDirectory, sFolderPath, false, bDebugModeOn);
+        
+    else
+        % We are running all tests in series, not parallel and something has
+        % changed or we are forced to execute.
+        
+        % We need to pass this to the runTest() function, but only need it for
+        % the parallel execution. So we just create an empty containers.Map.
+        ptParams = containers.Map();
+        
+        % Go through each item in the struct and see if we can execute a V-HAB
+        % simulation.
+        for iTest = 1:iNumberOfTests
+            runTest(tTests(iTest), ptParams, sTestDirectory, sFolderPath, false, bDebugModeOn);
+        end
     end
 else
     % Nothing has changed and we are not being forced to execute, so there
@@ -323,8 +395,6 @@ else
     return
     
 end
-
-tools.multiWaitbar('Close All');
 
 % Saving the test data in the TestStatus.mat file
 sPath = fullfile('data', 'TestStatus.mat');
@@ -354,6 +424,7 @@ iColumnWidth = max(aiNameLengths);
 iSuccessfulTests = sum(arrayfun(@(tArray) strcmp(tArray.sStatus, 'Successful'),tTests));
 iAbortedTests    = sum(arrayfun(@(tArray) strcmp(tArray.sStatus, 'Aborted'),tTests));
 iSkippedTests    = sum(arrayfun(@(tArray) strcmp(tArray.sStatus, 'Skipped'),tTests));
+iCancelledTests  = sum(arrayfun(@(tArray) strcmp(tArray.sStatus, 'Cancelled'),tTests));
 
 % Printing...
 fprintf('\n\n======================================\n');
@@ -363,6 +434,7 @@ fprintf('Total Tests:  %i\n\n', length(tTests));
 fprintf('Successful:   %i\n',   iSuccessfulTests);
 fprintf('Aborted:      %i\n',   iAbortedTests);
 fprintf('Skipped:      %i\n',   iSkippedTests);
+fprintf('Cancelled:    %i\n',   iCancelledTests);
 disp('--------------------------------------');
 disp('Detailed Summary:');
 for iI = 1:length(tTests)
@@ -494,15 +566,22 @@ fprintf('======================================\n\n');
 disp('Total elapsed time:');
 disp(tools.secs2hms(toc(hTimer)));
 
+    function updateWaitBar(xInput)
+        try
+            tools.multiWaitbar(tTests(xInput(1)).name, xInput(2));
+        catch
+            tools.multiWaitbar(tTests(xInput(1)).name, 'Close');
+        end
+    end
 
-
-
-    function updateWaitBar(aiInput)
-        iSimulationID = aiInput(1);
-        fCurrentProgress = aiInput(2);
+    function stopAllSims(~, ~, aoResultObjects)
+        for iObject = 1:length(aoResultObjects)
+            if ~strcmp(aoResultObjects(iObject).State, 'finished')
+                cancel(aoResultObjects(iObject));
+            end
+        end
         
-        % Update the appropriate waitbar graphic.
-        tools.multiWaitbar(tTests(iSimulationID).name, fCurrentProgress);
+        bCancelled = true;
     end
 
 
@@ -596,7 +675,7 @@ hold(oPlot,'on');
 oBars = bar(mfData(:,1));
 if ~verLessThan('MATLAB','9.7')
     oBars.DataTipTemplate.DataTipRows(1) = dataTipTextRow('Test',csNames);
-    oBars.DataTipTemplate.DataTipRows(1).Interpreter = 'none';
+    oBars.DataTipTemplate.Interpreter = 'none';
     oBars.DataTipTemplate.DataTipRows(2).Label = 'Ticks';
 end
 title('Ticks');
@@ -607,7 +686,7 @@ hold(oPlot,'on');
 oBars = bar(mfData(:,2));
 if ~verLessThan('MATLAB','9.7')
     oBars.DataTipTemplate.DataTipRows(1) = dataTipTextRow('Test',csNames);
-    oBars.DataTipTemplate.DataTipRows(1).Interpreter = 'none';
+    oBars.DataTipTemplate.Interpreter = 'none';
     oBars.DataTipTemplate.DataTipRows(2).Label = 'Seconds';
 end
 title('Time');
@@ -619,7 +698,7 @@ hold(oPlot,'on');
 oBars = bar(mfData(:,3));
 if ~verLessThan('MATLAB','9.7')
     oBars.DataTipTemplate.DataTipRows(1) = dataTipTextRow('Test',csNames);
-    oBars.DataTipTemplate.DataTipRows(1).Interpreter = 'none';
+    oBars.DataTipTemplate.Interpreter = 'none';
     oBars.DataTipTemplate.DataTipRows(2).Label = 'Seconds';
 end
 title('Logging');
@@ -631,7 +710,7 @@ hold(oPlot,'on');
 oBars = bar(mfData(:,4));
 if ~verLessThan('MATLAB','9.7')
     oBars.DataTipTemplate.DataTipRows(1) = dataTipTextRow('Test',csNames);
-    oBars.DataTipTemplate.DataTipRows(1).Interpreter = 'none';
+    oBars.DataTipTemplate.Interpreter = 'none';
     oBars.DataTipTemplate.DataTipRows(2).Label = 'kg';
 end
 title('Generated Mass');
@@ -643,7 +722,7 @@ hold(oPlot,'on');
 oBars = bar(mfData(:,5));
 if ~verLessThan('MATLAB','9.7')
     oBars.DataTipTemplate.DataTipRows(1) = dataTipTextRow('Test',csNames);
-    oBars.DataTipTemplate.DataTipRows(1).Interpreter = 'none';
+    oBars.DataTipTemplate.Interpreter = 'none';
     oBars.DataTipTemplate.DataTipRows(2).Label = 'kg';
 end
 title('Mass balance');
@@ -685,37 +764,37 @@ set(oFigure, 'WindowState', 'maximized');
 end
 
 function resizeTextField(oFigure, ~)
-    % Finding the plot containing the legend
-    oPlot = findobj(oFigure, 'Tag', 'LabelPlot');
-    
-    % Setting its position to the center of the subplot.
-    oPlot.Children(1).Position = [ (1-oPlot.Children(1).Extent(3))/2, 0.5 0];
+% Finding the plot containing the legend
+oPlot = findobj(oFigure, 'Tag', 'LabelPlot');
+
+% Setting its position to the center of the subplot.
+oPlot.Children(1).Position = [ (1-oPlot.Children(1).Extent(3))/2, 0.5 0];
 end
 
 function sFolderPath = createDataFolderPath()
-    %createDataFolderPath  Generate a name for a folder in 'data/'
-    
-    % Initializing the variables
-    bSuccess      = false;
-    iFolderNumber = 1;
-    
-    % Getting the current date for use in the folder name
-    sTimeStamp  = datestr(now(), 'yyyymmdd');
-    
-    % Generating the base folder path for all figures
-    sBaseFolderPath = fullfile('data', 'figures', 'Test');
-    
-    % We want to give the folder a number that doesn't exist yet. So we
-    % start at 1 and work our way up until we find one that's not there
-    % yet. 
-    while ~bSuccess
-        sFolderPath = fullfile(sBaseFolderPath, sprintf('%s_Test_Run_%i', sTimeStamp, iFolderNumber));
-        if exist(sFolderPath,'dir')
-            iFolderNumber = iFolderNumber + 1;
-        else
-            bSuccess = true;
-        end
+%createDataFolderPath  Generate a name for a folder in 'data/'
+
+% Initializing the variables
+bSuccess      = false;
+iFolderNumber = 1;
+
+% Getting the current date for use in the folder name
+sTimeStamp  = datestr(now(), 'yyyymmdd');
+
+% Generating the base folder path for all figures
+sBaseFolderPath = fullfile('data', 'figures', 'Test');
+
+% We want to give the folder a number that doesn't exist yet. So we
+% start at 1 and work our way up until we find one that's not there
+% yet.
+while ~bSuccess
+    sFolderPath = fullfile(sBaseFolderPath, sprintf('%s_Test_Run_%i', sTimeStamp, iFolderNumber));
+    if exist(sFolderPath,'dir')
+        iFolderNumber = iFolderNumber + 1;
+    else
+        bSuccess = true;
     end
+end
 end
 
 
@@ -723,48 +802,48 @@ end
 
 
 function bChanged = checkVHABFile()
-    % Since we can't call this function from outside the V-HAB base
-    % folder and this function would then catalog the entire directory,
-    % we'll add a virtual folder here so we can still check the few files
-    % in the top level V-HAB folder.
-    
-    % This is mainly just to save some space in the following code, but it
-    % also defines the file name we will use to store the tSavedInfo
-    % struct. 
-    sSavePath  = strrep('data/FolderStatusFortestVHAB.mat','/',filesep);
-    
-    bChanged = false;
-    tInfo = dir();
-    tInfo = tools.fileChecker.removeIllegalFilesAndFolders(tInfo);
-    tSavedInfo = struct();
-    try
-        load(sSavePath,'tSavedInfo');
-    catch oError
-        if ~strcmp(oError.identifier, 'MATLAB:load:couldNotReadFile')
-            rethrow(oError);
-        end
+% Since we can't call this function from outside the V-HAB base
+% folder and this function would then catalog the entire directory,
+% we'll add a virtual folder here so we can still check the few files
+% in the top level V-HAB folder.
+
+% This is mainly just to save some space in the following code, but it
+% also defines the file name we will use to store the tSavedInfo
+% struct.
+sSavePath  = strrep('data/FolderStatusFortestVHAB.mat','/',filesep);
+
+bChanged = false;
+tInfo = dir();
+tInfo = tools.fileChecker.removeIllegalFilesAndFolders(tInfo);
+tSavedInfo = struct();
+try
+    load(sSavePath,'tSavedInfo');
+catch oError
+    if ~strcmp(oError.identifier, 'MATLAB:load:couldNotReadFile')
+        rethrow(oError);
     end
-        
-    
-    for iI = 1:length(tInfo)
-        if ~tInfo(iI).isdir
-            sFileName = tools.normalizePath(tInfo(iI).name);
-            if isfield(tSavedInfo,sFileName)
-                if tSavedInfo.(sFileName) < tInfo(iI).datenum
-                    tSavedInfo.(sFileName) = tInfo(iI).datenum;
-                    save(sSavePath,'tSavedInfo');
-                    bChanged = true;
-                end
-            else
-                % The item we're looking at is a file, so we'll cleanup the
-                % file name and create a new item in the struct in which we
-                % can save the changed date for this file. 
+end
+
+
+for iI = 1:length(tInfo)
+    if ~tInfo(iI).isdir
+        sFileName = tools.normalizePath(tInfo(iI).name);
+        if isfield(tSavedInfo,sFileName)
+            if tSavedInfo.(sFileName) < tInfo(iI).datenum
                 tSavedInfo.(sFileName) = tInfo(iI).datenum;
                 save(sSavePath,'tSavedInfo');
                 bChanged = true;
             end
+        else
+            % The item we're looking at is a file, so we'll cleanup the
+            % file name and create a new item in the struct in which we
+            % can save the changed date for this file.
+            tSavedInfo.(sFileName) = tInfo(iI).datenum;
+            save(sSavePath,'tSavedInfo');
+            bChanged = true;
         end
     end
+end
 end
 
 function tTest = runTest(tTest, ptParams, sTestDirectory, sFolderPath, bParallelExecution, bDebugModeOn)
