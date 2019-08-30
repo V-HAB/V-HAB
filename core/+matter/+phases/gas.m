@@ -49,7 +49,11 @@ classdef gas < matter.phase
             this.fVolume  = fVolume;
             this.fDensity = this.fMass / this.fVolume;
             
-            this.fMassToPressure = this.oMT.calculatePressure(this) / this.fMass;
+            if this.fMass == 0
+                this.fMassToPressure = 0;
+            else
+                this.fMassToPressure = this.oMT.calculatePressure(this) / this.fMass;
+            end
             
             this.afPP = this.oMT.calculatePartialPressures(this);
             
