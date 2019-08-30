@@ -186,7 +186,7 @@ if (bChanged || bForceExecution)
         % Now we need to check if we can use the data. If there are empty runs,
         % the following arrayfun() call will fail, throwing us out of this
         % try-catch block.
-        if any(~isempty([tOldTestData.run]))
+        if any(isempty([tOldTestData.run]))
             warning('VHAB:testVHAB',['At least one of the tests in the OldTestStatus.mat file has not completed successfully.\n',...
                 'This prevents V-HAB from optimizing for parallel execution.']);
         end
