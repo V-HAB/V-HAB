@@ -329,7 +329,7 @@ fobj = handle( f );
 fobj.Position = [figPos, figSz];
 setappdata( fobj, 'ProgressEntries', [] );
 % Make sure we have the image
-defbarcolor = [0.8 0.0 0.1];
+defbarcolor = [0 101 189] ./ 255;
 barbgcol = uint8( 255*0.75*bgcol );
 setappdata( fobj, 'DefaultProgressBarBackgroundColor', barbgcol );
 setappdata( fobj, 'DefaultProgressBarColor', defbarcolor );
@@ -353,7 +353,6 @@ end % iCreateFig
 %-------------------------------------------------------------------------%
 function cdata = iMakeColors( baseColor, height )
 % Creates a shiny bar from a single base color
-lightColor = [1 1 1];
 badColorErrorID = 'multiWaitbar:BadColor';
 badColorErrorMsg = 'Colors must be a three element vector [R G B] or a single character (''r'', ''g'' etc.)';
 
@@ -396,18 +395,6 @@ end
 % By this point we should have a double precision 3-element vector.
 cols = repmat( baseColor, [height, 1] );
 
-breaks = max( 1, round( height * [1 25 50 75 88 100] / 100 ) );
-cols(breaks(1),:) = 0.6*baseColor;
-cols(breaks(2),:) = lightColor - 0.4*(lightColor-baseColor);
-cols(breaks(3),:) = baseColor;
-cols(breaks(4),:) = min( baseColor*1.2, 1.0 );
-cols(breaks(5),:) = min( baseColor*1.4, 0.95 ) + 0.05;
-cols(breaks(6),:) = min( baseColor*1.6, 0.9 ) + 0.1;
-
-y = 1:height;
-cols(:,1) = max( 0, min( 1, interp1( breaks, cols(breaks,1), y, 'pchip' ) ) );
-cols(:,2) = max( 0, min( 1, interp1( breaks, cols(breaks,2), y, 'pchip' ) ) );
-cols(:,3) = max( 0, min( 1, interp1( breaks, cols(breaks,3), y, 'pchip' ) ) );
 cdata = uint8( 255 * cat( 3, cols(:,1), cols(:,2), cols(:,3) ) );
 end % iMakeColors
 
@@ -533,9 +520,6 @@ if entry.Busy
     return;
 end
 
-% Some constants
-marker_weight = 0.8;
-
 % Check if the label needs updating
 updated = force;
 val = entry.Value;
@@ -555,14 +539,6 @@ if force || (filled<lastfilled)
     barim = iMakeBarImage(entry.CData, startIdx, filled);
     progresscdata = [barim,bgim];
     
-    % Add light/shadow around the markers
-    markers = round( (0.1:0.1:val)*psize(1) );
-    markers(markers<startIdx | markers>(filled-2)) = [];
-    highlight = [marker_weight*entry.CData, 255 - marker_weight*(255-entry.CData)];
-    for ii=1:numel( markers )
-        progresscdata(:,markers(ii)+[-1,0],:) = highlight;
-    end
-    
     % Set the image into the checkbox
     entry.BarCData = progresscdata;
     set( entry.Progress, 'cdata', progresscdata );
@@ -575,14 +551,6 @@ elseif filled > lastfilled
     % Repmat is the obvious way to fill the bar, but BSXFUN is often
     % faster. Indexing is obscure but faster still.
     progresscdata(:,startIdx:filled,:) = iMakeBarImage(entry.CData, startIdx, filled);
-    
-    % Add light/shadow around the markers
-    markers = round( (0.1:0.1:val)*psize(1) );
-    markers(markers<startIdx | markers>(filled-2)) = [];
-    highlight = [marker_weight*entry.CData, 255 - marker_weight*(255-entry.CData)];
-    for ii=1:numel( markers )
-        progresscdata(:,markers(ii)+[-1,0],:) = highlight;
-    end
     
     entry.BarCData = progresscdata;
     set( entry.Progress, 'CData', progresscdata );
