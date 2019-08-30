@@ -52,9 +52,6 @@ if nargin < 3
     bDebugModeOn = false;
 end
 
-% Boolean that is set to true if we can do this in parallel.
-bParallelExecution = false;
-
 % First we get the struct that shows us the current contents of the
 % tests directory. We also check which entries are directories.
 sTestDirectory = fullfile('user', '+tests');
@@ -149,27 +146,13 @@ iNumberOfTests = length(tTests);
 
 if (bChanged || bForceExecution)
     
-    % The Parallel Computing Toolbox assigns for-loop-iterations to the workers
-    % based on their order in the tTests struct. (I think.) The assignment is
-    % done prior to the execution and doesn't change after that. That can lead
-    % to the situation that several of the longest running simulations are
-    % assigned to the same worker, while the shorter simulations are not. The
-    % result is only one worker simulating while the others have already
-    % finished, negating the whole idea of parallel execution. The code
-    % contained in the following try-catch block is an attempt to re-arrange
-    % the simulations within the tTests struct so that the longest running
-    % simulations are distributed evenly among the workers. This is done by
-    % looking at previous test data, meaning the OldTestStatus file must exist,
-    % and also figuring out how many workers (i.e. CPU cores) are available on
-    % this machine. Then the tTests struct is re-arranged.
-    
-    % We're enclosing this in a try-catch block so if the OldTestStatus file
-    % doesn't exist or the user hasn't installed the Parallel Computing Toolbox
-    % the function keeps executing.
+    % We're enclosing this in a try-catch block so if the user hasn't
+    % installed the Parallel Computing Toolbox the function keeps
+    % executing.
     try
-        % In order to query the parallel pool of workers, we need to start one.
-        % The gcp() function gets the current parallel pool or starts a new
-        % one.
+        % In order to query the parallel pool of workers, we need to start
+        % one. The gcp() function gets the current parallel pool or starts
+        % a new one.
         oPool = gcp();
         
         % If starting the parallel pool worked, we set this boolean to true so
@@ -178,75 +161,10 @@ if (bChanged || bForceExecution)
         
         % Now we can get the number of workers
         iNumberOfWorkers = oPool.NumWorkers;
-        
-        % Getting the data from a previous test run.
-        tOldTestData = load('data/OldTestStatus.mat','tTests');
-        tOldTestData = tOldTestData.tTests;
-        
-        % Now we need to check if we can use the data. If there are empty runs,
-        % the following arrayfun() call will fail, throwing us out of this
-        % try-catch block.
-        if any(isempty([tOldTestData.run]))
-            warning('VHAB:testVHAB',['At least one of the tests in the OldTestStatus.mat file has not completed successfully.\n',...
-                'This prevents V-HAB from optimizing for parallel execution.']);
-        end
-        
-        % Extracting the run times for each of the simulations.
-        afRunTimes = arrayfun(@(tStruct) tStruct.run.fRunTime, tOldTestData);
-        
-%         % It may be that the number of tests has changed since the last
-%         % execution, so we check for that.
-%         if length(tOldTestData) == iNumberOfTests
-            % First we sort the tTests struct by run time, with the longest
-            % simulation as the first index.
-            [~, aiSortIndexes] = sort(afRunTimes, 'descend');
-            tTests = tTests(aiSortIndexes);
-            
-%             % Initializing an integer array that will contain the new indexes
-%             aiNewSortIndexes = zeros(iNumberOfTests, 1);
-%             
-%             % Now we initialize two counters, one for the current index of
-%             % aiNewSortIndexes and one for the current group. Here a group
-%             % refers to the order of the tests that are performed on each
-%             % individual worker. So group 1 is the first to be executed, group
-%             % two the second and so on. At first, the group and index are
-%             % identical, so we initialize the group at 2.
-%             iCurrentIndex = 1;
-%             iCurrentGroup = 2;
-%             
-%             % To determine the offset between workers within the
-%             % aiNewSortIndexes array, we divide the number of tests by the
-%             % number of workers and round up the result. We later use the
-%             % result as the offset between index steps.
-%             iFixedOffset = ceil(iNumberOfTests/iNumberOfWorkers);
-%             
-%             % Now we loop through all tests and determine their new indexes.
-%             for iI = 1:iNumberOfTests
-%                 % If we have reached the end of the length of the test array,
-%                 % we move into the next group.
-%                 if iCurrentIndex > iNumberOfTests
-%                     iCurrentIndex = iCurrentGroup;
-%                     iCurrentGroup = iCurrentGroup + 1;
-%                 end
-%                 
-%                 % Now we can set the index accordingly and increment the
-%                 % current index variable by the offset.
-%                 aiNewSortIndexes(iCurrentIndex) = iI;
-%                 iCurrentIndex = iCurrentIndex + iFixedOffset;
-%                 
-%             end
-%             
-%             % We're done and the last thing to do is to sort the tTests struct
-%             % using the new order.
-%             tTests = tTests(aiNewSortIndexes);
-%         else
-%             % The number of tests has changed, so we tell the user what's going
-%             % on.
-%             warning('VHAB:testVHAB',['The number of tests has changed in comparison to the data in OldTestStatus.mat.\n',...
-%                 'This means we cannot optimize the execution order of tests for parallel execution.\n',...
-%                 'Once this run of testVHAB() is complete, save the TestStatus.mat file as OldTestStatus.mat.']);
-%         end
+
     catch
+        % We can't do parallel execution, so we set this to false.
+        bParallelExecution = false;
         
     end
     
