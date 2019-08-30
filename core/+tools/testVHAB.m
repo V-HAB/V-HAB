@@ -873,7 +873,11 @@ if exist(fullfile(sTestDirectory, tTest.name, 'setup.m'), 'file')
         % Done! Let's plot stuff!
         oLastSimObj.plot();
         
-        aoFigures = evalin('base', 'aoFigures');
+        if bParallelExecution
+            aoFigures = evalin('base', 'aoFigures');
+        else
+            aoFigures = [];
+        end
         
         % Saving the figures to the pre-determined location
         tools.saveFigures(sFolderPath, strrep(tTest.name,'+',''), aoFigures);

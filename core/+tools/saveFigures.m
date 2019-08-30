@@ -9,7 +9,7 @@ function saveFigures(sFolderName, sFileName, aoFigures)
 %   a timestamp and sFileName as the file name. 
 %   If the aoFigures argument is present, those figures will be saved. 
 
-if nargin < 3
+if nargin < 3 || isempty(aoFigures)
     % Getting the graphics root object (needs to be a separate step)
     oGraphicsRoot = get(groot);
     % Getting the array of figure handle objects
