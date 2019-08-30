@@ -47,8 +47,15 @@ classdef infrastructure < base & event.source
         % instead of a full MATLAB instance. 
         bParallelExecution = false;
         
+        % If this simulation is being executed using the parallel pool, we
+        % need to know its index within the array of simulations. This is
+        % stored in this property. 
         iParallelSimulationID;
         
+        % In order to communicate with the MATLAB client when this
+        % simulation is run using the parallel pool, we need a parallel
+        % data queue object to send updates to. This property is a handle
+        % to that data queue. 
         oDataQueue;
     end
     
@@ -196,28 +203,32 @@ classdef infrastructure < base & event.source
             
             % If we are running this simulation in parallel with other
             % simulations, a key in the ptConfigParams container map must
-            % be 'ParallelExecution'. If this key is present, the matter
-            % table object will have been instantiated outside of the
-            % parallel loop and is contained in the container map as the
-            % value for the key 'ParallelExecution'. So we just assign it
-            % here. 
-            % If this simulation is being run individually, we can call the
-            % matter table constructor directly.
+            % be 'ParallelExecution'. If this key is present, some
+            % parameters are passed in as a cell, which is in turn the
+            % value for the 'ParallelExecution' key in ptConfigParams. So
+            % we parse these parameters here. 
             if isKey(ptConfigParams, 'ParallelExecution')
+                % Extracting the cell from the containers.Map.
                 cConfigParams = ptConfigParams('ParallelExecution');
                 
+                % The matter table object will have been instantiated
+                % outside of the parallel loop and is the first item in the
+                % cell. So we just assign it here and check its validity.
                 oMT = cConfigParams{1};
                 if ~isa(oMT, 'matter.table')
                     this.throw('infrastructure','The provided object is not a matter table.');
                 end
                 
+                % Now we can set the data queue object and identifier
+                % properties as well. 
                 this.oDataQueue = cConfigParams{2};
-                
                 this.iParallelSimulationID = cConfigParams{3};
                 
                 % Setting the parallel execution flag to true.
                 this.bParallelExecution = true;
             else
+                % This simulation is being run individually, so we can just
+                % call the matter table constructor directly.
                 oMT = matter.table();
             end
             
