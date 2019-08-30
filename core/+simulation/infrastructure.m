@@ -354,6 +354,15 @@ classdef infrastructure < base & event.source
                 % This call performs one single simulation step.
                 this.step();
             end
+            
+            % Only trigger 'finish' if we actually want the console output
+            % and if the simulation isn't paused. For the use case with
+            % TherMoS calling V-HAB, the finish event is triggered
+            % separately using the triggerFinish() method of this class.
+            if ~this.bSuppressConsoleOutput && ~this.toMonitors.oExecutionControl.bPaused
+                this.trigger('finish');
+            end
+            
         end
         
         function pause(this, varargin)
@@ -459,20 +468,6 @@ classdef infrastructure < base & event.source
             hTimer = tic();
             this.trigger('step_post');
             this.fRuntimeOther = this.fRuntimeOther + toc(hTimer);
-            
-            % Now we check to see if the simulation has reached the
-            % pre-determined end time. If it has, we trigger the finish
-            % event. This event only causes 
-            if (this.bUseTime && (this.oSimulationContainer.oTimer.fTime >= this.fSimTime)) || (~this.bUseTime && (this.oSimulationContainer.oTimer.iTick >= this.iSimTicks))
-                % Only trigger 'finish' if we actually want the console
-                % output and if the simulation isn't paused. For the use
-                % case with TherMoS calling V-HAB, the finish event is
-                % triggered separately using the triggerFinish() method of
-                % this class.
-                if ~this.bSuppressConsoleOutput && ~this.toMonitors.oExecutionControl.bPaused
-                    this.trigger('finish');
-                end
-            end
         end
         
         
