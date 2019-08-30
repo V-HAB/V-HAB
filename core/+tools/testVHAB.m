@@ -136,7 +136,7 @@ else
 end
 
 % If we run these using parallel execution, we need to add these fields
-% outside of the parfor loop.
+% outside of the function that is being executed on the parallel workers.
 tTests = arrayfun(@(tStruct) tools.addFieldToStruct(tStruct,'run'), tTests);
 tTests = arrayfun(@(tStruct) tools.addFieldToStruct(tStruct,'sStatus'), tTests);
 tTests = arrayfun(@(tStruct) tools.addFieldToStruct(tStruct,'sErrorReport'), tTests);
@@ -144,6 +144,8 @@ tTests = arrayfun(@(tStruct) tools.addFieldToStruct(tStruct,'sErrorReport'), tTe
 % Getting the total number of tests.
 iNumberOfTests = length(tTests);
 
+% Obvioulsy, we only perform any simulations if something has changed in
+% the code or if we are being forced to run.
 if (bChanged || bForceExecution)
     
     % We're enclosing this in a try-catch block so if the user hasn't
@@ -178,18 +180,37 @@ if (bChanged || bForceExecution)
         aoDataQueues = parallel.pool.DataQueue.empty(iNumberOfTests,0);
         aoResultObjects = parallel.FevalFuture.empty(iNumberOfTests,0);
         
-        bCancelled = false;
-        
-        %aiResultObjectIDs = zeros(iNumberOfTests, 0);
         
         % Creating a matter table object. Due to the file system access that is
         % done during the matter table instantiation, this cannot be done within
         % the parallel loop.
         oMT = matter.table();
         
-        oTimer = timer;
-        oTimer.TimerFcn = @(xInput) updateWaitBar(xInput);
+        % Creating a timer object. This is necessary, because we want to
+        % use a multiWaitbar to show the progress of the individual
+        % simulations. Since the multiWaitbar function is not designed to
+        % be called from multiple workers simultaneously, the timer object
+        % acts as the queue manager for the calls to update the wait bar.
+        % For that we actually need to explicitly set the BusyMode property
+        % of the timer to 'queue'.
+        oWaitBarTimer = timer;
+        oWaitBarTimer.BusyMode = 'queue';
         
+        % Now we set the timer function to the nested updateWaitbar()
+        % function that is defined at the end of this function. It needs to
+        % be generic regarding its input because it needs to handle both
+        % the 'update' calls as well as the 'close' calls when a simulation
+        % is completed.
+        oWaitBarTimer.TimerFcn = @(xInput) updateWaitBar(xInput);
+        
+        % It may be the case that a user wants to abort all simulations
+        % while they are still running. Since they are running on parallel
+        % workers, creating the 'STOP' file in the base directory won't
+        % work. So we provide a nice, big, red STOP button here that calls
+        % the other nested function called stopAllSims(). This callback
+        % changes dynamically based on the number of simulations that are
+        % currently running. So the actual assignment of that callback is
+        % done later on. Here we just create the figure and the button. 
         oFigure = figure('Name','Control', ...
             'MenuBar','none');
         oFigure.Position(3:4) = [200 150];
@@ -205,12 +226,20 @@ if (bChanged || bForceExecution)
         oButton.Units = 'normalized';
         oButton.Position = [0.25 0.25 0.5 0.5];
         
+        % The button callback will set this boolean variable to true so we
+        % can properly abort the for and while loops below. 
+        bCancelled = false;
+        
+        % Now we create a wait bar for each simulation. We do this here and
+        % not within the for loop below so the user can see all simulations
+        % at once and not just the ones that are currently running. 
         for iTest = 1:iNumberOfTests
-            
             tools.multiWaitbar(tTests(iTest).name, 0);
-            
         end
         
+        % In order to steer the while loop within the for loop below, we
+        % need these variables to keep track of which simulations are
+        % currently running. 
         abActiveSimulations = false(iNumberOfTests,1);
         iActiveSimulations = 0;
         
@@ -218,51 +247,108 @@ if (bChanged || bForceExecution)
         % using the parfeval() method.
         for iTest = 1:iNumberOfTests
             
+            % If the user hit the stop button, bCancelled will be true.
+            % This if condition here is to prevent another simulation from
+            % being launched even after the user cancelled. 
             if ~bCancelled
-            
+                % To be able to receive data from the parallel workers in
+                % the client, we need a data queue. We create this here for
+                % every simulation. 
                 aoDataQueues(iTest) = parallel.pool.DataQueue;
-                afterEach(aoDataQueues(iTest), oTimer.TimerFcn);
+                
+                % The afterEach() function will execute the timer function
+                % after each transmission from the worker. There the send()
+                % method is called with a payload of data which is passed
+                % directly to the timer function by afterEach(). Here this
+                % is used to update the waitbar for the individual
+                % simulation.
+                afterEach(aoDataQueues(iTest), oWaitBarTimer.TimerFcn);
                 
                 % Since we are in parallel execution mode we need to set a
                 % key-value-pair in the ptParams containers.Map called
-                % 'ParallelExecution' with the matter table object and the data
-                % queue as its values.
+                % 'ParallelExecution' with the matter table object, the
+                % data queue object and this simulations index within the
+                % tTest struct as its values within a cell.
                 ptParams = containers.Map({'ParallelExecution'}, {{oMT, aoDataQueues(iTest), iTest}});
                 
+                % Now we actually start the simulation on the parallel
+                % worker. The parfeval() function takes the parallel pool
+                % as the first input argument, followed by the function
+                % that is to be executed on the worker. The following
+                % arguments are the input arguments to the function to run.
+                % In this case it is the runTest() function that is defined
+                % below. 
+                % parfeval() returns a parallel.FevalFuture object from
+                % which the results of the parallel worker can be obtained.
+                % These results are the return values of runTest().
                 aoResultObjects(iTest) = parfeval(oPool, @runTest, 1, tTests(iTest), ptParams, sTestDirectory, sFolderPath, true, bDebugModeOn);
                 
-                %afterEach(aoResultObjects(iTest), @(~) oTimer.TimerFcn(iTest), 0, 'PassFuture', true);
-                
-                %aiResultObjectIDs(iTest) = aoResultObjects(iTest).ID;
-                
-                
-                %$$$$$$ This doesn't work yet. Need to change stopAllSims in order to handle more than eight sims at the same time.
-                %$$$$$$ The way it is now, it will not completely abort.
+                % Now that the FevalFuture object hast been added to the
+                % aoResultObjects array, we can update the callback of the
+                % stop button to include the current version of this array.
+                % This ensures that all simulations that are currently
+                % running are properly aborted when the button is pressed. 
                 oButton.Callback = { @stopAllSims, aoResultObjects };
                 
+                % In order to control the addition of new simulations to
+                % the parallel pool, we need to keep track of how many
+                % simulations are currently running, so we set the
+                % following variables accordingly. 
                 iActiveSimulations = iActiveSimulations + 1;
-                
                 abActiveSimulations(iTest) = true;
             end
             
-            % Check status of all pool workers
-            % If all are busy, wait
-            % If one or more are idle, break and add next sim
-            
-            % This is supposed to run when the total number of
-            % simulations that are currently supposed to run is higher than
-            % the number of workers, but also when 
+            % The following while loop contains code that continuously
+            % checks all simulations in the aoResultObjects array for their
+            % status. If they are completed, we fetch their outputs and
+            % delete their wait bar from the multiWaitbar window. The while
+            % loop continues if there are any active simulations
+            % (iActiveSimulations > 0) and if either the total number of
+            % simulations equals the number of workers (iActiveSimulations
+            % == iNumberOfWorkers) or the for loop in which we are running
+            % this has reached the last entry (iTest == iNumberOfTests).
+            % This logic ensures that the maximum number of simulations
+            % that we try to execute in parallel is equal to the number of
+            % workers. This is important, because if we try to add an
+            % additional simulation via a call of perfeval() the code will
+            % wait on that line until a worker is available. That means
+            % that the code does not enter this while loop, so old
+            % simulations are not detected and cleared out and
+            % additionally, since it locks up the client, the wait bars are
+            % not updated. 
+            %NOTE: Initially I thought that the parallel pool would take 
+            % care of this for me, but apparently it doesn't. This might be
+            % a bug, but I have not taken the time yet to take it up with
+            % Mathworks. 
             while iActiveSimulations && (iActiveSimulations == iNumberOfWorkers || iTest == iNumberOfTests)
                 
-                
-                
+                % First we get the indexes of the currently active
+                % simulations.
                 aiSimulationIndexes = find(abActiveSimulations);
                 
+                % Now we loop through all active simulations and check
+                % their status. 
                 for iSimulation = 1:length(aiSimulationIndexes)
+                    % Getting the index of the current simulation within
+                    % the aoResultObjects array.
                     iI = aiSimulationIndexes(iSimulation);
+                    
+                    % If this simulation's state is 'finished', we do
+                    % stuff. It will be finished regardless of the
+                    % simulation completing normally or crashing or being
+                    % cancelled via the STOP button. If it is not finished,
+                    % we don't have to do anything.
                     if strcmp(aoResultObjects(iI).State, 'finished')
+                        % This simulation has completed, so we set the
+                        % tracking variables accordingly.
                         abActiveSimulations(iI) = false;
                         iActiveSimulations = iActiveSimulations - 1;
+                        
+                        % If the simulation finished normally or crashed,
+                        % we will be able to retreive the outputs from the
+                        % parallel worker. If the simulation was cancelled,
+                        % the results will not be accessible, so we enclose
+                        % the following logic in a try catch block. 
                         try
                             tTests(iI) = fetchOutputs(aoResultObjects(iI));
                             
@@ -270,39 +356,46 @@ if (bChanged || bForceExecution)
                             tTests(iI).sStatus = 'Cancelled';
                         end
                         
-                        oTimer.TimerFcn(iI);
+                        % No matter the reason, this simulation is done, so
+                        % we can delete the wait bar for it. 
+                        oWaitBarTimer.TimerFcn(iI);
                         
                     end
                 end
             end
-            
         end
         
-        
+        % All simulations have completed. So now we can close the window
+        % that contains the STOP button and close the multibar. We need to
+        % call this even if there are no more individual wait bars left,
+        % because it will delete a persistent variable for the window
+        % handle. This is important if this function is called again within
+        % the same MATLAB session. 
         close(oFigure);
-        
         tools.multiWaitbar('Close All');
         
+        % If the user used the STOP button, we need to set the status of
+        % the simulations that had not yet been started to 'Cancelled' as
+        % well. 
         if bCancelled
             for iTest = 1:iNumberOfTests
                 if isempty(tTests(iTest).sStatus)
                     tTests(iTest).sStatus = 'Cancelled';
                 end
             end
-            
-            
         end
         
     else
-        % We are running all tests in series, not parallel and something has
-        % changed or we are forced to execute.
+        % We are running all tests in series, not parallel and something
+        % has changed or we are forced to execute.
         
-        % We need to pass this to the runTest() function, but only need it for
-        % the parallel execution. So we just create an empty containers.Map.
+        % We need to pass this to the runTest() function, but only need it
+        % for the parallel execution. So we just create an empty
+        % containers.Map.
         ptParams = containers.Map();
         
-        % Go through each item in the struct and see if we can execute a V-HAB
-        % simulation.
+        % Go through each item in the struct and see if we can execute a
+        % V-HAB simulation.
         for iTest = 1:iNumberOfTests
             runTest(tTests(iTest), ptParams, sTestDirectory, sFolderPath, false, bDebugModeOn);
         end
@@ -484,7 +577,27 @@ fprintf('======================================\n\n');
 disp('Total elapsed time:');
 disp(tools.secs2hms(toc(hTimer)));
 
+
+%% Nested functions
+
     function updateWaitBar(xInput)
+        % This function updates the wait bar for an individual simulation
+        % or deletes it. Both functions call the tools.multiWaitbar()
+        % function with different sets of input arguments.
+        % For the 'update' case, this function is called by the afterEach()
+        % method of a parallel data queue. The input parameters are
+        % provided as a 2x1 double array containing the simulation's index
+        % and it's progress as a percentage. The index is converted to a
+        % string containing the name of the simulation, which acts as the
+        % identifier within the wait bar. For the 'close' case, this
+        % function is called with just the index of the simulation. 
+        
+        % To discern between these two callers, we enclose the 'update'
+        % call in a try catch block. If the xInput argument contains a
+        % second element (xInput(2)) then we are being called from the data
+        % queue to update the wait bar. If xInput only has one element,
+        % this call will fail, so within the catch part, we handle the
+        % closing of the waitbar. 
         try
             tools.multiWaitbar(tTests(xInput(1)).name, xInput(2));
         catch
@@ -493,12 +606,18 @@ disp(tools.secs2hms(toc(hTimer)));
     end
 
     function stopAllSims(~, ~, aoResultObjects)
+        % This function is the callback for the STOP button. When it is
+        % pressed, this function loops through all parallel.FevalFuture
+        % objects in the aoResultsObjects input argument and cancels the
+        % worker, unless it is already finished. 
         for iObject = 1:length(aoResultObjects)
             if ~strcmp(aoResultObjects(iObject).State, 'finished')
                 cancel(aoResultObjects(iObject));
             end
         end
         
+        % In order to prevent further simulations from being added after
+        % the button is pressed, we set this boolean variable to true. 
         bCancelled = true;
     end
 
@@ -715,10 +834,6 @@ while ~bSuccess
 end
 end
 
-
-
-
-
 function bChanged = checkVHABFile()
 % Since we can't call this function from outside the V-HAB base
 % folder and this function would then catalog the entire directory,
@@ -765,6 +880,11 @@ end
 end
 
 function tTest = runTest(tTest, ptParams, sTestDirectory, sFolderPath, bParallelExecution, bDebugModeOn)
+% This function creates one V-HAB simulation, runs it and returns an
+% updated tTest struct. It can be used for both parallel and serial
+% execution of tests, the key here is the value of the bParallelExecution
+% input argument. 
+
 % If the folder has a correctly named 'setup.m' file, we can go ahead and
 % try to execute it.
 if exist(fullfile(sTestDirectory, tTest.name, 'setup.m'), 'file')
@@ -791,6 +911,14 @@ if exist(fullfile(sTestDirectory, tTest.name, 'setup.m'), 'file')
         % Done! Let's plot stuff!
         oLastSimObj.plot();
         
+        % If we are running in parallel, we need to jump through some hoops
+        % to get the figures saved. The plotter knows that it is being run
+        % on a parallel worker, so it has created the aoFigures array in
+        % the base workspace of the worker. So here, if we are running in
+        % parallel, we pull this variable from the base workspace into our
+        % local workspace to save it. If we are running in series, then we
+        % just set it to empty; the saveFigures() function knows how to
+        % deal with that. 
         if bParallelExecution
             aoFigures = evalin('base', 'aoFigures');
         else
@@ -804,8 +932,8 @@ if exist(fullfile(sTestDirectory, tTest.name, 'setup.m'), 'file')
         % drawnow() call is necessary, because otherwise MATLAB would just
         % jump over the close('all') instruction and run the next sim.
         % Stupid behavior, but this is the workaround. We only need to do
-        % this when not running in parallel, because then the windows are
-        % not visible.
+        % this when running in series, because then the windows are
+        % not visible on the parallel workers anyway.
         if ~bParallelExecution
             close('all');
             drawnow();
