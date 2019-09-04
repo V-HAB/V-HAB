@@ -1,0 +1,46 @@
+Source: USDA National Nutrient Database for Standard Reference 1 April 2018 Software v.3.9.5.3_2019-06-13
+Basic Report
+Report Run at: September 04 2019 06:36 EDT
+"Nutrient data for: Strawberries, raw"
+Nutrient,Unit,1Value per 100 g,"1 cup, halves = 152.0g","1 cup, pureed = 232.0g","1 cup, sliced = 166.0g","1 cup, whole = 144.0g","1 extra large (1-5/8"" dia) = 27.0g","1 large (1-3/8"" dia) = 18.0g","1 medium (1-1/4"" dia) = 12.0g","1 pint as purchased, yields = 357.0g","1 small (1"" dia) = 7.0g","1 NLEA serving = 147.0g",
+Proximates
+"Water",g,90.95,138.24,211.00,150.98,130.97,24.56,16.37,10.91,324.69,6.37,133.70
+"Energy",kcal,32,49,74,53,46,9,6,4,114,2,47
+"Protein",g,0.67,1.02,1.55,1.11,0.96,0.18,0.12,0.08,2.39,0.05,0.98
+"Total lipid (fat)",g,0.30,0.46,0.70,0.50,0.43,0.08,0.05,0.04,1.07,0.02,0.44
+"Carbohydrate, by difference",g,7.68,11.67,17.82,12.75,11.06,2.07,1.38,0.92,27.42,0.54,11.29
+"Fiber, total dietary",g,2.0,3.0,4.6,3.3,2.9,0.5,0.4,0.2,7.1,0.1,2.9
+"Sugars, total",g,4.89,7.43,11.34,8.12,7.04,1.32,0.88,0.59,17.46,0.34,7.19
+Minerals
+"Calcium, Ca",mg,16,24,37,27,23,4,3,2,57,1,24
+"Iron, Fe",mg,0.41,0.62,0.95,0.68,0.59,0.11,0.07,0.05,1.46,0.03,0.60
+"Magnesium, Mg",mg,13,20,30,22,19,4,2,2,46,1,19
+"Phosphorus, P",mg,24,36,56,40,35,6,4,3,86,2,35
+"Potassium, K",mg,153,233,355,254,220,41,28,18,546,11,225
+"Sodium, Na",mg,1,2,2,2,1,0,0,0,4,0,1
+"Zinc, Zn",mg,0.14,0.21,0.32,0.23,0.20,0.04,0.03,0.02,0.50,0.01,0.21
+Vitamins
+"Vitamin C, total ascorbic acid",mg,58.8,89.4,136.4,97.6,84.7,15.9,10.6,7.1,209.9,4.1,86.4
+"Thiamin",mg,0.024,0.036,0.056,0.040,0.035,0.006,0.004,0.003,0.086,0.002,0.035
+"Riboflavin",mg,0.022,0.033,0.051,0.037,0.032,0.006,0.004,0.003,0.079,0.002,0.032
+"Niacin",mg,0.386,0.587,0.896,0.641,0.556,0.104,0.069,0.046,1.378,0.027,0.567
+"Vitamin B-6",mg,0.047,0.071,0.109,0.078,0.068,0.013,0.008,0.006,0.168,0.003,0.069
+"Folate, DFE",µg,24,36,56,40,35,6,4,3,86,2,35
+"Vitamin B-12",µg,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+"Vitamin A, RAE",µg,1,2,2,2,1,0,0,0,4,0,1
+"Vitamin A, IU",IU,12,18,28,20,17,3,2,1,43,1,18
+"Vitamin E (alpha-tocopherol)",mg,0.29,0.44,0.67,0.48,0.42,0.08,0.05,0.03,1.04,0.02,0.43
+"Vitamin D (D2 + D3)",µg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+"Vitamin D",IU,0,0,0,0,0,0,0,0,0,0,0
+"Vitamin K (phylloquinone)",µg,2.2,3.3,5.1,3.7,3.2,0.6,0.4,0.3,7.9,0.2,3.2
+Lipids
+"Fatty acids, total saturated",g,0.015,0.023,0.035,0.025,0.022,0.004,0.003,0.002,0.054,0.001,0.022
+"Fatty acids, total monounsaturated",g,0.043,0.065,0.100,0.071,0.062,0.012,0.008,0.005,0.154,0.003,0.063
+"Fatty acids, total polyunsaturated",g,0.155,0.236,0.360,0.257,0.223,0.042,0.028,0.019,0.553,0.011,0.228
+"Fatty acids, total trans",g,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"Cholesterol",mg,0,0,0,0,0,0,0,0,0,0,0
+Amino Acids
+Other
+"Caffeine",mg,0,0,0,0,0,0,0,0,0,0,0
+Footnotes
+(a)"Value based on the analysis of 5-methyltetrahydrofolate"

@@ -1,0 +1,44 @@
+Source: USDA National Nutrient Database for Standard Reference 1 April 2018 Software v.3.9.5.3_2019-06-13
+Basic Report
+Report Run at: September 04 2019 06:17 EDT
+"Nutrient data for: Cabbage, raw"
+Nutrient,Unit,1Value per 100 g,"1 cup, chopped = 89.0g","1 cup, shredded = 70.0g","1 head, large (about 7"" dia) = 1248.0g","1 leaf, large = 33.0g","1 head, medium (about 5-3/4"" dia) = 908.0g","1 leaf, medium = 23.0g","1 head, small (about 4-1/2"" dia) = 714.0g","1 leaf = 15.0g",
+Proximates
+"Water",g,92.18,82.04,64.53,1150.41,30.42,836.99,21.20,658.17,13.83
+"Energy",kcal,25,22,18,312,8,227,6,178,4
+"Protein",g,1.28,1.14,0.90,15.97,0.42,11.62,0.29,9.14,0.19
+"Total lipid (fat)",g,0.10,0.09,0.07,1.25,0.03,0.91,0.02,0.71,0.01
+"Carbohydrate, by difference",g,5.80,5.16,4.06,72.38,1.91,52.66,1.33,41.41,0.87
+"Fiber, total dietary",g,2.5,2.2,1.8,31.2,0.8,22.7,0.6,17.9,0.4
+"Sugars, total",g,3.20,2.85,2.24,39.94,1.06,29.06,0.74,22.85,0.48
+Minerals
+"Calcium, Ca",mg,40,36,28,499,13,363,9,286,6
+"Iron, Fe",mg,0.47,0.42,0.33,5.87,0.16,4.27,0.11,3.36,0.07
+"Magnesium, Mg",mg,12,11,8,150,4,109,3,86,2
+"Phosphorus, P",mg,26,23,18,324,9,236,6,186,4
+"Potassium, K",mg,170,151,119,2122,56,1544,39,1214,26
+"Sodium, Na",mg,18,16,13,225,6,163,4,129,3
+"Zinc, Zn",mg,0.18,0.16,0.13,2.25,0.06,1.63,0.04,1.29,0.03
+Vitamins
+"Vitamin C, total ascorbic acid",mg,36.6,32.6,25.6,456.8,12.1,332.3,8.4,261.3,5.5
+"Thiamin",mg,0.061,0.054,0.043,0.761,0.020,0.554,0.014,0.436,0.009
+"Riboflavin",mg,0.040,0.036,0.028,0.499,0.013,0.363,0.009,0.286,0.006
+"Niacin",mg,0.234,0.208,0.164,2.920,0.077,2.125,0.054,1.671,0.035
+"Vitamin B-6",mg,0.124,0.110,0.087,1.548,0.041,1.126,0.029,0.885,0.019
+"Folate, DFE",µg,43,38,30,537,14,390,10,307,6
+"Vitamin B-12",µg,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+"Vitamin A, RAE",µg,5,4,4,62,2,45,1,36,1
+"Vitamin A, IU",IU,98,87,69,1223,32,890,23,700,15
+"Vitamin E (alpha-tocopherol)",mg,0.15,0.13,0.10,1.87,0.05,1.36,0.03,1.07,0.02
+"Vitamin D (D2 + D3)",µg,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+"Vitamin D",IU,0,0,0,0,0,0,0,0,0
+"Vitamin K (phylloquinone)",µg,76.0,67.6,53.2,948.5,25.1,690.1,17.5,542.6,11.4
+Lipids
+"Fatty acids, total saturated",g,0.034,0.030,0.024,0.424,0.011,0.309,0.008,0.243,0.005
+"Fatty acids, total monounsaturated",g,0.017,0.015,0.012,0.212,0.006,0.154,0.004,0.121,0.003
+"Fatty acids, total polyunsaturated",g,0.017,0.015,0.012,0.212,0.006,0.154,0.004,0.121,0.003
+"Fatty acids, total trans",g,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"Cholesterol",mg,0,0,0,0,0,0,0,0,0
+Amino Acids
+Other
+"Caffeine",mg,0,0,0,0,0,0,0,0,0

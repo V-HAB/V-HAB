@@ -1,0 +1,44 @@
+Source: USDA National Nutrient Database for Standard Reference 1 April 2018 Software v.3.9.5.3_2019-06-13
+Basic Report
+Report Run at: September 04 2019 06:30 EDT
+"Nutrient data for: Peas, green, raw"
+Nutrient,Unit,1Value per 100 g,"1 cup = 145.0g",
+Proximates
+"Water",g,78.86,114.35
+"Energy",kcal,81,117
+"Protein",g,5.42,7.86
+"Total lipid (fat)",g,0.40,0.58
+"Carbohydrate, by difference",g,14.45,20.95
+"Fiber, total dietary",g,5.7,8.3
+"Sugars, total",g,5.67,8.22
+Minerals
+"Calcium, Ca",mg,25,36
+"Iron, Fe",mg,1.47,2.13
+"Magnesium, Mg",mg,33,48
+"Phosphorus, P",mg,108,157
+"Potassium, K",mg,244,354
+"Sodium, Na",mg,5,7
+"Zinc, Zn",mg,1.24,1.80
+Vitamins
+"Vitamin C, total ascorbic acid",mg,40.0,58.0
+"Thiamin",mg,0.266,0.386
+"Riboflavin",mg,0.132,0.191
+"Niacin",mg,2.090,3.030
+"Vitamin B-6",mg,0.169,0.245
+"Folate, DFE",µg,65,94
+"Vitamin B-12",µg,0.00,0.00
+"Vitamin A, RAE",µg,38,55
+"Vitamin A, IU",IU,765,1109
+"Vitamin E (alpha-tocopherol)",mg,0.13,0.19
+"Vitamin D (D2 + D3)",µg,0.0,0.0
+"Vitamin D",IU,0,0
+"Vitamin K (phylloquinone)",µg,24.8,36.0
+Lipids
+"Fatty acids, total saturated",g,0.071,0.103
+"Fatty acids, total monounsaturated",g,0.035,0.051
+"Fatty acids, total polyunsaturated",g,0.187,0.271
+"Fatty acids, total trans",g,0.000,0.000
+"Cholesterol",mg,0,0
+Amino Acids
+Other
+"Caffeine",mg,0,0

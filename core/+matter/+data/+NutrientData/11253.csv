@@ -1,0 +1,44 @@
+Source: USDA National Nutrient Database for Standard Reference 1 April 2018 Software v.3.9.5.3_2019-06-13
+Basic Report
+Report Run at: September 04 2019 06:29 EDT
+"Nutrient data for: Lettuce, green leaf, raw"
+Nutrient,Unit,1Value per 100 g,"1 cup shredded = 36.0g","1 head = 360.0g","1 leaf inner = 4.8g","1 leaf outer = 24.0g",
+Proximates
+"Water",g,94.98,34.19,341.93,4.56,22.80
+"Energy",kcal,15,5,54,1,4
+"Protein",g,1.36,0.49,4.90,0.07,0.33
+"Total lipid (fat)",g,0.15,0.05,0.54,0.01,0.04
+"Carbohydrate, by difference",g,2.87,1.03,10.33,0.14,0.69
+"Fiber, total dietary",g,1.3,0.5,4.7,0.1,0.3
+"Sugars, total",g,0.78,0.28,2.81,0.04,0.19
+Minerals
+"Calcium, Ca",mg,36,13,130,2,9
+"Iron, Fe",mg,0.86,0.31,3.10,0.04,0.21
+"Magnesium, Mg",mg,13,5,47,1,3
+"Phosphorus, P",mg,29,10,104,1,7
+"Potassium, K",mg,194,70,698,9,47
+"Sodium, Na",mg,28,10,101,1,7
+"Zinc, Zn",mg,0.18,0.06,0.65,0.01,0.04
+Vitamins
+"Vitamin C, total ascorbic acid",mg,9.2,3.3,33.1,0.4,2.2
+"Thiamin",mg,0.070,0.025,0.252,0.003,0.017
+"Riboflavin",mg,0.080,0.029,0.288,0.004,0.019
+"Niacin",mg,0.375,0.135,1.350,0.018,0.090
+"Vitamin B-6",mg,0.090,0.032,0.324,0.004,0.022
+"Folate, DFE",µg,38,14,137,2,9
+"Vitamin B-12",µg,0.00,0.00,0.00,0.00,0.00
+"Vitamin A, RAE",µg,370,133,1332,18,89
+"Vitamin A, IU",IU,7405,2666,26658,355,1777
+"Vitamin E (alpha-tocopherol)",mg,0.22,0.08,0.79,0.01,0.05
+"Vitamin D (D2 + D3)",µg,0.0,0.0,0.0,0.0,0.0
+"Vitamin D",IU,0,0,0,0,0
+"Vitamin K (phylloquinone)",µg,126.3,45.5,454.7,6.1,30.3
+Lipids
+"Fatty acids, total saturated",g,0.020,0.007,0.072,0.001,0.005
+"Fatty acids, total monounsaturated",g,0.006,0.002,0.022,0.000,0.001
+"Fatty acids, total polyunsaturated",g,0.082,0.030,0.295,0.004,0.020
+"Fatty acids, total trans",g,0.000,0.000,0.000,0.000,0.000
+"Cholesterol",mg,0,0,0,0,0
+Amino Acids
+Other
+"Caffeine",mg,0,0,0,0,0

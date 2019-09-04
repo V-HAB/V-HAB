@@ -1,0 +1,44 @@
+Source: USDA National Nutrient Database for Standard Reference 1 April 2018 Software v.3.9.5.3_2019-06-13
+Basic Report
+Report Run at: September 04 2019 06:29 EDT
+"Nutrient data for: Onions, young green, tops only"
+Nutrient,Unit,1Value per 100 g,"1 tbsp = 6.0g","1 stalk = 12.0g","1 cup chopped = 71.0g",
+Proximates
+"Water",g,92.32,5.54,11.08,65.55
+"Energy",kcal,27,2,3,19
+"Protein",g,0.97,0.06,0.12,0.69
+"Total lipid (fat)",g,0.47,0.03,0.06,0.33
+"Carbohydrate, by difference",g,5.74,0.34,0.69,4.08
+"Fiber, total dietary",g,1.8,0.1,0.2,1.3
+"Sugars, total",g,3.91,0.23,0.47,2.78
+Minerals
+"Calcium, Ca",mg,52,3,6,37
+"Iron, Fe",mg,0.51,0.03,0.06,0.36
+"Magnesium, Mg",mg,16,1,2,11
+"Phosphorus, P",mg,25,2,3,18
+"Potassium, K",mg,159,10,19,113
+"Sodium, Na",mg,15,1,2,11
+"Zinc, Zn",mg,0.20,0.01,0.02,0.14
+Vitamins
+"Vitamin C, total ascorbic acid",mg,13.4,0.8,1.6,9.5
+"Thiamin",mg,0.030,0.002,0.004,0.021
+"Riboflavin",mg,0.026,0.002,0.003,0.018
+"Niacin",mg,0.330,0.020,0.040,0.234
+"Vitamin B-6",mg,0.088,0.005,0.011,0.062
+"Folate, DFE",µg,30,2,4,21
+"Vitamin B-12",µg,0.00,0.00,0.00,0.00
+"Vitamin A, RAE",µg,200,12,24,142
+"Vitamin A, IU",IU,4000,240,480,2840
+"Vitamin E (alpha-tocopherol)",mg,0.21,0.01,0.03,0.15
+"Vitamin D (D2 + D3)",µg,0.0,0.0,0.0,0.0
+"Vitamin D",IU,0,0,0,0
+"Vitamin K (phylloquinone)",µg,156.3,9.4,18.8,111.0
+Lipids
+"Fatty acids, total saturated",g,0.165,0.010,0.020,0.117
+"Fatty acids, total monounsaturated",g,0.042,0.003,0.005,0.030
+"Fatty acids, total polyunsaturated",g,0.121,0.007,0.015,0.086
+"Fatty acids, total trans",g,0.000,0.000,0.000,0.000
+"Cholesterol",mg,0,0,0,0
+Amino Acids
+Other
+"Caffeine",mg,0,0,0,0

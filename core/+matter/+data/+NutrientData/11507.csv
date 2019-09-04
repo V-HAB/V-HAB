@@ -1,0 +1,44 @@
+Source: USDA National Nutrient Database for Standard Reference 1 April 2018 Software v.3.9.5.3_2019-06-13
+Basic Report
+Report Run at: September 04 2019 06:37 EDT
+"Nutrient data for: Sweet potato, raw, unprepared (Includes foods for USDA's Food Distribution Program)"
+Nutrient,Unit,1Value per 100 g,"1 cup, cubes = 133.0g","1 sweetpotato, 5"" long = 130.0g",
+Proximates
+"Water",g,77.28,102.78,100.46
+"Energy",kcal,86,114,112
+"Protein",g,1.57,2.09,2.04
+"Total lipid (fat)",g,0.05,0.07,0.07
+"Carbohydrate, by difference",g,20.12,26.76,26.16
+"Fiber, total dietary",g,3.0,4.0,3.9
+"Sugars, total",g,4.18,5.56,5.43
+Minerals
+"Calcium, Ca",mg,30,40,39
+"Iron, Fe",mg,0.61,0.81,0.79
+"Magnesium, Mg",mg,25,33,32
+"Phosphorus, P",mg,47,63,61
+"Potassium, K",mg,337,448,438
+"Sodium, Na",mg,55,73,72
+"Zinc, Zn",mg,0.30,0.40,0.39
+Vitamins
+"Vitamin C, total ascorbic acid",mg,2.4,3.2,3.1
+"Thiamin",mg,0.078,0.104,0.101
+"Riboflavin",mg,0.061,0.081,0.079
+"Niacin",mg,0.557,0.741,0.724
+"Vitamin B-6",mg,0.209,0.278,0.272
+"Folate, DFE",µg,11,15,14
+"Vitamin B-12",µg,0.00,0.00,0.00
+"Vitamin A, RAE",µg,709,943,922
+"Vitamin A, IU",IU,14187,18869,18443
+"Vitamin E (alpha-tocopherol)",mg,0.26,0.35,0.34
+"Vitamin D (D2 + D3)",µg,0.0,0.0,0.0
+"Vitamin D",IU,0,0,0
+"Vitamin K (phylloquinone)",µg,1.8,2.4,2.3
+Lipids
+"Fatty acids, total saturated",g,0.018,0.024,0.023
+"Fatty acids, total monounsaturated",g,0.001,0.001,0.001
+"Fatty acids, total polyunsaturated",g,0.014,0.019,0.018
+"Fatty acids, total trans",g,0.000,0.000,0.000
+"Cholesterol",mg,0,0,0
+Amino Acids
+Other
+"Caffeine",mg,0,0,0

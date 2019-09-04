@@ -1,0 +1,44 @@
+Source: USDA National Nutrient Database for Standard Reference 1 April 2018 Software v.3.9.5.3_2019-06-13
+Basic Report
+Report Run at: September 04 2019 06:25 EDT
+"Nutrient data for: Chard, swiss, raw"
+Nutrient,Unit,1Value per 100 g,"1 cup = 36.0g","1 leaf = 48.0g",
+Proximates
+"Water",g,92.66,33.36,44.48
+"Energy",kcal,19,7,9
+"Protein",g,1.80,0.65,0.86
+"Total lipid (fat)",g,0.20,0.07,0.10
+"Carbohydrate, by difference",g,3.74,1.35,1.80
+"Fiber, total dietary",g,1.6,0.6,0.8
+"Sugars, total",g,1.10,0.40,0.53
+Minerals
+"Calcium, Ca",mg,51,18,24
+"Iron, Fe",mg,1.80,0.65,0.86
+"Magnesium, Mg",mg,81,29,39
+"Phosphorus, P",mg,46,17,22
+"Potassium, K",mg,379,136,182
+"Sodium, Na",mg,213,77,102
+"Zinc, Zn",mg,0.36,0.13,0.17
+Vitamins
+"Vitamin C, total ascorbic acid",mg,30.0,10.8,14.4
+"Thiamin",mg,0.040,0.014,0.019
+"Riboflavin",mg,0.090,0.032,0.043
+"Niacin",mg,0.400,0.144,0.192
+"Vitamin B-6",mg,0.099,0.036,0.048
+"Folate, DFE",µg,14,5,7
+"Vitamin B-12",µg,0.00,0.00,0.00
+"Vitamin A, RAE",µg,306,110,147
+"Vitamin A, IU",IU,6116,2202,2936
+"Vitamin E (alpha-tocopherol)",mg,1.89,0.68,0.91
+"Vitamin D (D2 + D3)",µg,0.0,0.0,0.0
+"Vitamin D",IU,0,0,0
+"Vitamin K (phylloquinone)",µg,830.0,298.8,398.4
+Lipids
+"Fatty acids, total saturated",g,0.030,0.011,0.014
+"Fatty acids, total monounsaturated",g,0.040,0.014,0.019
+"Fatty acids, total polyunsaturated",g,0.070,0.025,0.034
+"Fatty acids, total trans",g,0.000,0.000,0.000
+"Cholesterol",mg,0,0,0
+Amino Acids
+Other
+"Caffeine",mg,0,0,0

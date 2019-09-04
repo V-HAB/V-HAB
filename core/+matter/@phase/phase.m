@@ -64,6 +64,29 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % Length of the current time step for this phase
         fTimeStep;     % [s]
         
+        % If masses are used that are a composition of different base
+        % masses, these are modelled in tfCompoundMass. CompoundMasses must
+        % not be present in the matter table and can be defined
+        % arbitrarily, as long as the base matter that makes up the
+        % compound exists. The entries look for example like this.
+        % tfCompoundMass.Tomato.H2O = 1;
+        tfCompoundMass;
+        
+        % If ions are present in the phase, the charge of the ion is
+        % represented in this struct. The fields correspond to the
+        % respective ion, and the entry in the field is a matrix with the
+        % first row corresponding to the masses for the different charges
+        % and the second row corresponding to the different charges.
+        % Example entries would look like this:
+        % tfIons.H =
+        % 0.1   2.1   0.0001
+        % -1     0    1
+        % To calculate the total charge the following code can be used:
+        % sum(tfIons.H(1,:) .* tfIons.H(2,:))
+        % To get the mass of one specific charge level for the ion use:
+        % tfIons.H(1,tfIons.H(2,:) == -1)
+        tfIons;
+        
         % booleans used to check if anything is bound to the events
         % informing other object/functions about a finished
         % massupdate/update. These properties were implement to improve

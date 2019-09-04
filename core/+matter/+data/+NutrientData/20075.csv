@@ -1,0 +1,43 @@
+Source: USDA National Nutrient Database for Standard Reference 1 April 2018 Software v.3.9.5.3_2019-06-13
+Basic Report
+Report Run at: September 04 2019 06:39 EDT
+"Nutrient data for: Wheat, soft white"
+Nutrient,Unit,1Value per 100 g,"1 cup = 168.0g",
+Proximates
+"Water",g,10.42,17.51
+"Energy",kcal,340,571
+"Protein",g,10.69,17.96
+"Total lipid (fat)",g,1.99,3.34
+"Carbohydrate, by difference",g,75.36,126.60
+"Fiber, total dietary",g,12.7,21.3
+"Sugars, total",g,0.41,0.69
+Minerals
+"Calcium, Ca",mg,34,57
+"Iron, Fe",mg,5.37,9.02
+"Magnesium, Mg",mg,90,151
+"Phosphorus, P",mg,402,675
+"Potassium, K",mg,435,731
+"Sodium, Na",mg,2,3
+"Zinc, Zn",mg,3.46,5.81
+Vitamins
+"Vitamin C, total ascorbic acid",mg,0.0,0.0
+"Thiamin",mg,0.410,0.689
+"Riboflavin",mg,0.107,0.180
+"Niacin",mg,4.766,8.007
+"Vitamin B-6",mg,0.378,0.635
+"Folate, DFE",µg,41,69
+"Vitamin B-12",µg,0.00,0.00
+"Vitamin A, RAE",µg,0,0
+"Vitamin A, IU",IU,9,15
+"Vitamin E (alpha-tocopherol)",mg,1.01,1.70
+"Vitamin D (D2 + D3)",µg,0.0,0.0
+"Vitamin D",IU,0,0
+"Vitamin K (phylloquinone)",µg,1.9,3.2
+Lipids
+"Fatty acids, total saturated",g,0.368,0.618
+"Fatty acids, total monounsaturated",g,0.227,0.381
+"Fatty acids, total polyunsaturated",g,0.837,1.406
+"Cholesterol",mg,0,0
+Amino Acids
+Other
+"Caffeine",mg,0,0

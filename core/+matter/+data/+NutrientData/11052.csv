@@ -1,0 +1,44 @@
+Source: USDA National Nutrient Database for Standard Reference 1 April 2018 Software v.3.9.5.3_2019-06-13
+Basic Report
+Report Run at: September 04 2019 06:34 EDT
+"Nutrient data for: Beans, snap, green, raw"
+Nutrient,Unit,1Value per 100 g,"1 cup 1/2"" pieces = 100.0g","10.0 beans (4"" long) = 55.0g",
+Proximates
+"Water",g,90.32,90.32,49.68
+"Energy",kcal,31,31,17
+"Protein",g,1.83,1.83,1.01
+"Total lipid (fat)",g,0.22,0.22,0.12
+"Carbohydrate, by difference",g,6.97,6.97,3.83
+"Fiber, total dietary",g,2.7,2.7,1.5
+"Sugars, total",g,3.26,3.26,1.79
+Minerals
+"Calcium, Ca",mg,37,37,20
+"Iron, Fe",mg,1.03,1.03,0.57
+"Magnesium, Mg",mg,25,25,14
+"Phosphorus, P",mg,38,38,21
+"Potassium, K",mg,211,211,116
+"Sodium, Na",mg,6,6,3
+"Zinc, Zn",mg,0.24,0.24,0.13
+Vitamins
+"Vitamin C, total ascorbic acid",mg,12.2,12.2,6.7
+"Thiamin",mg,0.082,0.082,0.045
+"Riboflavin",mg,0.104,0.104,0.057
+"Niacin",mg,0.734,0.734,0.404
+"Vitamin B-6",mg,0.141,0.141,0.078
+"Folate, DFE",µg,33,33,18
+"Vitamin B-12",µg,0.00,0.00,0.00
+"Vitamin A, RAE",µg,35,35,19
+"Vitamin A, IU",IU,690,690,380
+"Vitamin E (alpha-tocopherol)",mg,0.41,0.41,0.23
+"Vitamin D (D2 + D3)",µg,0.0,0.0,0.0
+"Vitamin D",IU,0,0,0
+"Vitamin K (phylloquinone)",µg,43.0,43.0,23.6
+Lipids
+"Fatty acids, total saturated",g,0.050,0.050,0.028
+"Fatty acids, total monounsaturated",g,0.010,0.010,0.006
+"Fatty acids, total polyunsaturated",g,0.113,0.113,0.062
+"Fatty acids, total trans",g,0.000,0.000,0.000
+"Cholesterol",mg,0,0,0
+Amino Acids
+Other
+"Caffeine",mg,0,0,0

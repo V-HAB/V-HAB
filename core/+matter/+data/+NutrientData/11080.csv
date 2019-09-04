@@ -1,0 +1,44 @@
+Source: USDA National Nutrient Database for Standard Reference 1 April 2018 Software v.3.9.5.3_2019-06-13
+Basic Report
+Report Run at: September 04 2019 06:31 EDT
+"Nutrient data for: Beets, raw"
+Nutrient,Unit,1Value per 100 g,"1 cup = 136.0g","1 beet (2"" dia) = 82.0g",
+Proximates
+"Water",g,87.58,119.11,71.82
+"Energy",kcal,43,58,35
+"Protein",g,1.61,2.19,1.32
+"Total lipid (fat)",g,0.17,0.23,0.14
+"Carbohydrate, by difference",g,9.56,13.00,7.84
+"Fiber, total dietary",g,2.8,3.8,2.3
+"Sugars, total",g,6.76,9.19,5.54
+Minerals
+"Calcium, Ca",mg,16,22,13
+"Iron, Fe",mg,0.80,1.09,0.66
+"Magnesium, Mg",mg,23,31,19
+"Phosphorus, P",mg,40,54,33
+"Potassium, K",mg,325,442,266
+"Sodium, Na",mg,78,106,64
+"Zinc, Zn",mg,0.35,0.48,0.29
+Vitamins
+"Vitamin C, total ascorbic acid",mg,4.9,6.7,4.0
+"Thiamin",mg,0.031,0.042,0.025
+"Riboflavin",mg,0.040,0.054,0.033
+"Niacin",mg,0.334,0.454,0.274
+"Vitamin B-6",mg,0.067,0.091,0.055
+"Folate, DFE",µg,109,148,89
+"Vitamin B-12",µg,0.00,0.00,0.00
+"Vitamin A, RAE",µg,2,3,2
+"Vitamin A, IU",IU,33,45,27
+"Vitamin E (alpha-tocopherol)",mg,0.04,0.05,0.03
+"Vitamin D (D2 + D3)",µg,0.0,0.0,0.0
+"Vitamin D",IU,0,0,0
+"Vitamin K (phylloquinone)",µg,0.2,0.3,0.2
+Lipids
+"Fatty acids, total saturated",g,0.027,0.037,0.022
+"Fatty acids, total monounsaturated",g,0.032,0.044,0.026
+"Fatty acids, total polyunsaturated",g,0.060,0.082,0.049
+"Fatty acids, total trans",g,0.000,0.000,0.000
+"Cholesterol",mg,0,0,0
+Amino Acids
+Other
+"Caffeine",mg,0,0,0

@@ -1,0 +1,44 @@
+Source: USDA National Nutrient Database for Standard Reference 1 April 2018 Software v.3.9.5.3_2019-06-13
+Basic Report
+Report Run at: September 04 2019 06:35 EDT
+"Nutrient data for: Spinach, raw"
+Nutrient,Unit,1Value per 100 g,"1 cup = 30.0g","1 bunch = 340.0g","1 leaf = 10.0g","1 package (10 oz) = 284.0g",
+Proximates
+"Water",g,91.40,27.42,310.76,9.14,259.58
+"Energy",kcal,23,7,78,2,65
+"Protein",g,2.86,0.86,9.72,0.29,8.12
+"Total lipid (fat)",g,0.39,0.12,1.33,0.04,1.11
+"Carbohydrate, by difference",g,3.63,1.09,12.34,0.36,10.31
+"Fiber, total dietary",g,2.2,0.7,7.5,0.2,6.2
+"Sugars, total",g,0.42,0.13,1.43,0.04,1.19
+Minerals
+"Calcium, Ca",mg,99,30,337,10,281
+"Iron, Fe",mg,2.71,0.81,9.21,0.27,7.70
+"Magnesium, Mg",mg,79,24,269,8,224
+"Phosphorus, P",mg,49,15,167,5,139
+"Potassium, K",mg,558,167,1897,56,1585
+"Sodium, Na",mg,79,24,269,8,224
+"Zinc, Zn",mg,0.53,0.16,1.80,0.05,1.51
+Vitamins
+"Vitamin C, total ascorbic acid",mg,28.1,8.4,95.5,2.8,79.8
+"Thiamin",mg,0.078,0.023,0.265,0.008,0.222
+"Riboflavin",mg,0.189,0.057,0.643,0.019,0.537
+"Niacin",mg,0.724,0.217,2.462,0.072,2.056
+"Vitamin B-6",mg,0.195,0.059,0.663,0.020,0.554
+"Folate, DFE",µg,194,58,660,19,551
+"Vitamin B-12",µg,0.00,0.00,0.00,0.00,0.00
+"Vitamin A, RAE",µg,469,141,1595,47,1332
+"Vitamin A, IU",IU,9377,2813,31882,938,26631
+"Vitamin E (alpha-tocopherol)",mg,2.03,0.61,6.90,0.20,5.77
+"Vitamin D (D2 + D3)",µg,0.0,0.0,0.0,0.0,0.0
+"Vitamin D",IU,0,0,0,0,0
+"Vitamin K (phylloquinone)",µg,482.9,144.9,1641.9,48.3,1371.4
+Lipids
+"Fatty acids, total saturated",g,0.063,0.019,0.214,0.006,0.179
+"Fatty acids, total monounsaturated",g,0.010,0.003,0.034,0.001,0.028
+"Fatty acids, total polyunsaturated",g,0.165,0.050,0.561,0.017,0.469
+"Fatty acids, total trans",g,0.000,0.000,0.000,0.000,0.000
+"Cholesterol",mg,0,0,0,0,0
+Amino Acids
+Other
+"Caffeine",mg,0,0,0,0,0

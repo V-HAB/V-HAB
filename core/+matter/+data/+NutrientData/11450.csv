@@ -1,0 +1,41 @@
+Source: USDA National Nutrient Database for Standard Reference 1 April 2018 Software v.3.9.5.3_2019-06-13
+Basic Report
+Report Run at: September 04 2019 06:35 EDT
+"Nutrient data for: Soybeans, green, raw"
+Nutrient,Unit,1Value per 100 g,"1 cup = 256.0g",
+Proximates
+"Water",g,67.50,172.80
+"Energy",kcal,147,376
+"Protein",g,12.95,33.15
+"Total lipid (fat)",g,6.80,17.41
+"Carbohydrate, by difference",g,11.05,28.29
+"Fiber, total dietary",g,4.2,10.8
+Minerals
+"Calcium, Ca",mg,197,504
+"Iron, Fe",mg,3.55,9.09
+"Magnesium, Mg",mg,65,166
+"Phosphorus, P",mg,194,497
+"Potassium, K",mg,620,1587
+"Sodium, Na",mg,15,38
+"Zinc, Zn",mg,0.99,2.53
+Vitamins
+"Vitamin C, total ascorbic acid",mg,29.0,74.2
+"Thiamin",mg,0.435,1.114
+"Riboflavin",mg,0.175,0.448
+"Niacin",mg,1.650,4.224
+"Vitamin B-6",mg,0.065,0.166
+"Folate, DFE",µg,165,422
+"Vitamin B-12",µg,0.00,0.00
+"Vitamin A, RAE",µg,9,23
+"Vitamin A, IU",IU,180,461
+"Vitamin D (D2 + D3)",µg,0.0,0.0
+"Vitamin D",IU,0,0
+Lipids
+"Fatty acids, total saturated",g,0.786,2.012
+"Fatty acids, total monounsaturated",g,1.284,3.287
+"Fatty acids, total polyunsaturated",g,3.200,8.192
+"Fatty acids, total trans",g,0.000,0.000
+"Cholesterol",mg,0,0
+Amino Acids
+Other
+"Caffeine",mg,0,0

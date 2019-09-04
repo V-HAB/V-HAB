@@ -1,0 +1,129 @@
+Source: USDA National Nutrient Database for Standard Reference 1 April 2018 Software v.3.9.5.3_2019-06-13
+Full Report (All Nutrients)
+Report Run at: September 04 2019 09:57 EDT
+"Nutrient data for: Wild rice, raw"
+Food Group:  Cereal Grains and Pasta
+Common Name:
+Carbohydrate Factor: Fat Factor: Protein Factor: Nitrogen to Protein Conversion Factor: 
+Nutrient,Unit,1Value per 100 g,Data points,Std. Error,"1 cup = 160.0g",
+Proximates
+"Water",g,7.76,40,0.220,12.42
+"Energy",kcal,357,--,--,571
+"Energy",kJ,1494,--,--,2390
+"Protein",g,14.73,43,0.250,23.57
+"Total lipid (fat)",g,1.08,10,0.120,1.73
+"Ash",g,1.53,10,0.050,2.45
+"Carbohydrate, by difference",g,74.90,--,--,119.84
+"Fiber, total dietary",g,6.2,--,--,9.9
+"Sugars, total",g,2.50,--,--,4.00
+"Sucrose",g,0.67,3,--,1.07
+Minerals
+"Calcium, Ca",mg,21,41,3.000,34
+"Iron, Fe",mg,1.96,40,0.100,3.14
+"Magnesium, Mg",mg,177,41,8.000,283
+"Phosphorus, P",mg,433,40,11.000,693
+"Potassium, K",mg,427,41,11.000,683
+"Sodium, Na",mg,7,7,1.000,11
+"Zinc, Zn",mg,5.96,41,0.300,9.54
+"Copper, Cu",mg,0.524,41,0.057,0.838
+"Manganese, Mn",mg,1.329,38,0.032,2.126
+"Selenium, Se",µg,2.8,2,--,4.5
+Vitamins
+"Vitamin C, total ascorbic acid",mg,0.0,--,--,0.0
+"Thiamin",mg,0.115,40,0.012,0.184
+"Riboflavin",mg,0.262,40,0.013,0.419
+"Niacin",mg,6.733,40,0.188,10.773
+"Pantothenic acid",mg,1.074,7,0.235,1.718
+"Vitamin B-6",mg,0.391,6,0.096,0.626
+"Folate, total",µg,95,5,11.000,152
+"Folic acid",µg,0,--,--,0
+"Folate, food",µg,95,5,11.000,152
+"Folate, DFE",µg,95,--,--,152
+"Choline, total",mg,35.0,--,--,56.0
+"Vitamin B-12",µg,0.00,--,--,0.00
+"Vitamin B-12, added",µg,0.00,--,--,0.00
+"Vitamin A, RAE",µg,1,1,--,2
+"Retinol",µg,0,--,--,0
+"Carotene, beta",µg,11,--,--,18
+"Carotene, alpha",µg,0,--,--,0
+"Cryptoxanthin, beta",µg,0,--,--,0
+"Vitamin A, IU",IU,19,1,--,30
+"Lycopene",µg,0,--,--,0
+"Lutein + zeaxanthin",µg,220,--,--,352
+"Vitamin E (alpha-tocopherol)",mg,0.82,--,--,1.31
+"Vitamin E, added",mg,0.00,--,--,0.00
+"Vitamin D (D2 + D3)",µg,0.0,--,--,0.0
+"Vitamin D",IU,0,--,--,0
+"Vitamin K (phylloquinone)",µg,1.9,--,--,3.0
+Lipids
+"Fatty acids, total saturated",g,0.156,--,--,0.250
+"4:0",g,0.000,--,--,0.000
+"6:0",g,0.000,--,--,0.000
+"8:0",g,0.000,--,--,0.000
+"10:0",g,0.000,--,--,0.000
+"12:0",g,0.000,--,--,0.000
+"14:0",g,0.000,--,--,0.000
+"16:0",g,0.145,1,--,0.232
+"18:0",g,0.011,1,--,0.018
+"Fatty acids, total monounsaturated",g,0.159,--,--,0.254
+"16:1 undifferentiated",g,0.000,--,--,0.000
+"18:1 undifferentiated",g,0.159,1,--,0.254
+"20:1",g,0.000,--,--,0.000
+"22:1 undifferentiated",g,0.000,--,--,0.000
+"Fatty acids, total polyunsaturated",g,0.676,--,--,1.082
+"18:2 undifferentiated",g,0.377,1,--,0.603
+"18:3 undifferentiated",g,0.300,1,--,0.480
+"18:4",g,0.000,--,--,0.000
+"20:4 undifferentiated",g,0.000,--,--,0.000
+"20:5 n-3 (EPA)",g,0.000,--,--,0.000
+"22:5 n-3 (DPA)",g,0.000,--,--,0.000
+"22:6 n-3 (DHA)",g,0.000,--,--,0.000
+"Cholesterol",mg,0,--,--,0
+Amino Acids
+"Tryptophan",g,0.179,8,--,0.286
+"Threonine",g,0.469,8,--,0.750
+"Isoleucine",g,0.618,8,--,0.989
+"Leucine",g,1.018,8,--,1.629
+"Lysine",g,0.629,8,--,1.006
+"Methionine",g,0.438,8,--,0.701
+"Cystine",g,0.174,4,--,0.278
+"Phenylalanine",g,0.721,8,--,1.154
+"Tyrosine",g,0.622,8,--,0.995
+"Valine",g,0.858,7,--,1.373
+"Arginine",g,1.136,8,--,1.818
+"Histidine",g,0.384,8,--,0.614
+"Alanine",g,0.825,8,--,1.320
+"Aspartic acid",g,1.419,8,--,2.270
+"Glutamic acid",g,2.565,8,--,4.104
+"Glycine",g,0.672,8,--,1.075
+"Proline",g,0.519,8,--,0.830
+"Serine",g,0.778,8,--,1.245
+Other
+"Alcohol, ethyl",g,0.0,--,--,0.0
+"Caffeine",mg,0,--,--,0
+"Theobromine",mg,0,--,--,0
+Flavonoids
+Isoflavones
+"Daidzein",mg,0.00,1,--,0.00
+"Genistein",mg,0.00,1,--,0.00
+"Total isoflavones",mg,0.00,1,--,0.00
+Proanthocyanidin
+"Proanthocyanidin dimers",mg,2.1,18,0.780,3.4
+"Proanthocyanidin trimers",mg,3.3,18,1.830,5.3
+"Proanthocyanidin 4-6mers",mg,5.3,18,2.950,8.5
+1,"Qiu, Y., Liu, Q., and Beta, T.","Antioxidant activity of commercial wild rice and identification of flavonoids compounds in active fractions",2009,J. Agric. Food Chem.,57 pp. 7543-7543
+2,"Horn-Ross, P. L., Barnes, S., Lee, M., Coward, L., Mandel, E., Koo, J., John, E. M., and Smith, M. ","Assesing phytoestrogen exposure in epidemiologic studies: development of a database (United States).",2000,Cancer Causes and Control,11 pp. 289-289
+Langual Code(s)
+"G0003""COOKING METHOD NOT APPLICABLE"
+"M0001""CONTAINER OR WRAPPING NOT KNOWN"
+"N0001""FOOD CONTACT SURFACE NOT KNOWN"
+"P0024""HUMAN FOOD, NO AGE SPECIFICATION"
+"E0150""WHOLE, NATURAL SHAPE"
+"C0133""SEED, SKIN PRESENT, GERM PRESENT"
+"A0125""GRAIN OR STARCH PRODUCT (US CFR)"
+"F0003""NOT HEAT-TREATED"
+"J0001""PRESERVATION METHOD NOT KNOWN"
+"A1290""2000 CEREAL GRAINS AND PASTA (USDA SR)"
+"K0003""NO PACKING MEDIUM USED"
+"B1375""WILD RICE"
+"H0003""NO TREATMENT APPLIED"
