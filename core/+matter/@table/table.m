@@ -276,7 +276,7 @@ classdef table < base
             csInput = textscan(iFileID, '%s', 'Delimiter','\n');
             csInput = csInput{1};
             sInput_1  = csInput{1};
-            csSubstances = textscan(sInput_1,'%s','Delimiter',',');
+            csSubstances = textscan(sInput_1,'%s','Delimiter',';');
             csSubstances = csSubstances{1};
             
             fclose(iFileID);

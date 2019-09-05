@@ -36,7 +36,7 @@ if strcmp(sTarget, 'MatterData')
     csFirstRow = csFirstRow{1};
     sFirstRow  = csFirstRow{1};
     
-    csColumnNames = textscan(sFirstRow, '%s','Delimiter',',');
+    csColumnNames = textscan(sFirstRow, '%s','Delimiter',';');
     csColumnNames = csColumnNames{1};
     
     for iI = 1:length(csColumnNames)
@@ -54,7 +54,7 @@ if strcmp(sTarget, 'MatterData')
     csSecondRow = csSecondRow{1};
     sSecondRow  = csSecondRow{1};
     
-    csVariableNames = textscan(sSecondRow, '%s', iNumberOfColumns, 'Delimiter',',');
+    csVariableNames = textscan(sSecondRow, '%s', iNumberOfColumns, 'Delimiter',';');
     csVariableNames = csVariableNames{1};
     
     for iI = 1:length(csVariableNames)
@@ -70,7 +70,7 @@ if strcmp(sTarget, 'MatterData')
     csThirdRow = csThirdRow{1};
     sThirdRow  = csThirdRow{1};
     
-    csUnits = textscan(sThirdRow, '%s', iNumberOfColumns, 'Delimiter',',');
+    csUnits = textscan(sThirdRow, '%s', iNumberOfColumns, 'Delimiter',';');
     csUnits = csUnits{1};
     
     for iI = 1:length(csUnits)
@@ -88,7 +88,7 @@ if strcmp(sTarget, 'MatterData')
     sFormatString = strcat(sFormatString, '%[^\n\r]');
     
     % Get all other rows
-    csImportCell = textscan(iFileID, sFormatString, 'Delimiter', ',', 'ReturnOnError', false);
+    csImportCell = textscan(iFileID, sFormatString, 'Delimiter', ';', 'ReturnOnError', false);
     
     %% Close the text file.
     fclose(iFileID);
@@ -274,16 +274,16 @@ else
     sInput_3 = csInput{3};
     sInput_4 = csInput{4};
     
-    csColumnNames = textscan(sInput_1,'%s','Delimiter',',');
+    csColumnNames = textscan(sInput_1,'%s','Delimiter',';');
     csColumnNames = csColumnNames{1};
     
-    csVariableNames = textscan(sInput_2,'%s','Delimiter',',');
+    csVariableNames = textscan(sInput_2,'%s','Delimiter',';');
     csVariableNames = csVariableNames{1};
     
-    csUnits = textscan(sInput_3,'%s','Delimiter',',');
+    csUnits = textscan(sInput_3,'%s','Delimiter',';');
     csUnits = csUnits{1};
     
-    csValues = textscan(sInput_4,'%s','Delimiter',',');
+    csValues = textscan(sInput_4,'%s','Delimiter',';');
     csValues = csValues{1};
     
     fclose(iFileID);
@@ -343,7 +343,7 @@ else
         sInput_1 = csInput{1};
         sInput_2 = csInput{2};
         
-        csColumnNames = textscan(sInput_1,'%s','Delimiter',',');
+        csColumnNames = textscan(sInput_1,'%s','Delimiter',';');
         csColumnNames = csColumnNames{1};
         
         % To make the following code a little simpler, we create an integer
@@ -356,7 +356,7 @@ else
         csColumnNames = strrep(csColumnNames,' ','');
         csColumnNames = strrep(csColumnNames,'-','');
         
-        csUnits = textscan(sInput_2,'%s','Delimiter',',');
+        csUnits = textscan(sInput_2,'%s','Delimiter',';');
         csUnits = csUnits{1};
         
         % Create tColumns struct
@@ -379,7 +379,7 @@ else
         
         % Creating the file name
         sFileName = strrep(['core/+matter/+data/+NIST/',csFileName{iI},'DataFile.csv'], '/', filesep);
-        mfRawData = dlmread(sFileName,',');
+        mfRawData = dlmread(sFileName,';');
         
         % We need to initialize three smaller matrices with enough space to
         % hold all values. So first we need to find out, how many values

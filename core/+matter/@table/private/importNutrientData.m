@@ -16,7 +16,7 @@ function importNutrientData(this)
     csFirstRow = csFirstRow{1};
     sFirstRow  = csFirstRow{1};
     
-    csColumnNames = textscan(sFirstRow, '%s','Delimiter',',');
+    csColumnNames = textscan(sFirstRow, '%s','Delimiter',';');
     csColumnNames = csColumnNames{1};
 
     for iI = 1:length(csColumnNames)
@@ -34,7 +34,7 @@ function importNutrientData(this)
     csSecondRow = csSecondRow{1};
     sSecondRow  = csSecondRow{1};
     
-    csVariableNames = textscan(sSecondRow, '%s', iNumberOfColumns, 'Delimiter',',');
+    csVariableNames = textscan(sSecondRow, '%s', iNumberOfColumns, 'Delimiter',';');
     csVariableNames = csVariableNames{1};
     
     for iI = 1:length(csVariableNames)
@@ -50,7 +50,7 @@ function importNutrientData(this)
     csThirdRow = csThirdRow{1};
     sThirdRow  = csThirdRow{1};
     
-    csUnits = textscan(sThirdRow, '%s', iNumberOfColumns, 'Delimiter',',');
+    csUnits = textscan(sThirdRow, '%s', iNumberOfColumns, 'Delimiter',';');
     csUnits = csUnits{1};
     
     for iI = 1:length(csUnits)
@@ -68,7 +68,7 @@ function importNutrientData(this)
     sFormatString = strcat(sFormatString, '%[^\n\r]');
     
     % Get all other rows
-    csImportCell = textscan(iFileID, sFormatString, 'Delimiter', ',', 'ReturnOnError', false);
+    csImportCell = textscan(iFileID, sFormatString, 'Delimiter', ';', 'ReturnOnError', false);
     
     %% Close the text file.
     fclose(iFileID);

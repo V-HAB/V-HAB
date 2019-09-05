@@ -1,4 +1,4 @@
-Substance Name,Molar Mass,Specific Gas Constant,Standard Density,Standard Specific Heat Capacity
-sName,fMolarMass,fSpecificGasConstant,fStandardDensity,fStandardSpecificHeatCapacity
--,kg/mol,J/(kg*K),kg/m3,J/(kg*K)
-Methane,0.0160425,518.3,0.67983,2210
+Substance Name;Molar Mass;Specific Gas Constant;Standard Density;Standard Specific Heat Capacity
+sName;fMolarMass;fSpecificGasConstant;fStandardDensity;fStandardSpecificHeatCapacity
+-;kg/mol;J/(kg*K);kg/m3;J/(kg*K)
+Methane;0.0160425;518.3;0.67983;2210
