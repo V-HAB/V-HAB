@@ -4,6 +4,17 @@ function importNutrientData(this)
 % want to add additional food to V-HAB search for it in the database,
 % download the corresponding CSV and add it to the folder
 % core/+matter/+data/+NutrientData
+%
+% The skript is able to import both the base and the full data file,
+% however it is recommended to import the full data file. In the base file
+% some parts of the composition are neglected, resulting in the mass not
+% summing up to 100 g (or after the import 1 kg). For the full import the
+% mass balance is correct, however some parts are considered in multiple
+% quantities. A correct mass balance can be achieved by summing water,
+% protein, fat, ash and carbohydrates and neglecting everything else
+%
+% For data that is provided by the manufacturer, errors are likely because
+% they rarely report substances that sum up to 1 in their mass composition!
     
     % get the file names for the available nutrient data
     csFiles = dir(strrep('core/+matter/+data/+NutrientData','/',filesep));
@@ -85,7 +96,12 @@ function importNutrientData(this)
             
             if ~isempty(iHeaderRows) && iRow > iHeaderRows
                 cData = cell(1,0);
-                if ~isempty(regexp(csImport{iRow}, '1,"', 'once'))
+                % Unfortunatly the data is not exactly formatted
+                % identically from the database, sometimes there are empty
+                % lines before sources, sometimes there is the term sources
+                % of data and sometimes the sources just start (1,"
+                % identifies this case)
+                if ~isempty(regexp(csImport{iRow}, '1,"', 'once')) || ~isempty(regexp(csImport{iRow}, 'Sources of Data', 'once')) || isempty(csImport{iRow})
                     iEndRow = iRow - 1;
                     break
                 end
@@ -103,8 +119,6 @@ function importNutrientData(this)
                 acData{iRow} = cData;
             end
         end
-        
-        % tNutrientData = readtable(strrep(['core/+matter/+data/+NutrientData/', csFiles{iFile}],'/',filesep), 'HeaderLines', iHeaderRows);
         
         % Close the text file.
         fclose(iFileID);
@@ -147,7 +161,7 @@ function importNutrientData(this)
                 
                 if strcmp(sUnit, 'IU')
                     sUnitHeader = 'IU';
-                elseif strcmp(sUnit, 'kcal')
+                elseif strcmp(sUnit, 'kcal') || strcmp(sUnit, 'kJ')
                     sUnitHeader = 'Energy';
                 else
                     sUnitHeader = 'Mass';
@@ -166,41 +180,35 @@ function importNutrientData(this)
         end
     end
     
-    csMassFields = fieldnames(ttxImportNutrientData.Strawberries.Mass);
+    % add a general entry for food as it is assumed in the BVAD and HDIH:
+    ttxImportNutrientData.Food.Mass.Water                       = 0.4636; % 0.7 kg / 1.51 see table 3-33 in BVAD
+    % The following values are based on the 12.59 MJ of energy content
+    % mentioned in the BVAD food and the general percentages metioned in
+    % HDIH Marcunutrient Guidelines for Spaceflight (Table 7.2-2)
+    ttxImportNutrientData.Food.Mass.Protein                     = ((0.175 * 12.59 * 10^6) / (17 * 10^6)) / 1.51;
+    ttxImportNutrientData.Food.Mass.Carbohydrate__by_difference	= ((0.525 * 12.59 * 10^6) / (17 * 10^6)) / 1.51;
+    ttxImportNutrientData.Food.Mass.Total_lipid__fat_           = ((0.3 * 12.59 * 10^6) / (37 * 10^6)) / 1.51;
+    ttxImportNutrientData.Food.Mass.Ash                         =  1 - (ttxImportNutrientData.Food.Mass.Water + ttxImportNutrientData.Food.Mass.Protein + ttxImportNutrientData.Food.Mass.Carbohydrate__by_difference + ttxImportNutrientData.Food.Mass.Total_lipid__fat_ );
     
-    fTotalMass = 0;
-    for iMassField = 1:length(csMassFields)
-        if strcmp(csMassFields{iMassField}, 'Fiber__total_dietary') || strcmp(csMassFields{iMassField}, 'Sugars__total') || strcmp(csMassFields{iMassField}, 'Lipids')
-            continue
-        end
-        
-        xFieldValue = ttxImportNutrientData.Strawberries.Mass.(csMassFields{iMassField});
-        if isa(xFieldValue, 'struct')
-            csInternalFieldnames = fieldnames(xFieldValue);
-            for iInternalField = 1:length(csInternalFieldnames)
-                fTotalMass = fTotalMass + xFieldValue.(csInternalFieldnames{iInternalField});
-            end
-        else
-            fTotalMass = fTotalMass + xFieldValue;
-        end
-    end
+    this.ttxNutrientData = ttxImportNutrientData;
     
     %% Create Compound Matter Data entries based on imported nutrient data!
+    this.csEdibleSubstances = fieldnames(ttxImportNutrientData);
     
     % loop over all edible substances
     for iJ = 1:length(this.csEdibleSubstances)
-        this.ttxMatter.(this.csEdibleSubstances{iJ}).txNutrientData = ttxImportNutrientData.(this.csEdibleSubstances{iJ});
+        % Currently food is simplified to only consist of Water, Carbohydrates,
+        % Proteins, Fats and Ash (basically the rest e.g. Minerals)
+        trBaseComposition.H2O       = ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Water;
+        trBaseComposition.C6H12O6   = ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Carbohydrate__by_difference;
+        trBaseComposition.C4H5ON    = ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Protein;
+        trBaseComposition.C16H32O2  = ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Total_lipid__fat_;
+        trBaseComposition.C         = ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Ash;
         
-        % csComposition = {'Carbohydrates', 'Protein', 'Fat', 'C'}
-        csFieldName = fieldnames(this.ttxMatter.(this.csEdibleSubstances{iJ}).txNutrientData);
-        
-        fTotalMass = 0;
-        for iField = 1:length(csFieldName)
-            if ~isempty(regexp(csFieldName{iField}, 'Mass', 'once')) && isempty(regexp(csFieldName{iField}, 'EnergyMass', 'once'))
-                fTotalMass = fTotalMass + this.ttxMatter.(this.csEdibleSubstances{iJ}).txNutrientData.(csFieldName{iField});
-            end
-        end
-        this.defineCompoundMass(this.csEdibleSubstances{iJ}, csComposition)
+        % Now we define a compound mass in the matter table with the
+        % corresponding composition. Note that the base composition can be
+        % adjusted within a simulation, but for defining matter of this
+        % type, the base composition is used
+        this.defineCompoundMass(this, this.csEdibleSubstances{iJ}, trBaseComposition)
     end
 end
-

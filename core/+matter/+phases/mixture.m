@@ -49,7 +49,11 @@ classdef mixture < matter.phase
             if strcmp(this.sPhaseType, 'gas')
                 this.fMassToPressure = this.oMT.Const.fUniversalGas * this.fTemperature / (this.fMolarMass * this.fVolume);
             else
-                this.fMassToPressure = fPressure / this.fMass;
+                if this.fMass == 0
+                    this.fMassToPressure = 0;
+                else
+                    this.fMassToPressure = fPressure / this.fMass;
+                end
             end
             this.fDensity = this.oMT.calculateDensity(this);
             this.fVolume = this.fMass / this.fDensity;
@@ -69,7 +73,11 @@ classdef mixture < matter.phase
             this.fDensity = this.fMass / this.fVolume;
             
             if strcmp(this.sPhaseType, 'gas')
-                this.fMassToPressure = this.oMT.calculatePressure(this) / this.fMass;
+                if this.fMass == 0
+                    this.fMassToPressur = 0;
+                else
+                    this.fMassToPressure = this.oMT.calculatePressure(this) / this.fMass;
+                end
             end
         end
         

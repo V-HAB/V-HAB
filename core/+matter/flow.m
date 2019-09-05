@@ -30,6 +30,11 @@ classdef flow < base
         % translate, e.g. this.oMT.tiN2I)
         arPartialMass;
         
+        % To model masses consisting of more than one substance, compound
+        % masses can be defined. If these are transported through flows,
+        % their current composition is stored in this struct
+        trCompoundMass;
+        
         % Reference to the matter table
         oMT;
         

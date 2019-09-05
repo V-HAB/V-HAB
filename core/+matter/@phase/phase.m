@@ -353,6 +353,15 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                     end
 
                     this.afMass(this.oMT.tiN2I.(sKey)) = tfMass.(sName);
+                    
+                    if this.oMT.abCompound(this.oMT.tiN2I.(sKey))
+                        afCompoundMass = zeros(1, this.oMT.iSubstances);
+                        csComposition = this.oMT.ttxMatter.(sKey).csComposition;
+                        for iComponent = 1:length(this.oMT.ttxMatter.(sKey).csComposition)
+                            afCompoundMass(this.oMT.tiN2I.(csComposition{iComponent})) = this.oMT.ttxMatter.(sKey).trBaseComposition.(csComposition{iComponent}) * tfMass.(sName);
+                        end
+                        this.tfCompoundMass.(sKey) = afCompoundMass;
+                    end
                 end
 
                 % Calculate total mass

@@ -95,6 +95,9 @@ classdef table < base
         % substance that can absorb something else
         abAbsorber;
         
+        % A boolean array 
+        abCompound;
+        
         % This struct allows the conversion of shortcut to name
         tsS2N;
         
@@ -311,6 +314,8 @@ classdef table < base
             % Get list of substance indices.
             this.csI2N = fieldnames(this.tiN2I);
             
+            % define all current substance to be no compounds
+            this.abCompound = false(1, this.iSubstances);
             
             %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Importing additional data %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
