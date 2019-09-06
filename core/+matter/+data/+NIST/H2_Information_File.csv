@@ -1,4 +1,4 @@
-Substance Name,Molar Mass,Specific Gas Constant,Standard Density,Standard Specific Heat Capacity
-sName,fMolarMass,fSpecificGasConstant,fStandardDensity,fStandardSpecificHeatCapacity
--,kg/mol,J/(kg*K),kg/m3,J/(kg*K)
-Hydrogen,0.00201588,4124,0.085207,14267
+Substance Name;Molar Mass;Specific Gas Constant;Standard Density;Standard Specific Heat Capacity
+sName;fMolarMass;fSpecificGasConstant;fStandardDensity;fStandardSpecificHeatCapacity
+-;kg/mol;J/(kg*K);kg/m3;J/(kg*K)
+Hydrogen;0.00201588;4124;0.085207;14267

@@ -1,4 +1,4 @@
-Substance Name,Molar Mass,Specific Gas Constant,Standard Density,Standard Specific Heat Capacity
-sName,fMolarMass,fSpecificGasConstant,fStandardDensity,fStandardSpecificHeatCapacity
--,kg/mol,J/(kg*K),kg/m3,J/(kg*K)
-Nitrogen,0.02801348,296.8039,1.1851,1041.3
+Substance Name;Molar Mass;Specific Gas Constant;Standard Density;Standard Specific Heat Capacity
+sName;fMolarMass;fSpecificGasConstant;fStandardDensity;fStandardSpecificHeatCapacity
+-;kg/mol;J/(kg*K);kg/m3;J/(kg*K)
+Nitrogen;0.02801348;296.8039;1.1851;1041.3

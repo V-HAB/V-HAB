@@ -1,2 +1,2 @@
-Temperature,Pressure,Density,Volume,Internal Energy,Enthalpy,Entropy,Isochoric Heat Capacity,Isobaric Heat Capacity,Speed Of Sound,Joule-Thomson,Dynamic Viscosity,Thermal Conductivity,Phase
-K,Pa,kg/m3,m3/kg,J/kg,J/kg,J/kg*K,J/kg*K,J/kg*K,m/s,K/Pa,Pa*s,W/m*K,-
+Temperature;Pressure;Density;Volume;Internal Energy;Enthalpy;Entropy;Isochoric Heat Capacity;Isobaric Heat Capacity;Speed Of Sound;Joule-Thomson;Dynamic Viscosity;Thermal Conductivity;Phase
+K;Pa;kg/m3;m3/kg;J/kg;J/kg;J/kg*K;J/kg*K;J/kg*K;m/s;K/Pa;Pa*s;W/m*K;-
