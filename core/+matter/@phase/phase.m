@@ -72,6 +72,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % tfCompoundMass.Tomato = zeros(1, this.oMT.iSubstances)
         tfCompoundMass;
         
+        % Basically the same as tfCompoundMass but instead of the total
+        % masses of the partial substances for each compound, this property
+        % contains the partial mass ratios for each compound
+        trCompoundMass;
+        
         % If ions are present in the phase, the charge of the ion is
         % represented in this struct. The fields correspond to the
         % respective ion, and the entry in the field is a matrix with the
@@ -175,6 +180,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % The current flow details including further information like
         % temperature etc.
         mfCurrentInflowDetails;
+        
+        % The current mass flow for each compound mass from each exme
+        tfCompoundMassFlows;
         
         % We need to remember when the last call to the update() method
         % was. This is to prevent multiple updates per tick. 
@@ -318,6 +326,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             this.afMass = zeros(1, this.oMT.iSubstances);
             this.arPartialMass = zeros(1, this.oMT.iSubstances);
             this.fMinStep = this.oTimer.fMinimumTimeStep;
+            this.tfCompoundMassFlows = struct();
             
             % Mass provided?
             if (nargin >= 3) && ~isempty(tfMass) && ~isempty(fieldnames(tfMass))
@@ -383,7 +392,24 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             end
 
             this.fMolarMass = this.oMT.calculateMolarMass(this.afMass);
-             
+            
+            % Update the compound mass ratio struct
+            if any(this.afMass(this.oMT.abCompound) ~= 0)
+                csCompounds = fieldnames(this.tfCompoundMass);
+                for iCompound = 1:length(csCompounds)
+                    if this.afMass(this.oMT.tiN2I.(csCompounds{iCompound})) > 0
+                        afCompoundMass = this.tfCompoundMass.(csCompounds{iCompound});
+                        this.trCompoundMass.(csCompounds{iCompound}) = afCompoundMass ./ sum(afCompoundMass);
+                    else
+                        % if the compound was completly removed from this
+                        % phase, delte the compound mass entries for these
+                        % field
+                        this.trCompoundMass = rmfield(this.trCompoundMass ,(csCompounds{iCompound}));
+                        this.tfCompoundMass = rmfield(this.tfCompoundMass ,(csCompounds{iCompound}));
+                    end
+                end
+            end
+            
             % Mass
             this.fMass = sum(this.afMass);
             this.afMassGenerated = zeros(1, this.oMT.iSubstances);
@@ -707,7 +733,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             this.toProcsEXME.(oProcEXME.sName) = oProcEXME;
         end
 
-        function [ afTotalInOuts, mfInflowDetails ] = getTotalMassChange(this)
+        function [ afTotalInOuts, mfInflowDetails , tfCompoundMassFlows] = getTotalMassChange(this)
             %% getTotalMassChange
             % Get vector with total mass change through all EXME flows in
             % [kg/s].
@@ -731,6 +757,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Creating an array to log which of the flows are not in-flows
             aiOutFlows = ones(this.iProcsEXME, 1);
             
+            tfCompoundMassFlows = struct();
+            
             % Get flow rates and partials from EXMEs
             for iI = 1:this.iProcsEXME
                 % The fFlowRate parameter is the flow rate at the exme,
@@ -740,11 +768,25 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % afProperties contains the temperature and heat capacity
                 % of the exme.
                 oExme = this.coProcsEXME{iI};
-                [ fFlowRate, arFlowPartials, afProperties ] = oExme.getFlowData();
+                [ fFlowRate, arFlowPartials, afProperties, trExMECompoundMass ] = oExme.getFlowData();
                 
                 % Now we add the total mass flows per substance to the
                 % mfTotalFlows matrix.
                 mfTotalFlows(iI, :) = fFlowRate * arFlowPartials;
+                
+                if ~isempty(trExMECompoundMass)
+                    csCompounds = fieldnames(trExMECompoundMass);
+                    for iCompound = 1:length(csCompounds)
+                        arCompoundMass = trExMECompoundMass.(csCompounds{iCompound});
+                        
+                        afCompoundPartialMassFlow = arCompoundMass .* mfTotalFlows(iI, this.oMT.tiN2I.(csCompounds{iCompound}));
+                        if isfield(tfCompoundMassFlows, csCompounds{iCompound})
+                            tfCompoundMassFlows.(csCompounds{iCompound}) = tfCompoundMassFlows.(csCompounds{iCompound}) + afCompoundPartialMassFlow;
+                        else
+                            tfCompoundMassFlows.(csCompounds{iCompound}) = afCompoundPartialMassFlow;
+                        end
+                    end
+                end
                 
                 % Only the inflowing exme values are saved to the
                 % mfInflowDetails parameter
@@ -932,7 +974,39 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             end
             % Update total mass
             this.fMass = sum(this.afMass);
+            
+            % Update the compound mass struct
+            csCompounds = fieldnames(this.tfCompoundMassFlows);
+            if ~isempty(csCompounds)
+                for iCompound = 1:length(csCompounds)
+                    if isfield(this.tfCompoundMass, csCompounds{iCompound})
+                        this.tfCompoundMass.(csCompounds{iCompound}) = this.tfCompoundMass.(csCompounds{iCompound}) + this.tfCompoundMassFlows.(csCompounds{iCompound}) .* fLastStep;
+                    else
+                        this.tfCompoundMass.(csCompounds{iCompound}) = this.tfCompoundMassFlows.(csCompounds{iCompound}) .* fLastStep;
+                    end
+                end
+            end
 
+            % Update the compound mass ratio struct
+            if any(this.afMass(this.oMT.abCompound) ~= 0)
+                csCompounds = fieldnames(this.tfCompoundMass);
+                for iCompound = 1:length(csCompounds)
+                    if this.afMass(this.oMT.tiN2I.(csCompounds{iCompound})) > 0
+                        afCompoundMass = this.tfCompoundMass.(csCompounds{iCompound});
+                        this.trCompoundMass.(csCompounds{iCompound}) = afCompoundMass ./ sum(afCompoundMass);
+                    else
+                        % if the compound was completly removed from this
+                        % phase, delte the compound mass entries for these
+                        % field
+                        this.trCompoundMass = rmfield(this.trCompoundMass ,(csCompounds{iCompound}));
+                        this.tfCompoundMass = rmfield(this.tfCompoundMass ,(csCompounds{iCompound}));
+                    end
+                end
+            else
+                this.tfCompoundMass = [];
+                this.trCompoundMass = [];
+            end
+            
             % Now calculate the new total heat capacity for the
             % asscociated capacity (the specific heat capacity is updated
             % based on changes in pressure/tenperature etc as it is only

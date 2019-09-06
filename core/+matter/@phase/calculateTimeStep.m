@@ -9,13 +9,14 @@ function calculateTimeStep(this)
 % the outflows!
 
 % Change in kg of partial masses per second
-[ afChange, mfDetails ] = this.getTotalMassChange();
+[ afChange, mfDetails, tfCompoundMassFlows ] = this.getTotalMassChange();
 
 afTmpCurrentTotalInOuts = this.afCurrentTotalInOuts;
 
 % Setting the properties to the current values
-this.afCurrentTotalInOuts = afChange;
+this.afCurrentTotalInOuts   = afChange;
 this.mfCurrentInflowDetails = mfDetails;
+this.tfCompoundMassFlows    = tfCompoundMassFlows;
 
 if this.iSubstanceManipulators ~= 0
     afPartialFlows = this.afCurrentTotalInOuts + this.toManips.substance.afPartialFlows;

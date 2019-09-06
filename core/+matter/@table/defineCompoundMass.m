@@ -21,7 +21,7 @@ if bError
     error('Defining a compound mass is only possible within the matter table (not by the user) or the setup (location for user defined compound masses). This is necessary to prevent inconsistencies in the length of afMass vectors etc.')
 end
 
-if isfield(this.ttxMatter, sCompoundName)
+if isfield(this.ttxMatter, sCompoundName) && ~this.abCompound(this.tiN2I.(sCompoundName))
     error(['The entry ', sCompoundName,' already exists in the matter table, you cannot add a compound mass under the same name as an existing base mass'])
 end
 

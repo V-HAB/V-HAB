@@ -104,7 +104,7 @@ classdef exme < base
             
         end
         
-        function [ fFlowRate, arPartials, afProperties ] = getFlowData(this, fFlowRate)
+        function [ fFlowRate, arPartials, afProperties, trCompoundMass ] = getFlowData(this, fFlowRate)
             %% ExMe getFlowData
             % This function can be called to receive information about the
             % exme flow properties. 
@@ -120,6 +120,9 @@ classdef exme < base
             %               the partial mass flow rates for each substance
             % afProperties: A vector with two entries, the flow temperature
             %               and the flow specific heat capacity
+            % trCompoundMass: A strcut containing each compound mass as
+            %                 field and within each field the composition
+            %                 of this compound mass
             
             % The flow rate property of the flow is unsigned, so we have to
             % add it again by multiplying with the iSign property of this
@@ -135,6 +138,7 @@ classdef exme < base
                 % the properties from the connected flow.
                 arPartials   = this.oFlow.arPartialMass;
                 afProperties = [ this.oFlow.fTemperature this.oFlow.fSpecificHeatCapacity ];
+                trCompoundMass = this.oFlow.trCompoundMass;
             else
                 
                 if fFlowRate > 0
@@ -150,6 +154,7 @@ classdef exme < base
                     
                     arPartials   = this.oFlow.arPartialMass;
                     afProperties = [ this.oFlow.fTemperature this.oFlow.fSpecificHeatCapacity ];
+                    trCompoundMass = this.oFlow.trCompoundMass;
                     
                 else 
                     % The flow rate is either zero or negative, which means
@@ -158,6 +163,7 @@ classdef exme < base
                     % phase.
                     arPartials   = this.oPhase.arPartialMass;
                     afProperties = [ this.oPhase.fTemperature this.oPhase.oCapacity.fSpecificHeatCapacity ];
+                    trCompoundMass = this.oPhase.trCompoundMass;
                 end
             end
         end

@@ -132,8 +132,9 @@ classdef (Abstract) flow < matter.phase
                 fInwardsFlowRates = 0;
                 
                 % Get flow rates and partials from EXMEs
+                tfCompoundMassFlows = struct();
                 for iI = 1:this.iProcsEXME
-                    [ fFlowRate, arFlowPartials, ~ ] = this.coProcsEXME{iI}.getFlowData();
+                    [ fFlowRate, arFlowPartials, ~, trExMECompoundMass ] = this.coProcsEXME{iI}.getFlowData();
                     
                     % Include if EITHER an (real) inflow, OR a p2p (but not
                     % ourselves!) in either direction (p2ps can change
@@ -144,13 +145,27 @@ classdef (Abstract) flow < matter.phase
                         afInFlowrates(iI)  = fFlowRate;
                         aiOutFlows(iI)     = 0;
                         
+                        if ~isempty(trExMECompoundMass)
+                            csCompounds = fieldnames(trExMECompoundMass);
+                            afFlows = fFlowRate .* arFlowPartials;
+                            for iCompound = 1:length(csCompounds)
+                                arCompoundMass = trExMECompoundMass.(csCompounds{iCompound});
+
+                                afCompoundPartialMassFlow = arCompoundMass .* afFlows(1, this.oMT.tiN2I.(csCompounds{iCompound}));
+                                if isfield(tfCompoundMassFlows, csCompounds{iCompound})
+                                    tfCompoundMassFlows.(csCompounds{iCompound}) = tfCompoundMassFlows.(csCompounds{iCompound}) + afCompoundPartialMassFlow;
+                                else
+                                    tfCompoundMassFlows.(csCompounds{iCompound}) = afCompoundPartialMassFlow;
+                                end
+                            end
+                        end
+                
                         %if ~this.coProcsEXME{iI}.bFlowIsAProcP2P
                         if fFlowRate > 0
                             fInwardsFlowRates = fInwardsFlowRates + fFlowRate;
                         end
                     end
                 end
-
                 % Now we delete all of the rows in the mfInflowDetails matrix
                 % that belong to out-flows.
                 if any(aiOutFlows)
@@ -182,6 +197,17 @@ classdef (Abstract) flow < matter.phase
                 end
                 
                 afPartialInFlows = sum(mrInPartials, 1); %note we did multiply mrInPartials with flow rates above, so actually total partial flows!
+                
+
+                % Update the compound mass ratio struct
+                csCompounds = fieldnames(tfCompoundMassFlows);
+                if ~isempty(csCompounds)
+                    for iCompound = 1:length(csCompounds)
+                        this.trCompoundMass.(csCompounds{iCompound}) = tfCompoundMassFlows.(csCompounds{iCompound}) ./ sum(tfCompoundMassFlows.(csCompounds{iCompound}));
+                    end
+                else
+                    this.trCompoundMass = [];
+                end
                 
             else
                 afPartialInFlows = sum(afPartialInFlows, 1);

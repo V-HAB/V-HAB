@@ -162,6 +162,7 @@ classdef flow < base
                 if oPhase.fMass ~= 0
                     this.arPartialMass = oPhase.arPartialMass;
                     this.fMolarMass    = oPhase.fMolarMass;
+                    this.trCompoundMass        = oPhase.trCompoundMass;
                     this.fSpecificHeatCapacity = oPhase.oCapacity.fSpecificHeatCapacity;
                     
                     this.afPartialPressure = this.oMT.calculatePartialPressures(this);
@@ -388,6 +389,7 @@ classdef flow < base
             
             this.fSpecificHeatCapacity = oPhase.oCapacity.fSpecificHeatCapacity;
             this.fMolarMass            = oPhase.fMolarMass;
+            this.trCompoundMass        = oPhase.trCompoundMass;
         end
         
     end
@@ -468,7 +470,8 @@ classdef flow < base
                 arPhasePartialMass         = oExme.oPhase.arPartialMass;
                 fPhaseMolarMass            = oExme.oPhase.fMolarMass;
                 fPhaseSpecificHeatCapacity = oExme.oPhase.oCapacity.fSpecificHeatCapacity;
-                        
+                trFlowCompoundMass         = oExme.oPhase.trCompoundMass;
+                
                 % This can occur for example if a flow phase is used, which
                 % has an outflow, but not yet an inflow. In that case the
                 % partial mass of the phase is zero (as nothing flows in)
@@ -544,7 +547,7 @@ classdef flow < base
                 if ~isempty(oExme)
                     oFlow.arPartialMass         = arPhasePartialMass;
                     oFlow.fMolarMass            = fPhaseMolarMass;
-                    
+                    oFlow.trCompoundMass        = trFlowCompoundMass;
                     oFlow.fSpecificHeatCapacity = fPhaseSpecificHeatCapacity;
                 end
                 
