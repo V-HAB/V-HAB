@@ -185,9 +185,9 @@ function importNutrientData(this)
     % The following values are based on the 12.59 MJ of energy content
     % mentioned in the BVAD food and the general percentages metioned in
     % HDIH Marcunutrient Guidelines for Spaceflight (Table 7.2-2)
-    ttxImportNutrientData.Food.Mass.Protein                     = ((0.175 * 12.59 * 10^6) / (17 * 10^6)) / 1.51;
-    ttxImportNutrientData.Food.Mass.Carbohydrate__by_difference	= ((0.525 * 12.59 * 10^6) / (17 * 10^6)) / 1.51;
-    ttxImportNutrientData.Food.Mass.Total_lipid__fat_           = ((0.3 * 12.59 * 10^6) / (37 * 10^6)) / 1.51;
+    ttxImportNutrientData.Food.Mass.Protein                     = ((0.175 * 12.59 * 10^6) / (this.ttxMatter.C4H5ON.fNutritionalEnergy)) / 1.51;
+    ttxImportNutrientData.Food.Mass.Carbohydrate__by_difference	= ((0.525 * 12.59 * 10^6) / (this.ttxMatter.C6H12O6.fNutritionalEnergy)) / 1.51;
+    ttxImportNutrientData.Food.Mass.Total_lipid__fat_           = ((0.3 * 12.59 * 10^6)   / (this.ttxMatter.C16H32O2.fNutritionalEnergy)) / 1.51;
     ttxImportNutrientData.Food.Mass.Ash                         =  1 - (ttxImportNutrientData.Food.Mass.Water + ttxImportNutrientData.Food.Mass.Protein + ttxImportNutrientData.Food.Mass.Carbohydrate__by_difference + ttxImportNutrientData.Food.Mass.Total_lipid__fat_ );
     
     this.ttxNutrientData = ttxImportNutrientData;

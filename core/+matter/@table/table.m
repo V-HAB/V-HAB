@@ -67,6 +67,13 @@ classdef table < base
         % values with simple for-loops.
         afMolarMass;
         
+        % An array containing the nutritional energy of each substance in
+        % J/kg to enable fast calculation of energy content for a phase.
+        % Note that "compound" food like a tomatoe must be split into its
+        % components by using the resolveCompoundMass function before it
+        % can correctly calculate the nutritional content
+        afNutritionalEnergy;
+        
         % This struct maps all substance names according to an index, hence
         % the name N2I, for 'name to index'. The index corresponds to the
         % order in which the substances are stored in ttxMatter.
@@ -197,7 +204,9 @@ classdef table < base
             % filled with data. This is done to preallocate the memory. If
             % it is not done, MATLAB gives a warning and suggests to do
             % this.
-            this.afMolarMass = zeros(1, this.iSubstances);
+            this.afMolarMass         = zeros(1, this.iSubstances);
+            this.afNutritionalEnergy = zeros(1, this.iSubstances);
+            
             this.tiN2I       = struct();
             this.tsS2N       = struct();
             this.tsN2S       = struct();
@@ -263,6 +272,7 @@ classdef table < base
                 % And finally we create an entry in the molar mass array.
                 this.afMolarMass(iI) = fMolarMass;
                 
+                this.afNutritionalEnergy(iI) = tSubstance.fNutritionalEnergy;
             end
             
             %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

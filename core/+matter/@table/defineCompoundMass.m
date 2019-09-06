@@ -74,4 +74,9 @@ this.ttxMatter.(sCompoundName).csComposition        = csComposition;
 this.afMolarMass(this.iSubstances) = 0;
 this.afMolarMass(this.iSubstances) = sum(this.afMolarMass .* arBaseComposition);
 
+% For the nutritional energy we assume that is 0 even for foods that
+% consist of multiple parts. These must be split up before calculating
+% their energy content, to ensure it is correct!
+this.afNutritionalEnergy(this.iSubstances) = 0;
+
 end

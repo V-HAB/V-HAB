@@ -69,7 +69,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % not be present in the matter table and can be defined
         % arbitrarily, as long as the base matter that makes up the
         % compound exists. The entries look for example like this.
-        % tfCompoundMass.Tomato.H2O = 1;
+        % tfCompoundMass.Tomato = zeros(1, this.oMT.iSubstances)
         tfCompoundMass;
         
         % If ions are present in the phase, the charge of the ion is
