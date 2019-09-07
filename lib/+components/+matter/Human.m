@@ -619,37 +619,31 @@ classdef Human < vsys
             
             %% Food Conversion
             oStomachPhase = this.toStores.Human.toPhases.Stomach;
-            txResults = this.oMT.calculateNutritionalContent(oStomachPhase);
-            
-            csFood = fieldnames(txResults);
-            
-            csFood = csFood(~strcmp(csFood, 'EdibleTotal'));
-                        
-            afFoodConversionFlowRates = zeros(1,this.oMT.iSubstances);
+            afResolvedMass = this.oMT.resolveCompoundMass(oStomachPhase.afMass, oStomachPhase.tfCompoundMass);
             
             fFoodConversionTimeStep = this.fTimeStep * 2;
+            csFood = fieldnames(this.oMT.ttxNutrientData);
+            afFoodConversionFlowRates = zeros(1,this.oMT.iSubstances);
+            
+            % The simplified human model does not account for other
+            % components of the food aside from Protein, Fat, Carbohdyrates
+            % and Ash (which represents the mass that remains if the
+            % food would be burned, it represents all minerals in the
+            % food which are necessary nutrients but are not part of
+            % the energy balance)
+            afFoodConversionFlowRates(this.oMT.tiN2I.C6H12O6)   = (afResolvedMass(this.oMT.tiN2I.C6H12O6) - oStomachPhase.afMass(this.oMT.tiN2I.C6H12O6))   / fFoodConversionTimeStep;
+            afFoodConversionFlowRates(this.oMT.tiN2I.C16H32O2)  = (afResolvedMass(this.oMT.tiN2I.C16H32O2) - oStomachPhase.afMass(this.oMT.tiN2I.C16H32O2)) / fFoodConversionTimeStep;
+            afFoodConversionFlowRates(this.oMT.tiN2I.C4H5ON)    = (afResolvedMass(this.oMT.tiN2I.C4H5ON) - oStomachPhase.afMass(this.oMT.tiN2I.C4H5ON))     / fFoodConversionTimeStep;
+
+            % Ash is represented as Carbon
+            afFoodConversionFlowRates(this.oMT.tiN2I.C)         = (afResolvedMass(this.oMT.tiN2I.C) - oStomachPhase.afMass(this.oMT.tiN2I.C))               / fFoodConversionTimeStep;
+
+            afFoodConversionFlowRates(this.oMT.tiN2I.H2O)       = (afResolvedMass(this.oMT.tiN2I.H2O) - oStomachPhase.afMass(this.oMT.tiN2I.H2O))           / fFoodConversionTimeStep;
+            
             for iFood = 1:length(csFood)
                 sFood = csFood{iFood};
-                % The simplified human model does not account for other
-                % components of the food aside from Protein, Fat, Carbohdyrates
-                % and Ash (which represents the mass that remains if the
-                % food would be burned, it represents all minerals in the
-                % food which are necessary nutrients but are not part of
-                % the energy balance)
-                if txResults.(sFood).Mass > 1e-6
-                    fWaterMass = txResults.(sFood).Mass - txResults.(sFood).DryMass;
-
-                    afFoodConversionFlowRates(this.oMT.tiN2I.C6H12O6) = afFoodConversionFlowRates(this.oMT.tiN2I.C6H12O6) + txResults.(sFood).CarbohydrateMass / fFoodConversionTimeStep;
-                    afFoodConversionFlowRates(this.oMT.tiN2I.C16H32O2) = afFoodConversionFlowRates(this.oMT.tiN2I.C16H32O2) + txResults.(sFood).LipidMass / fFoodConversionTimeStep;
-                    afFoodConversionFlowRates(this.oMT.tiN2I.C4H5ON) = afFoodConversionFlowRates(this.oMT.tiN2I.C4H5ON) + txResults.(sFood).ProteinMass / fFoodConversionTimeStep;
-
-                    % Ash is represented as Carbon
-                    afFoodConversionFlowRates(this.oMT.tiN2I.C) = afFoodConversionFlowRates(this.oMT.tiN2I.C) + txResults.(sFood).AshMass / fFoodConversionTimeStep;
-
-                    afFoodConversionFlowRates(this.oMT.tiN2I.H2O) = afFoodConversionFlowRates(this.oMT.tiN2I.H2O) + fWaterMass / fFoodConversionTimeStep;
-
-                    afFoodConversionFlowRates(this.oMT.tiN2I.(sFood)) = - txResults.(sFood).Mass / fFoodConversionTimeStep;
-                end
+                
+                afFoodConversionFlowRates(this.oMT.tiN2I.(sFood)) = - oStomachPhase.afMass(this.oMT.tiN2I.(sFood)) / fFoodConversionTimeStep;
             end
             
             oStomachPhase.toManips.substance.setFlowRate(afFoodConversionFlowRates);
