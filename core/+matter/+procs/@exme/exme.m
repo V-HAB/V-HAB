@@ -104,7 +104,7 @@ classdef exme < base
             
         end
         
-        function [ fFlowRate, arPartials, afProperties, trCompoundMass ] = getFlowData(this, fFlowRate)
+        function [ fFlowRate, arPartials, afProperties, arCompoundMass ] = getFlowData(this, fFlowRate)
             %% ExMe getFlowData
             % This function can be called to receive information about the
             % exme flow properties. 
@@ -138,7 +138,7 @@ classdef exme < base
                 % the properties from the connected flow.
                 arPartials   = this.oFlow.arPartialMass;
                 afProperties = [ this.oFlow.fTemperature this.oFlow.fSpecificHeatCapacity ];
-                trCompoundMass = this.oFlow.trCompoundMass;
+                arCompoundMass = this.oFlow.arCompoundMass;
             else
                 
                 if fFlowRate > 0
@@ -154,7 +154,7 @@ classdef exme < base
                     
                     arPartials   = this.oFlow.arPartialMass;
                     afProperties = [ this.oFlow.fTemperature this.oFlow.fSpecificHeatCapacity ];
-                    trCompoundMass = this.oFlow.trCompoundMass;
+                    arCompoundMass = this.oFlow.arCompoundMass;
                     
                 else 
                     % The flow rate is either zero or negative, which means
@@ -163,7 +163,7 @@ classdef exme < base
                     % phase.
                     arPartials   = this.oPhase.arPartialMass;
                     afProperties = [ this.oPhase.fTemperature this.oPhase.oCapacity.fSpecificHeatCapacity ];
-                    trCompoundMass = this.oPhase.trCompoundMass;
+                    arCompoundMass = this.oPhase.arCompoundMass;
                 end
             end
         end

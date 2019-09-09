@@ -34,6 +34,7 @@ classdef flow < base
         % masses can be defined. If these are transported through flows,
         % their current composition is stored in this struct
         trCompoundMass;
+        arCompoundMass;
         
         % Reference to the matter table
         oMT;
@@ -163,6 +164,7 @@ classdef flow < base
                     this.arPartialMass = oPhase.arPartialMass;
                     this.fMolarMass    = oPhase.fMolarMass;
                     this.trCompoundMass        = oPhase.trCompoundMass;
+                    this.arCompoundMass        = oPhase.arCompoundMass;
                     this.fSpecificHeatCapacity = oPhase.oCapacity.fSpecificHeatCapacity;
                     
                     this.afPartialPressure = this.oMT.calculatePartialPressures(this);
@@ -390,6 +392,7 @@ classdef flow < base
             this.fSpecificHeatCapacity = oPhase.oCapacity.fSpecificHeatCapacity;
             this.fMolarMass            = oPhase.fMolarMass;
             this.trCompoundMass        = oPhase.trCompoundMass;
+            this.arCompoundMass        = oPhase.arCompoundMass;
         end
         
     end
@@ -471,7 +474,8 @@ classdef flow < base
                 fPhaseMolarMass            = oExme.oPhase.fMolarMass;
                 fPhaseSpecificHeatCapacity = oExme.oPhase.oCapacity.fSpecificHeatCapacity;
                 trFlowCompoundMass         = oExme.oPhase.trCompoundMass;
-                
+                arFlowCompoundMass         = oExme.oPhase.arCompoundMass;
+
                 % This can occur for example if a flow phase is used, which
                 % has an outflow, but not yet an inflow. In that case the
                 % partial mass of the phase is zero (as nothing flows in)
@@ -548,6 +552,8 @@ classdef flow < base
                     oFlow.arPartialMass         = arPhasePartialMass;
                     oFlow.fMolarMass            = fPhaseMolarMass;
                     oFlow.trCompoundMass        = trFlowCompoundMass;
+                    oFlow.arCompoundMass        = arFlowCompoundMass;
+                    
                     oFlow.fSpecificHeatCapacity = fPhaseSpecificHeatCapacity;
                 end
                 
