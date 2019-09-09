@@ -111,7 +111,7 @@ classdef FoodStore < matter.store
                 end
                 
             else
-                afResolvedMass = this.oMT.resolveCompoundMass(this.toPhases.Food.afMass, this.toPhases.Food.tfCompoundMass);
+                afResolvedMass = this.oMT.resolveCompoundMass(this.toPhases.Food.afMass, this.toPhases.Food.arCompoundMass);
 
                 afNutritionalEnergy = afResolvedMass .* this.oMT.afNutritionalEnergy;
                 fNutritionalEnergy = sum(afNutritionalEnergy);

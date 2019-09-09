@@ -65,21 +65,21 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         fTimeStep;     % [s]
         
         % If masses are used that are a composition of different base
-        % masses, these are modelled in tfCompoundMass. CompoundMasses must
-        % not be present in the matter table and can be defined
-        % arbitrarily, as long as the base matter that makes up the
-        % compound exists. The entries look for example like this.
-        % tfCompoundMass.Tomato = zeros(1, this.oMT.iSubstances)
-        tfCompoundMass;
-        
-        % Basically the same as tfCompoundMass but instead of the total
-        % masses of the partial substances for each compound, this property
-        % contains the partial mass ratios for each compound
-        trCompoundMass;
-        
-        arFlowCompoundMass;
-        
+        % masses, these are modelled in arCompoundMass. arCompoundMass is a
+        % matrix with oMT.iSubstances x oMT.iSubstances entries and each
+        % row contains the mass ratio composition for the corresponding
+        % mass if that mass is a compound. (e.g. if the compound has the
+        % matter table entry 234, then row 234 contains its composition.
+        % The current masses of the compounds can be calculated using:
+        % this.afMass' .* this.arCompoundMass
         arCompoundMass;
+        
+        % During the getTotalMassChange in the calculate time step
+        % function, this property is stored to save calculation time. It
+        % contains the mass ratios for all inflowing compound masses
+        % already mass averaged if multiple inflows of the same compound
+        % with different compositions are present
+        arInFlowCompoundMass;
         
         % If ions are present in the phase, the charge of the ion is
         % represented in this struct. The fields correspond to the
@@ -184,9 +184,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % The current flow details including further information like
         % temperature etc.
         mfCurrentInflowDetails;
-        
-        % The current mass flow for each compound mass from each exme
-        tfCompoundMassFlows;
         
         % We need to remember when the last call to the update() method
         % was. This is to prevent multiple updates per tick. 
@@ -327,10 +324,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             this.oTimer = this.oStore.oTimer;
             
             % Preset masses
-            this.afMass = zeros(1, this.oMT.iSubstances);
-            this.arPartialMass = zeros(1, this.oMT.iSubstances);
-            this.fMinStep = this.oTimer.fMinimumTimeStep;
-            this.tfCompoundMassFlows = struct();
+            this.afMass                 = zeros(1, this.oMT.iSubstances);
+            this.arPartialMass          = zeros(1, this.oMT.iSubstances);
+            this.arCompoundMass         = zeros(this.oMT.iSubstances, this.oMT.iSubstances);
+            this.arInFlowCompoundMass   = zeros(this.oMT.iSubstances, this.oMT.iSubstances);
+            this.fMinStep               = this.oTimer.fMinimumTimeStep;
             
             % Mass provided?
             if (nargin >= 3) && ~isempty(tfMass) && ~isempty(fieldnames(tfMass))
@@ -374,40 +372,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                             afCompoundMass(this.oMT.tiN2I.(csComposition{iComponent})) = this.oMT.ttxMatter.(sKey).trBaseComposition.(csComposition{iComponent}) * tfMass.(sName);
                         end
                         
-                        this.arCompoundMass = zeros(this.oMT.iSubstances, this.oMT.iSubstances);
                         for iComponent = 1:length(this.oMT.ttxMatter.(sKey).csComposition)
                             this.arCompoundMass(this.oMT.tiN2I.(sKey), this.oMT.tiN2I.(csComposition{iComponent})) = this.oMT.ttxMatter.(sKey).trBaseComposition.(csComposition{iComponent});
                         end
-                        % afCompoundMass then only contains entries for the
-                        % substances which where bound in compounds.
-                        % However, by removing all compound mass entries
-                        % from afMass and then adding afMass and this
-                        % afCompoundMass vector the afMass vector for all
-                        % base substances can be created!
-                        % afCompoundMass = this.afMass' .* this.arCompoundMass;
-                        % afCompoundMass = sum(afCompoundMass, 1);
-                        % afResolvedMass = afMass;
-                        % afResolvedMass(this.oMT.abCompound) = 0;
-                        % afResolvedMass = afResolvedMass + afCompoundMass;
-                        
-                        % When a flow with a compound mass enters a phase,
-                        % the flow also has an arCompoundComposition
-                        % property. In the calculate Time step function
-                        %an overall arCompoundComposition for all inflows
-                        %is then calculated by dividing each
-                        %arCompoundComposition with the corresponding
-                        %flowrate and then summing them up and multiplying
-                        %them with the total flow rate. This property is
-                        %then stored and used in the massupdate function to
-                        %calculate the new arCompoundComposition of the
-                        %phase by dividing the current composition with the
-                        %current phase mass and the inflowing composition
-                        %with the total mass change and then adding both
-                        %and multiplying the new composition with the total
-                        %new phase mass
-                        
-                        
-                        this.tfCompoundMass.(sKey) = afCompoundMass;
                     end
                 end
 
@@ -430,23 +397,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             end
 
             this.fMolarMass = this.oMT.calculateMolarMass(this.afMass);
-            
-            % Update the compound mass ratio struct
-            if any(this.afMass(this.oMT.abCompound) ~= 0)
-                csCompounds = fieldnames(this.tfCompoundMass);
-                for iCompound = 1:length(csCompounds)
-                    if this.afMass(this.oMT.tiN2I.(csCompounds{iCompound})) > 0
-                        afCompoundMass = this.tfCompoundMass.(csCompounds{iCompound});
-                        this.trCompoundMass.(csCompounds{iCompound}) = afCompoundMass ./ sum(afCompoundMass);
-                    else
-                        % if the compound was completly removed from this
-                        % phase, delte the compound mass entries for these
-                        % field
-                        this.trCompoundMass = rmfield(this.trCompoundMass ,(csCompounds{iCompound}));
-                        this.tfCompoundMass = rmfield(this.tfCompoundMass ,(csCompounds{iCompound}));
-                    end
-                end
-            end
             
             % Mass
             this.fMass = sum(this.afMass);
@@ -771,7 +721,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             this.toProcsEXME.(oProcEXME.sName) = oProcEXME;
         end
 
-        function [ afTotalInOuts, mfInflowDetails , tfCompoundMassFlows] = getTotalMassChange(this)
+        function [ afTotalInOuts, mfInflowDetails , arCurrentInFlowCompoundMass] = getTotalMassChange(this)
             %% getTotalMassChange
             % Get vector with total mass change through all EXME flows in
             % [kg/s].
@@ -788,16 +738,13 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Total flows - one row (see below) for each EXME, number of
             % columns is the number of substances (partial masses)
             mfTotalFlows = zeros(this.iProcsEXME, this.oMT.iSubstances);
-            aarExMECompoundMass = zeros(this.iProcsEXME, this.oMT.iSubstances,  this.oMT.iSubstances);
-            afCompoundMassFlow = zeros(this.oMT.iSubstances,  this.oMT.iSubstances);
+            mfCompoundMassFlow = zeros(this.oMT.iSubstances,  this.oMT.iSubstances);
 
             % Each row: flow rate, temperature, heat capacity
             mfInflowDetails = zeros(this.iProcsEXME, 3);
             
             % Creating an array to log which of the flows are not in-flows
             aiOutFlows = ones(this.iProcsEXME, 1);
-            
-            tfCompoundMassFlows = struct();
             
             % Get flow rates and partials from EXMEs
             for iI = 1:this.iProcsEXME
@@ -808,13 +755,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % afProperties contains the temperature and heat capacity
                 % of the exme.
                 oExme = this.coProcsEXME{iI};
-                [ fFlowRate, arFlowPartials, afProperties, aarExMECompoundMass(iI, :, :) ] = oExme.getFlowData();
+                [ fFlowRate, arFlowPartials, afProperties, arExMECompoundMass ] = oExme.getFlowData();
                 
                 % Now we add the total mass flows per substance to the
                 % mfTotalFlows matrix.
                 mfTotalFlows(iI, :) = fFlowRate * arFlowPartials;
-                
-                afCompoundMassFlow = afCompoundMassFlow + (abs(mfTotalFlows(iI, :)') .* aarExMECompoundMass(iI, :, :));
                 
                 % Only the inflowing exme values are saved to the
                 % mfInflowDetails parameter
@@ -824,6 +769,12 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                     % This flow is an in-flow, so we set the field in the
                     % array to zero.
                     aiOutFlows(iI) = 0;
+                    
+                    % Only the inflowing exme can actually change the mass
+                    % ratios of the phase. Outflowing exme must only be
+                    % considered as a total mass change before calculating
+                    % the new composition
+                    mfCompoundMassFlow = mfCompoundMassFlow + (mfTotalFlows(iI, :)' .* arExMECompoundMass);
                 end
             end
             
@@ -835,16 +786,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Now sum up in-/outflows over all EXMEs
             afTotalInOuts = sum(mfTotalFlows, 1);
             
-            % assume that a compound mass with composition A is flowing
-            % into the phase, while the same compound with composition B is
-            % flowing out of the phase and the phase contains it with
-            % composition B --> A change in composition of the compound
-            % only occurs based on the inflows, not the outflows. Therefore
-            % only inflows must be considered when changing the compound
-            % composition. The outflow (if there is any) is then considered
-            % by reducing the compound mass in the phase and then
-            % calculating the mixed composition
-            this.arFlowCompoundMass = afCompoundMassFlow ./ abs(sum())
+            % The compound mass flow ratio is stored per compound mass (in
+            % the rows)
+            afCompoundMassFlow = sum(mfCompoundMassFlow,2);
+            arCurrentInFlowCompoundMass = mfCompoundMassFlow ./ afCompoundMassFlow;
+            arCurrentInFlowCompoundMass(afCompoundMassFlow == 0, :) = 0;
             
             % Checking for NaNs. It is necessary to do this here so the
             % origin of NaNs can be found easily during debugging.
@@ -986,6 +932,27 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Multiply with current time step
             afTotalInOuts = afTotalInOuts * fLastStep;
             
+            % Update the compound mass. We do this before we update the
+            % total mass because we must use the total mass of the phase
+            % from before, minus all the outflows but not yet plus the
+            % inflows for this
+            afTotalOuts = afTotalInOuts;
+            afTotalOuts(afTotalOuts > 0) = 0;
+            afTotalIns = afTotalInOuts;
+            afTotalIns(afTotalIns < 0) = 0;
+            
+            afCurrentMass = this.afMass + afTotalOuts;
+            
+            % Now using the mass without the outflown matter (as that has
+            % the same composition as the matter in the phase) we add the
+            % inflowing mass with the corresponding compound composition to
+            % get the current masses for each compound
+            mfNewCompoundMasses = afCurrentMass' .* this.arCompoundMass + afTotalIns' .* this.arInFlowCompoundMass;
+            afNewCompoundMasses = sum(mfNewCompoundMasses, 2);
+            
+            this.arCompoundMass = mfNewCompoundMasses ./ afNewCompoundMasses;
+            this.arCompoundMass(afNewCompoundMasses == 0, :) = 0;
+            
             % Do the actual adding/removing of mass.
             this.afMass =  this.afMass + afTotalInOuts;
 
@@ -1013,38 +980,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             end
             % Update total mass
             this.fMass = sum(this.afMass);
-            
-            % Update the compound mass struct
-            csCompounds = fieldnames(this.tfCompoundMassFlows);
-            if ~isempty(csCompounds)
-                for iCompound = 1:length(csCompounds)
-                    if isfield(this.tfCompoundMass, csCompounds{iCompound})
-                        this.tfCompoundMass.(csCompounds{iCompound}) = this.tfCompoundMass.(csCompounds{iCompound}) + this.tfCompoundMassFlows.(csCompounds{iCompound}) .* fLastStep;
-                    else
-                        this.tfCompoundMass.(csCompounds{iCompound}) = this.tfCompoundMassFlows.(csCompounds{iCompound}) .* fLastStep;
-                    end
-                end
-            end
-
-            % Update the compound mass ratio struct
-            if any(this.afMass(this.oMT.abCompound) ~= 0)
-                csCompounds = fieldnames(this.tfCompoundMass);
-                for iCompound = 1:length(csCompounds)
-                    if this.afMass(this.oMT.tiN2I.(csCompounds{iCompound})) > 0
-                        afCompoundMass = this.tfCompoundMass.(csCompounds{iCompound});
-                        this.trCompoundMass.(csCompounds{iCompound}) = afCompoundMass ./ sum(afCompoundMass);
-                    else
-                        % if the compound was completly removed from this
-                        % phase, delte the compound mass entries for these
-                        % field
-                        this.trCompoundMass = rmfield(this.trCompoundMass ,(csCompounds{iCompound}));
-                        this.tfCompoundMass = rmfield(this.tfCompoundMass ,(csCompounds{iCompound}));
-                    end
-                end
-            else
-                this.tfCompoundMass = [];
-                this.trCompoundMass = [];
-            end
             
             % Now calculate the new total heat capacity for the
             % asscociated capacity (the specific heat capacity is updated

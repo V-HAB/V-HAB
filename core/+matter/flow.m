@@ -33,7 +33,6 @@ classdef flow < base
         % To model masses consisting of more than one substance, compound
         % masses can be defined. If these are transported through flows,
         % their current composition is stored in this struct
-        trCompoundMass;
         arCompoundMass;
         
         % Reference to the matter table
@@ -93,7 +92,8 @@ classdef flow < base
                 end
                 
                 % Initialize the mass fractions array with zeros.
-                this.arPartialMass = zeros(1, this.oMT.iSubstances);
+                this.arPartialMass  = zeros(1, this.oMT.iSubstances);
+                this.arCompoundMass = zeros(this.oMT.iSubstances, this.oMT.iSubstances);
                 
                 this.tfPropertiesAtLastMassPropertySet.fTemperature = -1;
                 this.tfPropertiesAtLastMassPropertySet.fPressure    = -1;
@@ -163,7 +163,6 @@ classdef flow < base
                 if oPhase.fMass ~= 0
                     this.arPartialMass = oPhase.arPartialMass;
                     this.fMolarMass    = oPhase.fMolarMass;
-                    this.trCompoundMass        = oPhase.trCompoundMass;
                     this.arCompoundMass        = oPhase.arCompoundMass;
                     this.fSpecificHeatCapacity = oPhase.oCapacity.fSpecificHeatCapacity;
                     
@@ -391,7 +390,6 @@ classdef flow < base
             
             this.fSpecificHeatCapacity = oPhase.oCapacity.fSpecificHeatCapacity;
             this.fMolarMass            = oPhase.fMolarMass;
-            this.trCompoundMass        = oPhase.trCompoundMass;
             this.arCompoundMass        = oPhase.arCompoundMass;
         end
         
@@ -473,7 +471,6 @@ classdef flow < base
                 arPhasePartialMass         = oExme.oPhase.arPartialMass;
                 fPhaseMolarMass            = oExme.oPhase.fMolarMass;
                 fPhaseSpecificHeatCapacity = oExme.oPhase.oCapacity.fSpecificHeatCapacity;
-                trFlowCompoundMass         = oExme.oPhase.trCompoundMass;
                 arFlowCompoundMass         = oExme.oPhase.arCompoundMass;
 
                 % This can occur for example if a flow phase is used, which
@@ -551,7 +548,6 @@ classdef flow < base
                 if ~isempty(oExme)
                     oFlow.arPartialMass         = arPhasePartialMass;
                     oFlow.fMolarMass            = fPhaseMolarMass;
-                    oFlow.trCompoundMass        = trFlowCompoundMass;
                     oFlow.arCompoundMass        = arFlowCompoundMass;
                     
                     oFlow.fSpecificHeatCapacity = fPhaseSpecificHeatCapacity;

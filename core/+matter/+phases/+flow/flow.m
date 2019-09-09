@@ -132,9 +132,9 @@ classdef (Abstract) flow < matter.phase
                 fInwardsFlowRates = 0;
                 
                 % Get flow rates and partials from EXMEs
-                tfCompoundMassFlows = struct();
+                mfCompoundMassFlow = zeros(this.oMT.iSubstances,  this.oMT.iSubstances);
                 for iI = 1:this.iProcsEXME
-                    [ fFlowRate, arFlowPartials, ~, trExMECompoundMass ] = this.coProcsEXME{iI}.getFlowData();
+                    [ fFlowRate, arFlowPartials, ~, arExMECompoundMass ] = this.coProcsEXME{iI}.getFlowData();
                     
                     % Include if EITHER an (real) inflow, OR a p2p (but not
                     % ourselves!) in either direction (p2ps can change
@@ -145,24 +145,15 @@ classdef (Abstract) flow < matter.phase
                         afInFlowrates(iI)  = fFlowRate;
                         aiOutFlows(iI)     = 0;
                         
-                        if ~isempty(trExMECompoundMass)
-                            csCompounds = fieldnames(trExMECompoundMass);
-                            afFlows = fFlowRate .* arFlowPartials;
-                            for iCompound = 1:length(csCompounds)
-                                arCompoundMass = trExMECompoundMass.(csCompounds{iCompound});
-
-                                afCompoundPartialMassFlow = arCompoundMass .* afFlows(1, this.oMT.tiN2I.(csCompounds{iCompound}));
-                                if isfield(tfCompoundMassFlows, csCompounds{iCompound})
-                                    tfCompoundMassFlows.(csCompounds{iCompound}) = tfCompoundMassFlows.(csCompounds{iCompound}) + afCompoundPartialMassFlow;
-                                else
-                                    tfCompoundMassFlows.(csCompounds{iCompound}) = afCompoundPartialMassFlow;
-                                end
-                            end
-                        end
-                
+                        
                         %if ~this.coProcsEXME{iI}.bFlowIsAProcP2P
                         if fFlowRate > 0
                             fInwardsFlowRates = fInwardsFlowRates + fFlowRate;
+                            % Only the inflowing exme can actually change the mass
+                            % ratios of the phase. Outflowing exme must only be
+                            % considered as a total mass change before calculating
+                            % the new composition
+                            mfCompoundMassFlow = mfCompoundMassFlow + (fFlowRate .* arExMECompoundMass);
                         end
                     end
                 end
@@ -198,16 +189,11 @@ classdef (Abstract) flow < matter.phase
                 
                 afPartialInFlows = sum(mrInPartials, 1); %note we did multiply mrInPartials with flow rates above, so actually total partial flows!
                 
-
-                % Update the compound mass ratio struct
-                csCompounds = fieldnames(tfCompoundMassFlows);
-                if ~isempty(csCompounds)
-                    for iCompound = 1:length(csCompounds)
-                        this.trCompoundMass.(csCompounds{iCompound}) = tfCompoundMassFlows.(csCompounds{iCompound}) ./ sum(tfCompoundMassFlows.(csCompounds{iCompound}));
-                    end
-                else
-                    this.trCompoundMass = [];
-                end
+                % The compound mass flow ratio is stored per compound mass (in
+                % the rows)
+                afCompoundMassFlow = sum(mfCompoundMassFlow,2);
+                this.arCompoundMass = mfCompoundMassFlow ./ afCompoundMassFlow;
+                this.arCompoundMass(afCompoundMassFlow == 0, :) = 0;
                 
             else
                 afPartialInFlows = sum(afPartialInFlows, 1);

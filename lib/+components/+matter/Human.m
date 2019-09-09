@@ -619,7 +619,7 @@ classdef Human < vsys
             
             %% Food Conversion
             oStomachPhase = this.toStores.Human.toPhases.Stomach;
-            afResolvedMass = this.oMT.resolveCompoundMass(oStomachPhase.afMass, oStomachPhase.tfCompoundMass);
+            afResolvedMass = this.oMT.resolveCompoundMass(oStomachPhase.afMass, oStomachPhase.arCompoundMass);
             
             fFoodConversionTimeStep = this.fTimeStep * 2;
             csFood = fieldnames(this.oMT.ttxNutrientData);
