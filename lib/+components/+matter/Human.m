@@ -671,7 +671,6 @@ classdef Human < vsys
             % and John D. Rummel, 1987. This results in the following
             % chemical reaction:            
             % 5 C4H5ON + C6H12O6 + C16H32O2 = C42H69O13N5 (feces solids composition)
-            
             fMolarFlowFeces = this.fFecesSolidProduction / this.oMT.afMolarMass(this.oMT.tiN2I.C42H69O13N5);
             tfMassConsumptionFeces.Fat          =     fMolarFlowFeces * this.oMT.afMolarMass(this.oMT.tiN2I.C16H32O2);
             tfMassConsumptionFeces.Protein      = 5 * fMolarFlowFeces * this.oMT.afMolarMass(this.oMT.tiN2I.C4H5ON);

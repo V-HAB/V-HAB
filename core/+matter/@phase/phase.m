@@ -738,7 +738,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Total flows - one row (see below) for each EXME, number of
             % columns is the number of substances (partial masses)
             mfTotalFlows = zeros(this.iProcsEXME, this.oMT.iSubstances);
-            mfCompoundMassFlow = zeros(this.oMT.iSubstances,  this.oMT.iSubstances);
+            arCurrentInFlowCompoundMass = zeros(this.oMT.iSubstances,  this.oMT.iSubstances);
 
             % Each row: flow rate, temperature, heat capacity
             mfInflowDetails = zeros(this.iProcsEXME, 3);
@@ -774,7 +774,13 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                     % ratios of the phase. Outflowing exme must only be
                     % considered as a total mass change before calculating
                     % the new composition
-                    mfCompoundMassFlow = mfCompoundMassFlow + (mfTotalFlows(iI, :)' .* arExMECompoundMass);
+                    if any(any(arExMECompoundMass))
+                        % Note that here arCurrentInFlowCompoundMass
+                        % actually contains mass flows, but because
+                        % intialising it with zeros already requires quite
+                        % a bit of time we use only one variable!
+                        arCurrentInFlowCompoundMass = arCurrentInFlowCompoundMass + (mfTotalFlows(iI, :)' .* arExMECompoundMass);
+                    end
                 end
             end
             
@@ -788,9 +794,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
             % The compound mass flow ratio is stored per compound mass (in
             % the rows)
-            afCompoundMassFlow = sum(mfCompoundMassFlow,2);
-            arCurrentInFlowCompoundMass = mfCompoundMassFlow ./ afCompoundMassFlow;
-            arCurrentInFlowCompoundMass(afCompoundMassFlow == 0, :) = 0;
+            if any(any(arExMECompoundMass))
+                afCompoundMassFlow = sum(arCurrentInFlowCompoundMass,2);
+                arCurrentInFlowCompoundMass = arCurrentInFlowCompoundMass ./ afCompoundMassFlow;
+                arCurrentInFlowCompoundMass(afCompoundMassFlow == 0, :) = 0;
+            end
             
             % Checking for NaNs. It is necessary to do this here so the
             % origin of NaNs can be found easily during debugging.
@@ -932,26 +940,28 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Multiply with current time step
             afTotalInOuts = afTotalInOuts * fLastStep;
             
-            % Update the compound mass. We do this before we update the
-            % total mass because we must use the total mass of the phase
-            % from before, minus all the outflows but not yet plus the
-            % inflows for this
-            afTotalOuts = afTotalInOuts;
-            afTotalOuts(afTotalOuts > 0) = 0;
-            afTotalIns = afTotalInOuts;
-            afTotalIns(afTotalIns < 0) = 0;
-            
-            afCurrentMass = this.afMass + afTotalOuts;
-            
-            % Now using the mass without the outflown matter (as that has
-            % the same composition as the matter in the phase) we add the
-            % inflowing mass with the corresponding compound composition to
-            % get the current masses for each compound
-            mfNewCompoundMasses = afCurrentMass' .* this.arCompoundMass + afTotalIns' .* this.arInFlowCompoundMass;
-            afNewCompoundMasses = sum(mfNewCompoundMasses, 2);
-            
-            this.arCompoundMass = mfNewCompoundMasses ./ afNewCompoundMasses;
-            this.arCompoundMass(afNewCompoundMasses == 0, :) = 0;
+            if any(any(this.arInFlowCompoundMass))
+                % Update the compound mass. We do this before we update the
+                % total mass because we must use the total mass of the phase
+                % from before, minus all the outflows but not yet plus the
+                % inflows for this
+                afTotalOuts = afTotalInOuts;
+                afTotalOuts(afTotalOuts > 0) = 0;
+                afTotalIns = afTotalInOuts;
+                afTotalIns(afTotalIns < 0) = 0;
+
+                afCurrentMass = this.afMass + afTotalOuts;
+
+                % Now using the mass without the outflown matter (as that has
+                % the same composition as the matter in the phase) we add the
+                % inflowing mass with the corresponding compound composition to
+                % get the current masses for each compound
+                mfNewCompoundMasses = afCurrentMass' .* this.arCompoundMass + afTotalIns' .* this.arInFlowCompoundMass;
+                afNewCompoundMasses = sum(mfNewCompoundMasses, 2);
+
+                this.arCompoundMass = mfNewCompoundMasses ./ afNewCompoundMasses;
+                this.arCompoundMass(afNewCompoundMasses == 0, :) = 0;
+            end
             
             % Do the actual adding/removing of mass.
             this.afMass =  this.afMass + afTotalInOuts;
