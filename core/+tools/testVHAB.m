@@ -515,7 +515,7 @@ end
 
 % If there were changes and we performed simulations and we have data to
 % make comparisons, we make them now an display them to the user.
-if bChanged
+if ( bChanged || bForceExecution )
     fprintf('=======================================\n');
     fprintf('=== Time and Mass Error Comparisons ===\n');
     fprintf('=======================================\n\n');
