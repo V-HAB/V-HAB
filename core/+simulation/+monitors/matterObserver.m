@@ -181,18 +181,18 @@ classdef matterObserver < simulation.monitor
             % DISP balance
             fprintf('+---------------------------------- MATTER BALANCE ---------------------------------+\n');
             
-            disp(['| Generated Mass in Phases: ', num2str(sum(this.mfGeneratedMass(end, :))), ' kg']);
-            disp(['| Total Mass Balance:       ', num2str(sum(mfTotalFinalMass) - sum(this.mfTotalMass(1, :))), ' kg']);
+            fprintf('%s|\n', pad(sprintf('| Generated Mass in Phases: %g kg', sum(this.mfGeneratedMass(end, :))), 84));
+            fprintf('%s|\n', pad(sprintf('| Total Mass Balance:       %g kg', sum(mfTotalFinalMass) - sum(this.mfTotalMass(1, :))), 84));
             
             if this.bVerbose
-                fprintf('| \n');
-                fprintf('| Generated Mass refers to the sum over all phases for the afGeneratedMass property.\n');
-                fprintf('| There mass is generated in case slightly too much mass is taken out of the phase.\n');
-                fprintf('| \n');
-                fprintf('| Mass Balance refers to the total mass balance and shows the difference between the \n');
-                fprintf('| sum over all phase masses at the end of the simulation and the beginning.\n');
-                fprintf('| A positive mass balance means mass was generated during the simulation, therefore \n');
-                fprintf('| the Generated Mass value always results in a mass balance error.\n');
+                fprintf('|                                                                                   |\n');
+                fprintf('| Generated Mass is the sum over all phases of the afGeneratedMass property.        |\n');
+                fprintf('| There mass is generated in case slightly too much mass is taken out of the phase. |\n');
+                fprintf('|                                                                                   |\n');
+                fprintf('| Mass Balance refers to the total mass balance and shows the difference between    | \n');
+                fprintf('| the sum over all phase masses at the end of the simulation and the beginning.     |\n');
+                fprintf('| A positive mass balance means mass was generated during the simulation, therefore |\n');
+                fprintf('| the Generated Mass value always results in a mass balance error.                  |\n');
             end
             
             fprintf('+-----------------------------------------------------------------------------------+\n');

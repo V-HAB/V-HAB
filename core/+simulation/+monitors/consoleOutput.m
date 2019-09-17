@@ -197,14 +197,13 @@ classdef consoleOutput < simulation.monitor
             
             % Actually printing the statistics.
             fprintf('+------------------------------ SIMULATION STATISTICS ------------------------------+\n');
-            fprintf('Sim Time:      %i [s] in %i ticks\n', oTimer.fTime, oTimer.iTick);
-            fprintf('Sim Runtime:   %.2f [s], from that for monitors (e.g. logging) %.2f [s]\n', oSimInfra.fRuntimeTick + oSimInfra.fRuntimeOther, oSimInfra.fRuntimeOther);
-            fprintf('Sim factor:    %.4f [-] (ratio)\n', oSimInfra.fSimFactor);
-            fprintf('Avg Time/Tick: %.4f [s]\n', oTimer.fTime / oTimer.iTick);
+            fprintf('%s|\n', pad(sprintf('Sim Time:      %i [s] in %i ticks', oTimer.fTime, oTimer.iTick), 84));
+            fprintf('%s|\n', pad(sprintf('Sim Runtime:   %.2f [s], from that for monitors (e.g. logging) %.2f [s]', oSimInfra.fRuntimeTick + oSimInfra.fRuntimeOther, oSimInfra.fRuntimeOther), 84));
+            fprintf('%s|\n', pad(sprintf('Sim factor:    %.4f [-] (ratio)', oSimInfra.fSimFactor), 84));
+            fprintf('%s|\n', pad(sprintf('Avg Time/Tick: %.4f [s]', oTimer.fTime / oTimer.iTick), 84));
             fprintf('+-----------------------------------------------------------------------------------+\n\n');
             
         end
-        
         
         function onStepPost(this, ~)
             % Prints something to the console during the simulation 
