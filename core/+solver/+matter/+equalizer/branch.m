@@ -140,7 +140,9 @@ classdef branch < solver.matter.base.branch
             if isnan(fFlowRate)
                 fFlowRate = 0;
             else
-                fFlowRate = sif(fPressDiff >= 0, fFlowRate, -1 * fFlowRate);
+                if fPressDiff < 0
+                    fFlowRate = -1 * fFlowRate;
+                end
             end
             
             fFlowRate = (this.fOldFlowRate * this.iDampFR + fFlowRate) / (this.iDampFR + 1);
