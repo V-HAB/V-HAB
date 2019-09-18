@@ -59,6 +59,24 @@ classdef Example < vsys
             % system object, phase object, {name(s) of f2f-processor(s)}, phase object
             matter.branch(this, oGasPhase, {'Pipe'}, oAirPhase, 'Branch');
             
+            
+            % Creating a store, volume 100 m^3
+            matter.store(this, 'InletTank', 100);
+            
+            % Adding a phase to the store
+            oInletPhase = this.toStores.InletTank.createPhase('water', 'boundary', 100, 288.15);
+            
+            % Creating a second store, volume 100 m^3
+            matter.store(this, 'OutletTank', 100);
+            
+            % Adding a phase to the store
+            oOutletPhase = this.toStores.OutletTank.createPhase('water', 'boundary', 100, 293.15);
+            
+            % Adding another pipe
+            components.matter.pipe(this, 'Pipe2', 1.5, 0.005);
+            
+            % And another branch
+            matter.branch(this, oInletPhase, {'Pipe2'}, oOutletPhase, 'WaterBranch');
         end
         
         
@@ -91,6 +109,10 @@ classdef Example < vsys
             % Creating an interval solver object that will solve for the
             % flow rate of the one branch in this system.
             solver.matter.interval.branch(this.toBranches.Branch);
+            
+            % Creating a manual solver object and setting the flow rate
+            oBranch = solver.matter.manual.branch(this.toBranches.WaterBranch);
+            oBranch.setFlowRate(0.002);
 
             % Since we want V-HAB to calculate the temperature changes in
             % this system we call the setThermalSolvers() method of the
