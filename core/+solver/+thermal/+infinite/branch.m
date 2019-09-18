@@ -76,22 +76,48 @@ classdef branch < solver.thermal.base.branch
                 oNormalCapacity = oCapacityRight;
                 
                 bFlow = true;
-                bLeft = true;
+                bLeftFlow = true;
             elseif oCapacityRight.oPhase.bFlow
                 
                 oFlowCapacity   = oCapacityRight;
                 oNormalCapacity = oCapacityLeft;
                 
                 bFlow = true;
-                bLeft = false;
+                bLeftFlow = false;
             else
                 bFlow = false;
             end
             
+            % check if one of the capacities is a boundary phase and set
+            % identifier accordingly to prevent many checks later on
+            if oCapacityLeft.oPhase.bBoundary
+                oBoundaryCapacity   = oCapacityLeft;
+                oNormalCapacity     = oCapacityRight;
+                
+                bBoundary = true;
+                bLeftBoundary = true;
+            elseif oCapacityRight.oPhase.bBoundary
+                
+                oBoundaryCapacity   = oCapacityRight;
+                oNormalCapacity     = oCapacityLeft;
+                
+                bBoundary = true;
+                bLeftBoundary = false;
+            else
+                bBoundary = false;
+            end
             % ensure that not both capacities are flow capacities, as that
             % would break the calculation
             if bFlow && oNormalCapacity.oPhase.bFlow
                 error('it is not possible to use an infinite conduction solver with two flow capacities! Currently both %s and %s are flow capacities', oCapacityLeft.sName, oCapacityRight.sName)
+            end
+            
+            if bBoundary && oNormalCapacity.oPhase.bBoundary
+                error('it is not possible to use an infinite conduction solver with two boundary capacities! Currently both %s and %s are boundary capacities', oCapacityLeft.sName, oCapacityRight.sName)
+            end
+            
+            if bBoundary && bFlow
+                error('it is currently not possible to use an infinite conduction solver with a boundary  and a flow capacity! Currently both %s and %s are either flow orboundary capacities', oCapacityLeft.sName, oCapacityRight.sName)
             end
             
             if bFlow
@@ -141,10 +167,31 @@ classdef branch < solver.thermal.base.branch
                 % values result in a temperature rise. For the right side
                 % the calculation is analogous but with a different sign
                 % and using the current right side heat flow
-                if bLeft
+                if bLeftFlow
                     fHeatFlow = -(fRequiredFlowHeatFlow - fCurrentHeatFlowLeft);
                 else
                     fHeatFlow = fRequiredFlowHeatFlow - fCurrentHeatFlowRight;
+                end
+                
+            elseif bBoundary
+                % If there is a boundary phase present, the infinite
+                % conduction solver will simply keep the other phase at the
+                % same temperature as the boundary
+                
+                % If the normal phase is hotter than the boundary, we need
+                % a negative heat flow!
+                fEqualizationTemperatureChange = (oNormalCapacity.fTemperature - oBoundaryCapacity.fTemperature) * oNormalCapacity.fTotalHeatCapacity;
+                
+                if bLeftBoundary
+                    % Since the boundary is on the left, we have to invert
+                    % the signs for the heat flows
+                    fHeatFlow = - fEqualizationTemperatureChange + fCurrentHeatFlowRight;
+                else
+                    % the normal phase is on the left, and we do not have
+                    % to change signs, as the calculations were performed
+                    % to ensure that negative heat flows are calculated if
+                    % the normal phase should cool down
+                    fHeatFlow = fEqualizationTemperatureChange - fCurrentHeatFlowLeft;
                 end
                 
             else
