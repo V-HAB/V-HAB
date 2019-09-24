@@ -79,12 +79,28 @@ classdef (Abstract) boundary < matter.phase
             % pressure of the phase
             fPressure = this.fPressure;
             
-            % In case afMass is used we calculate the partial pressures
-            if isfield(tProperties, 'afMass')
-                if isfield(tProperties, 'fPressure')
-                   fPressure = tProperties.fPressure;
-                end
+            % Parsing the fPressure property, if it was provided.
+            if isfield(tProperties, 'fPressure')
+                % Since we can't set this.fPressure directy, we need to
+                % change the fMassToPressure property. So first we set the
+                % pressure to the local variable. 
+                fPressure = tProperties.fPressure;
                 
+                % Now we calculate the relative pressure change. 
+                rPressureChange = fPressure / this.fPressure;
+                
+                % Using the relative pressure change, we change the overall
+                % amount of mass in the phase. This will increase or
+                % decrease the pressure.
+                this.afMass = this.afMass * rPressureChange;
+                this.fMass  = sum(this.afMass);
+                
+                % Now we can calculate the new fMassToPressure value.
+                this.fMassToPressure = fPressure/this.fMass;
+            end
+            
+            % Parsing the afMass property, if it was provided.
+            if isfield(tProperties, 'afMass')
                 this.afMass = tProperties.afMass;
                 this.fMass  = sum(this.afMass);
             end
