@@ -197,7 +197,7 @@ classdef consoleOutput < simulation.monitor
             
             % Actually printing the statistics.
             fprintf('+------------------------------ SIMULATION STATISTICS ------------------------------+\n');
-            fprintf('%s|\n', pad(sprintf('Sim Time:      %i [s] in %i ticks', oTimer.fTime, oTimer.iTick), 84));
+            fprintf('%s|\n', pad(sprintf('Sim Time:      %g [s] in %i ticks', oTimer.fTime, oTimer.iTick), 84));
             fprintf('%s|\n', pad(sprintf('Sim Runtime:   %.2f [s], from that for monitors (e.g. logging) %.2f [s]', oSimInfra.fRuntimeTick + oSimInfra.fRuntimeOther, oSimInfra.fRuntimeOther), 84));
             fprintf('%s|\n', pad(sprintf('Sim factor:    %.4f [-] (ratio)', oSimInfra.fSimFactor), 84));
             fprintf('%s|\n', pad(sprintf('Avg Time/Tick: %.4f [s]', oTimer.fTime / oTimer.iTick), 84));
