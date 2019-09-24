@@ -243,6 +243,8 @@ if (bChanged || bForceExecution)
         abActiveSimulations = false(iNumberOfTests,1);
         iActiveSimulations = 0;
         
+        disp('Starting multiple simulations. Progess window may be in background.');
+        
         % Looping through all tests and starting a simulation for each of them
         % using the parfeval() method.
         for iTest = 1:iNumberOfTests
