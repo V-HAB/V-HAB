@@ -1,59 +1,21 @@
 classdef Example < vsys
-    %EXAMPLE Example simulation for a system with subsystems in V-HAB 2.0
-    %   Two Tanks are connected to each other via pipes with a filter in
-    %   between. The filter is modeled as a store with two phases, one
-    %   being the connection (via exmes) to the system level branch. The
-    %   filter itself is in a subsystem of this system called 'SubSystem'.
-    %   So this tutorial serves as an example to show how branches between
-    %   subsystems are created. The important thing to remember here is,
-    %   that you have to discern between a branch from a suPersystem to a
-    %   suBsystem or the other direction. This determines how you create
-    %   the branch. 
-    
+    %EXAMPLE This example is based on the subsystem example. The only
+    %difference here is, that during the simulation the way the branches
+    %are connected will be changed at tick 100 in the simulation. For more
+    %information on how to change this, view the exec function of this file
     properties
         
     end
     
     methods
         function this = Example(oParent, sName)
-            % Call parent constructor. Third parameter defined how often
-            % the .exec() method of this subsystem is called. This can be
-            % used to change the system state, e.g. close valves or switch
-            % on/off components.
-            % Values can be: 0-inf for interval in [s] (zero means with
-            % lowest time step set for the timer). -1 means with every TICK
-            % of the timer, which is determined by the smallest time step
-            % of any of the systems. Providing a logical false (def) means
-            % the .exec method is called when the oParent.exec() is
-            % executed (see this .exec() method - always call exec@vsys as
-            % well!).
             this@vsys(oParent, sName, -1);
-            
-            
-            %TODO -> DOCUMENT!
-            %   -> here, just process Ctor params and set e.g. defualt
-            %      properties
-            %   -> ALSO, add subsystems
-            
             
             % Adding the subsystem
             tutorials.reconnectingExMe.subsystems.MiddleSystem(this, 'MiddleSystem');
             
             
-            
-            
-            % THEN do this:
             eval(this.oRoot.oCfgParams.configCode(this));
-            % -> COnfig params
-            
-            
-            
-            
-            
-            % MAtter stuff in createMatterStructure, solvers in
-            % createSovlerStructure. Stuff like connectIfs has to be done
-            % in createMatterStructure!
-            
         end
         
         
@@ -100,25 +62,12 @@ classdef Example < vsys
             % Now we need to connect the subsystem with the top level system (this one). This is
             % done by a method provided by the subsystem.
             this.toChildren.MiddleSystem.setIfFlows('MiddleSystemOutput', 'MiddleSystemInput');
-            
-            
-            
-            % Seal - means no more additions of stores etc can be done to
-            % this system.
-            %this.seal();
-            % NOT ANY MORE!
         end
         
         
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
             
-            
-            % SOLVERS ETC!
-            
-            % specific properties for rMaxChange etc, possibly depending on
-            % this.tSolverProperties.XXX
-            % OR this.oRoot.tSolverProperties !!!
             this.setThermalSolvers();
         end
     end
@@ -126,10 +75,24 @@ classdef Example < vsys
      methods (Access = protected)
         
         function exec(this, ~)
-            % exec(ute) function for this system
-            % Here it only calls its parent's exec function
             exec@vsys(this);
             
+            % To reconnect a exme to a different phase each exme has the
+            % function "reconnectExMe" which requires a phase as an input.
+            % By calling this function on the exme, the exme will be moved
+            % to the phase which is defined as input and therefore the
+            % branch will now connect two different phases. In this example
+            % the filter in and outlet branch are changed to switch the
+            % flow direction within the filter, just to showcase what
+            % happens. This can be done for any exme during the simulation,
+            % the only limitation beeing that changing the phase to which
+            % the exme is connect is not allowed to change the system to
+            % which the branch belong. For example, the interface branches
+            % are always part of the subsystem, not the parent system.
+            % Therefore, it is not allowed to change the exme which is
+            % located in the subsystem, to a phase in the parent system or
+            % a different subsystem, this will result in an error since it
+            % can lead to inconsistent system states.
             if this.oTimer.iTick == 100
                 this.toChildren.MiddleSystem.toChildren.SubSystem.toBranches.Filter_Inlet.coExmes{2}.reconnectExMe(this.toStores.Tank_2.toPhases.Tank_2_Phase_1);
                 this.toChildren.MiddleSystem.toChildren.SubSystem.toBranches.Filter_Outlet.coExmes{2}.reconnectExMe(this.toStores.Tank_1.toPhases.Tank_1_Phase_1);
