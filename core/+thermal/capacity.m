@@ -847,4 +847,37 @@ classdef capacity < base & event.source
             end
         end
     end
+    methods (Access = {?thermal.procs.exme})
+        % these functions are used to handle dynamic reconnection of
+        % branches during simulations. As it is important that everything
+        % is done correctly to prevent inconsistent simulation states while
+        % doing this, only the exme itself (from which the operation is
+        % triggered) has access to the necessary functions
+        function removeExMe(this, oExMe)
+            %% removeExMe
+            % This function removes the specified oExMe from the phase and
+            % sets the phase to outdated
+            this.toProcsEXME = rmfield(this.toProcsEXME, oExMe.sName);
+            for iExme = 1:this.iProcsEXME
+                if this.aoExmes(iExme) == oExMe
+                    break
+                end
+            end
+            this.aoExmes(iExme) = [];
+            this.iProcsEXME = this.iProcsEXME - 1;
+            
+            this.setOutdatedTS();
+        end
+        
+        function addExMe(this, oExMe)
+            %% addExMe
+            % adds the specified ExMe to this phase and sets the phase to
+            % outdated
+            this.toProcsEXME.(oExMe.sName) = oExMe;
+            this.aoExmes(end + 1) = oExMe;
+            this.iProcsEXME = this.iProcsEXME + 1;
+            
+            this.setOutdatedTS();
+        end
+    end
 end
