@@ -10,81 +10,100 @@ classdef setup < simulation.infrastructure
     
     
     properties
+        % Struct with log item indexes
+        tciLog;
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams)
+        function this = setup(ptConfigParams, tSolverParams, fSimTime)
             % Possible to change the constructor paths and params for the
             % monitors
             ttMonitorConfig = struct();
+            ttMonitorConfig.oTimeStepObserver.sClass = 'simulation.monitors.timestepObserver';
+            ttMonitorConfig.oTimeStepObserver.cParams = { 0 };
             
             this@simulation.infrastructure('SWME_Simulation', ptConfigParams, tSolverParams, ttMonitorConfig);
 
             % Creating a Test object
-            tutorials.SWME.systems.Example(this.oSimulationContainer, 'Test');    
+            examples.SWME.systems.Example(this.oSimulationContainer, 'Test');    
             
-            % Simulation length - stop when specific time in sim is reached
-            % or after specific amount of ticks (bUseTime true/false).
-            this.fSimTime  = 3600; % In seconds
-            this.iSimTicks = 1100;
-            this.bUseTime  = true;
+            % Simulation length 
+            if nargin > 2 && ~isempty(fSimTime)
+                this.fSimTime = fSimTime;
+            else
+                this.fSimTime = 120;
+            end
+            
+            % This simulation runs pretty fast regarding individual ticks,
+            % so we decrease the reporting interval in the console. 
+            this.toMonitors.oConsoleOutput.setReportingInterval(1000, 100);
         end
         
+        % Logging function
         function configureMonitors(this)
-            %% Logging
-            % Creating a cell setting the log items. You need to know the
-            % exact structure of your model to set log items, so do this
-            % when you are done modelling and ready to run a simulation. 
-            
+            % To make the code more legible, we create a local variable for
+            % the logger object.
             oLogger = this.toMonitors.oLogger;
             
+            this.tciLog.Temperatures{1} = oLogger.addValue('Test/SWME:s:SWMEStore.toProcsP2P.X50Membrane', 'fSWMEInletTemperature', 'K', 'SWME In');
+            this.tciLog.Temperatures{2} = oLogger.addValue('Test/SWME:s:SWMEStore.toProcsP2P.X50Membrane', 'fSWMEOutletTemperature', 'K', 'SWME Out');
             
-            tiLog.ValvePosition = oLogger.addValue('Test/SWME', 'iBPVCurrentSteps', 'steps', 'Valve Position');
+            this.tciLog.FlowRates{1} = oLogger.addValue('Test/SWME:b:InletBranch',  'fFlowRate * -1', 'kg/s', 'Inflow');
+            this.tciLog.FlowRates{2} = oLogger.addValue('Test/SWME:b:OutletBranch', 'fFlowRate',      'kg/s', 'Outflow');
             
-            tiLog.Combo_1.ValvePosition = tiLog.ValvePosition;
-            tiLog.Combo_1.Backpressure  = oLogger.addValue('Test/SWME:s:SWMEStore:p:VaporPhase', 'this.fMass * this.fMassToPressure', 'Pa', 'Vapor Backpressure');
-            tiLog.Combo_1.HeatRejection = oLogger.addValue('Test/SWME:s:SWMEStore.toProcsP2P.X50Membrane', 'fHeatRejectionSimple', 'W', 'Heat Rejection');
+            this.tciLog.ValvePosition{1} = oLogger.addValue('Test/SWME', 'iBPVCurrentSteps', '-', 'Valve Steps');
             
-            tiLog.HeatRejection = tiLog.Combo_1.HeatRejection;
+            this.tciLog.ValveArea{1} = oLogger.addValue('Test/SWME', 'fValveCurrentArea', 'm^2', 'Valve Area');
             
-            tiLog.Combo_2.TotalHeatRejection = tiLog.Combo_1.HeatRejection;
-            tiLog.Combo_2.F2FHeatRejection   = oLogger.addValue('Test/SWME.toProcsF2F.TemperatureProcessor', 'fHeatFlow', 'W', 'Processor Heat Flow');
+            this.tciLog.Masses{1} = oLogger.addValue('Test/SWME:s:SWMEStore:p:VaporPhase', 'this.fMass', 'kg', 'Vapor Phase');
+            this.tciLog.Masses{2} = oLogger.addValue('Test/SWME:s:SWMEStore:p:FlowPhase', 'this.fMass', 'kg',  'Flow Phase');
             
-            tiLog.OutletTemperature = oLogger.addValue('Test/SWME.toProcsF2F.TemperatureProcessor.aoFlows(2)', 'fTemperature', 'K', 'Outlet Temperature');
+            this.tciLog.Combo{1} = oLogger.addValue('Test/SWME:s:SWMEStore:p:VaporPhase',             'this.fMass * this.fMassToPressure', 'Pa',    'Vapor Backpressure');
+            this.tciLog.Combo{2} = oLogger.addValue('Test/SWME:s:SWMEStore.toProcsP2P.X50Membrane',   'fHeatRejectionSimple',              'W',     'Heat Rejection');
             
-            tiLog.WaterTemperatures.Inlet  = oLogger.addValue('Test/SWME:s:SWMEStore:p:FlowPhase.toProcsEXME.WaterIn', 'fTemperature', 'K', 'Inlet Temperature');
-            tiLog.WaterTemperatures.Outlet = tiLog.OutletTemperature;
+            this.tciLog.VaporMass{1} = oLogger.addValue('Test:s:EnvironmentTank:p:EnvironmentPhase', 'this.afMassChange(this.oMT.tiN2I.H2O)', 'kg', 'Vapor Mass lost to Environment');
             
-            tiLog.EnvironmentVaporMass = oLogger.addValue('Test/SWME:s:EnvironmentTank:p:EnvironmentPhase', 'fMass', 'kg', 'Vapor Mass lost to Environment');
-            
-            tiLog.VaporFlowRates.Membrane = oLogger.addValue('Test/SWME:s:SWMEStore.toProcsP2P.X50Membrane', 'fWaterVaporFlowRate', 'kg/s', 'Membrane Flow Rate');
-            tiLog.VaporFlowRates.Vacuum   = oLogger.addValue('Test/SWME:b:EnvironmentBranch', 'fFlowRate', 'kg/s', 'Environment Flow Rate');
-            
-            tiLog.WaterFlowRates.Inlet  = oLogger.addValue('Test/SWME:b:InletBranch', 'fFlowRate', 'kg/s', 'Inlet Flow Rate');
-            tiLog.WaterFlowRates.Outlet = oLogger.addValue('Test/SWME:b:OutletBranch', 'fFlowRate', 'kg/s', 'Outlet Flow Rate');
-            
-            tiLog.VaporBackpressure = tiLog.Combo_1.Backpressure;
+            this.tciLog.VaporFlowRates{1} = oLogger.addValue('Test/SWME:s:SWMEStore.toProcsP2P.X50Membrane', 'fWaterVaporFlowRate', 'kg/s', 'Membrane Flow Rate');
+            this.tciLog.VaporFlowRates{2} = oLogger.addValue('Test/SWME:b:EnvironmentBranch',                'fFlowRate',           'kg/s', 'Environment Flow Rate');
             
             
-            %% Define plots
-            
-            oPlot = this.toMonitors.oPlotter;
-            
-            oPlot.definePlot(tiLog.ValvePosition,     'Backpressure Valve Position');
-            oPlot.definePlot(tiLog.Combo_1,           'Valve Position, Vapor Backpressure and Heat Rejection');
-%             oPlot.definePlot(tiLog.HeatRejection,     'Heat Rejection Simple');
-            oPlot.definePlot(tiLog.Combo_2,           'Heat Rejection');
-            oPlot.definePlot(tiLog.OutletTemperature, 'Outlet Temperature');
-            oPlot.definePlot(tiLog.WaterTemperatures, 'Water Temperatures');
-            oPlot.definePlot(tiLog.EnvironmentVaporMass,   'Environment Tank Vapor Mass');
-            oPlot.definePlot(tiLog.VaporFlowRates,    'Vapor Flow Rates');
-            oPlot.definePlot(tiLog.WaterFlowRates,    'Water Flow Rates');
-            oPlot.definePlot(tiLog.VaporBackpressure, 'Vapor backpressure');
-
         end
         
-        function plot(this, varargin)
-            this.toMonitors.oPlotter.plot(varargin{:});
+        % Plotting function
+        function plot(this, tInputFigureOptions) 
+            % First we get a handle to the plotter object associated with
+            % this simulation.
+            oPlotter = plot@simulation.infrastructure(this);
+            
+            % Initializing the figure options struct
+            tFigureOptions = struct();
+            
+            % Turing on the time plot
+            tFigureOptions.bTimePlot = true;
+            
+            % Creating the cell that contains all plots.
+            coPlots = cell(3,3);
+            
+            
+            coPlots{1,1} = oPlotter.definePlot(this.tciLog.Temperatures, 'Temperatures');
+            coPlots{1,2} = oPlotter.definePlot(this.tciLog.FlowRates, 'Water Flow Rates');
+            coPlots{1,3} = oPlotter.definePlot(this.tciLog.ValvePosition, 'Valve Position');
+            coPlots{2,1} = oPlotter.definePlot(this.tciLog.Masses, 'Masses'); 
+            coPlots{2,2} = oPlotter.definePlot(this.tciLog.Combo, 'Heat Rejection', struct('csUnitOverride', {{ {'W'},{'Pa'} }}));
+            coPlots{2,3} = oPlotter.definePlot(this.tciLog.ValveArea, 'ValveArea');
+            coPlots{3,1} = oPlotter.definePlot(this.tciLog.VaporMass, 'Vapor Mass');
+            coPlots{3,2} = oPlotter.definePlot(this.tciLog.VaporFlowRates, 'Vapor Flow Rates');
+            
+            sName = 'SWME Simulation Results';
+            
+            if nargin > 2 && ~isempty(tInputFigureOptions)
+                tFigureOptions = tools.mergeStructs(tFigureOptions, tInputFigureOptions);
+            end
+            
+            oPlotter.defineFigure(coPlots, sName, tFigureOptions);
+            
+            % Plotting all figures (in this case just one). 
+            oPlotter.plot();
             
         end
         

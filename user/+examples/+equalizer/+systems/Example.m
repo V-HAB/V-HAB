@@ -4,7 +4,7 @@ classdef Example < vsys
     %   with a pipe in between
     
     properties
-        bSetNewBoundary = false;
+        % This system does not have any properties
     end
     
     methods
@@ -31,22 +31,20 @@ classdef Example < vsys
             % method of the parent class.
             createMatterStructure@vsys(this);
             
-            % Creating a store with an infinite volume since we want it to
-            % be a boundary
-            matter.store(this, 'Tank_1', Inf);
+            % Creating a store, volume 1 m^3
+            matter.store(this, 'Tank_1', 1);
             
-            % Adding a phase to the store 'Tank_1' with air at 20 deg C. We
-            % are also passing in a volume of 1 m^3, but that is only for
-            % the matter table to be able to correctly calculate the
-            % properties of the phase. The actual phase volume will be Inf.
-            oGasPhase = this.toStores.Tank_1.createPhase('air', 'boundary', 1, 293.15);
+            % Adding a phase to the store 'Tank_1', 1 m^3 air at 20 deg C
+            oGasPhase = this.toStores.Tank_1.createPhase('air', 1, 293.15);
             
-            % Creating a second store, again with infinite volume
-            matter.store(this, 'Tank_2', Inf);
+            % Creating a second store, volume 1 m^3
+            matter.store(this, 'Tank_2', 1);
             
-            % Adding a phase to the store 'Tank_2', air at 50 deg C and 
-            % 200 kPA.
-            oAirPhase = this.toStores.Tank_2.createPhase('air', 'boundary', 1, 323.15, 2e5);
+            % Adding a phase to the store 'Tank_2', 2 m^3 air at 50 deg C
+            % Note that we are creating a phase that is twice as voluminous
+            % as the store it is in. This means that the pressure of this
+            % phase will be higher than that of 'Tank_1'
+            oAirPhase = this.toStores.Tank_2.createPhase('air', 'boundary', 1, 323.15, 0.5, 2e5);
             
             % Adding a pipe to connect the tanks, 1.5 m long, 5 mm in
             % diameter. The pipe is in the components library and is
@@ -59,24 +57,6 @@ classdef Example < vsys
             % system object, phase object, {name(s) of f2f-processor(s)}, phase object
             matter.branch(this, oGasPhase, {'Pipe'}, oAirPhase, 'Branch');
             
-            
-            % Creating a store, volume 100 m^3
-            matter.store(this, 'InletTank', 100);
-            
-            % Adding a phase to the store
-            oInletPhase = this.toStores.InletTank.createPhase('water', 'boundary', 100, 288.15);
-            
-            % Creating a second store, volume 100 m^3
-            matter.store(this, 'OutletTank', 100);
-            
-            % Adding a phase to the store
-            oOutletPhase = this.toStores.OutletTank.createPhase('water', 'boundary', 100, 293.15);
-            
-            % Adding another pipe
-            components.matter.pipe(this, 'Pipe2', 1.5, 0.005);
-            
-            % And another branch
-            matter.branch(this, oInletPhase, {'Pipe2'}, oOutletPhase, 'WaterBranch');
         end
         
         
@@ -108,11 +88,7 @@ classdef Example < vsys
             
             % Creating an interval solver object that will solve for the
             % flow rate of the one branch in this system.
-            solver.matter.interval.branch(this.toBranches.Branch);
-            
-            % Creating a manual solver object and setting the flow rate
-            oBranch = solver.matter.manual.branch(this.toBranches.WaterBranch);
-            oBranch.setFlowRate(0.002);
+            solver.matter.equalizer.branch(this.toBranches.Branch, 0.1, 2*10^5);
 
             % Since we want V-HAB to calculate the temperature changes in
             % this system we call the setThermalSolvers() method of the
@@ -132,19 +108,6 @@ classdef Example < vsys
             % Here it only calls its parent's exec() method
             exec@vsys(this);
             
-            if this.oTimer.fTime > 600 && ~this.bSetNewBoundary
-                
-                tProperties.fPressure = 2e5;
-                afMass = zeros(1,this.oMT.iSubstances);
-                afMass(this.oMT.tiN2I.N2) = 1;
-                tProperties.afMass = afMass;
-                
-                this.toStores.Tank_1.aoPhases(1).setBoundaryProperties(tProperties);
-                tProperties.fPressure = 1e5;
-                this.toStores.Tank_2.aoPhases(1).setBoundaryProperties(tProperties);
-                
-                this.bSetNewBoundary = true;
-            end
         end
         
      end

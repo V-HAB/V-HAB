@@ -356,36 +356,6 @@ classdef container < sys
             this.connectThermalIF(sLocalInterface, sParentInterface);
         end
         
-        function disconnectIF(this, sLocalInterface)
-            %% disconnectIF
-            %
-            % This function can be used to disconnect an existing
-            % connection between two interface branches. Allowing it to be
-            % reconnected with another IF.
-            iLocalBranch = find(strcmp({ this.aoBranches.sNameLeft }, sLocalInterface), 1);
-            
-            if isempty(iLocalBranch)
-                this.throw('connectIF', 'Local interface %s not found', sLocalInterface);
-            end
-            
-            oBranch = this.aoBranches(iLocalBranch);
-            
-            if ~oBranch.abIfs(2)
-                this.throw('connectIF', 'Branch doesn''t have an interface on the right side (connected to store).');
-            end
-            
-            bTrigger = ~oBranch.abIfs(1) && ~isempty(oBranch.coExmes{2});
-            
-            oBranch.disconnect();
-            
-            % Do the trigger after the actual disconnect
-            if bTrigger
-                this.trigger('branch.disconnected', iLocalBranch);
-            end
-        end
-        
-        
-        
         function updateBranchNames(this, oBranch, sOldName)
             %% updateBranchNames
             % INTERNAL FUNCTION! Called by base.branch connectTo function

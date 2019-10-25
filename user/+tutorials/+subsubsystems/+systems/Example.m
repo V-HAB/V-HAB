@@ -27,7 +27,7 @@ classdef Example < vsys
             % the .exec method is called when the oParent.exec() is
             % executed (see this .exec() method - always call exec@vsys as
             % well!).
-            this@vsys(oParent, sName);
+            this@vsys(oParent, sName, 10);
             
             
             %TODO -> DOCUMENT!
@@ -129,10 +129,6 @@ classdef Example < vsys
             % exec(ute) function for this system
             % Here it only calls its parent's exec function
             exec@vsys(this);
-            
         end
-        
      end
-    
 end
-

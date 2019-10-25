@@ -359,7 +359,10 @@ classdef branch < base.branch
             for iI = 1:length(this.aoFlowProcs)
                 this.aoFlowProcs(iI).seal(this);
             end
-            
+
+            % now we no longer need the function to get the exmes from the
+            % other IF branch because we created a single branch from it
+            this.hGetBranchData = [];
             
             this.bSealed = true;
         end

@@ -37,6 +37,17 @@ classdef exme < base
 
     end
     
+    properties (SetAccess = private, GetAccess = private)
+        % To allow reconnection of the exme we create a property to store
+        % the new phase until the post tick reconnect operation is
+        % performed. The property is set to all private, as it should not
+        % be seen from outside the exme!
+        oNewPhase;
+        
+        % Function handle to the bindPostTick function of the timer,
+        % telling the corresponding post tick to be executed
+        hReconnectExme;
+    end
     
     
     methods
@@ -59,6 +70,13 @@ classdef exme < base
             oPhase.addProcEXME(this);
             
             this.oPhase = oPhase;
+            
+            % For rebinding the exme, we create a post tick call back which
+            % is performed after all phase operations are performed. That
+            % ensures that the phase still has a valid exme etc when it is
+            % calculated but that the exme is changed before the solvers
+            % are updated
+            this.hReconnectExme = this.oTimer.registerPostTick(@this.reconnectExMePostTick,            'matter',        'post_phase_update');
         end
         
         
@@ -102,6 +120,35 @@ classdef exme < base
                 rethrow(oErr);
             end
             
+        end
+        
+        function reconnectExMe(this, oNewPhase)
+            %% reconnectExMe
+            % This function can be used to change the phase to which the
+            % exme is connect, therefore also changing the phase to which
+            % the corresponding branch is connected. This function does not
+            % instantly change the connection, but rather binds the
+            % corresponding operation into the correct post tick location
+            % to ensure a consistent simulation
+            % Inputs:
+            % oNewPhase: The phase object to which the exme should be
+            %            connected afterwards
+            
+            % Bin the new phase to the property, will be set in post tick
+            % function reconnectExMePostTick
+            this.oNewPhase = oNewPhase;
+            
+            % tells the post tick to be executed
+            this.hReconnectExme();
+            
+            % Reconnecting the matter exme, also requires us to reconnect
+            % the thermal exme!
+            if this.iSign == 1
+                iExme = 2;
+            else
+                iExme = 1;
+            end
+            this.oFlow.oBranch.oThermalBranch.coExmes{iExme}.reconnectExMe(oNewPhase.oCapacity, true);
         end
         
         function [ fFlowRate, arPartials, afProperties, arCompoundMass ] = getFlowData(this, fFlowRate)
@@ -195,6 +242,46 @@ classdef exme < base
             % have one input parameter, this is not necessary here. 
             this.oFlow = matter.flow.empty();
             this.iSign = 0;
+        end
+        
+        function reconnectExMePostTick(this)
+            %% reconnectExMePostTick
+            % This function is executed in the post tick between the phase
+            % massupdated (which must be performed before the exme is
+            % changed) and the branch updates (which must be performed
+            % therefafter).
+            
+            % we check if reconnecting the ExMe would moved the
+            % branch from one system to another:
+            
+            % the first condition for this is, that the changed exme is
+            % the left exme of the branch, otherwise the system did not
+            % change! (as the branch is only located in the subsystem)
+            if this.oFlow.oBranch.coExmes{1} == this
+                % The second check is if the two phases are not located in
+                % the same system.
+                if this.oNewPhase.oStore.oContainer ~= this.oPhase.oStore.oContainer
+                    % If both conditions are met, the left exme and
+                    % therefore the branch were moved to a different
+                    % system. In this case we have to adjust the toBranches
+                    % and aoBranches properties of these systems
+                    % accordingly (check for thermal performed in thermal
+                    % domain)
+                    error(['currently it is not possible to change the left hand exme to a phase which is located in a different system! Occured while reconnecting exme', this.sName])
+                    
+                end
+            end
+            % Store the current phase as reference
+            oOldPhase = this.oPhase;
+            
+            this.oPhase = this.oNewPhase;
+            % Now we have to remove/add the exme to the old/new phase
+            oOldPhase.removeExMe(this);
+            this.oPhase.addExMe(this);
+            
+            % to prevent confusion, empty the new phase property
+            this.oNewPhase = [];
+            
         end
     end
 end

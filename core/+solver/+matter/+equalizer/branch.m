@@ -140,25 +140,14 @@ classdef branch < solver.matter.base.branch
             if isnan(fFlowRate)
                 fFlowRate = 0;
             else
-                fFlowRate = sif(fPressDiff >= 0, fFlowRate, -1 * fFlowRate);
+                if fPressDiff < 0
+                    fFlowRate = -1 * fFlowRate;
+                end
             end
             
             fFlowRate = (this.fOldFlowRate * this.iDampFR + fFlowRate) / (this.iDampFR + 1);
             
             this.fOldFlowRate = fFlowRate;
-            
-            
-            % Now check if we're synced to another solver. If yes, use that
-            % solver's flow rate and just add the FR here, assuming the
-            % user set an accordingly lower max. FR.
-            if ~isempty(this.oSyncedSolver)
-                if this.bAlignedSolverInvertedFlowRate
-                    iInv = -1;
-                else
-                    iInv = 1;
-                end
-                fFlowRate = iInv * this.oSyncedSolver.fFlowRate + fFlowRate;
-            end
             
             update@solver.matter.base.branch(this, fFlowRate);
         end
