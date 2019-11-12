@@ -94,8 +94,12 @@ classdef compressibleMedium < matter.manips.volume.step
                             % the "incompressible" substances does not change
                             % significantly over the pressure and therefore the
                             % small pressure differences that occur over one
-                            % phase update only have a negligible impact
-                            afDensityIncompressiblePhase(iPhase) = this.oMT.calculateDensity(oOtherPhase);
+                            % phase update only have a negligible impact.
+                            % Therefore, we can use the density stored in
+                            % the incompressible phase, which is only
+                            % updated after that phase considers it
+                            % outdated
+                            afDensityIncompressiblePhase(iPhase) = oOtherPhase.fDensity;
                             afVolumeIncompressiblePhase(iPhase)  = oOtherPhase.fMass / afDensityIncompressiblePhase(iPhase);
                         else
                             abCompressiblePhase(iPhase) = true;
