@@ -194,6 +194,19 @@ classdef branch < solver.thermal.base.branch
                     fHeatFlow = fEqualizationTemperatureChange - fCurrentHeatFlowLeft;
                 end
                 
+                % for this case we also have to set a timestep to ensure we
+                % do not produce oscillations. The timestep is the time it
+                % takes for the normal capacity to reach the temperature of
+                % the boundary capacity, which in this case is assumed to
+                % be 1 second. Now since that would limit the maximum
+                % simulation time step to 1 second, we only want to do this
+                % if we actually have a heat flow, otherwise we can set inf
+                if abs(fHeatFlow) > 1e-8
+                    this.setTimeStep(1, true);
+                else
+                    fHeatFlow = 0;
+                    this.setTimeStep(inf, true);
+                end
             else
                 % If we assume an inifinite conductor between the two
                 % capacities, the temperature change for each of the capacities
