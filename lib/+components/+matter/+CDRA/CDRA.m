@@ -468,8 +468,8 @@ classdef CDRA < vsys
                         %
                         % Note: Only the branches in between the cells of
                         % the currently generated filter are created here!
-                        components.matter.CDRA.components.Filter_F2F(this, [sName, '_FrictionProc_',num2str(iCell)], this.tGeometry.(csTypes{iType}).mfFrictionFactor(iCell));
                         if iCell ~= 1
+                            components.matter.CDRA.components.Filter_F2F(this, [sName, '_FrictionProc_',num2str(iCell)], this.tGeometry.(csTypes{iType}).mfFrictionFactor(iCell));
                             % branch between the current and the previous cell
                             oBranch = matter.branch(this, [sName,'.','Outflow_',num2str(iCell-1)], {[sName, '_FrictionProc_',num2str(iCell)]}, [sName,'.','Inflow_',num2str(iCell)], [sName, 'Flow',num2str(iCell-1),'toFlow',num2str(iCell)]);
                             

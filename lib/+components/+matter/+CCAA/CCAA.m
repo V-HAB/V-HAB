@@ -245,7 +245,6 @@ classdef CCAA < vsys
             
             % These branches are only necessary if a CDRA is connected to
             % the CCAA
-            components.matter.pipe(this, 'Pipe_From_CDRA', 1, 0.1, 2e-4);
             if ~isempty(this.sCDRA)
                 matter.branch(this, 'CHX.Flow_Out_Gas2',            {},                         'CCAA_CHX_to_CDRA_Out',     'CHX_CDRA');
             end

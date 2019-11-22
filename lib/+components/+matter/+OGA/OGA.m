@@ -53,7 +53,7 @@ classdef OGA < vsys
             % Creating the Electrolyzer
             matter.store(this, 'Electrolyzer', 0.225);
             % Input phase
-            oH2O = matter.phases.mixture(this.toStores.Electrolyzer, 'PhaseInLiquid', 'liquid', struct('H2O', 24, 'H2', 0.1, 'O2', 0.1), 0.025, AmbientTemperature, fPressure);
+            oH2O = matter.phases.mixture(this.toStores.Electrolyzer, 'PhaseInLiquid', 'liquid', struct('H2O', 24, 'H2', 0.1, 'O2', 0.1), AmbientTemperature, fPressure);
             
             % O2Phase 
             tO2.sSubstance = 'O2';

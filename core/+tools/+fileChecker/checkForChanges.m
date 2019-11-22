@@ -111,7 +111,7 @@ if ~bFirstRun
     
     % Make sure the string is cleaned up and doesn't contain any
     % illegal characters that can't be used as field names
-    sFileOrFolderString = tools.normalizePath(sFileOrFolderPath);
+    sFileOrFolderString = tools.normalizePath(sFileOrFolderPath, true);
     
     % Splitting the string into a cell array
     csFieldNames = strsplit(sFileOrFolderString, {'__', '_aaat_', '_p_'});
@@ -159,7 +159,7 @@ if ~bFirstRun
                     else
                         % We are looking at a file so we'll first get the
                         % struct-compatible file name.
-                        sFileName = tools.normalizePath(tInfo(iI).name);
+                        sFileName = tools.normalizePath(tInfo(iI).name, true);
                         
                         % Now we need to check, if this is a new or an
                         % existing file.
@@ -253,7 +253,7 @@ if ~bFirstRun
                         % This is only executed if a new folder is added to
                         % the existing file that has files on the top
                         % level.
-                        sFileName = tools.normalizePath(tInfo(iI).name);
+                        sFileName = tools.normalizePath(tInfo(iI).name, true);
                         % Saving the new file info and setting the
                         % bLastActionComplete variable to true.
                         tSavedInfo.(csFieldNames{1}).(sFileName) = tInfo(iI).datenum;
@@ -335,13 +335,13 @@ if ~bFirstRun
     sFieldNames = csFieldNames{1};
     for iI = 2:(length(csFieldNames) - 1)
         % Make sure that the field names are clean
-        csFieldNames{iI} = tools.normalizePath(csFieldNames{iI});
+        csFieldNames{iI} = tools.normalizePath(csFieldNames{iI}, true);
         sFieldNames = strcat(sFieldNames,'.',csFieldNames{iI});
     end
     sStructString = ['tSavedInfo','.',sFieldNames];
     
     % Make sure that the field name is clean
-    sFieldName = tools.normalizePath(csFieldNames{end});
+    sFieldName = tools.normalizePath(csFieldNames{end}, true);
     
     % Now we can check if the field already exists.
     if ~isfield(eval(sStructString),sFieldName)
@@ -509,7 +509,7 @@ else
             % The item we're looking at is a file, so we'll cleanup the
             % file name and create a new item in the struct in which we
             % can save the changed date for this file.
-            sFileName = tools.normalizePath(tInfo(iI).name);
+            sFileName = tools.normalizePath(tInfo(iI).name, true);
             tSavedInfo.(sFileName) = tInfo(iI).datenum;
         end
     end

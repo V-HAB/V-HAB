@@ -269,7 +269,7 @@ classdef PhotosynthesisModule < base
                         %Produced Substances
                         afPartialFlowRates(this.oMT.tiN2I.Chlorella)= 0 ;%[kg/s]
                         afPartialFlowRates(this.oMT.tiN2I.O2) = 0 ;%[kg/s]
-                        afPartialFlowRates(this.oMT.tiN2I.OHminus) = 0 ;%[kg/s]
+                        afPartialFlowRates(this.oMT.tiN2I.OH) = 0 ;%[kg/s]
                         afPartialFlowRates(this.oMT.tiN2I.COH2) = 0 ;%[kg/s]
                         
                         %set availability factor of substance that is

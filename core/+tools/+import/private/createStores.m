@@ -16,7 +16,7 @@ for iStore = 1:length(tCurrentSystem.Stores)
         error('In system %s in store %s the property fVolume was not defined in draw io!', sSystemName, sStoreName)
     end
     
-    fprintf(sSystemFile, ['          matter.store(this,     ''', sStoreName,''',    ', fVolume,',   ', tStore.bNoStoreCalculation,');\n']);
+    fprintf(sSystemFile, ['          matter.store(this,     ''', sStoreName,''',    ', fVolume, ');\n']);
     
     
     for iPhaseType = 1:length(csPhases)
@@ -140,11 +140,6 @@ for iStore = 1:length(tCurrentSystem.Stores)
                 else
                     error('In system %s in store %s in phase %s the property sPhaseType was not defined in draw io!', sSystemName, sStoreName, sPhaseName)
                 end
-                if isfield(tPhase, 'fVolume') && ~isempty(tPhase.fVolume)
-                    fVolume = tPhase.fVolume;
-                else
-                    error('In system %s in store %s in phase %s the property fVolume was not defined in draw io!', sSystemName, sStoreName, sPhaseName)
-                end
                 if isfield(tPhase, 'fPressure') && ~isempty(tPhase.fPressure)
                     fPressure = tPhase.fPressure;
                 else
@@ -169,11 +164,11 @@ for iStore = 1:length(tCurrentSystem.Stores)
                 sMassStruct = [sMassStruct, ')'];
                 
                 if ~isempty(regexp(sPhase, 'Boundary', 'once'))
-                    fprintf(sSystemFile, ['          matter.phases.boundary.mixture(    this.toStores.', sStoreName,',      ''', sPhaseName, ''',       ''', sPhaseType,''',        ', sMassStruct,',       ', fVolume,',       ', fTemperature,',      ', fPressure,');\n']);
+                    fprintf(sSystemFile, ['          matter.phases.boundary.mixture(    this.toStores.', sStoreName,',      ''', sPhaseName, ''',       ''', sPhaseType,''',        ', sMassStruct,',       ', fTemperature,',      ', fPressure,');\n']);
                 elseif ~isempty(regexp(sPhase, 'Flow', 'once'))
-                    fprintf(sSystemFile, ['          matter.phases.flow.mixture(        this.toStores.', sStoreName,',      ''', sPhaseName, ''',       ''', sPhaseType,''',        ', sMassStruct,',       ', fVolume,',       ', fTemperature,',      ', fPressure,');\n']);
+                    fprintf(sSystemFile, ['          matter.phases.flow.mixture(        this.toStores.', sStoreName,',      ''', sPhaseName, ''',       ''', sPhaseType,''',        ', sMassStruct,',       ', fTemperature,',      ', fPressure,');\n']);
                 else
-                    fprintf(sSystemFile, ['          matter.phases.mixture(             this.toStores.', sStoreName,',      ''', sPhaseName, ''',       ''', sPhaseType,''',        ', sMassStruct,',       ', fVolume,',       ', fTemperature,',      ', fPressure,');\n']);
+                    fprintf(sSystemFile, ['          matter.phases.mixture(             this.toStores.', sStoreName,',      ''', sPhaseName, ''',       ''', sPhaseType,''',        ', sMassStruct,',       ', fTemperature,',      ', fPressure,');\n']);
                 end
             end
             
