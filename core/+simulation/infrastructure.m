@@ -46,6 +46,17 @@ classdef infrastructure < base & event.source
         % do things differently to account for running on a parallel worker
         % instead of a full MATLAB instance. 
         bParallelExecution = false;
+        
+        % If this simulation is being executed using the parallel pool, we
+        % need to know its index within the array of simulations. This is
+        % stored in this property. 
+        iParallelSimulationID;
+        
+        % In order to communicate with the MATLAB client when this
+        % simulation is run using the parallel pool, we need a parallel
+        % data queue object to send updates to. This property is a handle
+        % to that data queue. 
+        oDataQueue;
     end
     
     % The following properties have private SetAccess due to the
@@ -192,22 +203,32 @@ classdef infrastructure < base & event.source
             
             % If we are running this simulation in parallel with other
             % simulations, a key in the ptConfigParams container map must
-            % be 'ParallelExecution'. If this key is present, the matter
-            % table object will have been instantiated outside of the
-            % parallel loop and is contained in the container map as the
-            % value for the key 'ParallelExecution'. So we just assign it
-            % here. 
-            % If this simulation is being run individually, we can call the
-            % matter table constructor directly.
+            % be 'ParallelExecution'. If this key is present, some
+            % parameters are passed in as a cell, which is in turn the
+            % value for the 'ParallelExecution' key in ptConfigParams. So
+            % we parse these parameters here. 
             if isKey(ptConfigParams, 'ParallelExecution')
-                oMT = ptConfigParams('ParallelExecution');
+                % Extracting the cell from the containers.Map.
+                cConfigParams = ptConfigParams('ParallelExecution');
+                
+                % The matter table object will have been instantiated
+                % outside of the parallel loop and is the first item in the
+                % cell. So we just assign it here and check its validity.
+                oMT = cConfigParams{1};
                 if ~isa(oMT, 'matter.table')
                     this.throw('infrastructure','The provided object is not a matter table.');
                 end
                 
+                % Now we can set the data queue object and identifier
+                % properties as well. 
+                this.oDataQueue = cConfigParams{2};
+                this.iParallelSimulationID = cConfigParams{3};
+                
                 % Setting the parallel execution flag to true.
                 this.bParallelExecution = true;
             else
+                % This simulation is being run individually, so we can just
+                % call the matter table constructor directly.
                 oMT = matter.table();
             end
             
@@ -353,7 +374,26 @@ classdef infrastructure < base & event.source
                 
                 % This call performs one single simulation step.
                 this.step();
+                
+                if this.bParallelExecution
+                    if this.bUseTime
+                        fProgress = this.oSimulationContainer.oTimer.fTime / this.fSimTime;
+                    else
+                        fProgress = this.oSimulationContainer.oTimer.iTick / this.iSimTicks;
+                    end
+                    
+                    send(this.oDataQueue, [this.iParallelSimulationID, fProgress]);
+                end
             end
+            
+            % Only trigger 'finish' if we actually want the console output
+            % and if the simulation isn't paused. For the use case with
+            % TherMoS calling V-HAB, the finish event is triggered
+            % separately using the triggerFinish() method of this class.
+            if ~this.bSuppressConsoleOutput && ~this.toMonitors.oExecutionControl.bPaused
+                this.trigger('finish');
+            end
+            
         end
         
         function pause(this, varargin)
@@ -459,20 +499,6 @@ classdef infrastructure < base & event.source
             hTimer = tic();
             this.trigger('step_post');
             this.fRuntimeOther = this.fRuntimeOther + toc(hTimer);
-            
-            % Now we check to see if the simulation has reached the
-            % pre-determined end time. If it has, we trigger the finish
-            % event. This event only causes 
-            if (this.bUseTime && (this.oSimulationContainer.oTimer.fTime >= this.fSimTime)) || (~this.bUseTime && (this.oSimulationContainer.oTimer.iTick >= this.iSimTicks))
-                % Only trigger 'finish' if we actually want the console
-                % output and if the simulation isn't paused. For the use
-                % case with TherMoS calling V-HAB, the finish event is
-                % triggered separately using the triggerFinish() method of
-                % this class.
-                if ~this.bSuppressConsoleOutput && ~this.toMonitors.oExecutionControl.bPaused
-                    this.trigger('finish');
-                end
-            end
         end
         
         

@@ -14,12 +14,15 @@ classdef boundary < thermal.capacity
             % never change. This is equivalent to an infinite heat
             % capacity, so that is exactly what we are setting here. 
             this.fTotalHeatCapacity = inf;
-            this.fSpecificHeatCapacity = inf;
         end
         
         function setBoundaryTemperature(this, fTemperature)
             % External function to set the boundary temperature
             this.setTemperature(fTemperature);
+            
+            % We also update the specific heat capacity, since we do not
+            % want to do this if nothing has changed in the boundary
+            this.fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(this.oPhase);
         end
         
         function updateTemperature(this, ~)

@@ -68,7 +68,12 @@ classdef ConstantTemperature < thermal.heatsource
                         if fFlowRate > 0
                             mfFlowRate(iExme) = fFlowRate;
                             mfSpecificHeatCapacity(iExme) = this.oCapacity.aoExmes(iExme).oBranch.oMatterObject.coExmes{iOtherExme}.oFlow.fSpecificHeatCapacity;
-                            mfTemperature(iExme) = this.oCapacity.aoExmes(iExme).oBranch.coExmes{iOtherExme}.oCapacity.fTemperature;
+                            if iOtherExme == 2
+                                mfTemperature(iExme) = this.oCapacity.aoExmes(iExme).oBranch.afTemperatures(end);
+                            else
+                                mfTemperature(iExme) = this.oCapacity.aoExmes(iExme).oBranch.afTemperatures(1);
+                            end
+                            
                         end
                     end
                 end

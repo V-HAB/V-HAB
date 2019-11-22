@@ -21,7 +21,7 @@ classdef BBMReactions < base
         
         fCurrentCalculatedHplus         = 0;
         fCurrentCalculatedPH            = 0;
-        fCurrentCalculatedOHminus       = 0;
+        fCurrentCalculatedOH            = 0;
         
         miTranslator;
         abSolve;
@@ -86,8 +86,8 @@ classdef BBMReactions < base
                                  this.oMT.tiN2I.(this.oMT.tsN2S.HydrogenPhosphate),...
                                  this.oMT.tiN2I.(this.oMT.tsN2S.Phosphate),...
                                  this.oMT.tiN2I.CO2,...
-                                 this.oMT.tiN2I.HCO3minus,...
-                                 this.oMT.tiN2I.CO3twominus,...
+                                 this.oMT.tiN2I.HCO3,...
+                                 this.oMT.tiN2I.CO3,...
                                  this.oMT.tiN2I.H2O,...
                                  this.oMT.tiN2I.(this.oMT.tsN2S.HydroxideIon),...
                                  this.oMT.tiN2I.Hplus];
@@ -98,8 +98,8 @@ classdef BBMReactions < base
             this.abSolve(this.oMT.tiN2I.(this.oMT.tsN2S.EDTA3minus))        = true;
             this.abSolve(this.oMT.tiN2I.(this.oMT.tsN2S.EDTA4minus))        = true;
             this.abSolve(this.oMT.tiN2I.(this.oMT.tsN2S.EDTA))              = true;
-            this.abSolve(this.oMT.tiN2I.HCO3minus)                     = true;
-            this.abSolve(this.oMT.tiN2I.CO3twominus)                   = true;
+            this.abSolve(this.oMT.tiN2I.HCO3)                     = true;
+            this.abSolve(this.oMT.tiN2I.CO3)                   = true;
             this.abSolve(this.oMT.tiN2I.CO2)                           = true;
             this.abSolve(this.oMT.tiN2I.(this.oMT.tsN2S.DihydrogenPhosphate)) = true;
             this.abSolve(this.oMT.tiN2I.(this.oMT.tsN2S.HydrogenPhosphate)) = true;
@@ -135,7 +135,7 @@ classdef BBMReactions < base
             mfCurrentMass(~this.abSolve)          = 0;
             
             this.fCurrentTotalEDTA               = mfCurrentConcentration(this.oMT.tiN2I.(this.oMT.tsN2S.EDTA))             + mfCurrentConcentration(this.oMT.tiN2I.(this.oMT.tsN2S.EDTAminus))             + mfCurrentConcentration(this.oMT.tiN2I.(this.oMT.tsN2S.EDTA2minus))     	+ mfCurrentConcentration(this.oMT.tiN2I.(this.oMT.tsN2S.EDTA3minus)) + mfCurrentConcentration(this.oMT.tiN2I.(this.oMT.tsN2S.EDTA4minus));
-            this.fCurrentTotalInorganicCarbon    = mfCurrentConcentration(this.oMT.tiN2I.HCO3minus)                         + mfCurrentConcentration(this.oMT.tiN2I.CO3twominus)                            + mfCurrentConcentration(this.oMT.tiN2I.CO2);
+            this.fCurrentTotalInorganicCarbon    = mfCurrentConcentration(this.oMT.tiN2I.HCO3)                         + mfCurrentConcentration(this.oMT.tiN2I.CO3)                            + mfCurrentConcentration(this.oMT.tiN2I.CO2);
             this.fCurrentTotalPhosphate          = mfCurrentConcentration(this.oMT.tiN2I.(this.oMT.tsN2S.PhosphoricAcid))	+ mfCurrentConcentration(this.oMT.tiN2I.(this.oMT.tsN2S.DihydrogenPhosphate))	+ mfCurrentConcentration(this.oMT.tiN2I.(this.oMT.tsN2S.HydrogenPhosphate))	+ mfCurrentConcentration(this.oMT.tiN2I.(this.oMT.tsN2S.Phosphate));
 
             this.fCurrentTotalMass               = sum(mfCurrentMass);
@@ -254,14 +254,14 @@ classdef BBMReactions < base
             
             fMassError = abs(sum(mfMassDifference));
             
-            if fMassError > 1e-10
+            if fMassError > 1e-8
                 keyboard()
             end
             
             this.fCurrentCalculatedHplus = mfTargetConcentration(this.oMT.tiN2I.Hplus);
             this.fCurrentCalculatedPH	 = -log10(mfTargetConcentration(this.oMT.tiN2I.Hplus));
             
-            this.fCurrentCalculatedOHminus = mfTargetConcentration(this.oMT.tiN2I.OHminus);
+            this.fCurrentCalculatedOH = mfTargetConcentration(this.oMT.tiN2I.OH);
             
             %% set flow rates according to mass differences:
             % check if time step is larger than 0 (exclude first time
@@ -302,7 +302,7 @@ classdef BBMReactions < base
             mfLeftSidePhosphat(4) = this.fCurrentTotalPhosphate;
 
             %% carbon and water
-            % mfConcentrationCarbon = [CO2; HCO3minus; CO3twominus;  H2O, OH-, H+]
+            % mfConcentrationCarbon = [CO2; HCO3; CO3;  H2O, OH-, H+]
             fKC_CO2     = this.fK_CO2 * fCurrentC_H2O;
             mfLinearSystemCarbon = [      fKC_CO2     , - fCurrentC_Hplus     ,       0             ,     0       ,     0             , 0 ;...
                                               0 	  ,        this.fK_HCO3   , - fCurrentC_Hplus   ,     0       ,     0             , 0 ;...
@@ -314,7 +314,7 @@ classdef BBMReactions < base
             mfLeftSideCarbon(4) = this.fK_w;
 
             %% Full System
-            % mfConcentrations = [EDTA; EDTA-; EDTA2-; EDTA3-; EDTA4-; PhosphoricAcid;  DihydrogenPhosphate; HydrogenPhosphate; Phosphate; CO2; HCO3minus; CO3twominus, H2O, OH-, H+]
+            % mfConcentrations = [EDTA; EDTA-; EDTA2-; EDTA3-; EDTA4-; PhosphoricAcid;  DihydrogenPhosphate; HydrogenPhosphate; Phosphate; CO2; HCO3; CO3, H2O, OH-, H+]
 
             % Now we built the full linear system from the part systems
             mfFullLinearSystem = zeros(15,15);
@@ -335,7 +335,7 @@ classdef BBMReactions < base
 
             % The 15th equation is the charge balance over the considered
             % Ions and the 15th concentration is H+
-            %                           [EDTA; EDTA-; EDTA2-; EDTA3-; EDTA4-; PhosphoricAcid;  DihydrogenPhosphate; HydrogenPhosphate; Phosphate; CO2; HCO3minus; CO3twominus, H2O, OH-, H+]
+            %                           [EDTA; EDTA-; EDTA2-; EDTA3-; EDTA4-; PhosphoricAcid;  DihydrogenPhosphate; HydrogenPhosphate; Phosphate; CO2; HCO3; CO3, H2O, OH-, H+]
             mfFullLinearSystem(15,:) = [    0,  -1,     -2,     -3,     -4,      0,                     -1,             -2,                 -3,     0,    -1,       -2,        0,   -1,  +1];
             mfFullLeftSide(15)       = - (this.mfCurrentConcentrationAll(this.oMT.tiN2I.Kplus) + this.mfCurrentConcentrationAll(this.oMT.tiN2I.Naplus)) + this.mfCurrentConcentrationAll(this.oMT.tiN2I.NO3);
 

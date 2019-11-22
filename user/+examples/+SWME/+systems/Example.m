@@ -11,22 +11,18 @@ classdef Example < vsys
         fFlowRate = 91/3600;
         
         % Initial inlet water temperature in [K]
-        fInitialTemperature = 289.15;
+        fInitialTemperature = 288.15;
     end
     
     methods
         function this = Example(oParent, sName)
-            this@vsys(oParent, sName, 1);
+            this@vsys(oParent, sName, 0.1);
             
             % Setting parameters if they were set by a simulation runner
             eval(this.oRoot.oCfgParams.configCode(this));
             
             % Creating the SWME
             components.matter.SWME(this, 'SWME', this.fInitialTemperature);
-            
-            % Setting the initial temperature set point. 10 degrees Celcius
-            % is a standard temperature here. 
-            this.toChildren.SWME.setTemperatureSetPoint(283.15);
             
         end
         
@@ -42,7 +38,6 @@ classdef Example < vsys
                 this.toStores.InletTank, ...       % Store in which the phase is located
                 'WaterInlet', ...                  % Phase name
                 struct('H2O', 2000), ...           % Phase contents
-                2, ...                             % Phase volume
                 this.fInitialTemperature, ...      % Phase temperature
                 28300);                            % Phase pressure
             
@@ -55,28 +50,53 @@ classdef Example < vsys
                 this.toStores.OutletTank, ...      % Store in which the phase is located
                 'WaterOutlet', ...                 % Phase name
                 struct('H2O', 0), ...              % Phase contents
-                0.001, ...                         % Phase volume
                 this.fInitialTemperature, ...      % Phase temperature
                 28300);                            % Phase pressure
             
-            % Adding extract/merge processors to the phase
-            matter.procs.exmes.liquid(oWaterInlet, 'FeedInlet');
-            matter.procs.exmes.liquid(oWaterOutlet, 'FeedOutlet');
+             % Creating an empty tank where the vapor flows to, simulating
+            % the environment (can be vacuum or planetary atmosphere)
+            matter.store(this, 'EnvironmentTank', 10);
+            
+            % Adding an empty phase to the environment tank, representing
+            % an empty tank
+            oEnvironment = matter.phases.boundary.gas(...
+                this.toStores.EnvironmentTank, ...        % Store in which the phase is located
+                'EnvironmentPhase', ...                   % Phase name
+                struct('H2O', 0), ...                     % Phase contents
+                10, ...                                   % Phase volume
+                293,...                                   % Phase temperature
+                0);                                       % Phase pressure
             
             % Two standard pipes, which connect the SWME to the super
             % system
             components.matter.pipe(this, 'Pipe_1', 0.01, 0.0127);
             components.matter.pipe(this, 'Pipe_2', 0.01, 0.0127);
             
-            % Flow from the inlet feed tank,  flowing through pipe 1,
-            % entering the SWME
-            matter.branch(this, 'SWME_In', {'Pipe_1'}, 'InletTank.FeedInlet');
+            % Creating the flowpath between the components.
+            matter.branch(this, 'SWME_Inlet', {'Pipe_1'}, oWaterInlet, 'InletBranch');
+            matter.branch(this, 'SWME_Outlet', {'Pipe_2'}, oWaterOutlet, 'OutletBranch');
+            matter.branch(this, 'SWME_Vapor', {}, oEnvironment, 'VaporBranch');
             
-            % Flow exiting the SWME, flowing through pipe 2, entering the
-            % outlet water tank
-            matter.branch(this, 'SWME_Out', {'Pipe_2'}, 'OutletTank.FeedOutlet');
+            this.toChildren.SWME.setInterfaces('SWME_Inlet','SWME_Outlet', 'SWME_Vapor');
             
-            this.toChildren.SWME.setInterfaces('SWME_In', 'SWME_Out');
+            this.toChildren.SWME.setEnvironmentReference(oEnvironment);
+            
+        end
+        
+        function createThermalStructure(this)
+            % This function creates all simulation objects in the thermal
+            % domain. 
+            
+            % First we always need to call the createThermalStructure()
+            % method of the parent class.
+            createThermalStructure@vsys(this);
+            
+            % We need to do nothing else here for this simple model. All
+            % thermal domain objects related to advective (mass-based) heat
+            % transfer will automatically be created by the
+            % setThermalSolvers() method. 
+            % Here one would create simulation objects for radiative and
+            % conductive heat transfer.
             
         end
         
@@ -87,6 +107,10 @@ classdef Example < vsys
             % Manually setting the inlet flow rate.
             this.toChildren.SWME.toBranches.InletBranch.oHandler.setFlowRate(-1 * this.fFlowRate);
             
+            % Since we want V-HAB to calculate the temperature changes in
+            % this system we call the setThermalSolvers() method of the
+            % thermal.container class. 
+            this.setThermalSolvers();
         end
         
     end

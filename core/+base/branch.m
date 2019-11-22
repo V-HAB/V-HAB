@@ -102,8 +102,6 @@ classdef (Abstract) branch < base & event.source
         
         % Specifies the type of branch, e.g. matter or thermal
         sType;
-        
-       
     end
     
     methods
@@ -303,13 +301,13 @@ classdef (Abstract) branch < base & event.source
                 sNewSubsystemBranchName = [ sLeftBranchName, 'Interface', csRightBranchName{2} ];
             else
                 sNewSubsystemBranchName = '';
+                
             end
             
             % Now, if the left side of this branch is a store, not an
             % interface, gather all the data from connected branches; if it
             % is an interface and is connected, call update method there
             this.updateConnectedBranches(sNewSubsystemBranchName);
-            
         end
         
         function [ hGetBranchData, hSetDisconnected ] = setConnected(this, oSubSysBranch, hUpdateConnectedBranches)
@@ -409,65 +407,6 @@ classdef (Abstract) branch < base & event.source
             end
         end
         
-        function disconnect(this)
-            % Can only deconnect the connection to an interface branch on
-            % the PARENT system (= supsystem).
-            
-            if ~this.abIf(2)
-                this.throw('connectTo', 'Right side of this branch is not an interface, can''t connect to anyone!');
-            
-            elseif isempty(this.coBranches{2})
-                this.throw('connectTo', 'No branch connected on right side!');
-                
-            end
-            
-            
-            % Disconnect here
-            oOldBranch         = this.coBranches{2};
-            this.coBranches{2} = [];
-            
-            % Call disconnect on the branch - if it fails, need to
-            % reset the coBranches
-            try
-                this.hSetDisconnected();
-                
-            catch oErr
-                this.coBranches{2} = oOldBranch;
-                
-                rethrow(oErr);
-            end
-            
-            % Remove function handles
-            this.hGetBranchData   = [];
-            this.hSetDisconnected = [];
-            
-            
-            if strcmp(this.sType, 'matter')
-                % Remove flow connection of if flow
-                this.hRemoveIfProc();
-
-
-                % If left side is NOT an interface (i.e. store), remove the
-                % stored references on flows, procs, func handles
-                if ~this.abIf(1)
-                    % Index of "out of system" entries
-                    iF = this.iIfFlow + 1;
-
-                    this.aoFlows    (iF:end) = [];
-                    %this.chSetFRs   (iF:end) = [];
-                    % One flow proc less than flows
-                    this.aoFlowProcs((iF - 1):end) = [];
-
-                    % Phase shortcut, also remove
-                    %this.coPhases{2} = [];
-                    this.coExmes{2} = [];
-
-                    this.iFlows     = length(this.aoFlows);
-                    this.iFlowProcs = length(this.aoFlowProcs);
-                end
-            end
-        end
-        
         function setOutdated(this)
             % Can be used by phases or f2f processors to request recalc-
             % ulation of the flow rate, e.g. after some internal parameters
@@ -482,7 +421,6 @@ classdef (Abstract) branch < base & event.source
                 this.trigger('outdated');
             end
         end
-        
     end
     
     methods (Access = {?base.branch, ?solver.matter.base.branch, ?solver.thermal.base.branch, ?solver.matter_multibranch.iterative.branch})
@@ -736,25 +674,6 @@ classdef (Abstract) branch < base & event.source
                 end
                 
             end
-        end
-        
-        function setDisconnected(this)
-            % Remove connected left (subsystem) branch
-            
-            if ~this.abIf(1)
-                this.throw('setDisconnected', 'Left side not an interface');
-                
-            elseif isempty(this.coBranches{1})
-                this.throw('setDisconnected', 'Left side not connected to branch');
-            
-            elseif this.coBranches{1}.coBranches{2} == this
-                this.throw('setDisconnected', 'Left side branch still connected to this branch');
-            
-            end
-            
-            
-            this.coBranches{1}            = [];
-            this.hUpdateConnectedBranches = [];
         end
         
         function [ oRightPhase, aoFlows, coProcs ] = getBranchData(this)

@@ -1,4 +1,4 @@
-Substance Name,Molar Mass,Specific Gas Constant,Average Molecular Diameter,Standard Density,Standard Specific Heat Capacity
-sName,fMolarMass,fSpecificGasConstant,fAverageMolecularDiameter,fStandardDensity,fStandardSpecificHeatCapacity
--,kg/mol,J/(kg*K),m,kg/m3,J/(kg*K)
-Water,0.018015275,461.526,2.72E-10,999.1,4188.5
+Substance Name;Molar Mass;Specific Gas Constant;Average Molecular Diameter;Standard Density;Standard Specific Heat Capacity
+sName;fMolarMass;fSpecificGasConstant;fAverageMolecularDiameter;fStandardDensity;fStandardSpecificHeatCapacity
+-;kg/mol;J/(kg*K);m;kg/m3;J/(kg*K)
+Water;0.018015275;461.526;2.72E-10;999.1;4188.5

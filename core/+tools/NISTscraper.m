@@ -479,7 +479,7 @@ for iI = 1:length(csSubstanceKeys)
     
     % Now we write the collected isochoric data for this substance to a
     % file.
-    writematrix(mfIsochoricData, [sPath, sIsochoricFileName]);
+    writematrix(mfIsochoricData, [sPath, sIsochoricFileName], 'Delimiter', ';');
     
     %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Getting the isobaric data %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -688,7 +688,7 @@ for iI = 1:length(csSubstanceKeys)
     
     % Now we write the collected isochoric data for this substance to a
     % file.
-    writematrix(mfIsobaricData, [sPath, sIsobaricFileName]);
+    writematrix(mfIsobaricData, [sPath, sIsobaricFileName], 'Delimiter', ';');
 end
 
 % Deleting the temporary file

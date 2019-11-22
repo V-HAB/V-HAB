@@ -105,8 +105,11 @@ for iFigure = 1:length(this.coFigures)
         
         % Since the user may want to save the entire figure to a file, we
         % create a save button above the panel.
-        oButton = uicontrol(oFigure,'String','Save Figure','FontSize',10,'Units','normalized','Position',[ 0 fPanelYSize fPanelXSize 0.03]);
+        oButton = uicontrol(oFigure,'String','Save Figure','FontSize',10,'Units','normalized','Position',[ 0 fPanelYSize + 0.03 fPanelXSize 0.03]);
         oButton.Callback = @tools.postprocessing.plotter.helper.saveFigureAs;
+        
+        oButton = uicontrol(oFigure,'String','Toggle Legends','FontSize',10,'Units','normalized','Position',[ 0 fPanelYSize fPanelXSize 0.03]);
+        oButton.Callback = @tools.postprocessing.plotter.helper.toggleLegends;
         
         % Doing some math so we get nicely proportioned buttons. The basic
         % idea behind all of it is that the panel is arbitrarily divided
@@ -596,17 +599,14 @@ for iFigure = 1:length(this.coFigures)
             xlabel('Ticks');
             ylabel('Time in s');
             title(oPlot, 'Evolution of Simulation Time vs. Simulation Ticks');
-            legend('hide')
             
             % Setting the callback to undock this subplot to the
             % appropriate button.
-            coButtons{iNumberOfPlots}.Callback = {@tools.postprocessing.plotter.helper.undockSubPlot, oPlot, legend};
+            iLastPlot = find(~cellfun(@(cCell) isempty(cCell), coButtons(iRows,:)), 1, 'last');
+            coButtons{iRows, iLastPlot}.Callback = {@tools.postprocessing.plotter.helper.undockSubPlot, oPlot, []};
             
-            % Setting the entry in the handles cell. MATLAB will give us a
-            % warning here, saying that the array is growing each
-            % iteration. While that is true, it always only grows by one.
-            % So we ignore that warning on this line.
-            coAxesHandles{end + 1} = oPlot; %#ok<AGROW>
+            % Setting the entry in the handles cell. 
+            coAxesHandles{end} = oPlot;
             
         end
         

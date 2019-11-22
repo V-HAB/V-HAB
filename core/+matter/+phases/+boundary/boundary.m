@@ -46,11 +46,89 @@ classdef (Abstract) boundary < matter.phase
     end
     
     %% Setting of boundary phase properties
-    methods (Abstract = true)
-        % the implementation of the methods to set the boundary properties
-        % is phase type specific but each child class must implement this,
-        % therefore it is an abstract method
-        setBoundaryProperties(this)
+    
+    methods
+        % Since this method is the same for liquid, solid and mixture
+        % phases, it is defined here. The gas boundary phase overloads this
+        % method to perform additiona, gas-specific calculations. The same
+        % can be done for the other phases should the need arise in the
+        % future. 
+        function setBoundaryProperties(this, tProperties)
+            % Using this function the user can set the properties of the
+            % boundary phase. Currently the following properties can be
+            % set:
+            %
+            % afMass:       partial mass composition of the phase
+            % fPressure:    Total pressure, from which the partial
+            %               pressures of the boundary are calculated based
+            %               on afMass
+            % fTemperature: Temperature of the boundary
+            %
+            % In order to define these provide a struct with the fieldnames
+            % as described here to this function for the values that you
+            % want to set
+            
+            % Since the pressure calculation requires the temperature, we
+            % first set the temperature if it was provided.
+            if isfield(tProperties, 'fTemperature')
+                this.oCapacity.setBoundaryTemperature(tProperties.fTemperature);
+            end
+            
+            % Store the current pressure in a local variable in case
+            % nothing else overwrites the pressure this will again be the
+            % pressure of the phase
+            fPressure = this.fPressure;
+            
+            % Parsing the fPressure property, if it was provided.
+            if isfield(tProperties, 'fPressure')
+                % Since we can't set this.fPressure directy, we need to
+                % change the fMassToPressure property. So first we set the
+                % pressure to the local variable. 
+                fPressure = tProperties.fPressure;
+                
+                % Now we calculate the relative pressure change. 
+                rPressureChange = fPressure / this.fPressure;
+                
+                % Using the relative pressure change, we change the overall
+                % amount of mass in the phase. This will increase or
+                % decrease the pressure.
+                this.afMass = this.afMass * rPressureChange;
+                this.fMass  = sum(this.afMass);
+                
+                % Now we can calculate the new fMassToPressure value.
+                this.fMassToPressure = fPressure/this.fMass;
+            end
+            
+            % Parsing the afMass property, if it was provided.
+            if isfield(tProperties, 'afMass')
+                this.afMass = tProperties.afMass;
+                this.fMass  = sum(this.afMass);
+            end
+            
+            if this.fMass ~= 0
+                % Now we calculate other derived values with the new parameters
+                this.fMassToPressure = fPressure/this.fMass;
+                this.fMolarMass      = sum(this.afMass .* this.oMT.afMolarMass) / this.fMass;
+                
+                this.arPartialMass   = this.afMass/this.fMass;
+                
+                % V/m = p*R*T;
+                this.fDensity = this.oMT.calculateDensity(this);
+            else
+                this.fMassToPressure = 0;
+                this.fMolarMass      = 0;
+                this.arPartialMass   = zeros(1, this.oMT.iSubstances);
+                this.fDensity        = 0;
+            end
+            
+            % We also need to reset some thermal values (e.g. total heat
+            % capacity), which is done by calling the
+            % setBoundaryTemperature() method. This method includes the
+            % required calculations. 
+            this.oCapacity.setBoundaryTemperature(this.fTemperature);
+            
+            this.setBranchesOutdated();
+        end
     end
     
     methods  (Access = protected)

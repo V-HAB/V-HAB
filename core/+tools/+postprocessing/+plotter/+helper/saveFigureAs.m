@@ -76,6 +76,11 @@ function saveFigureAs(hButton,~)
     % uiputfile method with our pre-selected values.
     [sFileName, sFilePath, iFilterIndex] = uiputfile(csTypeList(:,1:2),'Save as',sPreviousPath);
     
+    if ~any([sFileName, sFilePath, iFilterIndex])
+        % The user hit cancel, so we just return and do nothing.
+        return;
+    end
+    
     % Saving the path for next time.
     sPreviousPath = sFilePath;
     
@@ -160,11 +165,33 @@ function saveFigureAs(hButton,~)
     % here.
     
     % First, we need to set the figure itself to the size that we want our
-    % image to be. For that we first change the units to centimeters, save
-    % the current size of the figure and then set our desired value.
+    % image to be. For that we first change the units to centimeters and
+    % then save the current size of the figure.
     hFigure.Units = 'centimeters';
     afOldFigurePosition = hFigure.Position;
-    hFigure.Position(3:4) = [fFigureWidth fFigureHeight];
+    
+    % We want to center the figure on the screen, so we need to get the
+    % screensize in centimeters.
+    set(groot,'Units','centimeters');
+    afScreenSize = get(groot,'ScreenSize');
+    set(groot,'Units','pixels');
+    
+    % Now we can calculate the position of the bottom left corner of the
+    % figure, which is how MATLAB positions windows on the screen. 
+    fFigureLeft   = (afScreenSize(3) - fFigureWidth)  / 2;
+    fFigureBottom = (afScreenSize(4) - fFigureHeight) / 2;
+    
+    % Finally we can set the new values.
+    hFigure.Position = [fFigureLeft fFigureBottom fFigureWidth fFigureHeight];
+    
+    % For some weird reason, MATLAB sometimes, but not always changes the
+    % Position property to the values passed in on the previous line. To
+    % ensure we get what we want, we call drawnow() and set the same values
+    % again. 
+    %TODO File MATLAB Bug Report.
+    drawnow();
+    hFigure.Position = [fFigureLeft fFigureBottom fFigureWidth fFigureHeight];
+    
     
     % The PaperSize property determines the acutal size of the image that
     % we will later produce. It is currently set to some default value,
@@ -173,7 +200,7 @@ function saveFigureAs(hButton,~)
     % PaperSize equal to the actual size. And of course we need to make
     % sure the units are correct as well first. 
     hFigure.PaperUnits = 'centimeters';
-    hFigure.PaperSize = hFigure.Position(3:4);
+    hFigure.PaperSize = [fFigureWidth fFigureHeight];
     
     % Alright, now we have to change the fonts and font sizes. We don't
     % want to mess up the plot, so we'll save the current values so we can
@@ -352,7 +379,13 @@ function saveFigureAs(hButton,~)
             % This is the PDF, SVG and EMF case. We chose the '-painters'
             % renderer here, because that produces a vector file. In some
             % cases, this may lead to significantly smaller file sizes.
+            
+            warning('off', 'MATLAB:print:FigureTooLargeForPage');
+            
             print('-painters','-noui',[sFilePath,sFileName],sFormat);
+            
+            warning('on', 'MATLAB:print:FigureTooLargeForPage');
+            
         case {3,4}
             % This is the case for JPEG and PNG. They use the same format.
             print('-r600','-noui',[sFilePath,sFileName],sFormat);
@@ -457,6 +490,13 @@ function [ fFigureWidth, fFigureHeight, sFontName, fFontSize, ...
     global fFigureWidth_Preset  fFigureHeight_Preset sFontName_Preset ...
            fFontSize_Preset bTitleOn_Preset bMainGrid_Preset ...
            bMinorGrid_Preset bAutoAdjustXAxis_Preset bAutoAdjustYAxis_Preset
+    
+    % If this is the first time in this MATLAB session that this dialog box
+    % is shown, the globals will be empty. In this case, we load the
+    % presets from a file. 
+    if isempty(fFigureWidth_Preset)
+        recallPresets();
+    end
     
     % This variable defines the height of the different lines in the
     % window.
@@ -748,6 +788,15 @@ function [ fFigureWidth, fFigureHeight, sFontName, fFontSize, ...
               'FontSize',12,...
               'Callback',@finish);
     
+    %% Save as default button
+          
+    % Creating the button
+    uicontrol('Parent',oDialog,...
+              'Position',[150 iVerticalPosition 140 30],...
+              'String','Save as default',...
+              'FontSize',12,...
+              'Callback',@saveAsDefault);
+
     %% Wait for d to close before running to completion
     uiwait(oDialog);
     
@@ -761,6 +810,13 @@ function [ fFigureWidth, fFigureHeight, sFontName, fFontSize, ...
         % variable for the UserData struct of the figure. 
         tUserData = oButton.Parent.UserData;
         
+        setGlobals(tUserData);
+        
+        % Now we can delete the figure and return to the main function.
+        delete(gcf);
+    end
+
+    function setGlobals(tUserData)
         fFigureWidth = str2double(tUserData.oFigureWidth.String);
         fFigureWidth_Preset = fFigureWidth;
         
@@ -787,9 +843,61 @@ function [ fFigureWidth, fFigureHeight, sFontName, fFontSize, ...
         
         bAutoAdjustYAxis = tUserData.oAutoAdjustYAxis.Value;
         bAutoAdjustYAxis_Preset = bAutoAdjustYAxis;
+    end
+
+    function saveAsDefault(oButton, ~)
         
-        % Now we can delete the figure and return to the main function.
-        delete(gcf);
+        tUserData = oButton.Parent.UserData;
+        
+        setGlobals(tUserData);
+        
+        tPresets = struct();
+        
+        tPresets.fFigureWidth = str2double(tUserData.oFigureWidth.String);
+        
+        tPresets.fFigureHeight = str2double(tUserData.oFigureHeight.String);
+        
+        tPresets.sFontName = char(tUserData.oFontSelector.String(tUserData.oFontSelector.Value));
+        
+        tPresets.fFontSize = str2double(tUserData.oFontSize.String);
+        
+        tPresets.bTitleOn = tUserData.oTitleOn.Value;
+        
+        tPresets.bMainGrid = tUserData.oMainGrid.Value;
+        
+        tPresets.bMinorGrid = tUserData.oMinorGrid.Value;
+        
+        tPresets.bAutoAdjustXAxis = tUserData.oAutoAdjustXAxis.Value;
+        
+        tPresets.bAutoAdjustYAxis = tUserData.oAutoAdjustYAxis.Value;
+        
+        save(strrep('data/SaveAsImagePresets.mat','/',filesep), 'tPresets');
+        
+    end
+
+    function recallPresets()
+        if exist(strrep('data/SaveAsImagePresets.mat','/',filesep),'file')
+            load(strrep('data/SaveAsImagePresets.mat','/',filesep),'tPresets');
+            
+            fFigureWidth_Preset = tPresets.fFigureWidth;
+            
+            fFigureHeight_Preset = tPresets.fFigureHeight;
+            
+            sFontName_Preset = tPresets.sFontName;
+            
+            fFontSize_Preset = tPresets.fFontSize;
+            
+            bTitleOn_Preset = tPresets.bTitleOn;
+            
+            bMainGrid_Preset = tPresets.bMainGrid;
+            
+            bMinorGrid_Preset = tPresets.bMinorGrid;
+            
+            bAutoAdjustXAxis_Preset = tPresets.bAutoAdjustXAxis;
+            
+            bAutoAdjustYAxis_Preset = tPresets.bAutoAdjustYAxis;
+            
+        end
     end
         
 end

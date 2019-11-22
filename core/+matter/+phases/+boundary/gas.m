@@ -26,12 +26,12 @@ classdef gas < matter.phases.boundary.boundary
         function this = gas(oStore, sName, tfMass, fVolume, fTemperature, fPressure)
             %% gas boundary class constructor
             %
-            % creates a gas boundary phase with the specifid conditions.
+            % Creates a gas boundary phase with the specifid conditions.
             % These will remain constant throughout the simulation unless
             % they are directly changed using the setBoundaryProperties
             % function!
             %
-            % to make the boundary phase compatible with phase definitions
+            % To make the boundary phase compatible with phase definitions
             % of normal gas phases, if the volume is provided it is simply
             % ignored, otherwise only three parameters are required
             %
@@ -70,31 +70,36 @@ classdef gas < matter.phases.boundary.boundary
         
         function setBoundaryProperties(this, tProperties)
             %% setBoundaryProperties
-            % using this function the user can set the properties of the
+            % Using this function the user can set the properties of the
             % boundary phase. Currently the following properties can be
             % set:
             %
-            % afMass:       partial mass composition of the phase
+            % afMass:       Partial mass composition of the phase
             % fPressure:    Total pressure, from which the partial
             %               pressures of the boundary are calculated based
             %               on afMass
-            % afPP:         partial pressure composition of the phase (if
+            % afPP:         Partial pressure composition of the phase (if
             %               afMass is not provided)
             % fTemperature: Temperature of the boundary
             %
             % In order to define these provide a struct with the fieldnames
             % as described here to this function for the values that you
-            % want to set
+            % want to set.
+            %
+            % This method overloads the one in the parent class. 
             
-            % Since the pressure calculation require the temperature, we
-            % first set the temperature if it was provided
+            
+            % Since the pressure calculation requires the temperature, we
+            % first set the temperature if it was provided.
             if isfield(tProperties, 'fTemperature')
                 this.oCapacity.setBoundaryTemperature(tProperties.fTemperature);
             end
             
-            % Store the current pressure in a local variable in case
-            % nothing else overwrites the pressure this will again be the
-            % pressure of the phase
+            % The fPressure property of the matter phase is a dependent
+            % property, meaning it is only calculated on demand and cannot
+            % be directly overwritten. So we store the current pressure in
+            % a local variable. This local variable may be overwritten by
+            % the user-provided inputs of this method. 
             fPressure = this.fPressure;
             
             % In case afMass is used we calculate the partial pressures
@@ -104,17 +109,19 @@ classdef gas < matter.phases.boundary.boundary
                 end
                 
                 this.afMass = tProperties.afMass;
-                this.fMass = sum(this.afMass);
+                this.fMass  = sum(this.afMass);
                 
                 if this.fMass ~= 0
                     % Now we calculate the molar mass fractions, since these
                     % represent the partial pressure fractions as well
                     afMols = this.afMass ./ this.oMT.afMolarMass;
                     arMolFractions = afMols/sum(afMols);
+                    
                     % And then set the correct partial pressure composition for
                     % the phase
                     this.afPP = this.fPressure .* arMolFractions;
                 end
+                
             % Since elseif is used afPP is ignored if afMass is provided
             elseif isfield(tProperties, 'afPP')
                 % if the partial pressures are provided the mass
@@ -123,8 +130,8 @@ classdef gas < matter.phases.boundary.boundary
                 this.afPP = tProperties.afPP;
                 
                 arMolFractions = this.afPP ./ sum(this.afPP);
-                this.afMass = arMolFractions .* this.oMT.afMolarMass;
-                this.fMass = sum(this.afMass);
+                this.afMass    = arMolFractions .* this.oMT.afMolarMass;
+                this.fMass     = sum(this.afMass);
             end
             
             if this.fMass ~= 0
@@ -149,16 +156,18 @@ classdef gas < matter.phases.boundary.boundary
                 end
                 
             else
-                this.fMassToPressure = 0;
-                this.fMolarMass = 0;
+                this.fMassToPressure   = 0;
+                this.fMolarMass        = 0;
                 this.afPartsPerMillion = zeros(1, this.oMT.iSubstances);
-                this.arPartialMass = zeros(1, this.oMT.iSubstances);
-                this.fDensity = 0;
-                this.afPP = zeros(1, this.oMT.iSubstances);
+                this.arPartialMass     = zeros(1, this.oMT.iSubstances);
+                this.fDensity          = 0;
+                this.afPP              = zeros(1, this.oMT.iSubstances);
             end
             
             % We also need to reset some thermal values (e.g. total heat
-            % capacity) which is done in the temperature function
+            % capacity), which is done by calling the
+            % setBoundaryTemperature() method. This method includes the
+            % required calculations. 
             this.oCapacity.setBoundaryTemperature(this.fTemperature);
             
             this.setBranchesOutdated();

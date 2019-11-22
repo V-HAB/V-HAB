@@ -32,10 +32,6 @@ classdef CRA_Sabatier_manip_proc < matter.manips.substance.flow
             
             this.mPartialConversionFlowRates = zeros(1, this.oPhase.oMT.iSubstances); 
         end
-        function update(this)
-            
-            update@matter.manips.substance.flow(this, this.mPartialConversionFlowRates);
-        end
         function calculateConversionRate(this, afInFlowRates, aarInPartials)
             
             %initializes the flowrates for each individual substance of this manipulator to 0
@@ -158,6 +154,13 @@ classdef CRA_Sabatier_manip_proc < matter.manips.substance.flow
             this.mPartialConversionFlowRates(tiN2I.H2O) = this.mPartialConversionFlowRates(tiN2I.H2O) - 0.5*sum(this.mPartialConversionFlowRates);
             
             this.update();
+        end
+    end
+    
+    methods (Access = protected)
+        function update(this)
+            
+            update@matter.manips.substance.flow(this, this.mPartialConversionFlowRates);
         end
     end
 end

@@ -309,29 +309,6 @@ classdef container < sys
             end
         end
         
-        function disconnectThermalIF(this, sLocalInterface)
-            iLocalBranch = find(strcmp({ this.aoBranches.sNameLeft }, sLocalInterface), 1);
-            
-            if isempty(iLocalBranch)
-                this.throw('connectIF', 'Local interface %s not found', sLocalInterface);
-            end
-            
-            oBranch = this.aoBranches(iLocalBranch);
-            
-            if ~oBranch.abIfs(2)
-                this.throw('connectIF', 'Branch doesn''t have an interface on the right side (connected to store).');
-            end
-            
-            bTrigger = ~oBranch.abIfs(1) && ~isempty(oBranch.coExmes{2});
-            
-            oBranch.disconnect();
-            
-            % Do the trigger after the actual disconnect
-            if bTrigger
-                this.trigger('branch.disconnected', iLocalBranch);
-            end
-        end
-        
         function removePassThroughThermalBranches(this)
             % If a branch is a pass-through branch from a subsystem to a
             % supersystem via an intermediate system, abIf = [1; 1]. So we

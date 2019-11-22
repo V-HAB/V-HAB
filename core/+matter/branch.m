@@ -69,9 +69,9 @@ classdef branch < base.branch
             if nargin < 5
                 sCustomName = [];
             end
-            this@base.branch(oContainer, xLeft, csProcs, xRight, sCustomName, 'matter');
             
-            % Problem. handle right side should be executed after this next section!!
+            % Calling the parent constructor
+            this@base.branch(oContainer, xLeft, csProcs, xRight, sCustomName, 'matter');
             
             % Adding the branch to our matter.container
             this.oContainer.addBranch(this);
@@ -170,15 +170,13 @@ classdef branch < base.branch
                 this.aoFlowProcs(end + 1) = this.oContainer.toProcsF2F.(sProc).addFlow(oFlow, 2);
             end
         end
+        
         function setOutdated(this)
             %% matter branch setOutdated
             % Can be used by phases or f2f processors to request recalc-
             % ulation of the flow rate, e.g. after some internal parameters
             % changed (closing a valve).
             
-            % If the flowrate changed, the thermal branch also has to be
-            % recalculated
-            this.oThermalBranch.setOutdated();
             % Only trigger if not yet set
             if ~this.bOutdated
                 this.bOutdated = true;
@@ -361,7 +359,10 @@ classdef branch < base.branch
             for iI = 1:length(this.aoFlowProcs)
                 this.aoFlowProcs(iI).seal(this);
             end
-            
+
+            % now we no longer need the function to get the exmes from the
+            % other IF branch because we created a single branch from it
+            this.hGetBranchData = [];
             
             this.bSealed = true;
         end

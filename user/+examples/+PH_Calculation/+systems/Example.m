@@ -50,9 +50,9 @@ classdef Example < vsys
             % phase will be higher than that of 'Tank_1'
             fMolNaOH        = 8 * fMolH3PO4;
             fMassNaplus     = fMolNaOH * this.oMT.afMolarMass(this.oMT.tiN2I.Naplus);
-            fMassOHMinus    = fMolNaOH * this.oMT.afMolarMass(this.oMT.tiN2I.OHminus);
+            fMassOHMinus    = fMolNaOH * this.oMT.afMolarMass(this.oMT.tiN2I.OH);
             
-            oTank2 = matter.phases.liquid(this.toStores.Tank_2, 'Water', struct('H2O', 1994 , 'Naplus', fMassNaplus, 'OHminus', fMassOHMinus), 293, 1e5);
+            oTank2 = matter.phases.liquid(this.toStores.Tank_2, 'Water', struct('H2O', 1994 , 'Naplus', fMassNaplus, 'OH', fMassOHMinus), 293, 1e5);
             
             % Adding a pipe to connect the tanks, 1.5 m long, 5 mm in
             % diameter. The pipe is in the components library and is
