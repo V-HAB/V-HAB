@@ -1,14 +1,15 @@
-
-classdef big_system < vsys
+classdef RFCS < vsys
     
     properties
-        afPower=0;
+        % array which contains the available solar power
+        afPower;
+        
+        fSolarPanelArea         = 50; %m^2 solarpanele
+        rSolarpanelEfficiency   = 0.12;
         
         obranch_hxE;
         obranch_hxF;
         fI_Fuelcell=0;
-        n_solarpanels=50; %m^2 solarpanele
-        rEta_solarpanel=0.12;
         fPower=0;
         fuelcell_on;
         electrolyseur_on;
@@ -22,18 +23,22 @@ classdef big_system < vsys
     end
     
     methods
-        function this = big_system(oParent, sName)
+        function this = RFCS(oParent, sName, fSolarPanelArea, rSolarpanelEfficiency)
             
             this@vsys(oParent, sName,30);
             eval(this.oRoot.oCfgParams.configCode(this));
             
-            this.afPower=this.rEta_solarpanel*this.n_solarpanels*xlsread('user\+examples\+RFCS\+helper\HAPS Available Solar Power.xlsx','C140:C427');%sonnenphase
+            if nargin > 2
+                this.fSolarPanelArea        = fSolarPanelArea;
+            end
+            if nargin > 3
+                this.rSolarpanelEfficiency  = rSolarpanelEfficiency;
+            end
             
-            %subsystem electrolyseur
-            examples.RFCS.system.Subsystem_Electrolyseur(this, 'Subsystem_Electrolyseur');
-            %subsystem fuelcell
-            examples.RFCS.system.Subsystem_Fuelcell_small(this, 'Subsystem_Fuelcell');
+            this.afPower = this.rEta_solarpanel * this.n_solarpanels * xlsread('user\+examples\+RFCS\+helper\HAPS Available Solar Power.xlsx','C140:C427');%sonnenphase
             
+            components.matter.Electrolyzer.Electrolyzer(this, 'Electrolyzer');
+            components.matter.FuelCell.FuelCell(this, 'FuelCell');
         end
         
         
@@ -42,17 +47,19 @@ classdef big_system < vsys
             %stores and phases
             % water tank
             
-            matter.store(this, 'Water_Tank', 1);
-            oWater_Phase=matter.phases.liquid(this.toStores.Water_Tank, 'water', struct('H2O',4), 0.004, 273+20,101300);
+            fInitialTemperature = 293;
             
-            %H2 high pressure tank
+            matter.store(this, 'Water_Tank', 0.1);
+            oWater      = this.toStores.Water_Tank.createPhase(  'liquid',      'Water',   0.1, struct('H2O', 1),  fInitialTemperature, 1e5);
+            
+            matter.store(this, 'CoolingSystem', 0.1);
+            oCooling    = this.toStores.CoolingSystem.createPhase('liquid',     'CoolingWater',  0.1, struct('H2O', 1),  fInitialTemperature, 1e5);
+            
             matter.store(this, 'H2_Tank', 0.05*2);
+            oH2         = this.toStores.H2_Tank.createPhase(  'gas', 'H2',   0.05*2, struct('H2', 1e5),  fInitialTemperature, 0.8);
             
-            oH2_Phase=matter.phases.gas(this.toStores.H2_Tank, 'H2', struct('H2',0.01*27),1, 273+20); %0.003 leer 0.3 voll
-            
-            %O2 high pressure tank
             matter.store(this, 'O2_Tank', 0.0253*2);
-            oO2_Phase=matter.phases.gas(this.toStores.O2_Tank, 'O2', struct('O2',8*0.01*27),1, 273+20); %0.08 leer 2.4 voll
+            oO2         = this.toStores.O2_Tank.createPhase(  'gas', 'O2',   0.0253*2, struct('O2', 1e5),  fInitialTemperature, 0.8);
             
             %conection store cooling
             matter.store(this, 'cooling_conection1', 0,1);

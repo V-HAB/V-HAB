@@ -5,20 +5,23 @@ classdef FuelCell < vsys
         %number of cells of the fuelcell stack
         iCells = 30;
         
-        % Last time at which the voltage calculation function was executed
-        % in seconds
-        fLastVoltageCalculation = 0;
+        % Area of the membrane for one cell
+        fMembraneArea       = 250 / 10000;	% m^2
+             
+        % Thickness of the membrane in one cell
+        fMembraneThickness  = 2*10^-6;      % m
         
-        fCurrentVoltage = 0;
+        % The maximum current that can can pass through the membrane
+        fMaxCurrentDensity  = 4000;       % A/m^2
         
         % This property is used to store the current efficiency value of
         % the fuel cell. The efficiency is calculated dynamically within
         % the calculate_Voltage function
-        rEfficiency = 1; %efficienty
-        
+        rEfficiency = 1;
         
         fStackCurrent = 0; % A
-        fStackVoltage = 20; % V
+        fStackVoltage; % V
+        
         fTemperature; %temperatur of the fuel cell stack
         fPower = 0; %electric power of the fuel cell stack
         
@@ -27,23 +30,27 @@ classdef FuelCell < vsys
     
     
     methods
-        function this = FuelCell(oParent, sName, iCells)
+        function this = FuelCell(oParent, sName, iCells, fMembraneArea, fMembraneThickness)
             
             this@vsys(oParent, sName, 30);
             
             this.iCells = iCells;
             
+            if nargin > 3
+                this.fMembraneArea = fMembraneArea;
+            end
+            if nargin > 4
+                this.fMembraneThickness = fMembraneThickness;
+            end
+            
+            this.fStackVoltage = this.iCells * 1.23;
+            
             eval(this.oRoot.oCfgParams.configCode(this));
-            
-            
-            
         end
         
         
         function createMatterStructure(this)
             createMatterStructure@vsys(this);
-            %stores and phases--------------------------------------------------------
-            
             
             fInitialTemperature = 293.15; %initial Temperatur of all phases of the fuelcell
             
@@ -56,7 +63,7 @@ classdef FuelCell < vsys
             oH2 =       this.toStores.FuelCell.createPhase(  'gas', 'flow', 'H2_Channel',   0.05, struct('H2', 1e5),  fInitialTemperature, 0.8);
             oO2 =       this.toStores.FuelCell.createPhase(  'gas', 'flow', 'O2_Channel',   0.05, struct('O2', 1e5),  fInitialTemperature, 0.8);
             
-            oMembrane = this.toStores.FuelCell.createPhase(  'gas',         'Membrane',     0.3, struct('O2', 0.5e5, 'H2', 0.5e5),  fInitialTemperature, 0.5);
+            oMembrane = this.toStores.FuelCell.createPhase(  'gas',         'Membrane',     0.3, struct('O2', 0.5e5, 'H2', 0.5e5),  fInitialTemperature, 0.8);
             
             oCooling =  this.toStores.FuelCell.createPhase(  'liquid',      'CoolingSystem',0.1, struct('H2O', 1),  fInitialTemperature, 1e5);
             
@@ -69,13 +76,13 @@ classdef FuelCell < vsys
             components.matter.pipe(this, 'Pipe_Cooling_Out',    1.5, 0.003);
             
             % branches
-            matter.branch(this, oH2,        {'Pipe_H2_In'},         'H2_Inlet',         'H2_inlet');
+            matter.branch(this, oH2,        {'Pipe_H2_In'},         'H2_Inlet',         'H2_Inlet');
             matter.branch(this, oH2,        {'Pipe_H2_Out'},        'H2_Outlet',        'H2_Outlet');
             
-            matter.branch(this, oO2,        {'Pipe_O2_In'},         'O2_Inlet',         'O2_inlet');
+            matter.branch(this, oO2,        {'Pipe_O2_In'},         'O2_Inlet',         'O2_Inlet');
             matter.branch(this, oO2,        {'Pipe_O2_Out'},        'O2_Outlet',        'O2_Outlet');
             
-            matter.branch(this, oCooling,   {'Pipe_Cooling_In'},    'Cooling_Inlet',  	'Cooling_inlet');
+            matter.branch(this, oCooling,   {'Pipe_Cooling_In'},    'Cooling_Inlet',  	'Cooling_Inlet');
             matter.branch(this, oCooling,   {'Pipe_Cooling_Out'},   'Coooling_Outlet',	'Cooling_Outlet');
             
             % adding the fuel cell reaction manip
@@ -100,127 +107,110 @@ classdef FuelCell < vsys
             this.connectIF('Inlet_cooling', sInlet_cooling);
         end
         
+        function createThermalStructure(this)
+            createThermalStructure@vsys(this);
+            
+            oFuelCellHeatSource = thermal.heatsource('FuelCell_HeatSource', 0);
+            this.toStores.FuelCell.toPhases.CoolingSystem.oCapacity.addHeatSource(oFuelCellHeatSource);
+
+        end
+        
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
             
+            tSolverProperties.fMaxError = 1e-6;
+            tSolverProperties.iMaxIterations = 500;
+            tSolverProperties.fMinimumTimeStep = 1;
+            tSolverProperties.iIterationsBetweenP2PUpdate = 200;
+            
+            aoMultiSolverBranches = [this.toBranches.H2_Inlet;...
+                                     this.toBranches.H2_Outlet;...
+                                     this.toBranches.O2_Inlet;...
+                                     this.toBranches.O2_Outlet;];
+            
+            oSolver = solver.matter_multibranch.iterative.branch(aoMultiSolverBranches, 'complex');
+            oSolver.setSolverProperties(tSolverProperties);
             
             
-            %add solver: one iterative solver for each gaschanal
+            oCoolingInlet = solver.matter.residual.branch('Cooling_Inlet');
+            oCoolingInlet.setPositiveFlowDirection(false);
             
-            solver.matter.iterative.branch(this.aoBranches(5));
-            solver.matter.iterative.branch(this.aoBranches(6));
-            solver.matter.iterative.branch(this.aoBranches(7));
-            solver.matter.iterative.branch(this.aoBranches(8));
+            solver.matter.residual.branch('Cooling_Outlet');
             
-            %            solver.matter.iterative.branch(this.aoBranches(3));
-            %            solver.matter.iterative.branch(this.aoBranches(4));
-            
-            %manual solver
-            this.oBranch1=solver.matter.manual.branch(this.aoBranches(1));
-            this.oBranch2=solver.matter.manual.branch(this.aoBranches(2));
-            this.oBranch3=solver.matter.manual.branch(this.aoBranches(3));
-            this.oBranch4=solver.matter.manual.branch(this.aoBranches(4));
-            this.oBranch5=solver.matter.manual.branch(this.aoBranches(9));
-            this.ocoolBranch1=solver.matter.manual.branch(this.aoBranches(10));
-            this.ocoolBranch2=solver.matter.manual.branch(this.aoBranches(11));
-            
-            
-            
+            %% Assign thermal solvers
+            this.setThermalSolvers();
         end
         
         function calculate_voltage(this)
-            
-            
-            
             % calculate the voltage of the fuel cell
             % depending on input partial-pressure temperature
             % current and internal resistance
-            R=8.314459; %gaskonstant J/(mol*K)
-            T=this.fTemperature;
-            fFaraday=96485.3365; %As/mol
             
-            I=this.fStackCurrent;
+            fMaxCurrent = this.fMaxCurrentDensity * this.fMembraneArea;
             
-            I_limit=100; %max current throw the membrane
-            I_o=0.01;  %change current
+            this.fStackCurrent = this.fPower / this.fStackVoltage;
             
-            %this are usual default values
-            a=0.4;     %activation coefficient
-            beta=0.8;  %diffusion coefficient
+            % TBD: where does this calue come from?
+            fChangeCurrent = 0.01;
             
-            k=0.00085; %linearisation faktor for gibbs energy
-            %(do to use values from mattertable)
+            %linearisation factor for gibbs energy
+            fGibbsLinearization = 0.00085;
             
-            %membrane
-            lamda=14; %water content of the membrane 0-20 (no dynamic effects at the moment)
-            A=250;   %area of the membrane on cm^2
-            l=2*10^-4; %thickness of the membrane in cm
+            % water content of the membrane 0-20 (no dynamic effects at the moment)
+            % TO DO: add a dynamic calculation for this
+            fWaterContent           = 14;
+            fActivationCoefficient  = 0.4;
+            fDiffusionCoefficient   = 0.8;
             
             %calculating the resistence of the membrane
-            Rm=l/(A*(0.005139*lamda+0.00326)*exp(1267*(1/303-1/T)));
+            fMembraneResistance = this.fMembraneThickness/(this.fMembraneArea*(0.005139*fWaterContent+0.00326)*exp(1267*(1/303-1 / this.fTemperature)));
             
-            %timeconstant of the outpur capasity
-            ftau=2;
-            %get the partialpressure and massflow of the input phases:
-            [ afPartialPressures_h2 ] = getPartialPressures(this.toStores.gaschanal_in_h2.toPhases.fuel);
-            [ afPartialPressures_o2 ] = getPartialPressures(this.toStores.gaschanal_in_o2.toPhases.O2_H2O);
+            %timeconstant of the output capacity
+            fTau = 2;
             
-            fPressure_H2=afPartialPressures_h2(this.oMT.tiN2I.H2);
-            fPressure_O2=afPartialPressures_o2(this.oMT.tiN2I.O2);
+            fPressure_H2 = this.toStores.H2_Inlet.afPP(this.oMT.tiN2I.H2);
+            fPressure_O2 = this.toStores.H2_Inlet.afPP(this.oMT.tiN2I.O2);
             
             %calculate the static stack voltage
-            if I>0
-                Vo=this.iCells*(1.23-k*(T-298)+R*T/2/fFaraday*log(fPressure_H2*sqrt(fPressure_O2))-R*T/2/fFaraday/a*log(I/I_o)-Rm*I-R*T/2/fFaraday/beta*log(1+I/I_limit));
+            if this.fStackCurrent > 0
+                % TO DO: split equation up to make it easier to follow and
+                % add source for the calculation
+                % TO DO: Find reference for the 1.23 value, should be the
+                % potential for hydrogen in V, but that should also be
+                % adaptable or calculated based on oMT
+                fNewVoltage = this.iCells * (1.23 - fGibbsLinearization * (this.fTemperature - 298) +...
+                    this.oMT.Const.fUniversalGas * this.fTemperature / (2 * this.oMT.Const.fFaraday) *...
+                    log(fPressure_H2 * sqrt(fPressure_O2)) - this.oMT.Const.fUniversalGas * this.fTemperature / (2 * this.oMT.Const.fFaraday) /fActivationCoefficient*log(this.fStackCurrent/fChangeCurrent)-fMembraneResistance*this.fStackCurrent-this.oMT.Const.fUniversalGas* this.fTemperature /2/ this.oMT.Const.fFaraday /fDiffusionCoefficient*log(1+this.fStackCurrent/fMaxCurrent));
             else
                 %another function for the case i==0 because of the log()
-                Vo=this.iCells*(1.23-k*(T-298)+R*T/2/fFaraday*log(fPressure_H2*sqrt(fPressure_O2)));
+                fNewVoltage = this.iCells * (1.23-fGibbsLinearization*(this.fTemperature - 298)+ this.oMT.Const.fUniversalGas * this.fTemperature /2/ this.oMT.Const.fFaraday *log(fPressure_H2*sqrt(fPressure_O2)));
             end
             
             %zero potential of the cell
-            this.fStackZeroPotential=1.23-k*(T-298)+R*T/2/fFaraday*log(fPressure_H2*sqrt(fPressure_O2));
+            this.fStackZeroPotential = 1.23 - fGibbsLinearization*(this.fTemperature - 298)+ this.oMT.Const.fUniversalGas * this.fTemperature /2/ this.oMT.Const.fFaraday *log(fPressure_H2*sqrt(fPressure_O2));
             
-            %current timestep
-            h=this.oTimer.fTime-this.lastexec;
-            if h<1
-                this.fCurrentVoltage=this.fCurrentVoltage+h*(Vo-this.fCurrentVoltage)*ftau; %euler eqation
+            % the euler equation
+            if this.oPhase.fTimeStep < 1
+                this.fStackVoltage = this.fStackVoltage + this.oPhase.fTimeStep * (fNewVoltage - this.fStackVoltage) * fTau;
             end
             
-            this.fStackVoltage=this.fCurrentVoltage; %stack voltage
+            this.fStackCurrent = this.fPower / this.fStackVoltage;
             
             % efficiency is calculatet by using the current voltage of the single cell
             % and the open circuit voltage regarding to current pressure and
             % temperature (fVoltage = Stack voltage)
-            this.rEfficiency = (this.fStackVoltage/this.iCells)/this.fStackZeroPotential;
-            % 
-            fHeatFlow = I*this.fStackVoltage*(1-this.rEfficiency);
+            this.rEfficiency = (this.fStackVoltage / this.iCells) / this.fStackZeroPotential;
             
-            % now we set the calculated heat flow to the corresponding heat
-            % source within the system. It is assumed that the heat is
-            % generated in the water phase of the fuel cell
-            asdasd! 
+            % Now calculate the heat flow of the fuel cell and set it to
+            % the heat source of the cooling system. The heatsource could
+            % also be placed in the membrane and the thermal conduction of
+            % the heat to the coolant channel could be calculated, but this
+            % is simplified in this fuel cell
+            fHeatFlow = this.fStackCurrent * this.fStackVoltage * (1 - this.rEfficiency);
             
-            this.lastexec=this.oTimer.fTime;
-            
-            
+            this.toStores.FuelCell.toPhases.CoolingSystem.oCapacity.toHeatSources.FuelCellHeatSource.setPower(fHeatFlow);
         end
-        
-        
-        function calculate_current(this)
-            
-            % no very important method :)
-            
-            %to iplement dynamics of the electrical load
-            %for the moment you have to set the current from the exec function
-            %of the main system
-            
-            %i tryed to set the electrical power instead of the current and
-            %calculate the current depending on U(i) and P(t), but this got
-            %unstable
-            
-        end
-        
     end
-    
     
     methods (Access = protected)
         
@@ -228,22 +218,6 @@ classdef FuelCell < vsys
             % exec(ute) function for this system
             % Here it only calls its parent's exec function
             exec@vsys(this);
-            
-            
-            %set the manual solver for the cooling circle
-            %this side of the heat exchanger the flowrate is always the same
-            % the other side of the heat exchanger has a control logic
-            
-            this.ocoolBranch1.setFlowRate(0.1);
-            this.ocoolBranch2.setFlowRate(-0.1);
-            
         end
-        
     end
-    
-    
-    
-    
-    
 end
-
