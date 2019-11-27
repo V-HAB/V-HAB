@@ -600,6 +600,14 @@ classdef logger < simulation.monitor
             fprintf('[Logger] Loading complete!\n');
         end
         
+        function clearVirtualValues(this)
+            %CLEARVIRTUALVALUES Deletes all virtual values
+            % This function is intended for use during debugging and
+            % post-processing of simulation results where it may be
+            % necessary to add and then remove virtual values. 
+            this.tVirtualValues = struct('sExpression', {}, 'calculationHandle', {}, 'sName', {}, 'sUnit', {}, 'sLabel', {});
+        end
+        
     end
     
     

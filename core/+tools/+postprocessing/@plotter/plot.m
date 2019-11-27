@@ -653,6 +653,55 @@ for iFigure = 1:length(this.coFigures)
         aoFigures(iFigure) = oFigure;
     end
     
+    %% Keyboard Control
+    % The following code exists solely to enable the user to control the
+    % undock subplot callback buttons via the keyboard. To make this
+    % functionality feel native on all platforms, Windows and Unix
+    % environments will use keyboard shortcuts using the 'Control' key as
+    % the main modifier, while macOS uses 'Command'. Similarly, Windows and
+    % Unix use 'alt' and macOS uses 'option'. The keyboard shortcuts are as
+    % follows:
+    %
+    % Command/Control + [1-0] -> Undocks plots 1 to 10
+    % Command/Control + alt/option [1-0] -> Undocks plots 11 to 20
+    % Command/Control + alt/option + shift [1-0] -> Undocks plots 21 to 30
+    %
+    % Hopefully no one will have more than thirty plots in a figure.
+    
+    % Undocking subplots only makes sense if there are any subplots, so we
+    % enclose all of this in an if-condition.
+    
+    if iNumberOfPlots > 1
+        % First we need to save a reference to all buttons in the UserData
+        % struct of the figure so we can access their callbacks later.
+        oFigure.UserData.coButtons = coButtons;
+        
+        % Because MATLAB numbers columns and rows differently than the
+        % buttons are actually displayed, we need to create the
+        % miButtonIndexes matrix that links the numbers on the buttons to
+        % the actual array indexes. First we get the current size of the
+        % plot. Note that size actually outputs the results in the reverse
+        % order, rows then columns. This is necessary so we can later
+        % transpose the matrix and get the dimensions we have in the button
+        % array.
+        [iFakeColumns, iFakeRows] = size(oFigure.UserData.coButtons);
+        
+        % Creating a matrix of zeros with the appropriate dimensions.
+        oFigure.UserData.miButtonIndexes = zeros([iFakeRows, iFakeColumns]);
+        
+        % We now fill the matrix in the order of the linear indexes.
+        for iI = 1:(iRows*iColumns)
+            oFigure.UserData.miButtonIndexes(iI) = iI;
+        end
+        
+        % Last step is the transposition.
+        oFigure.UserData.miButtonIndexes = oFigure.UserData.miButtonIndexes';
+        
+        % Now we need to assign the key press function to this figure.
+        oFigure.KeyPressFcn = @KeyPressFunction;
+        
+    end
+    
 end
 
 % In case we are running a simulation using the parallel pool, we need to
@@ -661,6 +710,124 @@ end
 % the figure objects after the plot() method has finished executing. 
 if this.oSimulationInfrastructure.bParallelExecution
     assignin('base','aoFigures',aoFigures);
+end
+
+function KeyPressFunction(oFigure, oKeyData)
+    %KEYPRESSFUNCTION Enables keyboard control of undock subplot buttons
+    % We need to catch all sorts of stray inputs, so we enclose this entire
+    % function in a try-catch-block. That way we can just throw errors to
+    % silently abort. 
+    try
+        % Getting the number key the user pressed.
+        iKey = str2double(oKeyData.Key);
+        
+        % We only need to do anything here if the user pressed a modifier
+        % key combination and a number key. 
+        if ~isempty(oKeyData.Modifier) && iKey <= 9 && iKey >= 0
+            
+            % To account for the Mac using 'command' instead of 'control',
+            % we create a string containing the platform-specific modifier.
+            % Interestingly, MATLAB displays 'alt' on Macs as well, even
+            % though 'option' is pressed, so we don't need to worry about
+            % that. 
+            if ismac()
+                sPlatformModifier = 'command';
+            else
+                sPlatformModifier = 'control';
+            end
+            
+            % Getting the total number of modifier keys being pressed. We
+            % need this to catch some unwanted inputs.
+            iNumberOfModifiers = length(oKeyData.Modifier);
+            
+            % This if-condition catches the case where the user hit only
+            % the 'command' or 'control' key and nothing else.
+            if isempty(oKeyData.Character) && strcmp(oKeyData.Key, '0') && iNumberOfModifiers == 1
+                error('Just pressed the command or control key.');
+            end
+            
+            % 'Command' and 'control' are the main modifiers, so this
+            % if-condition catches the case where only 'shift' or 'alt' is
+            % pressed.
+            if ~any(strcmp(oKeyData.Modifier, sPlatformModifier))
+                error('Command or control not pressed.');
+            end
+            
+            % We now switch the number of modifiers being pressed because
+            % that drives the number range we want to address. We control
+            % the range by setting iOffset, which is then added to the
+            % value of the number key being pressed. Due to the differences
+            % between macOS and Windows and Linux we have to make some
+            % additional checks here regarding the order in which the
+            % modifiers are present in the Modifier struct. 
+            switch iNumberOfModifiers
+                case 1
+                    if strcmp(oKeyData.Modifier, sPlatformModifier)
+                        iOffset = 0;
+                    end
+                case 2
+                    if ismac()
+                        if strcmp(oKeyData.Modifier{1},'alt') && ...
+                           strcmp(oKeyData.Modifier{2},sPlatformModifier)
+                            iOffset = 10;
+                        end
+                    else
+                        if strcmp(oKeyData.Modifier{1},sPlatformModifier) && ...
+                           strcmp(oKeyData.Modifier{2},'alt')
+                            iOffset = 10;
+                        end
+                    end
+                case 3
+                    if ismac()
+                        if strcmp(oKeyData.Modifier{1},'shift') && ...
+                           strcmp(oKeyData.Modifier{2},'alt') && ...
+                           strcmp(oKeyData.Modifier{3},sPlatformModifier)
+                            iOffset = 20;
+                        end
+                    else
+                        if strcmp(oKeyData.Modifier{1},'shift') && ...
+                           strcmp(oKeyData.Modifier{2},sPlatformModifier) && ...
+                           strcmp(oKeyData.Modifier{3},'alt')
+                            iOffset = 20;
+                        end
+                    end
+                otherwise
+                    % For now, if any more modifier buttons are pressed, we
+                    % abort. 
+                    error('Something went wrong.');
+            end
+                    
+            % If the pressed key is zero, we add ten to its value. 
+            if iKey == 0
+                iKey = 10;
+            end
+            
+            % Adding the offset to the key. 
+            iKey = iKey + iOffset;
+            
+            % Getting the linear index of the plot the user wants to undock
+            % using our miButtonIndexes link matrix.
+            iActualIndex = oFigure.UserData.miButtonIndexes == iKey;
+            
+            % The Callback property of the uicontrol object is actually a
+            % cell in our case, containing the callback itself, as well as
+            % a reference to the plot object and its legend object. We need
+            % to extract those and pass them as arguments to the actual
+            % function call. 
+            cCallBackData = oFigure.UserData.coButtons{iActualIndex}.Callback;
+            
+            % Actually calling the callback. Since this is a uicontrol
+            % callback, the function expects references to the parent
+            % figure and the button object as the first two arguments.
+            % These are not used in the undockSuplot() function, so we just
+            % pass in NaNs.
+            cCallBackData{1}(NaN, NaN, cCallBackData{2}, cCallBackData{3});
+            
+        end
+    catch
+        % We want this to fail silently if there are inadvertent button
+        % presses, so we don't put anything in here. 
+    end
 end
 
 end
