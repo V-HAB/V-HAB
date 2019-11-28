@@ -25,16 +25,16 @@ classdef Electrolyzer < vsys
     end
     
     methods
-        function this = Electrolyzer(oParent, sName, iCells, fMembraneArea, fMembraneThickness)
+        function this = Electrolyzer(oParent, sName, fTimeStep, iCells, fMembraneArea, fMembraneThickness)
             
-            this@vsys(oParent, sName, 30);
+            this@vsys(oParent, sName, fTimeStep);
             
             this.iCells = iCells;
             
-            if nargin > 3
+            if nargin > 4
                 this.fMembraneArea = fMembraneArea;
             end
-            if nargin > 4
+            if nargin > 5
                 this.fMembraneThickness = fMembraneThickness;
             end
             
@@ -72,14 +72,14 @@ classdef Electrolyzer < vsys
             matter.branch(this, oWater,     {'Pipe_Water_In'},       'Water_Inlet',       'Water_Inlet');
             
             matter.branch(this, oCooling,   {'Pipe_Cooling_In'},    'Cooling_Inlet',  	'Cooling_Inlet');
-            matter.branch(this, oCooling,   {'Pipe_Cooling_Out'},   'Coooling_Outlet',	'Cooling_Outlet');
+            matter.branch(this, oCooling,   {'Pipe_Cooling_Out'},   'Cooling_Outlet',	'Cooling_Outlet');
             
             %maipulator
-            components.matter.Electrolyzer.ElectrolyzerReaction('ElectrolyzerReaction', oMembrane);
+            components.matter.Electrolyzer.components.ElectrolyzerReaction('ElectrolyzerReaction', oMembrane);
             
-            components.matter.P2Ps.ManualP2P(this.toStores.FuelCell, 'H2_from_Membrane',    oMembrane,      oH2);
-            components.matter.P2Ps.ManualP2P(this.toStores.FuelCell, 'O2_from_Membrane',    oMembrane,      oO2);
-            components.matter.P2Ps.ManualP2P(this.toStores.FuelCell, 'H2O_to_Membrane',     oWater,         oMembrane);
+            components.matter.P2Ps.ManualP2P(this.toStores.Electrolyzer, 'H2_from_Membrane',    oMembrane,      oH2);
+            components.matter.P2Ps.ManualP2P(this.toStores.Electrolyzer, 'O2_from_Membrane',    oMembrane,      oO2);
+            components.matter.P2Ps.ManualP2P(this.toStores.Electrolyzer, 'H2O_to_Membrane',     oWater,         oMembrane);
         end
         
         function createThermalStructure(this)
@@ -90,15 +90,15 @@ classdef Electrolyzer < vsys
 
         end
         
-        function setIfFlows(this, sInlet, sOutlet1,sOutlet2,sInlet_cooling,sOutlet_cooling)
+        function setIfFlows(this, H2_Outlet, O2_Outlet, Water_Inlet, Cooling_Inlet, Cooling_Outlet)
             % This function connects the system and subsystem level branches with each other. It
             % uses the connectIF function provided by the matter.container class
             
-            this.connectIF('Inlet',  sInlet);
-            this.connectIF('Outlet1', sOutlet1);
-            this.connectIF('Outlet2', sOutlet2);
-            this.connectIF('Outlet_cooling', sOutlet_cooling);
-            this.connectIF('Inlet_cooling', sInlet_cooling);
+            this.connectIF('H2_Outlet',         H2_Outlet);
+            this.connectIF('O2_Outlet',         O2_Outlet);
+            this.connectIF('Water_Inlet',       Water_Inlet);
+            this.connectIF('Cooling_Outlet',    Cooling_Inlet);
+            this.connectIF('Cooling_Inlet',     Cooling_Outlet);
             
             
         end
@@ -111,19 +111,18 @@ classdef Electrolyzer < vsys
             tSolverProperties.fMinimumTimeStep = 1;
             tSolverProperties.iIterationsBetweenP2PUpdate = 200;
             
-            aoMultiSolverBranches = [this.toBranches.H2_Inlet;...
-                                     this.toBranches.H2_Outlet;...
-                                     this.toBranches.O2_Inlet;...
+            aoMultiSolverBranches = [this.toBranches.H2_Outlet;...
                                      this.toBranches.O2_Outlet;];
             
             oSolver = solver.matter_multibranch.iterative.branch(aoMultiSolverBranches, 'complex');
             oSolver.setSolverProperties(tSolverProperties);
             
             
-            oCoolingInlet = solver.matter.residual.branch('Cooling_Inlet');
-            oCoolingInlet.setPositiveFlowDirection(false);
+            oWaterInlet = solver.matter.residual.branch(this.toBranches.Water_Inlet);
+            oWaterInlet.setPositiveFlowDirection(false);
             
-            solver.matter.residual.branch('Cooling_Outlet');
+            solver.matter.manual.branch(this.toBranches.Cooling_Inlet);
+            solver.matter.residual.branch(this.toBranches.Cooling_Outlet);
             
             %% Assign thermal solvers
             this.setThermalSolvers();
@@ -132,7 +131,7 @@ classdef Electrolyzer < vsys
         function calculate_voltage(this)
             % calculate the voltage of the electrolyseur
             
-            fTemperature = this.toStores.membrane.toPhases.water.fTemperature;
+            fTemperature = this.toStores.Electrolyzer.toPhases.CoolingSystem.fTemperature;
             
             %Partialpressure of H2 and O2 in the output phase
             fPressure_H2 = this.toStores.Electrolyzer.toPhases.H2_Channel.fPressure;
@@ -158,7 +157,7 @@ classdef Electrolyzer < vsys
             %another case for p==0 and I==0 because of the log()
             if fPressure_H2 > 0
                 if this.fStackCurrent > 0
-                    this.fCellVoltage = 1.23+fGibbsLinearization*(fTemperature-298)+this.oMT.Const.fUniversalGas*fTemperature/2/this.oMT.Const.fFaraday*log(fPressure_H2*sqrt(fPressure_O2))+this.oMT.Const.fUniversalGas*fTemperature/2/this.oMT.Const.fFaraday/fActivationCoefficient*log(this.fStackCurrent/fChangeCurrent)+this.Number_cells*fMembraneResistance*this.fStackCurrent+this.oMT.Const.fUniversalGas*fTemperature/2/this.oMT.Const.fFaraday/fDiffusionCoefficient*log(1+this.fStackCurrent/fMaxCurrent);
+                    this.fCellVoltage = 1.23+fGibbsLinearization*(fTemperature-298)+this.oMT.Const.fUniversalGas*fTemperature/2/this.oMT.Const.fFaraday*log(fPressure_H2*sqrt(fPressure_O2))+this.oMT.Const.fUniversalGas*fTemperature/2/this.oMT.Const.fFaraday/fActivationCoefficient*log(this.fStackCurrent/fChangeCurrent)+this.iCells*fMembraneResistance*this.fStackCurrent+this.oMT.Const.fUniversalGas*fTemperature/2/this.oMT.Const.fFaraday/fDiffusionCoefficient*log(1+this.fStackCurrent/fMaxCurrent);
                 else
                     this.fCellVoltage = 1.48; %default value for starting
                 end
@@ -174,11 +173,13 @@ classdef Electrolyzer < vsys
             
             fHeatFlow = this.fStackCurrent * this.fStackVoltage * (1 - this.rEfficiency);
             
-            this.toStores.Electrolyzer.toPhases.CoolingSystem.oCapacity.toHeatSources.Electrolyzer_HeatSource.setPower(fHeatFlow);
+            this.toStores.Electrolyzer.toPhases.CoolingSystem.oCapacity.toHeatSources.Electrolyzer_HeatSource.setHeatFlow(fHeatFlow);
         end
         
         function setPower(this, fPower)
             this.fPower = fPower;
+            
+            this.calculate_voltage();
         end
     end
     
@@ -189,6 +190,7 @@ classdef Electrolyzer < vsys
             % Here it only calls its parent's exec function
             exec@vsys(this);
             
+            this.calculate_voltage();
         end
     end
 end

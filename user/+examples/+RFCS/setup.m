@@ -11,69 +11,77 @@ classdef setup < simulation.infrastructure
             
             ttMonitorConfig = struct();
             this@simulation.infrastructure('RFCS', ptConfigParams, tSolverParams, ttMonitorConfig);
-            examples.RFCS.system.big_system(this.oSimulationContainer,'big_system');
+            examples.RFCS.system.RFCS(this.oSimulationContainer,'RFCS');
             
             %simulation length
-            this.fSimTime = 60*60; % In seconds (8.3 hours)
+            this.fSimTime = 7 * 24 * 3600;
             this.bUseTime = true;
         end
         
         function configureMonitors(this)
-            %logging
-            oLog = this.toMonitors.oLogger;
-            oLog.add('big_system', 'flow_props');
-            oLog.add('big_system', 'thermal_properties');
             
-            oLog.add('big_system/Subsystem_Fuelcell', 'thermal_properties');
-            oLog.add('big_system/Subsystem_Electrolyseur', 'thermal_properties');
-            %
-            %
-            oLog.add('big_system/Subsystem_Fuelcell', 'flow_props');
-            oLog.add('big_system/Subsystem_Electrolyseur', 'flow_props');
+            oLogger = this.toMonitors.oLogger;
             
-            oLog.addValue('big_system', 'this.toChildren.Subsystem_Fuelcell.fVoltage', 'V', 'ohneKondensator');
-            oLog.addValue('big_system', 'this.toChildren.Subsystem_Fuelcell.Uc', 'V', 'Spannung_Brennstoffzelle');
-            oLog.addValue('big_system', 'this.toChildren.Subsystem_Fuelcell.fI', 'A', 'Strom_Brennstoffzelle');
-            oLog.addValue('big_system', 'this.toChildren.Subsystem_Fuelcell.toStores.gaschanal_in_h2.toProcsP2P.H2_Absorber_gaschanal.y', 'F', 'FFF');
-            oLog.addValue('big_system', 'this.toChildren.Subsystem_Fuelcell.toStores.gaschanal_in_h2.toProcsP2P.H2_Absorber_gaschanal.u', 'F', 'FFF1');
-            oLog.addValue('big_system', 'this.toChildren.Subsystem_Fuelcell.toStores.gaschanal_in_o2.toPhases.O2_H2O.rRelHumidity', '%', 'Humidity');
-            oLog.addValue('big_system', 'this.toChildren.Subsystem_Fuelcell.toStores.gaschanal_in_h2.toPhases.fuel.rRelHumidity', '%', 'Humidity');
+            oLogger.addValue('RFCS:s:O2_Tank:p:O2', 'fPressure',    'Pa', 'O_2 Tank Pressure');
+            oLogger.addValue('RFCS:s:H2_Tank:p:H2', 'fPressure',    'Pa', 'H_2 Tank Pressure');
             
-            oLog.addValue('big_system', 'this.toChildren.Subsystem_Fuelcell.eta', 'r', ' eta_Fuelcell');
-            oLog.addValue('big_system', 'this.toChildren.Subsystem_Fuelcell.heat', 'W', ' Heat_Fuelcell');
-            oLog.addValue('big_system', 'this.toChildren.Subsystem_Electrolyseur.heat', 'W', ' Heat_Elektrolyser');
-            oLog.addValue('big_system', 'this.toChildren.Subsystem_Electrolyseur.fPower', 'W', ' Power');
-            oLog.addValue('big_system', 'this.toChildren.Subsystem_Electrolyseur.fI', 'A', 'Strom_Elektrolyseur');
-            oLog.addValue('big_system', 'this.toChildren.Subsystem_Electrolyseur.uz', 'V', 'Spannung_Elektrolyseur');
-            oLog.addValue('big_system', 'this.toProcsF2F.Radiator.fHeatFlow', 'W', 'Heat Flow_Radiator');
-            oLog.addValue('big_system', 'this.toProcsF2F.HeatExchanger_Electrolyseur_1.fHeatFlow', 'W', 'Heat Flow_Elektrolyseur_XC');
-            oLog.addValue('big_system', 'this.toProcsF2F.HeatExchanger_Fuelcell_1.fHeatFlow', 'W', 'Heat Flow_Brennstoffzelle_XC');
-            %
+            oLogger.addValue('RFCS:s:Water_Tank:p:Water', 'fMass',	'kg', 'H2O Tank Mass');
+            
+            oLogger.addValue('RFCS:s:CoolingSystem:p:CoolingWater', 'fTemperature', 'K', 'Coolant Temperature');
+            
+            oLogger.addValue('RFCS.toBranches.Radiator_Cooling', 'fFlowRate', 'kg/s', 'Radiator Flowrate');
             
             
-            oPlot = this.toMonitors.oPlotter;
+            % Fuel Cell Logging
+            oLogger.addValue('RFCS:c:FuelCell', 'rEfficiency',      '-',  	'Fuel Cell Efficiency');
+            oLogger.addValue('RFCS:c:FuelCell', 'fStackCurrent',    'A',    'Fuel Cell Current');
+            oLogger.addValue('RFCS:c:FuelCell', 'fStackVoltage',    'V',    'Fuel Cell Voltage');
+            oLogger.addValue('RFCS:c:FuelCell', 'fPower',           'W',    'Fuel Cell Power');
             
+            oLogger.addValue('RFCS:c:FuelCell:s:FuelCell:p:Membrane.toManips.substance', 'this.afPartialFlows(this.oMT.tiN2I.H2)',	'kg/s',    'Fuel Cell Reaction H_2 Flow');
+            oLogger.addValue('RFCS:c:FuelCell:s:FuelCell:p:Membrane.toManips.substance', 'this.afPartialFlows(this.oMT.tiN2I.O2)',	'kg/s',    'Fuel Cell Reaction O_2 Flow');
+            oLogger.addValue('RFCS:c:FuelCell:s:FuelCell:p:Membrane.toManips.substance', 'this.afPartialFlows(this.oMT.tiN2I.H2O)',	'kg/s',    'Fuel Cell Reaction H2O Flow');
             
-            oPlot.definePlotAllWithFilter('V',  'Voltage');
-            oPlot.definePlotAllWithFilter('A',  'Current');
+            % Electrolyzer Logging
+            oLogger.addValue('RFCS:c:Electrolyzer', 'rEfficiency',      '-',  	'Electrolyzer Efficiency');
+            oLogger.addValue('RFCS:c:Electrolyzer', 'fStackCurrent',    'A',    'Electrolyzer Current');
+            oLogger.addValue('RFCS:c:Electrolyzer', 'fStackVoltage',    'V',    'Electrolyzer Voltage');
+            oLogger.addValue('RFCS:c:Electrolyzer', 'fPower',           'W',    'Electrolyzer Power');
             
-            oPlot.definePlotAllWithFilter('Pa',  'Tank Pressures');
-            oPlot.definePlotAllWithFilter('kg',  'Masses');
-            oPlot.definePlotAllWithFilter('K',   'Temperatures');
-            oPlot.definePlotAllWithFilter('kg/s',   'Flowrate');
-            oPlot.definePlotAllWithFilter('F',   'FFF');
-            oPlot.definePlotAllWithFilter('%',   'Humidity');
-            oPlot.definePlotAllWithFilter('W',   'Heat');
-            oPlot.definePlotAllWithFilter('r',   'Wirkungsgrad');
-            
-            
-            
+            oLogger.addValue('RFCS:c:Electrolyzer:s:Electrolyzer:p:Membrane.toManips.substance', 'this.afPartialFlows(this.oMT.tiN2I.H2)',	'kg/s',    'Electrolyzer Reaction H_2 Flow');
+            oLogger.addValue('RFCS:c:Electrolyzer:s:Electrolyzer:p:Membrane.toManips.substance', 'this.afPartialFlows(this.oMT.tiN2I.O2)',	'kg/s',    'Electrolyzer Reaction O_2 Flow');
+            oLogger.addValue('RFCS:c:Electrolyzer:s:Electrolyzer:p:Membrane.toManips.substance', 'this.afPartialFlows(this.oMT.tiN2I.H2O)',	'kg/s',    'Electrolyzer Reaction H2O Flow');
             
         end
         function plot(this)
             
             close all % closes all currently open figures
-            this.toMonitors.oPlotter.plot();
+            
+            oPlotter = plot@simulation.infrastructure(this);
+            
+            tPlotOptions = struct('sTimeUnit','hours');
+            
+            coPlots = [];
+            coPlots{1,1} = oPlotter.definePlot({'"O_2 Tank Pressure"', '"H_2 Tank Pressure"'}, 'Tank Pressures', tPlotOptions);
+            coPlots{1,2} = oPlotter.definePlot({'"H2O Tank Mass"'}, 'Tank Masses', tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot({'"Coolant Temperature"'}, 'Temperatures', tPlotOptions);
+            coPlots{2,2} = oPlotter.definePlot({'"Radiator Flowrate"'}, 'Flow Rates', tPlotOptions);
+            oPlotter.defineFigure(coPlots, 'RFCS');
+            
+            coPlots = [];
+            coPlots{1,1} = oPlotter.definePlot({'"Fuel Cell Current"', '"Fuel Cell Voltage"'}, 'Fuel Cell Electric Parameters', tPlotOptions);
+            coPlots{1,2} = oPlotter.definePlot({'"Fuel Cell Power"', '"Fuel Cell Efficiency"'}, 'Fuel Cell Power', tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot({'"Fuel Cell Reaction H_2 Flow"', '"Fuel Cell Reaction O_2 Flow"', '"Fuel Cell Reaction H2O Flow"'}, 'Flowrates', tPlotOptions);
+            oPlotter.defineFigure(coPlots, 'FuelCell');
+            
+            coPlots = [];
+            coPlots{1,1} = oPlotter.definePlot({'"Electrolyzer Current"', '"Electrolyzer Voltage"'}, 'Electrolyzer Electric Parameters', tPlotOptions);
+            coPlots{1,2} = oPlotter.definePlot({'"Electrolyzer Power"', '"Electrolyzer Efficiency"'}, 'Electrolyzer Power', tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot({'"Electrolyzer Reaction H_2 Flow"', '"Electrolyzer Reaction O_2 Flow"', '"Electrolyzer Reaction H2O Flow"'}, 'Flowrates', tPlotOptions);
+            oPlotter.defineFigure(coPlots, 'Electrolyzer');
+            
+            
+            oPlotter.plot();
         end
     end
 end

@@ -1,4 +1,4 @@
-function [ cParams, sDefaultPhase ] = liquid(oStore, trMassRatios, fVolume, fTemperature, fPressure)
+function [ cParams, sDefaultPhase ] = liquid(oStore, fVolume, trMassRatios, fTemperature, fPressure)
 %helper to create a water phase
 %
 % Parameters:

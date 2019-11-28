@@ -8,8 +8,6 @@ classdef ManualP2P < matter.procs.p2ps.stationary
     % this would require calculation time, just do not do this ;)
     
     properties (SetAccess = protected, GetAccess = public)
-        % parent system reference
-        oParent;
         
         afFlowRates;
         
@@ -26,10 +24,8 @@ classdef ManualP2P < matter.procs.p2ps.stationary
     end
     
     methods
-        function this = ManualP2P(oParent, oStore, sName, sPhaseAndPortIn, sPhaseAndPortOut)
+        function this = ManualP2P(oStore, sName, sPhaseAndPortIn, sPhaseAndPortOut)
             this@matter.procs.p2ps.stationary(oStore, sName, sPhaseAndPortIn, sPhaseAndPortOut);
-
-            this.oParent = oParent;
             
             this.setTimeStep = this.oTimer.bind(@(~) this.registerUpdate(), 0, struct(...
                 'sMethod', 'update', ...
