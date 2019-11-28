@@ -378,6 +378,10 @@ for iFigure = 1:length(this.coFigures)
                         sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
                     end
                     
+                    % If the user selected to change the unit of time by which
+                    % this plot is created, we have to adjust the afTime array.
+                    [ afTime, ~ ] = this.adjustTime(afTime, tPlotOptions);
+
                     % Using a specialized version of the generatePlot()
                     % method we used for the left side, we can now create
                     % the remaining traces and the y axis on the right
