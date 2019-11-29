@@ -52,8 +52,8 @@ classdef Electrolyzer < vsys
             
             oMembrane   = matter.phases.mixture(this.toStores.Electrolyzer, 'Membrane', 'solid', struct('H2O',0.5,'H2',0.1,'O2',0.1), fInitialTemperature, 1e5);
             
-            oH2         = this.toStores.Electrolyzer.createPhase(  'gas', 'H2_Channel',   0.05, struct('H2', 1e5),  fInitialTemperature, 0.8);
-            oO2         = this.toStores.Electrolyzer.createPhase(  'gas', 'O2_Channel',   0.05, struct('O2', 1e5),  fInitialTemperature, 0.8);
+            oH2         = this.toStores.Electrolyzer.createPhase(  'gas', 'flow', 'H2_Channel',   0.05, struct('H2', 1e5),  fInitialTemperature, 0.8);
+            oO2         = this.toStores.Electrolyzer.createPhase(  'gas', 'flow', 'O2_Channel',   0.05, struct('O2', 1e5),  fInitialTemperature, 0.8);
             
             oWater      = this.toStores.Electrolyzer.createPhase(  'liquid',      'ProductWater',   0.1, struct('H2O', 1),  fInitialTemperature, 1e5);
             
@@ -66,13 +66,17 @@ classdef Electrolyzer < vsys
             components.matter.pipe(this, 'Pipe_Cooling_In',     1.5, 0.003);
             components.matter.pipe(this, 'Pipe_Cooling_Out',    1.5, 0.003);
             
-            % branches
-            matter.branch(this, oH2,        {'Pipe_H2_Out'},         'H2_Outlet',         'H2_Outlet');
-            matter.branch(this, oO2,        {'Pipe_O2_Out'},         'O2_Outlet',         'O2_Outlet');
-            matter.branch(this, oWater,     {'Pipe_Water_In'},       'Water_Inlet',       'Water_Inlet');
+            % valves
+            components.matter.valve(this,'Valve_H2', false);
+            components.matter.valve(this,'Valve_O2', false);
             
-            matter.branch(this, oCooling,   {'Pipe_Cooling_In'},    'Cooling_Inlet',  	'Cooling_Inlet');
-            matter.branch(this, oCooling,   {'Pipe_Cooling_Out'},   'Cooling_Outlet',	'Cooling_Outlet');
+            % branches
+            matter.branch(this, oH2,        {'Valve_H2', 'Pipe_H2_Out'},  	'H2_Outlet',         'H2_Outlet');
+            matter.branch(this, oO2,        {'Valve_O2', 'Pipe_O2_Out'},   	'O2_Outlet',         'O2_Outlet');
+            matter.branch(this, oWater,     {'Pipe_Water_In'},              'Water_Inlet',       'Water_Inlet');
+            
+            matter.branch(this, oCooling,   {'Pipe_Cooling_In'},            'Cooling_Inlet',  	'Cooling_Inlet');
+            matter.branch(this, oCooling,   {'Pipe_Cooling_Out'},           'Cooling_Outlet',	'Cooling_Outlet');
             
             %maipulator
             components.matter.Electrolyzer.components.ElectrolyzerReaction('ElectrolyzerReaction', oMembrane);
@@ -123,6 +127,20 @@ classdef Electrolyzer < vsys
             
             solver.matter.manual.branch(this.toBranches.Cooling_Inlet);
             solver.matter.residual.branch(this.toBranches.Cooling_Outlet);
+            
+            csStores = fieldnames(this.toStores);
+            % sets numerical properties for the phases of CDRA
+            for iS = 1:length(csStores)
+                for iP = 1:length(this.toStores.(csStores{iS}).aoPhases)
+                    oPhase = this.toStores.(csStores{iS}).aoPhases(iP);
+                    
+                    tTimeStepProperties.rMaxChange = 0.1;
+                    tTimeStepProperties.fMaxStep = this.fTimeStep;
+
+                    oPhase.setTimeStepProperties(tTimeStepProperties);
+                        
+                end
+            end
             
             %% Assign thermal solvers
             this.setThermalSolvers();

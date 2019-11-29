@@ -50,50 +50,6 @@ classdef RFCS < vsys
             matter.store(this, 'O2_Tank', 0.05);
             oO2         = this.toStores.O2_Tank.createPhase(  'gas', 'O2',   0.05, struct('O2', 50e5),  fInitialTemperature, 0.8);
             
-            tCharacteristic = struct(...
-                ...% Upper and speed and respective characteristic function
-                'fSpeedUpper', 100000, ...
-                'calculateUpperDeltaP', @(fVolumetricFlowRate) 30*10^5-fVolumetricFlowRate*2*10^5*10^4, ...
-                ...% Lower and speed and respective characteristic function
-                'fSpeedLower', 1000, ...
-                'calculateLowerDeltaP', @(fVolumetricFlowRate) 0.03*10^5-fVolumetricFlowRate*0.002*10^5*10^4, ...
-                ...% Pressure, temperature, gas constant and density of the gas
-                ...% used during the determination of the characteristic
-                'fTestPressure',    29649, ...      Pa
-                'fTestTemperature',   294.26, ...   K
-                'fTestGasConstant',   287.058, ...  J/kgK
-                'fTestDensity',         0.3510, ...  kg/m3
-                'fZeroCrossingUpper',   0.007, ...  m^3/s
-                'fZeroCrossingLower',   0.0048 ...  m^3/s
-                );
-        
-            components.matter.fan(this, 'O2_Compressor', 100000, tCharacteristic);
-            components.matter.fan(this, 'H2_Compressor', 100000, tCharacteristic);
-            
-%             %heat exchanger
-%             %defines the heat exchanged object using the previously created properties
-%             sHX_type = 'CounterPlate';
-%             tHX_Parameters.fBroadness       = 1;    % broadness of the heat exchange area in m
-%             tHX_Parameters.fHeight_1        = 0.15; % Height of the channel for fluid 1 in m
-%             tHX_Parameters.fHeight_2        = 0.15; % Height of the channel for fluid 2 in m
-%             tHX_Parameters.fLength          = 5;    % length of the heat exchanger in m
-%             tHX_Parameters.fThickness       = 0.01; % thickness of the plate in m
-%             
-%             % Assume aluminium with 230W/K/m
-%             Conductivity = 230;                          % Conductivity of the Heat exchanger solid material
-%             
-%             %defines the heat exchanged object using the previously created properties
-%             components.matter.HX(this, 'FuelCell_HeatExchanger', tHX_Parameters, sHX_type, Conductivity);
-%             components.matter.HX(this, 'Electrolyzer_HeatExchanger', tHX_Parameters, sHX_type, Conductivity);
-            
-            
-            %valves
-            components.matter.valve(this,'FuelCell_Valve_H2', false);
-            components.matter.valve(this,'FuelCell_Valve_O2', false);
-            
-            components.matter.valve(this,'Electrolyzer_Valve_H2', false);
-            components.matter.valve(this,'Electrolyzer_Valve_O2', false);
-            
             %radiator area= 3.5m^2
             examples.RFCS.components.radiator(this, 'Radiator', 3.5, 0.4);
             
@@ -103,11 +59,11 @@ classdef RFCS < vsys
             matter.branch(this, oCooling,                       {'Radiator_Pipe', 'Radiator'},	oCooling,         'Radiator_Cooling');
             
             %% Fuel Cell Connections
-            matter.branch(this, 'FuelCell_H2_Inlet',            {'FuelCell_Valve_H2'},      	oH2);
-            matter.branch(this, 'FuelCell_H2_Outlet',       	{'H2_Compressor'},            	oH2);
+            matter.branch(this, 'FuelCell_H2_Inlet',            {},                             oH2);
+            matter.branch(this, 'FuelCell_H2_Outlet',       	{},                             oH2);
             
-            matter.branch(this, 'FuelCell_O2_Inlet',            {'FuelCell_Valve_O2'},       	oO2);
-            matter.branch(this, 'FuelCell_O2_Outlet',           {'O2_Compressor'},          	oO2);
+            matter.branch(this, 'FuelCell_O2_Inlet',            {},                             oO2);
+            matter.branch(this, 'FuelCell_O2_Outlet',           {},                             oO2);
             
             matter.branch(this, 'FuelCell_Water_Outlet',    	{},                             oWater);
             
@@ -115,14 +71,14 @@ classdef RFCS < vsys
             matter.branch(this, 'FuelCell_Cooling_Outlet',      {},                             oCooling);
             
             %% Electrolyzer Connections
-            matter.branch(this, 'Electrolyzer_H2_Outlet',    	{'Electrolyzer_Valve_H2'},      oH2);
-            matter.branch(this, 'Electrolyzer_O2_Outlet',     	{'Electrolyzer_Valve_O2'},  	oO2);
+            matter.branch(this, 'Electrolyzer_H2_Outlet',    	{},                             oH2);
+            matter.branch(this, 'Electrolyzer_O2_Outlet',     	{},                             oO2);
             matter.branch(this, 'Electrolyzer_Water_Inlet',    	{},                             oWater);
             
             matter.branch(this, 'Electrolyzer_Cooling_Inlet',   {},                             oCooling);
             matter.branch(this, 'Electrolyzer_Coooling_Outlet',	{},                             oCooling);
             
-            this.toChildren.FuelCell.setIfFlows('FuelCell_H2_Inlet', 'FuelCell_H2_Outlet', 'FuelCell_O2_Inlet', 'FuelCell_O2_Outlet', 'FuelCell_Water_Outlet', 'FuelCell_Cooling_Inlet', 'FuelCell_Cooling_Outlet')
+            this.toChildren.FuelCell.setIfFlows('FuelCell_H2_Inlet', 'FuelCell_H2_Outlet', 'FuelCell_O2_Inlet', 'FuelCell_O2_Outlet', 'FuelCell_Cooling_Inlet', 'FuelCell_Cooling_Outlet', 'FuelCell_Water_Outlet')
             this.toChildren.Electrolyzer.setIfFlows('Electrolyzer_H2_Outlet', 'Electrolyzer_O2_Outlet', 'Electrolyzer_Water_Inlet', 'Electrolyzer_Cooling_Inlet', 'Electrolyzer_Coooling_Outlet')
         end
         
@@ -131,6 +87,20 @@ classdef RFCS < vsys
             createSolverStructure@vsys(this);
             
             solver.matter.manual.branch(this.toBranches.Radiator_Cooling);
+            
+            csStores = fieldnames(this.toStores);
+            % sets numerical properties for the phases of CDRA
+            for iS = 1:length(csStores)
+                for iP = 1:length(this.toStores.(csStores{iS}).aoPhases)
+                    oPhase = this.toStores.(csStores{iS}).aoPhases(iP);
+                    
+                    tTimeStepProperties.rMaxChange = 0.1;
+                    tTimeStepProperties.fMaxStep = this.fTimeStep;
+
+                    oPhase.setTimeStepProperties(tTimeStepProperties);
+                        
+                end
+            end
             
             %% Assign thermal solvers
             this.setThermalSolvers();
@@ -163,38 +133,37 @@ classdef RFCS < vsys
                 this.toChildren.Electrolyzer.setPower(fAvailablePower);
                 this.toChildren.FuelCell.setPower(0);
                 
-                this.toChildren.Electrolyzer.toBranches.Cooling_Inlet.setFlowRate(-0.1);
-                this.toChildren.FuelCell.toBranches.Cooling_Inlet.setFlowRate(0);
+                this.toChildren.Electrolyzer.toBranches.Cooling_Inlet.oHandler.setFlowRate(-0.1);
+                this.toChildren.FuelCell.toBranches.Cooling_Inlet.oHandler.setFlowRate(0);
                 
-                if ~this.toProcsF2F.Electrolyzer_Valve_H2.bOpen
-                    this.toProcsF2F.Electrolyzer_Valve_H2.setOpen(true);
+                if ~this.toChildren.Electrolyzer.toProcsF2F.Valve_H2.bOpen
+                    this.toChildren.Electrolyzer.toProcsF2F.Valve_H2.setOpen(true);
                 end
-                if ~this.toProcsF2F.Electrolyzer_Valve_O2.bOpen
-                    this.toProcsF2F.Electrolyzer_Valve_O2.setOpen(true);
-                end
-                
-                if this.toProcsF2F.FuelCell_Valve_H2.bOpen
-                    this.toProcsF2F.H2_Compressor.switchOff();
-                    this.toProcsF2F.FuelCell_Valve_H2.setOpen(false);
-                end
-                if this.toProcsF2F.FuelCell_Valve_O2.bOpen
-                    this.toProcsF2F.O2_Compressor.switchOff();
-                    this.toProcsF2F.FuelCell_Valve_O2.setOpen(false);
+                if ~this.toChildren.Electrolyzer.toProcsF2F.Valve_O2.bOpen
+                    this.toChildren.Electrolyzer.toProcsF2F.Valve_O2.setOpen(true);
                 end
                 
+                if this.toChildren.FuelCell.toProcsF2F.Valve_H2.bOpen
+                    this.toChildren.FuelCell.toProcsF2F.H2_Compressor.switchOff();
+                    this.toChildren.FuelCell.toProcsF2F.Valve_H2.setOpen(false);
+                end
+                if this.toChildren.FuelCell.toProcsF2F.Valve_O2.bOpen
+                    this.toChildren.FuelCell.toProcsF2F.O2_Compressor.switchOff();
+                    this.toChildren.FuelCell.toProcsF2F.Valve_O2.setOpen(false);
+                end
                 
             else
                 this.toChildren.Electrolyzer.setPower(0);
                 this.toChildren.FuelCell.setPower(-fAvailablePower);
                 
-                this.toChildren.Electrolyzer.toBranches.Cooling_Inlet.setFlowRate(0);
-                this.toChildren.FuelCell.toBranches.Cooling_Inlet.setFlowRate(-0.1);
+                this.toChildren.Electrolyzer.toBranches.Cooling_Inlet.oHandler.setFlowRate(0);
+                this.toChildren.FuelCell.toBranches.Cooling_Inlet.oHandler.setFlowRate(-0.1);
                 
-                if ~this.toProcsF2F.Electrolyzer_Valve_H2.bOpen
-                    this.toProcsF2F.Electrolyzer_Valve_H2.setOpen(false);
+                if this.toChildren.Electrolyzer.toProcsF2F.Valve_H2.bOpen
+                    this.toChildren.Electrolyzer.toProcsF2F.Valve_H2.setOpen(false);
                 end
-                if ~this.toProcsF2F.Electrolyzer_Valve_O2.bOpen
-                    this.toProcsF2F.Electrolyzer_Valve_O2.setOpen(false);
+                if this.toChildren.Electrolyzer.toProcsF2F.Valve_O2.bOpen
+                    this.toChildren.Electrolyzer.toProcsF2F.Valve_O2.setOpen(false);
                 end
             end
             
@@ -202,13 +171,13 @@ classdef RFCS < vsys
             % oxygen before it is required. No electricity is generated
             % beforehand because the electric circuit is not yet closed
             if fAvailablePower < 50
-                if ~this.toProcsF2F.FuelCell_Valve_H2.bOpen
-                    this.toProcsF2F.H2_Compressor.switchOn();
-                    this.toProcsF2F.FuelCell_Valve_H2.setOpen(true);
+                if ~this.toChildren.FuelCell.toProcsF2F.Valve_H2.bOpen
+                    this.toChildren.FuelCell.toProcsF2F.H2_Compressor.switchOn();
+                    this.toChildren.FuelCell.toProcsF2F.Valve_H2.setOpen(true);
                 end
-                if ~this.toProcsF2F.FuelCell_Valve_O2.bOpen
-                    this.toProcsF2F.O2_Compressor.switchOn();
-                    this.toProcsF2F.FuelCell_Valve_O2.setOpen(true);
+                if ~this.toChildren.FuelCell.toProcsF2F.Valve_O2.bOpen
+                    this.toChildren.FuelCell.toProcsF2F.O2_Compressor.switchOn();
+                    this.toChildren.FuelCell.toProcsF2F.Valve_O2.setOpen(true);
                 end
             end
             
@@ -218,9 +187,9 @@ classdef RFCS < vsys
             % through the radiator if the temperature is higher than 65°C
             fDeltaTemperature = this.toStores.CoolingSystem.toPhases.CoolingWater.fTemperature - 338.15;
             if fDeltaTemperature > 0
-                this.toBranches.Radiator_Cooling.setFlowRate(0.2 * fDeltaTemperature);
+                this.toBranches.Radiator_Cooling.oHandler.setFlowRate(0.2 * fDeltaTemperature);
             else
-                this.toBranches.Radiator_Cooling.setFlowRate(0);
+                this.toBranches.Radiator_Cooling.oHandler.setFlowRate(0);
             end
             
         end

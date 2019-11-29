@@ -64,7 +64,8 @@ classdef FuelCell < vsys
             % components (H2 Channel, O2 Channel, Membrane, Cooling System)
             matter.store(this, 'FuelCell', 0.5);
             
-            oH2 =       this.toStores.FuelCell.createPhase(  'gas', 'flow', 'H2_Channel',   0.05, struct('H2', 1e5),  fInitialTemperature, 0.8);
+            oH2 =       this.toStores.FuelCell.createPhase(  'gas', 'flow', 'H2_Channel',   0.025, struct('H2', 1e5),  fInitialTemperature, 0.8);
+            oH2_Out =   this.toStores.FuelCell.createPhase(  'gas', 'flow', 'H2_Outlet',    0.025, struct('H2', 1e5),  fInitialTemperature, 0.8);
             oO2 =       this.toStores.FuelCell.createPhase(  'gas', 'flow', 'O2_Channel',   0.05, struct('O2', 1e5),  fInitialTemperature, 0.8);
             
             oMembrane = this.toStores.FuelCell.createPhase(  'gas',         'Membrane',     0.3, struct('O2', 0.5e5, 'H2', 0.5e5),  fInitialTemperature, 0.8);
@@ -82,24 +83,69 @@ classdef FuelCell < vsys
             components.matter.pipe(this, 'Pipe_H2_Out',         1.5, 0.003);
             components.matter.pipe(this, 'Pipe_O2_In',          1.5, 0.003);
             components.matter.pipe(this, 'Pipe_O2_Out',         1.5, 0.003);
-            components.matter.pipe(this, 'Pipe_O2_to_Dryer',  	1.5, 0.003);
             components.matter.pipe(this, 'Pipe_Cooling_In',     1.5, 0.003);
             components.matter.pipe(this, 'Pipe_Cooling_Out',    1.5, 0.003);
             
+            % valves
+            components.matter.valve(this,'Valve_H2', false);
+            components.matter.valve(this,'Valve_O2', false);
+            
+            % fans
+            % The fan characteristic is based on the DLE 5-30
+            % characteristic found here:
+            % http://www.maximator.de/assets/mime/fab90f7a0d5202048ad8550de355ceff/MAXIMATOR%20Kompressoren%2011-2007.pdf
+            % Note that this is only done to have a realistic behavior for
+            % the compressor. It is not because that compressor makes
+            % sense. The 2 Bar curve is assumed for the lower speed, the 4
+            % bar curve for the higher speed. The fitting was made by just
+            % selecting a meaningful function which represents the behavior
+            % and approximates the curves
+%             mfCharacteristicUpper = table2array(readtable('+components\+matter\+FuelCell\+components\DLE 5-30 4 Bar Inletpressure.csv'));
+%             mfCharacteristicLower = table2array(readtable('+components\+matter\+FuelCell\+components\DLE 5-30 2 Bar Inletpressure.csv'));
+%             
+%             plot((mfCharacteristicUpper(:,2) .* 60/10000), mfCharacteristicUpper(:,1) .* 10^5);
+%             hold on
+%             plot((mfCharacteristicLower(:,2) .* 60/10000), mfCharacteristicLower(:,1) .* 10^5);
+            
+            tCharacteristic = struct(...
+                ...% Upper and speed and respective characteristic function
+                'fSpeedUpper', 1000, ...
+                'calculateUpperDeltaP', @(fVolumetricFlowRate) (300e5 * exp(-(1.5 * fVolumetricFlowRate).^3)) - 100e5, ...
+                ...% Lower and speed and respective characteristic function
+                'fSpeedLower', 100, ...
+                'calculateLowerDeltaP', @(fVolumetricFlowRate) (280e5 * exp(-(3.2 * fVolumetricFlowRate).^3)) - 100e5, ...
+                ...% Pressure, temperature, gas constant and density of the gas
+                ...% used during the determination of the characteristic
+                'fTestPressure',        10e5, ...      Pa
+                'fTestTemperature',     294.26, ...   K
+                'fTestGasConstant',     2077.1, ...  J/kgK
+                'fTestDensity',         0.823, ...  kg/m3
+                'fZeroCrossingUpper',   0.65, ...  m^3/s
+                'fZeroCrossingLower',   0.31 ...  m^3/s
+                );
+            
+            components.matter.fan(this, 'H2_Compressor', 100000, tCharacteristic);
+            
+            tCharacteristic.fTestGasConstant = 259.8;
+            tCharacteristic.fTestDensity = 13.226;
+            components.matter.fan(this, 'O2_Compressor', 100000, tCharacteristic);
+            
             % Internal Branches
-            matter.branch(this, oO2,        {'Pipe_O2_to_Dryer'},	oO2_Dryer,          'O2_to_Dryer');
+            matter.branch(this, oH2,                {'H2_Compressor'},          oH2_Out,            'H2_to_Outlet');
+            matter.branch(this, oO2,                {'O2_Compressor'},          oO2_Dryer,          'O2_to_Dryer');
             
             % Interfaces branches
-            matter.branch(this, oH2,                {'Pipe_H2_In'},         'H2_Inlet',         'H2_Inlet');
-            matter.branch(this, oH2,                {'Pipe_H2_Out'},        'H2_Outlet',        'H2_Outlet');
+            matter.branch(this, oH2,                {'Valve_H2', 'Pipe_H2_In'},	'H2_Inlet',         'H2_Inlet');
+            matter.branch(this, oH2_Out,          	{'Pipe_H2_Out'},            'H2_Outlet',        'H2_Outlet');
             
-            matter.branch(this, oO2,                {'Pipe_O2_In'},         'O2_Inlet',         'O2_Inlet');
-            matter.branch(this, oO2_Dryer,          {'Pipe_O2_Out'},        'O2_Outlet',        'O2_Outlet');
+            matter.branch(this, oO2,                {'Valve_O2', 'Pipe_O2_In'},	'O2_Inlet',         'O2_Inlet');
+            matter.branch(this, oO2_Dryer,          {'Pipe_O2_Out'},            'O2_Outlet',        'O2_Outlet');
             
-            matter.branch(this, oCooling,           {'Pipe_Cooling_In'},    'Cooling_Inlet',  	'Cooling_Inlet');
-            matter.branch(this, oCooling,           {'Pipe_Cooling_Out'},   'Cooling_Outlet',	'Cooling_Outlet');
             
-            matter.branch(this, oRecoveredWater,  	{},                     'Water_Outlet',     'Water_Outlet');
+            matter.branch(this, oCooling,           {'Pipe_Cooling_In'},        'Cooling_Inlet',  	'Cooling_Inlet');
+            matter.branch(this, oCooling,           {'Pipe_Cooling_Out'},       'Cooling_Outlet',	'Cooling_Outlet');
+            
+            matter.branch(this, oRecoveredWater,  	{},                         'Water_Outlet',     'Water_Outlet');
             
             % adding the fuel cell reaction manip
             components.matter.FuelCell.components.FuelCellReaction('FuelCellReaction', oMembrane);
@@ -139,6 +185,7 @@ classdef FuelCell < vsys
             tSolverProperties.iIterationsBetweenP2PUpdate = 200;
             
             aoMultiSolverBranches = [this.toBranches.H2_Inlet;...
+                                     this.toBranches.H2_to_Outlet;...
                                      this.toBranches.H2_Outlet;...
                                      this.toBranches.O2_Inlet;...
                                      this.toBranches.O2_to_Dryer;...
@@ -153,6 +200,20 @@ classdef FuelCell < vsys
             
             solver.matter.residual.branch(this.toBranches.Water_Outlet);
             
+            
+            csStores = fieldnames(this.toStores);
+            % sets numerical properties for the phases of CDRA
+            for iS = 1:length(csStores)
+                for iP = 1:length(this.toStores.(csStores{iS}).aoPhases)
+                    oPhase = this.toStores.(csStores{iS}).aoPhases(iP);
+                    
+                    tTimeStepProperties.rMaxChange = 0.1;
+                    tTimeStepProperties.fMaxStep = this.fTimeStep;
+
+                    oPhase.setTimeStepProperties(tTimeStepProperties);
+                        
+                end
+            end
             
             %% Assign thermal solvers
             this.setThermalSolvers();
