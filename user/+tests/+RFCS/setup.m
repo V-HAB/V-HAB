@@ -7,9 +7,11 @@ classdef setup < simulation.infrastructure
     
     methods
         
-        function this = setup(ptConfigParams, tSolverParams)
+        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig)
             
-            ttMonitorConfig = struct();
+            if nargin < 3
+                ttMonitorConfig = struct();
+            end
             
             this@simulation.infrastructure('RFCS', ptConfigParams, tSolverParams, ttMonitorConfig);
             examples.RFCS.system.RFCS(this.oSimulationContainer,'RFCS');

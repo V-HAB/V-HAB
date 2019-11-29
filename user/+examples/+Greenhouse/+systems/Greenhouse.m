@@ -303,21 +303,18 @@ classdef Greenhouse < vsys
             
             % add excess extraction p2ps
             components.matter.P2Ps.ManualP2P(...
-                this, ...                                   % parent system reference
                 this.toStores.Atmosphere, ...               % store containing phases
                 'ExcessO2_P2P', ...                         % p2p processor name
                 'Atmosphere_Phase_1.ExcessO2_P2P_Out', ... 	% first phase and exme
                 'ExcessO2.ExcessO2_P2P_In');               	% second phase and exme
                 
             components.matter.P2Ps.ManualP2P(...
-                this, ...                                   % parent system reference
                 this.toStores.Atmosphere, ...               % store containing phases
                 'ExcessCO2_P2P', ...                        % p2p processor name
                 'Atmosphere_Phase_1.ExcessCO2_P2P_Out', ...	% first phase and exme
                 'ExcessCO2.ExcessCO2_P2P_In');             	% second phase and exme
                         
             components.matter.P2Ps.ManualP2P(...
-                this, ...                                   % parent system reference
                 this.toStores.Atmosphere, ...               % store containing phases
                 'WaterAbsorber_P2P', ...                 	% p2p processor name
                 'Atmosphere_Phase_1.WaterAbsorber_P2P_Out', ...	% first phase and exme
