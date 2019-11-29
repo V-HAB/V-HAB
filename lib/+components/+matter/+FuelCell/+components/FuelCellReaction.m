@@ -28,7 +28,7 @@ classdef FuelCellReaction < matter.manips.substance.stationary
             % differences in the molar masses, we calculate the mass flow
             % of water by summing up the other two flow rates instead of
             % using the molar mass to calculate it
-            afPartialFlows(this.oMT.tiN2I.H2O) =   fH2_Massflow + fO2_Massflow;
+            afPartialFlows(this.oMT.tiN2I.H2O) = (fH2_Massflow + fO2_Massflow);
             
             % Now we can call the parent update method and pass on the
             % afPartials variable. The last parameter indicates that the

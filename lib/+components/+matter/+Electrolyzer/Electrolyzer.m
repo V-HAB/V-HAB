@@ -5,9 +5,9 @@ classdef Electrolyzer < vsys
     properties
         fStackCurrent       = 0;    % current
         fCellVoltage        = 1.48; % cellvoltage
-        fStackVoltage       = 12;   % stack voltage
         fPower              = 0;    % power of the stack
-        iCells              = 100;  % number of cells
+        iCells              = 50;   % number of cells
+        fStackVoltage;              % stack voltage
             
         % This property is used to store the current efficiency value of
         % the fuel cell. The efficiency is calculated dynamically within
@@ -15,27 +15,46 @@ classdef Electrolyzer < vsys
         rEfficiency = 1;
         
         % Area of the membrane for one cell
-        fMembraneArea       = 25 / 10000;	% m^2
+        fMembraneArea       = 0.01;	% m^2
              
         % Thickness of the membrane in one cell
         fMembraneThickness  = 2*10^-6;      % m
         
         % The maximum current that can can pass through the membrane
-        fMaxCurrentDensity  = 10000;       % A/m^2
+        fMaxCurrentDensity  = 20000;       % A/m^2
+        
+        % Charge transfer coefficient of anode and cathode. Base values are
+        % from http://www.electrochemsci.org/papers/vol7/7054143.pdf table 2
+        fChargeTransferAnode = 0.5;
+        fChargeTransferCatode = 1;
     end
     
     methods
-        function this = Electrolyzer(oParent, sName, fTimeStep, iCells, fMembraneArea, fMembraneThickness)
+        function this = Electrolyzer(oParent, sName, fTimeStep, iCells, tOptionalInputs)
+            % The optional input struct can contain the following fields:
+            % fMembraneArea
+            % fMembraneThickness
+            % fMaxCurrentDensity
+            % fChargeTransferAnode
+            % fChargeTransferCatode
             
             this@vsys(oParent, sName, fTimeStep);
             
             this.iCells = iCells;
-            
             if nargin > 4
-                this.fMembraneArea = fMembraneArea;
-            end
-            if nargin > 5
-                this.fMembraneThickness = fMembraneThickness;
+                csFields = fieldnames(tOptionalInputs);
+                csValidFields = {'fMembraneArea',...
+                                 'fMembraneThickness',...
+                                 'fMaxCurrentDensity',...
+                                 'fChargeTransferAnode',...
+                                 'fChargeTransferCatode'};
+                for iField = 1:length(csFields)
+                    if any(strcmp(csValidFields, csFields{iField}))
+                        this.(csFields{iField}) = tOptionalInputs.(csFields{iField});
+                    else
+                        error(['Invalid input ', csFields{iField}, ' for the electrolyzer']);
+                    end
+                end
             end
             
             this.fStackVoltage = this.iCells * this.fCellVoltage;
@@ -57,12 +76,12 @@ classdef Electrolyzer < vsys
             
             oWater      = this.toStores.Electrolyzer.createPhase(  'liquid',      'ProductWater',   0.1, struct('H2O', 1),  fInitialTemperature, 1e5);
             
-            oCooling    = this.toStores.Electrolyzer.createPhase(  'liquid',      'CoolingSystem',  0.1, struct('H2O', 1),  fInitialTemperature, 1e5);
+            oCooling    = this.toStores.Electrolyzer.createPhase(  'liquid',      'CoolingSystem',  0.1, struct('H2O', 1),  340, 1e5);
             
             % pipes
-            components.matter.pipe(this, 'Pipe_H2_Out',          1.5, 0.003);
-            components.matter.pipe(this, 'Pipe_O2_Out',          1.5, 0.003);
-            components.matter.pipe(this, 'Pipe_Water_In',      1.5, 0.003);
+            components.matter.pipe(this, 'Pipe_H2_Out',         1.5, 0.003);
+            components.matter.pipe(this, 'Pipe_O2_Out',         1.5, 0.003);
+            components.matter.pipe(this, 'Pipe_Water_In',       1.5, 0.003);
             components.matter.pipe(this, 'Pipe_Cooling_In',     1.5, 0.003);
             components.matter.pipe(this, 'Pipe_Cooling_Out',    1.5, 0.003);
             
@@ -152,42 +171,83 @@ classdef Electrolyzer < vsys
             fTemperature = this.toStores.Electrolyzer.toPhases.CoolingSystem.fTemperature;
             
             %Partialpressure of H2 and O2 in the output phase
-            fPressure_H2 = this.toStores.Electrolyzer.toPhases.H2_Channel.fPressure;
-            fPressure_O2 = this.toStores.Electrolyzer.toPhases.O2_Channel.fPressure;
+            fPressureH2 = this.toStores.Electrolyzer.toPhases.H2_Channel.fPressure;
+            fPressureO2 = this.toStores.Electrolyzer.toPhases.O2_Channel.fPressure;
+            fPressureH2O = this.toStores.Electrolyzer.toPhases.ProductWater.fPressure;
             
+            % Calculated for one cell because the full current passes
+            % through each cell
             fMaxCurrent = this.fMaxCurrentDensity * this.fMembraneArea;
             
-            this.fStackCurrent = this.fPower / this.fStackVoltage;
-            
-            % TBD: where does this calue come from?
-            fChangeCurrent = 0.01;
-            
-            %linearisation factor for gibbs energy
-            fGibbsLinearization = 0.00085;
-            
-            % water content of the membrane 0-20 (no dynamic effects at the moment)
-            % TO DO: add a dynamic calculation for this
-            fWaterContent           = 14;
-            fActivationCoefficient  = 0.4;
-            fDiffusionCoefficient   = 0.8;
-            
-            fMembraneResistance = this.fMembraneThickness/(this.fMembraneArea*(0.005139*fWaterContent+0.00326)*exp(1267*(1/303-1/fTemperature))); %membrane resistentece of one cell
-            %another case for p==0 and I==0 because of the log()
-            if fPressure_H2 > 0
-                if this.fStackCurrent > 0
-                    this.fCellVoltage = 1.23+fGibbsLinearization*(fTemperature-298)+this.oMT.Const.fUniversalGas*fTemperature/2/this.oMT.Const.fFaraday*log(fPressure_H2*sqrt(fPressure_O2))+this.oMT.Const.fUniversalGas*fTemperature/2/this.oMT.Const.fFaraday/fActivationCoefficient*log(this.fStackCurrent/fChangeCurrent)+this.iCells*fMembraneResistance*this.fStackCurrent+this.oMT.Const.fUniversalGas*fTemperature/2/this.oMT.Const.fFaraday/fDiffusionCoefficient*log(1+this.fStackCurrent/fMaxCurrent);
-                else
-                    this.fCellVoltage = 1.48; %default value for starting
+            rError = 1;
+            iIteration = 1;
+            while rError > 1e-4 && iIteration < 500
+                this.fStackCurrent = this.fPower / this.fStackVoltage;
+
+                if this.fStackCurrent > fMaxCurrent
+                    this.fStackCurrent = fMaxCurrent;
                 end
-            else
-                this.fCellVoltage = 1.48;
+                this.fPower = this.fStackCurrent * this.fStackVoltage;
+
+                fCurrentDensity = this.fStackCurrent / this.fMembraneArea;
+
+                % Nernst Equation e.g. from "Efficiency Calculationand
+                % Configuration Design of a PEM Electrolyzer System for Hydrogen Production"
+                % http://www.electrochemsci.org/papers/vol7/7054143.pdf (Eq. 5)
+                % This is the "optimal" voltage where the electrolyzer would
+                % operate at 100% efficiency
+                fReversibleVoltage = 1.229 - 8.5*10^-4*(fTemperature-298) + 4.3085*10^-5 * fTemperature * log(fPressureH2 * sqrt(fPressureO2) / fPressureH2O);
+
+                if this.fPower == 0
+                    % If the power is 0, nothing is reacted and the cell
+                    % voltage is the reversible voltage without losses
+                    % (efficiency of 100%)
+                    this.fCellVoltage = fReversibleVoltage;
+                else
+                    %% Calculation of losses
+                    % activation losses (Eq 6) from the source above
+                    fActivationLossVoltage = ((this.fChargeTransferAnode + this.fChargeTransferCatode)/(this.fChargeTransferAnode * this.fChargeTransferCatode)) * ...
+                                            (this.oMT.Const.fUniversalGas * fTemperature / (2 * this.oMT.Const.fFaraday)) * ...
+                                            log(fCurrentDensity / (1.08*10^-17 * exp(0.086 * fTemperature)));
+
+                    % Ohmic Losses
+                    % Equation 7 from the paper, conducivitiy and water content is 
+                    % explained in the text below:
+                    % a calculation for the membrane humidity could also be added,
+                    % but the text states that PEM elys usually operate at this
+                    % value. If the calculation for this is implemented, the model
+                    % must also be improved to correctly model the water content of
+                    % the membrane!
+                    fWaterSaturationPressure = this.oMT.calculateVaporPressure(fTemperature, 'H2O');
+                    fMembraneHumidity       = 14;
+                    fMembraneConducivity    = (0.005139 * fMembraneHumidity + 0.00326) * exp(1267 * (1/303 - 1/fTemperature));
+                    fOhmicLossVoltage       = fCurrentDensity * (this.fMembraneThickness/fMembraneConducivity);
+
+                    % Concentration Losses (Eq. 8)
+                    fPressureX = fPressureO2 / (0.1173 * 101325) + (fWaterSaturationPressure / 101325);
+                    if fPressureX > 2
+                        fBetaOne = (8.66*10^-5 * fTemperature - 0.068) * fPressureX - 1.6*10^-4 * fTemperature + 0.54;
+                    else
+                        fBetaOne = (7.16*10^-4 * fTemperature - 0.622) * fPressureX - 1.45*10^-3 * fTemperature + 1.68;
+                    end
+                    fConcentrationLossVoltage = fCurrentDensity * (fBetaOne * fCurrentDensity/this.fMaxCurrentDensity)^2;
+
+                    this.fCellVoltage = (fReversibleVoltage + fActivationLossVoltage + fOhmicLossVoltage + fConcentrationLossVoltage);
+                end
+                this.rEfficiency = fReversibleVoltage / this.fCellVoltage;
+
+                this.fStackVoltage = this.iCells * this.fCellVoltage;
+
+                fCurrent = this.fPower / this.fStackVoltage;
+                
+                rError = abs(this.fStackCurrent - fCurrent);
+                this.fStackCurrent = fCurrent;
+                
+                iIteration = iIteration + 1;
             end
-            
-            this.rEfficiency = 1.48 / this.fCellVoltage;
-            
-            this.fStackVoltage = this.iCells * this.fCellVoltage;
-            
-            this.fStackCurrent = this.fPower / this.fStackVoltage;
+            % Reset the power value because it might be lowered from the
+            % set value because of limits in the electrolyzer
+            this.fPower = this.fStackCurrent * this.fStackVoltage;
             
             fHeatFlow = this.fStackCurrent * this.fStackVoltage * (1 - this.rEfficiency);
             

@@ -11,7 +11,7 @@ classdef ElectrolyzerReaction < matter.manips.substance.stationary
     methods (Access = protected)
         function update(this)
             %calculate the resulting molar flow
-            fMolarH2Flow = this.oPhase.oStore.oContainer.fStackCurrent / (2 * this.oMT.Const.fFaraday);
+            fMolarH2Flow = this.oPhase.oStore.oContainer.iCells * this.oPhase.oStore.oContainer.fStackCurrent / (2 * this.oMT.Const.fFaraday);
             
             % Initialize the array we pass back to the phase once we're
             % done
@@ -19,7 +19,7 @@ classdef ElectrolyzerReaction < matter.manips.substance.stationary
             
             %set the flowrates of the manip
             afPartialFlows(this.oMT.tiN2I.H2)  = fMolarH2Flow * this.oMT.afMolarMass(this.oMT.tiN2I.H2);
-            afPartialFlows(this.oMT.tiN2I.O2)  = 0.5 * fMolarH2Flow * this.oMT.afMolarMass(this.oMT.tiN2I.H2);
+            afPartialFlows(this.oMT.tiN2I.O2)  = 0.5 * fMolarH2Flow * this.oMT.afMolarMass(this.oMT.tiN2I.O2);
             afPartialFlows(this.oMT.tiN2I.H2O) = - sum(afPartialFlows);
             
             % update method they are converted to flow rates.

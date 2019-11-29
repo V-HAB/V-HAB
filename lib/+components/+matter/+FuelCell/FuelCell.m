@@ -34,17 +34,32 @@ classdef FuelCell < vsys
     
     
     methods
-        function this = FuelCell(oParent, sName, fTimeStep, iCells, fMembraneArea, fMembraneThickness)
+        function this = FuelCell(oParent, sName, fTimeStep, iCells, tOptionalInputs)
+            % The optional input struct can contain the following fields:
+            % fMembraneArea
+            % fMembraneThickness
+            % fMaxCurrentDensity
+            % rMaxReactingH2
+            % rMaxReactingO2
             
             this@vsys(oParent, sName, fTimeStep);
             
             this.iCells = iCells;
             
             if nargin > 4
-                this.fMembraneArea = fMembraneArea;
-            end
-            if nargin > 5
-                this.fMembraneThickness = fMembraneThickness;
+                csFields = fieldnames(tOptionalInputs);
+                csValidFields = {'fMembraneArea',...
+                                 'fMembraneThickness',...
+                                 'fMaxCurrentDensity',...
+                                 'rMaxReactingH2',...
+                                 'rMaxReactingO2'};
+                for iField = 1:length(csFields)
+                    if any(strcmp(csValidFields, csFields{iField}))
+                        this.(csFields{iField}) = tOptionalInputs.(csFields{iField});
+                    else
+                        error(['Invalid input ', csFields{iField}, ' for the Fuel Cell']);
+                    end
+                end
             end
             
             this.fStackVoltage = this.iCells * 1.23;
@@ -70,7 +85,7 @@ classdef FuelCell < vsys
             
             oMembrane = this.toStores.FuelCell.createPhase(  'gas',         'Membrane',     0.3, struct('O2', 0.5e5, 'H2', 0.5e5),  fInitialTemperature, 0.8);
             
-            oCooling =  this.toStores.FuelCell.createPhase(  'liquid',      'CoolingSystem',0.1, struct('H2O', 1),  fInitialTemperature, 1e5);
+            oCooling =  this.toStores.FuelCell.createPhase(  'liquid',      'CoolingSystem',0.1, struct('H2O', 1),  340, 1e5);
             
             matter.store(this, 'O2_WaterSeperation', 0.01);
             oO2_Dryer       = this.toStores.O2_WaterSeperation.createPhase(  'gas', 'flow', 'O2',   1e-6, struct('O2', 1e5),  fInitialTemperature, 0.8);
@@ -91,44 +106,8 @@ classdef FuelCell < vsys
             components.matter.valve(this,'Valve_O2', false);
             
             % fans
-            % The fan characteristic is based on the DLE 5-30
-            % characteristic found here:
-            % http://www.maximator.de/assets/mime/fab90f7a0d5202048ad8550de355ceff/MAXIMATOR%20Kompressoren%2011-2007.pdf
-            % Note that this is only done to have a realistic behavior for
-            % the compressor. It is not because that compressor makes
-            % sense. The 2 Bar curve is assumed for the lower speed, the 4
-            % bar curve for the higher speed. The fitting was made by just
-            % selecting a meaningful function which represents the behavior
-            % and approximates the curves
-%             mfCharacteristicUpper = table2array(readtable('+components\+matter\+FuelCell\+components\DLE 5-30 4 Bar Inletpressure.csv'));
-%             mfCharacteristicLower = table2array(readtable('+components\+matter\+FuelCell\+components\DLE 5-30 2 Bar Inletpressure.csv'));
-%             
-%             plot((mfCharacteristicUpper(:,2) .* 60/10000), mfCharacteristicUpper(:,1) .* 10^5);
-%             hold on
-%             plot((mfCharacteristicLower(:,2) .* 60/10000), mfCharacteristicLower(:,1) .* 10^5);
-            
-            tCharacteristic = struct(...
-                ...% Upper and speed and respective characteristic function
-                'fSpeedUpper', 1000, ...
-                'calculateUpperDeltaP', @(fVolumetricFlowRate) (300e5 * exp(-(1.5 * fVolumetricFlowRate).^3)) - 100e5, ...
-                ...% Lower and speed and respective characteristic function
-                'fSpeedLower', 100, ...
-                'calculateLowerDeltaP', @(fVolumetricFlowRate) (280e5 * exp(-(3.2 * fVolumetricFlowRate).^3)) - 100e5, ...
-                ...% Pressure, temperature, gas constant and density of the gas
-                ...% used during the determination of the characteristic
-                'fTestPressure',        10e5, ...      Pa
-                'fTestTemperature',     294.26, ...   K
-                'fTestGasConstant',     2077.1, ...  J/kgK
-                'fTestDensity',         0.823, ...  kg/m3
-                'fZeroCrossingUpper',   0.65, ...  m^3/s
-                'fZeroCrossingLower',   0.31 ...  m^3/s
-                );
-            
-            components.matter.fan(this, 'H2_Compressor', 100000, tCharacteristic);
-            
-            tCharacteristic.fTestGasConstant = 259.8;
-            tCharacteristic.fTestDensity = 13.226;
-            components.matter.fan(this, 'O2_Compressor', 100000, tCharacteristic);
+            components.matter.fan_simple(this, 'H2_Compressor', 2e5, false);
+            components.matter.fan_simple(this, 'O2_Compressor', 2e5, false);
             
             % Internal Branches
             matter.branch(this, oH2,                {'H2_Compressor'},          oH2_Out,            'H2_to_Outlet');
@@ -228,8 +207,8 @@ classdef FuelCell < vsys
             
             fMaxCurrent = this.fMaxCurrentDensity * this.fMembraneArea;
             
-            fCurrentH2InletFlow = this.toBranches.H2_Inlet.fFlowRate * this.toBranches.H2_Inlet.aoFlows(1).arPartialMass(this.oMT.tiN2I.H2);
-            fCurrentO2InletFlow = this.toBranches.O2_Inlet.fFlowRate * this.toBranches.O2_Inlet.aoFlows(1).arPartialMass(this.oMT.tiN2I.O2);
+            fCurrentH2InletFlow = abs(this.toBranches.H2_Inlet.fFlowRate * this.toBranches.H2_Inlet.aoFlows(1).arPartialMass(this.oMT.tiN2I.H2));
+            fCurrentO2InletFlow = abs(this.toBranches.O2_Inlet.fFlowRate * this.toBranches.O2_Inlet.aoFlows(1).arPartialMass(this.oMT.tiN2I.O2));
             
             fMolarFlowH2 = this.rMaxReactingH2 * fCurrentH2InletFlow / this.oMT.afMolarMass(this.oMT.tiN2I.H2);
             fMolarFlowO2 = this.rMaxReactingO2 * fCurrentO2InletFlow / this.oMT.afMolarMass(this.oMT.tiN2I.O2);

@@ -1,5 +1,8 @@
 classdef RFCS < vsys
-    
+    % This is an example model of a Regnerative Fuel Cell System, which
+    % combines an electrolyzer, a fuel cell and H2, O2 and water tanks to
+    % simulate an energy storage system. This example assumes solar cells
+    % with a solar profile from earth as the energy input
     properties
         % array which contains the available solar power
         afPower;
@@ -26,7 +29,13 @@ classdef RFCS < vsys
             
             this.afPower(:,2) = this.afPower(:,2) .* this.rSolarpanelEfficiency .* this.fSolarPanelArea;
             
-            components.matter.Electrolyzer.Electrolyzer(this, 'Electrolyzer', 5*60, 100);
+            tOptionalInputsEly.fMembraneArea        = 1e-3;
+            tOptionalInputsEly.fMembraneThickness   = 50e-6;
+            tOptionalInputsEly.fMaxCurrentDensity   = 20000;
+            
+            components.matter.Electrolyzer.Electrolyzer(this, 'Electrolyzer', 5*60, 30, tOptionalInputsEly);
+            
+            
             components.matter.FuelCell.FuelCell(this, 'FuelCell', 5*60, 30);
         end
         
@@ -38,11 +47,11 @@ classdef RFCS < vsys
             
             fInitialTemperature = 293;
             
-            matter.store(this, 'Water_Tank', 0.1);
-            oWater      = this.toStores.Water_Tank.createPhase(  'liquid',      'Water',   0.1, struct('H2O', 1),  fInitialTemperature, 1e5);
+            matter.store(this, 'Water_Tank', 0.004);
+            oWater      = this.toStores.Water_Tank.createPhase(  'liquid',      'Water',   0.004, struct('H2O', 1),  fInitialTemperature, 1e5);
             
             matter.store(this, 'CoolingSystem', 0.1);
-            oCooling    = this.toStores.CoolingSystem.createPhase('liquid',     'CoolingWater',  0.1, struct('H2O', 1),  fInitialTemperature, 1e5);
+            oCooling    = this.toStores.CoolingSystem.createPhase('liquid',     'CoolingWater',  0.1, struct('H2O', 1),  340, 1e5);
             
             matter.store(this, 'H2_Tank', 0.1);
             oH2         = this.toStores.H2_Tank.createPhase(  'gas', 'H2',   0.1, struct('H2', 50e5),  fInitialTemperature, 0.8);
@@ -130,7 +139,18 @@ classdef RFCS < vsys
             % (in case the electrolyzer is operating) or how much power is
             % required for the operation of the payload
             if fAvailablePower > 0
-                this.toChildren.Electrolyzer.setPower(fAvailablePower);
+                
+                fLowestTankPressure = min(this.toStores.H2_Tank.toPhases.H2.fPressure, this.toStores.O2_Tank.toPhases.O2.fPressure);
+                if fLowestTankPressure > 50e5
+                    % reduce the power we set to the electrolyzer after we
+                    % reach 50 bar pressure to increase efficiency. The
+                    % function is selected so that after 80 bar only a few
+                    % percent of the power are still used
+                    fSetPower = (1 / ((fLowestTankPressure - 40e5) / 10e5)^2) * fAvailablePower;
+                else
+                    fSetPower = fAvailablePower;
+                end
+                this.toChildren.Electrolyzer.setPower(fSetPower);
                 this.toChildren.FuelCell.setPower(0);
                 
                 this.toChildren.Electrolyzer.toBranches.Cooling_Inlet.oHandler.setFlowRate(-0.1);

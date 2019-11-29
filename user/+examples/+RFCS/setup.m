@@ -17,7 +17,7 @@ classdef setup < simulation.infrastructure
             examples.RFCS.system.RFCS(this.oSimulationContainer,'RFCS');
             
             %simulation length
-            this.fSimTime = 7 * 24 * 3600;
+            this.fSimTime = 4 * 24 * 3600;
             this.bUseTime = true;
         end
         
