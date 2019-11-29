@@ -25,7 +25,7 @@ classdef RFCS < vsys
                 this.rSolarpanelEfficiency  = rSolarpanelEfficiency;
             end
             
-            this.afPower = xlsread('user\+examples\+RFCS\+helper\HAPS Available Solar Power.xlsx','B40:C327');
+            this.afPower = xlsread('user\+examples\+RFCS\+helper\HAPS_AvailableSolarPower.xlsx','B40:C327');
             
             this.afPower(:,2) = this.afPower(:,2) .* this.rSolarpanelEfficiency .* this.fSolarPanelArea;
             

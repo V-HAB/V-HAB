@@ -10,14 +10,12 @@ classdef setup < simulation.infrastructure
         function this = setup(ptConfigParams, tSolverParams)
             
             ttMonitorConfig = struct();
-%             ttMonitorConfig.oTimeStepObserver.sClass = 'simulation.monitors.timestepObserver';
-%             ttMonitorConfig.oTimeStepObserver.cParams = { 0 };
             
             this@simulation.infrastructure('RFCS', ptConfigParams, tSolverParams, ttMonitorConfig);
             examples.RFCS.system.RFCS(this.oSimulationContainer,'RFCS');
             
             %simulation length
-            this.fSimTime = 4 * 24 * 3600;
+            this.fSimTime = 1 * 24 * 3600;
             this.bUseTime = true;
         end
         
