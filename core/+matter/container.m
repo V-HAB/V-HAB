@@ -38,6 +38,10 @@ classdef container < sys
         
         % Indicator if this container is sealed or not
         bMatterSealed = false;
+        
+        % The maximum pressure in Pa up to which the ideal gas law is used
+        % within V-HAB
+        fMaxIdealGasLawPressure = 5e5; % Pa
     end
     
     properties (SetAccess = private, GetAccess = public)
@@ -302,6 +306,13 @@ classdef container < sys
                 end
                 
             end
+        end
+        function setMaxIdealGasLawPressure(this, fMaxIdealGasLawPressure)
+            % This function can be used when defining a V-HAB simulation to
+            % change the maximum pressure up to which the ideal gas law is
+            % assumed. Otherwise stored matter data is used, which is more
+            % accurate but slower
+            this.fMaxIdealGasLawPressure = fMaxIdealGasLawPressure;
         end
     end
     
