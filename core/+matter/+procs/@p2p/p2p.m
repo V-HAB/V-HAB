@@ -56,7 +56,7 @@ classdef (Abstract) p2p < matter.flow & event.source
             % Parent constructor
             this@matter.flow(oStore);
             
-            if isstring(xIn)
+            if ischar(xIn)
                 % Phases / ports
                 [ sPhaseIn,  sExMeIn  ] = strtok(xIn,  '.');
 
@@ -65,6 +65,10 @@ classdef (Abstract) p2p < matter.flow & event.source
                     oPhaseIn    = this.oStore.toPhases.(sPhaseIn);
                 catch
                     this.throw('p2p', 'Phase could not be found: in phase "%s"', sPhaseIn);
+                end
+                if isempty(sExMeIn)
+                    matter.procs.exmes.(oPhaseIn.sType)(oPhaseIn,       [sName, '_In']);
+                    sExMeIn = ['.' , sName, '_In'];
                 end
             else
                 % In this case the input should be a phase, and we have to
@@ -77,7 +81,7 @@ classdef (Abstract) p2p < matter.flow & event.source
                 sExMeIn = ['.' , sName, '_In'];
             end
             
-            if isstring(xOut)
+            if ischar(xOut)
                 [ sPhaseOut, sExMeOut ] = strtok(xOut, '.');
 
                 % Find the phases
@@ -85,6 +89,10 @@ classdef (Abstract) p2p < matter.flow & event.source
                     oPhaseOut   = this.oStore.toPhases.(sPhaseOut);
                 catch
                     this.throw('p2p', 'Phase could not be found: out phase "%s"', sPhaseOut);
+                end
+                if isempty(sExMeOut)
+                    matter.procs.exmes.(oPhaseOut.sType)(oPhaseOut,       [sName, '_Out']);
+                    sExMeOut = ['.' , sName, '_Out'];
                 end
             else
                 % In this case the input should be a phase, and we have to
