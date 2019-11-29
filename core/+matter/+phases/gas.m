@@ -51,6 +51,7 @@ classdef gas < matter.phase
             
             if this.fMass == 0
                 this.fMassToPressure = 0;
+                this.afPP =  zeros(1, this.oMT.iSubstances);
             else
                 fPressure = this.oMT.calculatePressure(this);
                 if fPressure < this.oStore.oContainer.fMaxIdealGasLawPressure
