@@ -128,54 +128,58 @@ classdef Greenhouse < vsys
             
             matter.store(this, 'BiomassSplit', 4);
             
-            oBiomassEdibleSplit = matter.phases.liquid(...
+            oBiomassEdibleSplit = matter.phases.mixture(...
                 this.toStores.BiomassSplit, ...     % store containing phase
                 'BiomassEdible', ...                % phase name
+                'solid', ...
                 struct(...                          % phase contents    [kg]
                     ), ...
                 fTemperatureInit, ...               % phase temperature [K]
                 101325);
             
-            matter.procs.exmes.liquid(oBiomassEdibleSplit, 'BiomassEdible_Out_ToStorage');
-            matter.procs.exmes.liquid(oBiomassEdibleSplit, 'EdibleInedible_Split_P2P_Out');
+            matter.procs.exmes.mixture(oBiomassEdibleSplit, 'BiomassEdible_Out_ToStorage');
+            matter.procs.exmes.mixture(oBiomassEdibleSplit, 'EdibleInedible_Split_P2P_Out');
             
-            oBiomassInedibleSplit = matter.phases.liquid(...
+            oBiomassInedibleSplit = matter.phases.mixture(...
                 this.toStores.BiomassSplit, ...     % store containing phase
                 'BiomassInedible', ...              % phase name
+                'solid', ...
                 struct(...                          % phase contents    [kg]
                     ), ...
                 fTemperatureInit, ...               % phase temperature [K]
                 101325);
 
-            matter.procs.exmes.liquid(oBiomassInedibleSplit, 'BiomassInedible_Out_ToStorage');
-            matter.procs.exmes.liquid(oBiomassInedibleSplit, 'EdibleInedible_Split_P2P_In');
+            matter.procs.exmes.mixture(oBiomassInedibleSplit, 'BiomassInedible_Out_ToStorage');
+            matter.procs.exmes.mixture(oBiomassInedibleSplit, 'EdibleInedible_Split_P2P_In');
             
             %% Biomass Storage
             
             matter.store(this, 'BiomassEdible', 20);
             
-            oBiomassEdible = matter.phases.liquid(...
+            oBiomassEdible = matter.phases.mixture(...
                 this.toStores.BiomassEdible, ...    % store containing phase
                 'BiomassEdible', ...                % phase name
+                'solid', ...
                 struct(...                          % phase contents    [kg]
-                    'CabbageEdibleWet', 5, ...
-                    'StrawberryEdibleWet', 3), ...
+                    'Cabbage', 5, ...
+                    'Strawberries', 3), ...
                 fTemperatureInit, ...               % phase temperature [K]
                 101325);
             
-            matter.procs.exmes.liquid(oBiomassEdible, 'BiomassEdible_In_FromSplit');
+            matter.procs.exmes.mixture(oBiomassEdible, 'BiomassEdible_In_FromSplit');
             
             matter.store(this, 'BiomassInedible', 20);
             
-            oBiomassInedible = matter.phases.liquid(...
+            oBiomassInedible = matter.phases.mixture(...
                 this.toStores.BiomassInedible, ...  % store containing phase
                 'BiomassInedible', ...              % phase name
+                'solid', ...
                 struct(...                          % phase contents    [kg]
                     ), ...
                 fTemperatureInit, ...               % phase temperature [K]
                 101325);
             
-            matter.procs.exmes.liquid(oBiomassInedible, 'BiomassInedible_In_FromSplit');
+            matter.procs.exmes.mixture(oBiomassInedible, 'BiomassInedible_In_FromSplit');
             
             %% Leakage Buffer
             
@@ -339,9 +343,9 @@ classdef Greenhouse < vsys
                 matter.procs.exmes.gas(oAtmosphere,             [this.toChildren.(csPlantCultures{iI}).sName, '_AtmosphereCirculation_In']);
                 matter.procs.exmes.liquid(oWaterSupply,         [this.toChildren.(csPlantCultures{iI}).sName, '_WaterSupply_Out']);
                 matter.procs.exmes.liquid(oNutrientSupply,      [this.toChildren.(csPlantCultures{iI}).sName, '_NutrientSupply_Out']);
-                matter.procs.exmes.liquid(oBiomassEdibleSplit,  [this.toChildren.(csPlantCultures{iI}).sName, '_Biomass_In']);
+                matter.procs.exmes.mixture(oBiomassEdibleSplit,  [this.toChildren.(csPlantCultures{iI}).sName, '_Biomass_In']);
                 
-                csInedibleBiomass{iI} = [this.toChildren.(csPlantCultures{iI}).txPlantParameters.sPlantSpecies, 'InedibleWet'];
+                csInedibleBiomass{iI} = [this.toChildren.(csPlantCultures{iI}).txPlantParameters.sPlantSpecies, 'Inedible'];
             end
             
             %% Create Biomass Split P2P

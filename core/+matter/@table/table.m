@@ -341,6 +341,7 @@ classdef table < base
             importNutrientData(this);
             importAbsorberData(this);
             importAntoineData(this);
+            importPlantData(this);
             
             %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Saving the data %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

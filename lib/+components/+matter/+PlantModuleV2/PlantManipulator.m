@@ -5,8 +5,8 @@ classdef PlantManipulator < matter.manips.substance.stationary
         % parent system reference
         oParent;
         
-        iEdibleWetBiomass;
-        iInedibleWetBiomass;
+        iEdibleBiomass;
+        iInedibleBiomass;
         
         afTotalTransformedMass;
     end
@@ -16,8 +16,8 @@ classdef PlantManipulator < matter.manips.substance.stationary
             this@matter.manips.substance.stationary(sName, oPhase);
 
             this.oParent = oParent;
-            this.iEdibleWetBiomass = this.oMT.tiN2I.([this.oParent.txPlantParameters.sPlantSpecies, 'EdibleWet']);
-            this.iInedibleWetBiomass = this.oMT.tiN2I.([this.oParent.txPlantParameters.sPlantSpecies, 'InedibleWet']);
+            this.iEdibleBiomass = this.oMT.tiN2I.(this.oParent.txPlantParameters.sPlantSpecies);
+            this.iInedibleBiomass = this.oMT.tiN2I.([this.oParent.txPlantParameters.sPlantSpecies, 'Inedible']);
             
             this.afTotalTransformedMass = zeros(1,this.oMT.iSubstances);
             
@@ -57,8 +57,8 @@ classdef PlantManipulator < matter.manips.substance.stationary
             afPartialFlows(1, tiN2I.CO2) =         this.oParent.tfGasExchangeRates.fCO2ExchangeRate;
 
             % edible and inedible biomass growth
-            afPartialFlows(1, this.iEdibleWetBiomass) =   this.oParent.tfBiomassGrowthRates.fGrowthRateEdible;
-            afPartialFlows(1, this.iInedibleWetBiomass) = this.oParent.tfBiomassGrowthRates.fGrowthRateInedible;
+            afPartialFlows(1, this.iEdibleBiomass) =   this.oParent.tfBiomassGrowthRates.fGrowthRateEdible;
+            afPartialFlows(1, this.iInedibleBiomass) = this.oParent.tfBiomassGrowthRates.fGrowthRateInedible;
             
             % to reduce mass erros the current error in mass is spread over
             % the in and outs
@@ -90,8 +90,8 @@ classdef PlantManipulator < matter.manips.substance.stationary
             %% Set Plant Growth Flow Rates
             afPartialFlowRatesBiomass = zeros(1,this.oMT.iSubstances);
             % current masses in the balance phase:
-            afPartialFlowRatesBiomass(this.iEdibleWetBiomass) = afPartialFlows(this.iEdibleWetBiomass); 
-            afPartialFlowRatesBiomass(this.iInedibleWetBiomass) = afPartialFlows(this.iInedibleWetBiomass);
+            afPartialFlowRatesBiomass(this.iEdibleBiomass) = afPartialFlows(this.iEdibleBiomass); 
+            afPartialFlowRatesBiomass(this.iInedibleBiomass) = afPartialFlows(this.iInedibleBiomass);
             this.oParent.toStores.Plant_Culture.toProcsP2P.BiomassGrowth_P2P.setFlowRate(afPartialFlowRatesBiomass);
 
             %% Set atmosphere flow rates

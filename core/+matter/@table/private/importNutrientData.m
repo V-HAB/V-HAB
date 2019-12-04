@@ -45,9 +45,18 @@ function importNutrientData(this)
     % downloaded CSV file and provide a custom name if you want custom food
     % names
     csCustomFoodNames           = {'Beans, snap'; 'SnapBeans'};
-    csCustomFoodNames(:,end+1)  = {'Beans, kidney'; 'KidneyBeans'};
     csCustomFoodNames(:,end+1)  = {'Onions, young green'; 'GreenOnions'};
     csCustomFoodNames(:,end+1)  = {'ORGANIC WHOLE GROUND TIGERNUT'; 'Chufa'};
+    
+    % Renamings that are necessary to provide consistency to the plant
+    % model
+    csCustomFoodNames(:,end+1)  = {'Beans, kidney'; 'Drybean'};
+    csCustomFoodNames(:,end+1)  = {'Potatoes';      'Whitepotato'};
+    csCustomFoodNames(:,end+1)  = {'Soybeans';      'Soybean'};
+    csCustomFoodNames(:,end+1)  = {'Tomatoes';      'Tomato'};
+    csCustomFoodNames(:,end+1)  = {'Peanuts';       'Peanut'};
+    csCustomFoodNames(:,end+1)  = {'Wild rice';     'Rice'};
+    csCustomFoodNames(:,end+1)  = {'Sweet potato';  'Sweetpotato'};
     
     % now loop through the files
     for iFile = 1:length(csFiles)
