@@ -338,9 +338,9 @@ classdef table < base
             % cases, however, additional information is required for a
             % substance. The following functions import these data into the
             % matter table. 
-            importNutrientData(this);
             importAbsorberData(this);
             importAntoineData(this);
+            importNutrientData(this);
             importPlantData(this);
             
             %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

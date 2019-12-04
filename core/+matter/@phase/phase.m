@@ -746,6 +746,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Creating an array to log which of the flows are not in-flows
             aiOutFlows = ones(this.iProcsEXME, 1);
             
+            % Just initialize to false to handle the logical check
+            % correctly in case no exmes are defined at all
+            arExMECompoundMass = false;
+            
             % Get flow rates and partials from EXMEs
             for iI = 1:this.iProcsEXME
                 % The fFlowRate parameter is the flow rate at the exme,

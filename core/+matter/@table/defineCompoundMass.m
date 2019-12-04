@@ -79,4 +79,16 @@ this.afMolarMass(this.iSubstances) = sum(this.afMolarMass .* arBaseComposition);
 % their energy content, to ensure it is correct!
 this.afNutritionalEnergy(this.iSubstances) = 0;
 
+% Absorbers store a vector with the same length as the number of substances
+% in the matter table for the adsorption enthalpy. To ensure consistency we
+% also have to add the new substance to these vectors
+for iAbsorber = 1:sum(this.abAbsorber)
+    miAbsorberIndex = find(this.abAbsorber);
+    this.ttxMatter.(this.csSubstances{miAbsorberIndex(iAbsorber)}).tAbsorberParameters.mfAbsorptionEnthalpy(this.iSubstances) = 0;
+    this.ttxMatter.(this.csSubstances{miAbsorberIndex(iAbsorber)}).tAbsorberParameters.tToth.mf_A0(this.iSubstances) = 0;
+    this.ttxMatter.(this.csSubstances{miAbsorberIndex(iAbsorber)}).tAbsorberParameters.tToth.mf_B0(this.iSubstances) = 0;
+    this.ttxMatter.(this.csSubstances{miAbsorberIndex(iAbsorber)}).tAbsorberParameters.tToth.mf_E(this.iSubstances)  = 0;
+    this.ttxMatter.(this.csSubstances{miAbsorberIndex(iAbsorber)}).tAbsorberParameters.tToth.mf_T0(this.iSubstances) = 0;
+    this.ttxMatter.(this.csSubstances{miAbsorberIndex(iAbsorber)}).tAbsorberParameters.tToth.mf_C0(this.iSubstances) = 0;
+end
 end

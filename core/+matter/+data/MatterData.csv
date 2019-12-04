@@ -167,7 +167,7 @@ C4H5ON;Protein;solid;0.083088875;16736000;;;804;1860;;;;0;For Energy Content: ht
 C2H2F4;Coolant;liquid;0.1020309;0;170;250;;;;;;0;;
 C2H2F4;Coolant;gas;0.1020309;0;170;250;4.25;702.4;;;;0;;
 Chlorella; CH1.75O0.42N0.15;solid;0.022595349;0;;;804;1860;;;;0;;
-H;Hydrogenion;liquid;0.00100794;0;;;804;1860;;;;1;already implemented in line 15;
+Hplus;Hydrogenion;liquid;0.00100794;0;;;804;1860;;;;1;already implemented in line 15;
 HCO3;Bicarbonate; solid;0.0610089;0;;;1.7845;850.7;;;;-1;density and heat capacity assumed to be equal to the CO2 values at 1 bar and 25øC;
 CO3;Carbonate; solid;0.0600089;0;;;1.7845;850.7;;;;-2;density and heat capacity assumed to be equal to the CO2 values at 1 bar and 25øC;
 C10H14N2Na2O8;DisodiumEDTASalt;liquid;0.3362063;0;;;804;1860;;;;0;;
