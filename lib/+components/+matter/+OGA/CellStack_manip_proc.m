@@ -21,6 +21,13 @@ classdef CellStack_manip_proc < matter.manips.substance.stationary
             this.fTemperatureToFlow = fOutflowTemperature;
         end
         
+        function setPower(this, fPower)
+            this.fPower = fPower;
+        end
+    end
+    
+    methods (Access = protected)
+        
         function update(this)
             
             this.fCurrent = -6.992 * 10^(-7) * this.fPower^2 + 0.0219043626 * this.fPower + 0.0649761243;
@@ -104,10 +111,6 @@ classdef CellStack_manip_proc < matter.manips.substance.stationary
             afFlowRateO2(this.oMT.tiN2I.O2) = afPartials(this.oMT.tiN2I.O2);
             this.oPhase.oStore.toProcsP2P.O2Proc.setFlowRate(afFlowRateO2);
             
-        end
-        
-        function setPower(this, fPower)
-            this.fPower = fPower;
         end
     end
 end

@@ -370,13 +370,13 @@ classdef Human < vsys
             % Add p2p procs that remove the produced materials from the process
             % phase and add O2 to it
             % components.matter.P2Ps.ConstantMassP2P(this,   this.toStores.Human, 'Food_P2P',            'Stomach.Food_Out_Internal',         'HumanPhase.Food_In_Internal', {'C4H5ON', 'C16H32O2', 'C6H12O6', 'H2O'}, 1);
-            components.matter.P2Ps.ManualP2P(this,   this.toStores.Human, 'Food_P2P',            'Stomach.Food_Out_Internal',         'HumanPhase.Food_In_Internal');
+            components.matter.P2Ps.ManualP2P(this.toStores.Human, 'Food_P2P',            'Stomach.Food_Out_Internal',         'HumanPhase.Food_In_Internal');
             
-            components.matter.P2Ps.ManualP2P(this,   this.toStores.Human, 'CO2_P2P',             'HumanPhase.CO2_Out_Internal',        'Air.CO2_In');
-            components.matter.P2Ps.ManualP2P(this,   this.toStores.Human, 'O2_P2P',              'Air.O2_Out',                         'HumanPhase.O2_In_Internal');
-            components.matter.P2Ps.ManualP2P(this,   this.toStores.Human, 'CrewHumidityProduction',   'HumanPhase.Humidity_Out_Internal',	'Air.Humidity_In');
-            components.matter.P2Ps.ManualP2P(this,   this.toStores.Human, 'Urine_Removal',       'HumanPhase.Urine_Out_Internal',      'Urine.Urine_In_Internal');
-            components.matter.P2Ps.ManualP2P(this,   this.toStores.Human, 'Feces_Removal',       'HumanPhase.Feces_Out_Internal',      'Feces.Feces_In_Internal');
+            components.matter.P2Ps.ManualP2P(this.toStores.Human, 'CO2_P2P',             'HumanPhase.CO2_Out_Internal',        'Air.CO2_In');
+            components.matter.P2Ps.ManualP2P(this.toStores.Human, 'O2_P2P',              'Air.O2_Out',                         'HumanPhase.O2_In_Internal');
+            components.matter.P2Ps.ManualP2P(this.toStores.Human, 'CrewHumidityProduction',   'HumanPhase.Humidity_Out_Internal',	'Air.Humidity_In');
+            components.matter.P2Ps.ManualP2P(this.toStores.Human, 'Urine_Removal',       'HumanPhase.Urine_Out_Internal',      'Urine.Urine_In_Internal');
+            components.matter.P2Ps.ManualP2P(this.toStores.Human, 'Feces_Removal',       'HumanPhase.Feces_Out_Internal',      'Feces.Feces_In_Internal');
             
             %% adding the interface to the habitat            
             matter.branch(this, 'Human.Air_Out',            {}, 'Air_Out'             ,'Air_Out');

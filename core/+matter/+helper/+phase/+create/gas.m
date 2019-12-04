@@ -41,33 +41,34 @@ end
 % Find the indices of all substances that are in the flow
 aiIndices = find(mfPartialPressure > 0);
 
-% Alternative more accurate calculation: 
-% Not used because the calculation within the V Hab phases also uses the
-% ideal gas law
+if sum(mfPartialPressure) < oStore.oContainer.fMaxIdealGasLawPressure
+    % Now we use the ideal gas law to calculate the mass of the individual
+    % components:
+    % p V = m R T --> m = (p V) / (R T)
+    afMass = (mfPartialPressure .* fVolume) ./ ((fRm ./ oStore.oMT.afMolarMass) .* fTemperature);
+else
+    % Go through all substances that have mass and get the density of each. 
+    afRho   = zeros(1, length(aiIndices));
 
-% % Go through all substances that have mass and get the density of each. 
-% afRho   = zeros(1, length(aiIndices));
-% 
-% for iIndex = 1:length(aiIndices)
-%     % Generating the paramter struct that findProperty() requires.
-%     tParameters = struct();
-%     tParameters.sSubstance      = oStore.oMT.csSubstances{aiIndices(iIndex)};
-%     tParameters.sProperty       = 'Density';
-%     tParameters.sFirstDepName   = 'Temperature';
-%     tParameters.fFirstDepValue  = fTemperature;
-%     tParameters.sPhaseType      = 'gas';
-%     tParameters.sSecondDepName  = 'Pressure';
-%     tParameters.fSecondDepValue = mfPartialPressure(aiIndices(iIndex));
-%     tParameters.bUseIsobaricData = true;
-%     
-%     % Now we can call the findProperty() method.
-%     afRho(iIndex) = oStore.oMT.findProperty(tParameters);
-% end
+    for iIndex = 1:length(aiIndices)
+        % Generating the paramter struct that findProperty() requires.
+        tParameters = struct();
+        tParameters.sSubstance      = oStore.oMT.csSubstances{aiIndices(iIndex)};
+        tParameters.sProperty       = 'Density';
+        tParameters.sFirstDepName   = 'Temperature';
+        tParameters.fFirstDepValue  = fTemperature;
+        tParameters.sPhaseType      = 'gas';
+        tParameters.sSecondDepName  = 'Pressure';
+        tParameters.fSecondDepValue = mfPartialPressure(aiIndices(iIndex));
+        tParameters.bUseIsobaricData = true;
 
-% Now we use the ideal gas law to calculate the mass of the individual
-% components:
-% p V = m R T --> m = (p V) / (R T)
-afMass = (mfPartialPressure .* fVolume) ./ ((fRm ./ oStore.oMT.afMolarMass) .* fTemperature);
+        % Now we can call the findProperty() method.
+        afRho(iIndex) = oStore.oMT.findProperty(tParameters);
+    end
+    afMass = zeros(1, oStore.oMT.iSubstances);
+    afMass(aiIndices) = afRho .* fVolume;
+end
+
 
 % define the struct that is required to define the phase in the vsys:
 tfMass = struct();

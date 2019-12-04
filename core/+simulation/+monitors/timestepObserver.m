@@ -99,7 +99,11 @@ classdef timestepObserver < simulation.monitor
                 end
                 
                 if isempty(csReports{iIndex})
-                    warning('you came accros an unknown object that binds time steps, please check the oCaller object and add it to the list above with a report string to enable debugging')
+                    if isfield(oCaller, 'sName')
+                        csReports{iIndex} = ['The entity ', oCaller.sEntity, ' with the name ', oCaller.sName, ' had a minimal time step of ' num2str(fMinStep), ' seconds in Simulation Tick ', num2str(oTimer.iTick)];
+                    else
+                        csReports{iIndex} = ['The entity ', oCaller.sEntity, ' had a minimal time step of ' num2str(fMinStep), ' seconds in Simulation Tick ', num2str(oTimer.iTick)];
+                    end
                 end
             end
     

@@ -128,7 +128,9 @@ classdef branch < base.branch
                 this.bTriggersetHeatFlowCallbackBound = true;
             end
         end
-        
+    end
+    
+    methods (Access = {?solver.thermal.base.branch, ?base.branch})
         function setHeatFlow(this, fHeatFlow, afTemperatures)
             % The solver calls this function to set the fHeatFlow and
             % afTemperatures values of the branch based on its internal

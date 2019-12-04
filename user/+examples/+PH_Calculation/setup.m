@@ -37,7 +37,7 @@ classdef setup < simulation.infrastructure
 
             % Adding the tank temperatures to the log
             oLogger.addValue('Example:s:Tank_1:p:Water.toManips.substance.oChemicalReactions', 'fCurrentTotalPhosphate',                        'kg/m^3', 'Concentration Phosphate');
-            oLogger.addValue('Example:s:Tank_1:p:Water.toManips.substance.oChemicalReactions', 'mfCurrentConcentrationAll(this.oMT.tiN2I.OHminus)',  'kg/m^3', 'Concentration OH-');
+            oLogger.addValue('Example:s:Tank_1:p:Water.toManips.substance.oChemicalReactions', 'mfCurrentConcentrationAll(this.oMT.tiN2I.OH)',  'kg/m^3', 'Concentration OH-');
             oLogger.addValue('Example:s:Tank_1:p:Water.toManips.substance.oChemicalReactions', 'mfCurrentConcentrationAll(this.oMT.tiN2I.Naplus)',   'kg/m^3', 'Concentration Naplus');
             oLogger.addValue('Example:s:Tank_1:p:Water.toManips.substance.oChemicalReactions', 'fCurrentCalculatedPH',                          '-',     'PH');
             oLogger.addValue('Example:s:Tank_1:p:Water.toManips.substance.oChemicalReactions', 'fCurrentVolume',                                'm^3',   'Volume');

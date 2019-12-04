@@ -7,6 +7,8 @@ classdef fan_simple < matter.procs.f2f
         fMaxDeltaP;          % Maximum pressure rise in [Pa]
         iDir = 1;            % Direction of flow
         
+        % Parameter to check if the fan is on or off
+        bTurnedOn = true;
     end
         
     methods
@@ -28,17 +30,36 @@ classdef fan_simple < matter.procs.f2f
             this.supportSolver('manual', true, @this.updateManualSolver);
         end
         
-        function fDeltaPressure = update(this)
-            
-            fDeltaPressure = -1 * this.fMaxDeltaP;
-            this.fDeltaPress = fDeltaPressure;
+        function switchOn(this)
+            this.bTurnedOn = true;
+            this.oBranch.setOutdated();
+        end
+        
+        function switchOff(this)
+            this.bTurnedOn = false;
+            this.oBranch.setOutdated();
         end
         
         
-        function [ fDeltaPress, fDeltaTemp ] = solverDeltas(this, ~)
-            fDeltaTemp = 0;
-            fDeltaPress = -1 * this.fMaxDeltaP;
-            this.fDeltaPressure = fDeltaPress;
+        function fDeltaPressure = update(this)
+            if this.bTurnedOn
+                fDeltaPressure = -1 * this.fMaxDeltaP;
+                this.fDeltaPressure = fDeltaPressure;
+            else
+                this.fDeltaPressure = 0;
+            end
+        end
+        
+        
+        function [ fDeltaPressure, fDeltaTemp ] = solverDeltas(this, ~)
+            if this.bTurnedOn
+                fDeltaTemp = 0;
+                fDeltaPressure = -1 * this.fMaxDeltaP;
+                this.fDeltaPressure = fDeltaPressure;
+            else
+                this.fDeltaPressure = 0;
+                fDeltaPressure = 0;
+            end
         end
         
         function fDeltaTemperature = updateManualSolver(this)

@@ -215,21 +215,18 @@ classdef PlantCulture < vsys
             
             %
             components.matter.P2Ps.ManualP2P(...
-                this, ...                                       % parent system reference
                 this.toStores.Plant_Culture, ...                % store containing phases
                 'BiomassGrowth_P2P', ...                     	% p2p processor name
                 [oBalance.sName, '.BiomassGrowth_P2P_Out'], ...     % first phase and exme
                 [oPlants.sName, '.BiomassGrowth_P2P_In']);         % second phase and exme
             
             components.matter.P2Ps.ManualP2P(...
-                this, ...                                       % parent system reference
                 this.toStores.Plant_Culture, ...                % store containing phases
                 'GasExchange_From_Atmosphere_To_Plants', ...       % p2p processor name
                 [oAtmospherePhase.sName, '.GasExchange1_Out'], ...     % first phase and exme
                 [oBalance.sName, '.GasExchange1_In']);         % second phase and exme
             
             components.matter.P2Ps.ManualP2P(...
-                this, ...                                       % parent system reference
                 this.toStores.Plant_Culture, ...                % store containing phases
                 'GasExchange_From_Plants_To_Atmosphere', ...       % p2p processor name
                 [oBalance.sName, '.GasExchange2_Out'], ...     % first phase and exme

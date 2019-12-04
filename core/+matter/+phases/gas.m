@@ -51,11 +51,21 @@ classdef gas < matter.phase
             
             if this.fMass == 0
                 this.fMassToPressure = 0;
+                this.afPP =  zeros(1, this.oMT.iSubstances);
             else
-                this.fMassToPressure = this.oMT.calculatePressure(this) / this.fMass;
+                fPressure = this.oMT.calculatePressure(this);
+                if fPressure < this.oStore.oContainer.fMaxIdealGasLawPressure
+                    % p V = m R T 
+                    this.afPP = (this.afMass .* (oStore.oMT.Const.fUniversalGas ./ this.oStore.oMT.afMolarMass) .* fTemperature) ./ fVolume;
+                    fPressure = sum(this.afPP);
+                    this.fMassToPressure = fPressure / this.fMass;
+                else
+                    % have to define fMassToPressure before calculatePartialPressures
+                    % is called!
+                    this.fMassToPressure = fPressure / this.fMass;
+                    this.afPP = this.oMT.calculatePartialPressures(this);
+                end
             end
-            
-            this.afPP = this.oMT.calculatePartialPressures(this);
             
             if this.afPP(this.oMT.tiN2I.H2O)
                 % Calculate saturation vapour pressure
@@ -76,7 +86,7 @@ classdef gas < matter.phase
             % calculated by using the matter table (realgas assumption) and
             % dividing it with the current mass
             
-            if this.fPressure < 10e5
+            if this.fPressure < this.oStore.oContainer.fMaxIdealGasLawPressure
                 fMassToPressure = this.oMT.Const.fUniversalGas * this.fTemperature / (this.fMolarMass * this.fVolume);
             else
                 fMassToPressure = this.oMT.calculatePressure(this) / this.fMass;

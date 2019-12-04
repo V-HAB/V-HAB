@@ -166,7 +166,7 @@ classdef branch < solver.thermal.base.branch
                 % Now loop through the remaining flows
                 for iFlow = aiFlows
                     
-                    if ismethod(oMassBranch.aoFlowProcs(iFlow + iFlowProcShifter),'updateThermal')
+                    if oMassBranch.aoFlowProcs(iFlow + iFlowProcShifter).bThermalActive
                         oMassBranch.aoFlowProcs(iFlow + iFlowProcShifter).updateThermal();
                     end                    
                     

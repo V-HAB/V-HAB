@@ -364,12 +364,14 @@ function update(this)
     % next iteration so that the solver can converge. However after it has
     % converged, the actual results must be used to ensure that the zero
     % sum of mass flows over the gas flow nodes is maintained!
-    for iColumn = 1:iNewRows
-        oObj = this.poColIndexToObj(aiNewColToOriginalCol(iColumn));
-        
-        if isa(oObj, 'matter.branch')
-            iB = find(this.aoBranches == oObj, 1);
-            this.afFlowRates(iB) = afResults(iColumn);
+    if ~all(abZeroFlowBranches)
+        for iColumn = 1:iNewRows
+            oObj = this.poColIndexToObj(aiNewColToOriginalCol(iColumn));
+
+            if isa(oObj, 'matter.branch')
+                iB = find(this.aoBranches == oObj, 1);
+                this.afFlowRates(iB) = afResults(iColumn);
+            end
         end
     end
     

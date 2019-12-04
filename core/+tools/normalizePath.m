@@ -1,4 +1,4 @@
-function sOutputName = normalizePath(sInputPath)
+function sOutputName = normalizePath(sInputPath, bFolder)
     %NORMALIZEPATH  Convert a path to a form without special characters
     %   Other than underscores, not much except letters is allowed in
     %   struct field names. So this function cleans any input string and
@@ -12,11 +12,25 @@ function sOutputName = normalizePath(sInputPath)
     %                   without any characters that would prevent its use
     %                   as a struct field name.
     
+    if nargin < 2
+        bFolder = false;
+    end
+    
     % Checking if the provided string is empty
     if isempty(sInputPath)
         sOutputName = '';
         warning('V_HAB:normalizePath','The string you have provided to the normalizePath() function is empty.');
         return;
+    end
+    
+    % Checking if there are any space characters in the string. This is not
+    % permitted, so we throw an error.
+    if bFolder
+        if contains(sInputPath, ' ')
+            error('VHAB:normalizePath', ['The file you are adding\n(%s)\n', ... 
+                  'contains space characters in its path. This is not permitted within V-HAB/MATLAB.\n'...
+                  'Please change all file and folder names accordingly.'], sInputPath);
+        end
     end
     
     % The path will contain characters that denote a folder as either a

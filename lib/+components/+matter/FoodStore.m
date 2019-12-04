@@ -31,7 +31,7 @@ classdef FoodStore < matter.store
             matter.procs.exmes.mixture(this.toPhases.Food,     ['FoodPrepOut_', num2str(this.iHumans)]);
             matter.procs.exmes.mixture(oPhase,     ['FoodPrepIn_', num2str(this.iHumans)]);
             
-            components.matter.P2Ps.ManualP2P(this.oParent, this, ['FoodPrepP2P_', num2str(this.iHumans)], ['Food.FoodPrepOut_', num2str(this.iHumans)], ['Food_Output_', num2str(this.iHumans), '.FoodPrepIn_', num2str(this.iHumans)]);
+            components.matter.P2Ps.ManualP2P(this, ['FoodPrepP2P_', num2str(this.iHumans)], ['Food.FoodPrepOut_', num2str(this.iHumans)], ['Food_Output_', num2str(this.iHumans), '.FoodPrepIn_', num2str(this.iHumans)]);
             
             matter.procs.exmes.mixture(oPhase,     ['Outlet_', num2str(this.iHumans)]);
             

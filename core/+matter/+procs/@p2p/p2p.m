@@ -35,7 +35,7 @@ classdef (Abstract) p2p < matter.flow & event.source
     
     
     methods
-        function this = p2p(oStore, sName, sPhaseAndPortIn, sPhaseAndPortOut)
+        function this = p2p(oStore, sName, xIn, xOut)
             %% p2p class constructor.
             %
             % creates a new P2P which can move individual substance from
@@ -56,42 +56,59 @@ classdef (Abstract) p2p < matter.flow & event.source
             % Parent constructor
             this@matter.flow(oStore);
             
-            % Phases / ports
-            [ sPhaseIn,  sExMeIn  ] = strtok(sPhaseAndPortIn,  '.');
-            [ sPhaseOut, sExMeOut ] = strtok(sPhaseAndPortOut, '.');
-            
-            % Find the phases
-            try
-                oPhaseIn    = this.oStore.toPhases.(sPhaseIn);
-                oPhaseOut   = this.oStore.toPhases.(sPhaseOut);
-            catch
-                this.throw('p2p', 'Phase could not be found: in phase "%s", out phase "%s"', sPhaseIn, sPhaseOut);
+            if ischar(xIn)
+                % Phases / ports
+                [ sPhaseIn,  sExMeIn  ] = strtok(xIn,  '.');
+
+                % Find the phases
+                try
+                    oPhaseIn    = this.oStore.toPhases.(sPhaseIn);
+                catch
+                    this.throw('p2p', 'Phase could not be found: in phase "%s"', sPhaseIn);
+                end
+                if isempty(sExMeIn)
+                    matter.procs.exmes.(oPhaseIn.sType)(oPhaseIn,       [sName, '_In']);
+                    sExMeIn = ['.' , sName, '_In'];
+                end
+            else
+                % In this case the input should be a phase, and we have to
+                % create a new exme to which the P2P can be connected:
+                if ~isa(xIn, 'matter.phase')
+                    this.throw('p2p', 'Provided input for the P2P %s neither a string nor phase', sName)
+                end
+                oPhaseIn = xIn;
+                matter.procs.exmes.(oPhaseIn.sType)(oPhaseIn,       [sName, '_In']);
+                sExMeIn = ['.' , sName, '_In'];
             end
             
+            if ischar(xOut)
+                [ sPhaseOut, sExMeOut ] = strtok(xOut, '.');
+
+                % Find the phases
+                try
+                    oPhaseOut   = this.oStore.toPhases.(sPhaseOut);
+                catch
+                    this.throw('p2p', 'Phase could not be found: out phase "%s"', sPhaseOut);
+                end
+                if isempty(sExMeOut)
+                    matter.procs.exmes.(oPhaseOut.sType)(oPhaseOut,       [sName, '_Out']);
+                    sExMeOut = ['.' , sName, '_Out'];
+                end
+            else
+                % In this case the input should be a phase, and we have to
+                % create a new exme to which the P2P can be connected:
+                if ~isa(xOut, 'matter.phase')
+                    this.throw('p2p', 'Provided input for the P2P %s neither a string nor phase', this.sName)
+                end
+                oPhaseOut = xOut;
+                matter.procs.exmes.(oPhaseOut.sType)(oPhaseOut,       [sName, '_Out']);
+                sExMeOut = ['.' , sName, '_Out'];
+            end
             % Set name of P2P
             this.sName   = sName;
             
             % Can only be done after this.oStore is set, store checks that!
             this.oStore.addP2P(this);
-            
-            
-            % If no port is given in sPaseAndPortIn or -Out, auto-create
-            % EXMEs, else add the flow to the given (by name) EXME
-            if isempty(sExMeIn)
-                sExMeIn = sprintf('.p2p_%s_in', this.sName);
-                
-                sPhaseType = oPhaseIn.sType;
-                
-                matter.procs.exmes.(sPhaseType)(oPhaseIn, sExMeIn(2:end));
-            end
-            
-            if isempty(sExMeOut)
-                sExMeOut = sprintf('.p2p_%s_out', this.sName);
-                
-                sPhaseType = oPhaseOut.sType;
-                
-                matter.procs.exmes.(sPhaseType)(oPhaseOut, sExMeOut(2:end));
-            end
             
             oPhaseIn.toProcsEXME.(sExMeIn(2:end) ).addFlow(this);
             oPhaseOut.toProcsEXME.(sExMeOut(2:end)).addFlow(this);
