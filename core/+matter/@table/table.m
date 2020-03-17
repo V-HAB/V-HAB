@@ -69,6 +69,14 @@ classdef table < base
         % values with simple for-loops.
         afMolarMass;
         
+        % An array containing the elemental charge of each substance 
+        % We keep this in a separate array to enable fast calculation of
+        % the total charge of a phase or flow. The order in which the
+        % substances are stored is identical to the order in ttxMatter.
+        % Also, using an array makes it easy to loop through the individual
+        % values with simple for-loops.
+        aiCharge;
+        
         % An array containing the nutritional energy of each substance in
         % J/kg to enable fast calculation of energy content for a phase.
         % Note that "compound" food like a tomatoe must be split into its
@@ -273,6 +281,7 @@ classdef table < base
                 
                 % And finally we create an entry in the molar mass array.
                 this.afMolarMass(iI) = fMolarMass;
+                this.aiCharge(iI)    = tSubstance.iCharge;
                 
                 this.afNutritionalEnergy(iI) = tSubstance.fNutritionalEnergy;
             end
