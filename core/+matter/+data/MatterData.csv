@@ -223,3 +223,6 @@ H3C6H5O7;CitricAcid;liquid;0.19212352;0;0;;;1665;1178.981105;;;;;;
 SO4;Sulfate;liquid;0.0960636;0;-2;;;1840;4186;;;;;density and heat capacity assumed to be equal to the H2SO4 values; heat capacity value for H2O at 1 bar and 20°C
 HSO4;HydrogenSulfate;liquid;0.09707154;0;-1;;;1840;4186;;;;;density and heat capacity assumed to be equal to the H2SO4 values; heat capacity value for H2O at 1 bar and 20°C
 CaCO3;Calcite;solid;0.1000869;0;0;;;2730;833.675536;;;;;;
+Ca2plus;CalciumIon;liquid;0.040078;0;2;1112.15;1757.15;1540;647;22.5;1.52;;;;
+Mg2plus;MagnesiumIon;liquid;0.024305;0;2;921.95;1380.15;1740;1020;26;3.54;;;;
+Clminus;ChlorineIon;liquid;0.035453;0;-1;172.15;238.55;2.95;480;;;;;;
