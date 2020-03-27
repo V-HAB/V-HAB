@@ -48,7 +48,7 @@ classdef FoodStore < matter.store
             sInputExme = ['FoodIn_', num2str(this.iInputs)];
         end
         
-        function requestFood(this, iHuman, fEnergy, fTime, arComposition)
+        function afPartialMasses = requestFood(this, iHuman, fEnergy, fTime, arComposition)
             %% requestFood
             % This function can be used to request food from the food store
             % for the human. The required function to perform this for the

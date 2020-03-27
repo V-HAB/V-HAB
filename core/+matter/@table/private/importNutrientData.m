@@ -193,11 +193,22 @@ function importNutrientData(this)
     ttxImportNutrientData.Food.Mass.Water                       = 0.4636; % 0.7 kg / 1.51 see table 3-33 in BVAD
     % The following values are based on the 12.59 MJ of energy content
     % mentioned in the BVAD food and the general percentages metioned in
-    % HDIH Marcunutrient Guidelines for Spaceflight (Table 7.2-2)
+    % HDIH Marcunutrient Guidelines for Spaceflight (Table 7.2-2 and 7.2-3)
     ttxImportNutrientData.Food.Mass.Protein                     = ((0.175 * 12.59 * 10^6) / (this.ttxMatter.C4H5ON.fNutritionalEnergy)) / 1.51;
     ttxImportNutrientData.Food.Mass.Carbohydrate__by_difference	= ((0.525 * 12.59 * 10^6) / (this.ttxMatter.C6H12O6.fNutritionalEnergy)) / 1.51;
     ttxImportNutrientData.Food.Mass.Total_lipid__fat_           = ((0.3 * 12.59 * 10^6)   / (this.ttxMatter.C16H32O2.fNutritionalEnergy)) / 1.51;
     ttxImportNutrientData.Food.Mass.Ash                         =  1 - (ttxImportNutrientData.Food.Mass.Water + ttxImportNutrientData.Food.Mass.Protein + ttxImportNutrientData.Food.Mass.Carbohydrate__by_difference + ttxImportNutrientData.Food.Mass.Total_lipid__fat_ );
+    ttxImportNutrientData.Food.Mass.Fiber__total_dietary        = (12e-3 * 4187e3 / 12.59e6);
+    ttxImportNutrientData.Food.Mass.Minerals.Calcium__Ca        = 2e-3      / 1.51;
+    ttxImportNutrientData.Food.Mass.Minerals.Phosphorus__P     	= 0.7e-3    / 1.51;
+    ttxImportNutrientData.Food.Mass.Minerals.Magnesmium__Mg   	= 0.42e-3   / 1.51;
+    ttxImportNutrientData.Food.Mass.Minerals.Sodium__Na        	= 1.9e-3    / 1.51;
+    ttxImportNutrientData.Food.Mass.Minerals.Potassium__K       = 4.7e-3    / 1.51;
+    ttxImportNutrientData.Food.Mass.Minerals.Iron__Fe           = 9e-6      / 1.51;
+    ttxImportNutrientData.Food.Mass.Minerals.Copper__Cu         = 4.65e-6   / 1.51;
+    ttxImportNutrientData.Food.Mass.Minerals.Manganese__Mn     	= 2.3e-6    / 1.51;
+    ttxImportNutrientData.Food.Mass.Minerals.Zinc__Zn           = 11e-6     / 1.51;
+    ttxImportNutrientData.Food.Mass.Minerals.Selenium__Se     	= 227.5e-9  / 1.51;
     
     this.ttxNutrientData = ttxImportNutrientData;
     
@@ -207,13 +218,48 @@ function importNutrientData(this)
     % loop over all edible substances
     for iJ = 1:length(this.csEdibleSubstances)
         % Currently food is simplified to only consist of Water, Carbohydrates,
-        % Proteins, Fats and Ash (basically the rest e.g. Minerals)
-        trBaseComposition.H2O       = ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Water;
-        trBaseComposition.C6H12O6   = ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Carbohydrate__by_difference;
-        trBaseComposition.C4H5ON    = ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Protein;
-        trBaseComposition.C16H32O2  = ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Total_lipid__fat_;
-        trBaseComposition.C         = ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Ash;
+        % Proteins, Fats and Ash (basically the rest e.g. Minerals). From
+        % the database entries the values:
+        % Water, Carbohydrate__by_difference, Protein, Total_lipid__fat_
+        % and Ash sum up to exactly 1! Fibers seem to be included in the
+        % Carbohydrate__by_difference value, therefore we subtract them
+        % here and add them individually
+        trBaseComposition           = struct();
         
+        trBaseComposition.H2O       = ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Water;
+        trBaseComposition.C6H12O6   = ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Carbohydrate__by_difference - ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Fiber__total_dietary;
+        trBaseComposition.C3H7NO2   = ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Protein;
+        trBaseComposition.C16H32O2  = ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Total_lipid__fat_;
+        
+        % unfortunatly it is not certain that all mineral fields are always
+        % present and contain zero if they are not. Therefore, to only add
+        % which minerals are present we first check which are there
+        csMinerals = fieldnames(ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Minerals);
+        % now we have to derive the V-HAB name for these minerals and add
+        % them to the struct
+        for iMineral = 1:length(csMinerals)
+            csSplitString = strsplit(csMinerals{iMineral}, '__');
+            % the second part of the split string is the element of the
+            % mineral and can be used by V-HAB
+            trBaseComposition.(csSplitString{2}) = ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Minerals.(csMinerals{iMineral});
+        end
+        
+        trBaseComposition.DietaryFiber	= ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Fiber__total_dietary;
+       
+        csFields = fieldnames(trBaseComposition);
+        rTotal = 0;
+        for iField = 1:length(csFields)
+            rTotal = rTotal + trBaseComposition.(csFields{iField});
+        end
+        trBaseComposition.C	= 1 - rTotal;
+        if trBaseComposition.C < 0
+            if trBaseComposition.C < -0.05
+                error(['in the food composition of food stuff ', this.csEdibleSubstances{iJ}, ' an error occured'])
+            else
+                trBaseComposition.H2O   = trBaseComposition.H2O + trBaseComposition.C;
+                trBaseComposition.C     = 0;
+            end
+        end
         % Now we define a compound mass in the matter table with the
         % corresponding composition. Note that the base composition can be
         % adjusted within a simulation, but for defining matter of this

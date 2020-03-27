@@ -633,18 +633,29 @@ classdef Human < vsys
             % the energy balance)
             afFoodConversionFlowRates(this.oMT.tiN2I.C6H12O6)   = (afResolvedMass(this.oMT.tiN2I.C6H12O6) - oStomachPhase.afMass(this.oMT.tiN2I.C6H12O6))   / fFoodConversionTimeStep;
             afFoodConversionFlowRates(this.oMT.tiN2I.C16H32O2)  = (afResolvedMass(this.oMT.tiN2I.C16H32O2) - oStomachPhase.afMass(this.oMT.tiN2I.C16H32O2)) / fFoodConversionTimeStep;
-            afFoodConversionFlowRates(this.oMT.tiN2I.C4H5ON)    = (afResolvedMass(this.oMT.tiN2I.C4H5ON) - oStomachPhase.afMass(this.oMT.tiN2I.C4H5ON))     / fFoodConversionTimeStep;
-
-            % Ash is represented as Carbon
-            afFoodConversionFlowRates(this.oMT.tiN2I.C)         = (afResolvedMass(this.oMT.tiN2I.C) - oStomachPhase.afMass(this.oMT.tiN2I.C))               / fFoodConversionTimeStep;
+            % Note that the simplified human model represents proteins as
+            % C4H5ON, while the detailed human model uses C3H7NO2!
+            afFoodConversionFlowRates(this.oMT.tiN2I.C4H5ON)    = (afResolvedMass(this.oMT.tiN2I.C3H7NO2) - oStomachPhase.afMass(this.oMT.tiN2I.C4H5ON))     / fFoodConversionTimeStep;
 
             afFoodConversionFlowRates(this.oMT.tiN2I.H2O)       = (afResolvedMass(this.oMT.tiN2I.H2O) - oStomachPhase.afMass(this.oMT.tiN2I.H2O))           / fFoodConversionTimeStep;
+            
             
             for iFood = 1:length(csFood)
                 sFood = csFood{iFood};
                 
                 afFoodConversionFlowRates(this.oMT.tiN2I.(sFood)) = - oStomachPhase.afMass(this.oMT.tiN2I.(sFood)) / fFoodConversionTimeStep;
             end
+            
+            % Ash is represented as Carbon
+            % Since we do not want to model all the minerals etc which are
+            % modelled in the food stuff, we simplify it to combine all
+            % remaining entries into ash or C. Since we so far only
+            % converted parts of the food composition into the relevant
+            % things, but also subtracted the total food flowrates that are
+            % converted, we can simply use the sum over the current food
+            % conversion flowrates to get this.
+            afFoodConversionFlowRates(this.oMT.tiN2I.C)         = - sum(afFoodConversionFlowRates);
+
             
             oStomachPhase.toManips.substance.setFlowRate(afFoodConversionFlowRates);
             
