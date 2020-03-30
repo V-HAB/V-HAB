@@ -100,6 +100,9 @@ classdef table < base
         % cell array for all edible substances
         csEdibleSubstances;
         
+        % boolean vector to identify edible compound mass
+        abEdibleSubstances;
+        
         % A cell array with the names of all substances contained in the
         % matter table
         csSubstances;
@@ -216,6 +219,7 @@ classdef table < base
             % this.
             this.afMolarMass         = zeros(1, this.iSubstances);
             this.afNutritionalEnergy = zeros(1, this.iSubstances);
+            this.abEdibleSubstances  = false(1, this.iSubstances);
             
             this.tiN2I       = struct();
             this.tsS2N       = struct();

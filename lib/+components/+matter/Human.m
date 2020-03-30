@@ -93,20 +93,11 @@ classdef Human < vsys
                 this.trInitialFoodComposition.Carbohydrate  = 0.5;
             end
             
-            % "Chapter 3: Calculation Of The Energy Content Of Foods – Energy
-            % Conversion Factors". Food and Agriculture Organization of the
-            % United Nations. 
-            % Protein:          17 * 10^6; % J/kg
-            % Fat:              37 * 10^6; % J/kg
-            % Carbohydrates:    17 * 10^6; % J/kg
-            %
-            % However, the values in the calculate Nutritional Content 
-            % function, which is based on American data, divergeses
-            % TO DO: Find a good solution for this, if this is changed, the
-            % calculateNutritionalContent function also has to be changed
-            this.tfEnergyContent.Fat          = 37 * 10^6;
-            this.tfEnergyContent.Protein      = 17 * 10^6;
-            this.tfEnergyContent.Carbohydrate = 17 * 10^6;
+            % For legacy reasons, define the nutritional energy content
+            % here locally
+            this.tfEnergyContent.Fat          = this.oMT.afNutritionalEnergy(this.oMT.tiN2I.C16H32O2);
+            this.tfEnergyContent.Protein      = this.oMT.afNutritionalEnergy(this.oMT.tiN2I.C4H5ON);
+            this.tfEnergyContent.Carbohydrate = this.oMT.afNutritionalEnergy(this.oMT.tiN2I.C6H12O6);
             
             % boolean is the easiest way to differentiate between male and
             % female, calculate the basic energy demand
@@ -632,7 +623,9 @@ classdef Human < vsys
             % food which are necessary nutrients but are not part of
             % the energy balance)
             afFoodConversionFlowRates(this.oMT.tiN2I.C6H12O6)   = (afResolvedMass(this.oMT.tiN2I.C6H12O6) - oStomachPhase.afMass(this.oMT.tiN2I.C6H12O6))   / fFoodConversionTimeStep;
-            afFoodConversionFlowRates(this.oMT.tiN2I.C16H32O2)  = (afResolvedMass(this.oMT.tiN2I.C16H32O2) - oStomachPhase.afMass(this.oMT.tiN2I.C16H32O2)) / fFoodConversionTimeStep;
+            % Note that the simplified human model represents fats as
+            % C16H32O2, while the detailed human model uses C51H98O6!
+            afFoodConversionFlowRates(this.oMT.tiN2I.C16H32O2)  = (afResolvedMass(this.oMT.tiN2I.C51H98O6) - oStomachPhase.afMass(this.oMT.tiN2I.C16H32O2)) / fFoodConversionTimeStep;
             % Note that the simplified human model represents proteins as
             % C4H5ON, while the detailed human model uses C3H7NO2!
             afFoodConversionFlowRates(this.oMT.tiN2I.C4H5ON)    = (afResolvedMass(this.oMT.tiN2I.C3H7NO2) - oStomachPhase.afMass(this.oMT.tiN2I.C4H5ON))     / fFoodConversionTimeStep;

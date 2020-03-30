@@ -229,7 +229,7 @@ function importNutrientData(this)
         trBaseComposition.H2O       = ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Water;
         trBaseComposition.C6H12O6   = ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Carbohydrate__by_difference - ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Fiber__total_dietary;
         trBaseComposition.C3H7NO2   = ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Protein;
-        trBaseComposition.C16H32O2  = ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Total_lipid__fat_;
+        trBaseComposition.C51H98O6  = ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Total_lipid__fat_;
         
         % unfortunatly it is not certain that all mineral fields are always
         % present and contain zero if they are not. Therefore, to only add
@@ -264,6 +264,7 @@ function importNutrientData(this)
         % corresponding composition. Note that the base composition can be
         % adjusted within a simulation, but for defining matter of this
         % type, the base composition is used
-        this.defineCompoundMass(this, this.csEdibleSubstances{iJ}, trBaseComposition)
+        this.defineCompoundMass(this, this.csEdibleSubstances{iJ}, trBaseComposition, true);
+        
     end
 end

@@ -1,4 +1,4 @@
-function defineCompoundMass(this, oCaller, sCompoundName, trBaseComposition)
+function defineCompoundMass(this, oCaller, sCompoundName, trBaseComposition, bEdibleSubstance)
 %% defineCompoundMass
 % Defines a new mass type for which no data is present in the
 % MatterData.csv. Instead the defined compound mass is made up of a basic
@@ -60,6 +60,12 @@ this.tsN2S.sCompoundName = sCompoundName;
 this.abAbsorber(this.iSubstances) = false;
 
 this.abCompound(this.iSubstances) = true;
+
+if nargin > 4
+    this.abEdibleSubstances(this.iSubstances) = bEdibleSubstance;
+else
+    this.abEdibleSubstances(this.iSubstances) = false;
+end
 
 this.ttxMatter.(sCompoundName).trBaseComposition    = trBaseComposition;
 
