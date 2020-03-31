@@ -280,10 +280,10 @@ classdef Human < vsys
             
             %% Creating the stores and phases with init masses
             % Init masses and volumes
-            tfMassesFeces = struct('C42H69O13N5', 0.032, 'H2O', 0.1);
+            tfMassesFeces = struct('Feces', 0.1);
             fVolumeFeces = 0.1;
 
-            tfMassesUrine = struct('C2H6O2N2', 0.059, 'H2O', 1.6); 
+            tfMassesUrine = struct('Urine', 1.6); 
             fVolumeUrine = 0.1;
             
             tfMassesStomach = struct(); 
@@ -386,6 +386,8 @@ classdef Human < vsys
             % temperature heat source for the stomach
             oConstantTemperatureHeatSource = components.thermal.heatsources.ConstantTemperature('StomachConstantTemperature');
             this.toStores.Human.toPhases.Stomach.oCapacity.addHeatSource(oConstantTemperatureHeatSource);
+            oConstantTemperatureHeatSource = components.thermal.heatsources.ConstantTemperature('HumanConstantTemperature');
+            this.toStores.Human.toPhases.HumanPhase.oCapacity.addHeatSource(oConstantTemperatureHeatSource);
         end
         
         function createSolverStructure(this)
@@ -547,27 +549,29 @@ classdef Human < vsys
             tfPercent.Carbohydrate = tfTotalEnergy.Carbohydrate / fTotalEnergy;
             
             % from these percentages the respiratory coefficient can be
-            % calculated assuming the human consumes 1 J of energy:
-            tfPercentMol.Fat            = (tfPercent.Fat / this.tfEnergyContent.Fat) / this.oMT.afMolarMass(this.oMT.tiN2I.C16H32O2);
-            tfPercentMol.Protein        = (tfPercent.Protein / this.tfEnergyContent.Protein) / this.oMT.afMolarMass(this.oMT.tiN2I.C4H5ON);
-            tfPercentMol.Carbohydrate   = (tfPercent.Carbohydrate / this.tfEnergyContent.Carbohydrate) / this.oMT.afMolarMass(this.oMT.tiN2I.C6H12O6);
+            % calculated assuming the human consumes 1 J of energy, so
+            % these values are the mol consumed of each nutrient to produce
+            % 1 J of energy:
+            tfMolarConsumptionPerJoule.Fat            = (tfPercent.Fat / this.tfEnergyContent.Fat) / this.oMT.afMolarMass(this.oMT.tiN2I.C16H32O2);
+            tfMolarConsumptionPerJoule.Protein        = (tfPercent.Protein / this.tfEnergyContent.Protein) / this.oMT.afMolarMass(this.oMT.tiN2I.C4H5ON);
+            tfMolarConsumptionPerJoule.Carbohydrate   = (tfPercent.Carbohydrate / this.tfEnergyContent.Carbohydrate) / this.oMT.afMolarMass(this.oMT.tiN2I.C6H12O6);
             
             % C16H32O2 (fats)          + 23 O2     =    16 CO2 + 16H20
             % 2 C4H5ON  (protein)      + 7  O2     =    C2H6O2N2 (urine solids) + 6 CO2 + 2H2O 
             % C6H12O6 (carbohydrates)  + 6  O2     =    6 CO2 + 6H2O
-            this.fRespiratoryCoefficient = (tfPercentMol.Fat * 16 + tfPercentMol.Protein * 3   + tfPercentMol.Carbohydrate * 6) /...
-                                           (tfPercentMol.Fat * 23 + tfPercentMol.Protein * 3.5 + tfPercentMol.Carbohydrate * 6);
+            this.fRespiratoryCoefficient = (tfMolarConsumptionPerJoule.Fat * 16 + tfMolarConsumptionPerJoule.Protein * 3   + tfMolarConsumptionPerJoule.Carbohydrate * 6) /...
+                                           (tfMolarConsumptionPerJoule.Fat * 23 + tfMolarConsumptionPerJoule.Protein * 3.5 + tfMolarConsumptionPerJoule.Carbohydrate * 6);
             
             % Based on the Respiratory coefficient and according to
             % E. Hofmann, "Funktionelle Biochemie des Menschen" © Springer
             % Fachmedien Wiesbaden 1979 it is possible to calculate a
-            % colric value for oxygen (the amount of energy released per
+            % caloric value for oxygen (the amount of energy released per
             % unit of oxygen)
             % Following the calculation from above for 1 J of energy a
             % total of x kg of oxygen is consumed, and 1/ this is the
             % amount of energy that can be released per kg of oxygen. It
             % therefore has the unit J/kg
-            this.fCaloricValueOxygen = 1 /  (this.oMT.afMolarMass(this.oMT.tiN2I.O2) *(tfPercentMol.Fat * 23  +  tfPercentMol.Protein * 3.5  + tfPercentMol.Carbohydrate * 6 ));
+            this.fCaloricValueOxygen = 1 /  (this.oMT.afMolarMass(this.oMT.tiN2I.O2) *(tfMolarConsumptionPerJoule.Fat * 23  +  tfMolarConsumptionPerJoule.Protein * 3.5  + tfMolarConsumptionPerJoule.Carbohydrate * 6 ));
             
             
             %% Respiration
@@ -690,23 +694,17 @@ classdef Human < vsys
             % by food --> added as additional energy demand
             this.fAdditionalFoodEnergyDemand = this.fAdditionalFoodEnergyDemand + fEnergyEquivalenFecesTotal * this.fTimeStep;
             
-            % since the consumption of fat, protein and carbohydrates for
-            % the feces does not respect the current energy composition of
-            % the food, the energy demand of each of the basic nutrients is
-            % adapted to ensure that overall (food and feces consumption)
-            % the current percentual energy composition of the food is
-            % respected
-            tfTotalCurrentEnergyConsumption.Fat          = (this.fCurrentEnergyDemand * tfPercent.Fat)          + (tfPercent.Fat           * fEnergyEquivalenFecesTotal - tfEnergyEquivalentFeces.Fat);
-            tfTotalCurrentEnergyConsumption.Protein      = (this.fCurrentEnergyDemand * tfPercent.Protein)      + (tfPercent.Protein       * fEnergyEquivalenFecesTotal - tfEnergyEquivalentFeces.Protein);
-            tfTotalCurrentEnergyConsumption.Carbohydrate = (this.fCurrentEnergyDemand * tfPercent.Carbohydrate) + (tfPercent.Carbohydrate  * fEnergyEquivalenFecesTotal - tfEnergyEquivalentFeces.Carbohydrate);
+            % Previously the energy for the feces was also considered here,
+            % but that results in a higher mass consumption for these
+            % nutrients and also a higher CO2 production etc. So that was
+            % wrong
+            tfMolarConsumption.Fat            = this.fCurrentEnergyDemand * tfMolarConsumptionPerJoule.Fat;
+            tfMolarConsumption.Protein        = this.fCurrentEnergyDemand * tfMolarConsumptionPerJoule.Protein;
+            tfMolarConsumption.Carbohydrate   = this.fCurrentEnergyDemand * tfMolarConsumptionPerJoule.Carbohydrate;
             
-            tfMassConsumption.Fat             = tfTotalCurrentEnergyConsumption.Fat          / this.tfEnergyContent.Fat;
-            tfMassConsumption.Protein         = tfTotalCurrentEnergyConsumption.Protein      / this.tfEnergyContent.Protein;
-            tfMassConsumption.Carbohydrate    = tfTotalCurrentEnergyConsumption.Carbohydrate / this.tfEnergyContent.Carbohydrate;
-            
-            tfMolarConsumption.Fat            = tfMassConsumption.Fat           / this.oMT.afMolarMass(this.oMT.tiN2I.C16H32O2);
-            tfMolarConsumption.Protein        = tfMassConsumption.Protein       / this.oMT.afMolarMass(this.oMT.tiN2I.C4H5ON);
-            tfMolarConsumption.Carbohydrate   = tfMassConsumption.Carbohydrate  / this.oMT.afMolarMass(this.oMT.tiN2I.C6H12O6);
+            tfMassConsumption.Fat             = tfMolarConsumption.Fat          * this.oMT.afMolarMass(this.oMT.tiN2I.C16H32O2);
+            tfMassConsumption.Protein         = tfMolarConsumption.Protein      * this.oMT.afMolarMass(this.oMT.tiN2I.C4H5ON);
+            tfMassConsumption.Carbohydrate    = tfMolarConsumption.Carbohydrate * this.oMT.afMolarMass(this.oMT.tiN2I.C6H12O6);
             
             % C16H32O2 (fats)          + 23 O2     =    16 CO2 + 16H20
             % 2 C4H5ON  (protein)      + 7  O2     =    C2H6O2N2 (urine solids) + 6 CO2 + 2H2O 
@@ -718,15 +716,30 @@ classdef Human < vsys
             % fO2ConsCheck = this.oMT.afMolarMass(this.oMT.tiN2I.O2)      * (tfMolarConsumption.Fat * 23 + tfMolarConsumption.Protein * 3.5 + tfMolarConsumption.Carbohydrate * 6);
             
             afManipulatorFlowRates = zeros(1,this.oMT.iSubstances);
-            afManipulatorFlowRates(this.oMT.tiN2I.C42H69O13N5)  = this.fFecesSolidProduction;
-            afManipulatorFlowRates(this.oMT.tiN2I.C2H6O2N2)     = this.fUrineSolidsProduction;
             afManipulatorFlowRates(this.oMT.tiN2I.CO2)          = this.fCO2Production;
-            afManipulatorFlowRates(this.oMT.tiN2I.H2O)          = this.fMetabolicWaterProduction;
             
             afManipulatorFlowRates(this.oMT.tiN2I.C16H32O2)    	= - (tfMassConsumption.Fat          + tfMassConsumptionFeces.Fat);
             afManipulatorFlowRates(this.oMT.tiN2I.C4H5ON)     	= - (tfMassConsumption.Protein      + tfMassConsumptionFeces.Protein);
             afManipulatorFlowRates(this.oMT.tiN2I.C6H12O6)    	= - (tfMassConsumption.Carbohydrate + tfMassConsumptionFeces.Carbohydrate);
             afManipulatorFlowRates(this.oMT.tiN2I.O2)           = -  this.fOxygenDemand;
+            
+            % According to BVAD for 0.059 kg of solid urine 1.6 kg of urine water
+            fUrineWater                                         = (1.6 / 0.059) * this.fUrineSolidsProduction;
+            afManipulatorFlowRates(this.oMT.tiN2I.Urine)        = this.fUrineSolidsProduction + fUrineWater;
+            
+            % According to BVAD for 0.032 kg of solid feces 0.1 kg of water
+            fFecesWater                                         = (0.1 / 0.032) * this.fFecesSolidProduction;
+            afManipulatorFlowRates(this.oMT.tiN2I.Feces)        = this.fFecesSolidProduction + fFecesWater;
+            
+            afManipulatorFlowRates(this.oMT.tiN2I.H2O)          = this.fMetabolicWaterProduction - fUrineWater - fFecesWater;
+            % Since we define compound masses we have to specify what
+            % components contribute to what compound mass:
+            aarFlowsToCompound = zeros(this.oMT.iSubstances, this.oMT.iSubstances);
+            aarFlowsToCompound(this.oMT.tiN2I.Urine, this.oMT.tiN2I.H2O)         = fUrineWater / (this.fUrineSolidsProduction + fUrineWater);
+            aarFlowsToCompound(this.oMT.tiN2I.Urine, this.oMT.tiN2I.C2H6O2N2)    = this.fUrineSolidsProduction / (this.fUrineSolidsProduction + fUrineWater);
+            
+            aarFlowsToCompound(this.oMT.tiN2I.Feces, this.oMT.tiN2I.H2O)         = fFecesWater / (this.fFecesSolidProduction + fFecesWater);
+            aarFlowsToCompound(this.oMT.tiN2I.Feces, this.oMT.tiN2I.C42H69O13N5) = this.fFecesSolidProduction / (this.fFecesSolidProduction + fFecesWater);
             
             %% Setting of P2P and Manip flowrates
             afCO2P2PFlowRates = zeros(1,this.oMT.iSubstances);
@@ -738,19 +751,15 @@ classdef Human < vsys
             this.toStores.Human.toProcsP2P.O2_P2P.setFlowRate(afO2P2PFlowRates);
             
             afUrineP2PFlowRates = zeros(1,this.oMT.iSubstances);
-            afUrineP2PFlowRates(this.oMT.tiN2I.C2H6O2N2)   = this.fUrineSolidsProduction;
-            % According to BVAD for 0.059 kg of solid urine 1.6 kg of urine water
-            afUrineP2PFlowRates(this.oMT.tiN2I.H2O)        = (1.6 / 0.059) * this.fUrineSolidsProduction;
+            afUrineP2PFlowRates(this.oMT.tiN2I.Urine) = afManipulatorFlowRates(this.oMT.tiN2I.Urine);
             this.toStores.Human.toProcsP2P.Urine_Removal.setFlowRate(afUrineP2PFlowRates);
             
             afFecesP2PFlowRates = zeros(1,this.oMT.iSubstances);
-            afFecesP2PFlowRates(this.oMT.tiN2I.C42H69O13N5) = this.fFecesSolidProduction;
-            % According to BVAD for 0.032 kg of solid feces 0.1 kg of water
-            afFecesP2PFlowRates(this.oMT.tiN2I.H2O)         = (0.1 / 0.032) * this.fFecesSolidProduction;
+            afFecesP2PFlowRates(this.oMT.tiN2I.Feces) = afManipulatorFlowRates(this.oMT.tiN2I.Feces);
             this.toStores.Human.toProcsP2P.Feces_Removal.setFlowRate(afFecesP2PFlowRates);
             
             % Set manip flowrate
-            this.toStores.Human.toPhases.HumanPhase.toManips.substance.setFlowRate(afManipulatorFlowRates);
+            this.toStores.Human.toPhases.HumanPhase.toManips.substance.setFlowRate(afManipulatorFlowRates, aarFlowsToCompound);
             
             %% Drinking
             % Logic for drinking is kept simple, if more than 0.5 kg of

@@ -11,6 +11,7 @@ classdef ManualManipulator < matter.manips.substance.stationary
         % Property to store the manual flow rates in kg/s for each
         % substance that the user defned using the setFlowRate function
         afManualFlowRates; % [kg/s]
+        aarManualFlowsToCompound;
     end
     
     methods
@@ -20,9 +21,10 @@ classdef ManualManipulator < matter.manips.substance.stationary
             this.oParent = oParent;
             
             this.afManualFlowRates = zeros(1,this.oMT.iSubstances);
+            this.aarManualFlowsToCompound = zeros(this.oPhase.oMT.iSubstances, this.oPhase.oMT.iSubstances);
         end
         
-        function setFlowRate(this, afFlowRates)
+        function setFlowRate(this, afFlowRates, aarFlowsToCompound)
             % required input for the set flowrate function is a vector with
             % the length of oMT.iSubstances. The entries in the vector
             % correspond to substance flowrates with the substances beeing
@@ -54,6 +56,11 @@ classdef ManualManipulator < matter.manips.substance.stationary
             end
             
             this.afManualFlowRates = afFlowRates;
+            if nargin > 2
+                this.aarManualFlowsToCompound = aarFlowsToCompound;
+            else
+                this.aarManualFlowsToCompound = zeros(this.oPhase.oMT.iSubstances, this.oPhase.oMT.iSubstances);
+            end
             
             % call the update function to set the manual flow rates as
             % manipualtor flow rates
@@ -63,7 +70,7 @@ classdef ManualManipulator < matter.manips.substance.stationary
     methods (Access = protected)
         function update(this, ~)
             %% sets the flowrate values
-            update@matter.manips.substance(this, this.afManualFlowRates);
+            update@matter.manips.substance(this, this.afManualFlowRates, this.aarManualFlowsToCompound);
         end
     end
 end

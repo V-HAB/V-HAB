@@ -355,7 +355,7 @@ classdef flow < base
         end
         
         
-        function setMatterProperties(this, fFlowRate, arPartialMass, fTemperature, fPressure)
+        function setMatterProperties(this, fFlowRate, arPartialMass, fTemperature, fPressure, arCompoundMass)
             %% setMatterProperties
             % For derived classes of flow, can set the matter properties 
             % through this method manually. In contrast to setData, this 
@@ -386,7 +386,11 @@ classdef flow < base
             
             this.fSpecificHeatCapacity = oPhase.oCapacity.fSpecificHeatCapacity;
             this.fMolarMass            = oPhase.fMolarMass;
-            this.arCompoundMass        = oPhase.arCompoundMass;
+            if nargin > 5
+                this.arCompoundMass    = arCompoundMass;
+            else
+                this.arCompoundMass    = oPhase.arCompoundMass;
+            end
         end
         
     end

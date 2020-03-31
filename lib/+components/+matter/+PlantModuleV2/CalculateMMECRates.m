@@ -264,18 +264,34 @@ function [ oCulture ] ...
     
     % attach calculated plant consumsption and production rates to culture 
     % object, further handling on the upper level. also convert to SI units
-    oCulture.tfMMECRates.fWC    = fHWC;
-    oCulture.tfMMECRates.fTR    = fHTR;
-    oCulture.tfMMECRates.fOC    = fHOC;
-    oCulture.tfMMECRates.fOP    = fHOP;
-    oCulture.tfMMECRates.fCO2C  = fHCO2C;
-    oCulture.tfMMECRates.fCO2P  = fHCO2P;
-    oCulture.tfMMECRates.fNC    = fHNC;
     
-    % growth rate on dry basis because edible and inedible biomass parts
-    % have different water contents
-    oCulture.tfMMECRates.fCGR   = fHCGR;
-    oCulture.tfMMECRates.fWCGR   = fHWCGR;
+    % It was noticed that the MEC model in the beginning has slight errors
+    % because more water is consumed than transpired while no crop growth
+    % rate occurs
+    if fHCGR == 0
+        oCulture.tfMMECRates.fWC    = fHTR;
+        oCulture.tfMMECRates.fTR    = fHTR;
+        oCulture.tfMMECRates.fOC    = 0;
+        oCulture.tfMMECRates.fOP    = 0;
+        oCulture.tfMMECRates.fCO2C  = 0;
+        oCulture.tfMMECRates.fCO2P  = 0;
+        oCulture.tfMMECRates.fNC    = 0;
+        oCulture.tfMMECRates.fCGR   = 0;
+        oCulture.tfMMECRates.fWCGR  = 0;
+    else
+        oCulture.tfMMECRates.fWC    = fHWC;
+        oCulture.tfMMECRates.fTR    = fHTR;
+        oCulture.tfMMECRates.fOC    = fHOC;
+        oCulture.tfMMECRates.fOP    = fHOP;
+        oCulture.tfMMECRates.fCO2C  = fHCO2C;
+        oCulture.tfMMECRates.fCO2P  = fHCO2P;
+        oCulture.tfMMECRates.fNC    = fHNC;
+
+        % growth rate on dry basis because edible and inedible biomass parts
+        % have different water contents
+        oCulture.tfMMECRates.fCGR   = fHCGR;
+        oCulture.tfMMECRates.fWCGR  = fHWCGR;
+    end
     
 	% For debugging, if the mass balance is no longer correct
 %     fBalance = fHTR + fHOP + fHCO2P + fHWCGR - fHOC - fHCO2C - fHNC - fHWC;

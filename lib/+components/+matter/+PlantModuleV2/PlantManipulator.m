@@ -82,8 +82,53 @@ classdef PlantManipulator < matter.manips.substance.stationary
                 end
             end
             
+            trBaseCompositionEdible     = this.oMT.ttxMatter.(this.oMT.csI2N{this.iEdibleBiomass}).trBaseComposition;
+            trBaseCompositionInedible   = this.oMT.ttxMatter.(this.oMT.csI2N{this.iInedibleBiomass}).trBaseComposition;
             
-            update@matter.manips.substance.stationary(this, afPartialFlows);
+            fTotalPlantBiomassWaterConsumption = -afPartialFlows(1, tiN2I.H2O);
+            fWaterConsumptionEdible = trBaseCompositionEdible.H2O * afPartialFlows(1, this.iEdibleBiomass);
+            fWaterConsumptionInedible = fTotalPlantBiomassWaterConsumption - fWaterConsumptionEdible;
+            
+            if fWaterConsumptionInedible < 0
+                error('In the plant module too much water is used for edible plant biomass production')
+            end
+            if fWaterConsumptionInedible - afPartialFlows(1, this.iInedibleBiomass) > 1e-6
+                error('In the plant module more water is consumed than biomass is created! This might be due to a mismatch between the defined water content for the edible plant biomass and the assumed edible biomass water content in the MEC model')
+            end
+            
+            aarManipCompoundMassRatios = zeros(this.oMT.iSubstances, this.oMT.iSubstances);
+            
+            if fWaterConsumptionInedible > afPartialFlows(1, this.iInedibleBiomass)
+                % This should not occur permanently, and large cases of
+                % this are catched by the errors above. For cases where
+                % this occurs on a small scale, we can set the water
+                % content to 1
+                aarManipCompoundMassRatios(this.iInedibleBiomass, this.oMT.tiN2I.H2O)       = 1;
+            else
+                aarManipCompoundMassRatios(this.iInedibleBiomass, this.oMT.tiN2I.H2O)       = fWaterConsumptionInedible / afPartialFlows(1, this.iInedibleBiomass);
+            
+                csInedibleComposition = fieldnames(trBaseCompositionInedible);
+                % This calculation enables easy addition of other materials to
+                % the inedible biomass of each plant. It only requires the
+                % addition of that mass to the base composition struct
+                for iField = 1:length(csInedibleComposition)
+                    if strcmp(csInedibleComposition{iField}, 'H2O')
+                        continue
+                    end
+                    rMassRatioWithoutWater = (trBaseCompositionInedible.(csInedibleComposition{iField}) / (1 - trBaseCompositionInedible.H2O));
+                    aarManipCompoundMassRatios(this.iInedibleBiomass, this.oMT.tiN2I.(csInedibleComposition{iField}))   = rMassRatioWithoutWater * (afPartialFlows(1, this.iInedibleBiomass) - fWaterConsumptionInedible) / afPartialFlows(1, this.iInedibleBiomass);
+                end
+            end
+            
+            csEdibleComposition = fieldnames(trBaseCompositionEdible);
+            % This calculation enables easy addition of other materials to
+            % the edible biomass of each plant. It only requires the
+            % addition of that mass to the base composition struct
+            for iField = 1:length(csEdibleComposition)
+                aarManipCompoundMassRatios(this.iEdibleBiomass, this.oMT.tiN2I.(csEdibleComposition{iField})) = trBaseCompositionEdible.(csEdibleComposition{iField});
+            end
+            
+            update@matter.manips.substance.stationary(this, afPartialFlows, aarManipCompoundMassRatios);
             
             %%
             

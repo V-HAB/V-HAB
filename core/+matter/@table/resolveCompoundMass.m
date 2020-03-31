@@ -5,6 +5,9 @@ function afResolvedMass = resolveCompoundMass(this, afMass, arCompoundMass)
 if any(afMass(this.abCompound))
     afResolvedMass = afMass' .* arCompoundMass;
     afResolvedMass = sum(afResolvedMass, 1);
+    % Since the arCompoundMass entries for non compound masses are all 0 we
+    % have to add these masses to the resolved mass again!
+    afResolvedMass(1, ~this.abCompound) = afResolvedMass(1, ~this.abCompound) + afMass(1, ~this.abCompound);
 else
     afResolvedMass = afMass;
 end

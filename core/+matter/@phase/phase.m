@@ -798,7 +798,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
             % The compound mass flow ratio is stored per compound mass (in
             % the rows)
-            if any(any(arExMECompoundMass))
+            if any(any(arCurrentInFlowCompoundMass))
                 afCompoundMassFlow = sum(arCurrentInFlowCompoundMass,2);
                 arCurrentInFlowCompoundMass = arCurrentInFlowCompoundMass ./ afCompoundMassFlow;
                 arCurrentInFlowCompoundMass(afCompoundMassFlow == 0, :) = 0;
@@ -931,9 +931,15 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             if ~base.oDebug.bOff, this.out(1, 2, 'total-fr', 'Total flow rate in %s-%s: %.20f', { this.oStore.sName, this.sName, sum(afTotalInOuts) }); end
             
             % Check manipulator
+            bCompoundManipulatur = false;
             if ~isempty(this.toManips.substance) && ~isempty(this.toManips.substance.afPartialFlows)
                 % Add the changes from the manipulator to the total inouts
                 afTotalInOuts = afTotalInOuts + this.toManips.substance.afPartialFlows;
+                
+                % Check if the manipulator creates a compound mass:
+                if any(this.toManips.substance.afPartialFlows(this.oMT.abCompound))
+                    bCompoundManipulatur = true;
+                end
                 
                 if ~base.oDebug.bOff, this.out(tools.debugOutput.MESSAGE, 1, 'manip-substance', 'Has substance manipulator'); end % directly follows message above, so don't output name
             end
@@ -944,23 +950,39 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Multiply with current time step
             afTotalInOuts = afTotalInOuts * fLastStep;
             
-            if any(any(this.arInFlowCompoundMass))
+            % check if a compound mass update is required:
+            if any(any(this.arInFlowCompoundMass)) || bCompoundManipulatur
                 % Update the compound mass. We do this before we update the
                 % total mass because we must use the total mass of the phase
                 % from before, minus all the outflows but not yet plus the
                 % inflows for this
-                afTotalOuts = afTotalInOuts;
+                % We use this.afCurrentTotalInOuts because that does not
+                % contain the manipulator flowrates yet!
+                afTotalOuts = this.afCurrentTotalInOuts * fLastStep;
+                afTotalIns = afTotalOuts;
+                % Note that for the outflows we set everything larger than
+                % 0 to 0! so the larger than 0 for the outflows and the
+                % smaller than 0 for the inflows are correct!
                 afTotalOuts(afTotalOuts > 0) = 0;
-                afTotalIns = afTotalInOuts;
                 afTotalIns(afTotalIns < 0) = 0;
 
+                % The outgoing mass can be subtracted without considering
+                % the composition, as it does not change the current
+                % composition of the compound mass in this phase
                 afCurrentMass = this.afMass + afTotalOuts;
 
                 % Now using the mass without the outflown matter (as that has
                 % the same composition as the matter in the phase) we add the
                 % inflowing mass with the corresponding compound composition to
                 % get the current masses for each compound
-                mfNewCompoundMasses = afCurrentMass' .* this.arCompoundMass + afTotalIns' .* this.arInFlowCompoundMass;
+                if bCompoundManipulatur
+                    mfNewCompoundMasses =   afCurrentMass' .* this.arCompoundMass +...    % current compound mass composition after outflows
+                                            afTotalIns' .* this.arInFlowCompoundMass +... % plus the total added compound masses from exmes
+                                            fLastStep .* this.toManips.substance.afPartialFlows' .* this.toManips.substance.aarFlowsToCompound; % plus the total added compound masses from manips
+                else
+                    mfNewCompoundMasses = afCurrentMass' .* this.arCompoundMass +...    % current compound mass composition after outflows
+                                          afTotalIns' .* this.arInFlowCompoundMass; % plus the total added compound masses from exmes
+                end
                 afNewCompoundMasses = sum(mfNewCompoundMasses, 2);
 
                 this.arCompoundMass = mfNewCompoundMasses ./ afNewCompoundMasses;
