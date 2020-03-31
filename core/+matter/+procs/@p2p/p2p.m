@@ -366,6 +366,11 @@ classdef (Abstract) p2p < matter.flow & event.source
             if (nargin < 4) || isempty(fTemperature), fTemperature = fExMeTemperature; end
             if (nargin < 5) || isempty(fPressure), fPressure = fExMePressure; end
                 
+            % Connected phases have to do a massupdate before we set the
+            % new flow rate - so the mass for the LAST time step, with the
+            % old flow rate, is actually moved from tank to tank.
+            this.oIn.oPhase.registerMassupdate();
+            this.oOut.oPhase.registerMassupdate();
             
             setMatterProperties@matter.flow(this, fFlowRate, arPartialMass, fTemperature, fPressure);
             
