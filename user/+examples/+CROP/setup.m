@@ -43,13 +43,13 @@ classdef setup < simulation.infrastructure
             this.tiLog.FR_TanFlt                         = oLogger.addValue('Example:c:CROP.toBranches.Tank_to_BioFilter', 'fFlowRate', 'Flow Rate To CROP_BioFilter', 'kg/s'); % 4
             this.tiLog.FR_FltTan                         = oLogger.addValue('Example:c:CROP.toBranches.BioFilter_to_Tank', 'fFlowRate', 'Flow Rate From CROP_BioFilter', 'kg/s'); % 5
                        
-            this.tiLog.M_CROP_BioFilter_Liquid_CH4N2O    = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.FlowPhase', 'afMass(this.oMT.tiN2I.COH4N2)', 'CROP_BioFilter Liquid COH4N2 Mass', 'kg'); % 6
+            this.tiLog.M_CROP_BioFilter_Liquid_CH4N2O    = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.FlowPhase', 'afMass(this.oMT.tiN2I.CH4N2O)', 'CROP_BioFilter Liquid CH4N2O Mass', 'kg'); % 6
             this.tiLog.M_CROP_BioFilter_Liquid_NH3       = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.FlowPhase', 'afMass(this.oMT.tiN2I.NH3)', 'CROP_BioFilter Liquid NH3 Mass', 'kg'); % 7
             this.tiLog.M_CROP_BioFilter_Gas_CO2          = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.Atmosphere', 'afMass(this.oMT.tiN2I.CO2)', 'CROP_BioFilter Gas CO2 Mass', 'kg'); % 8
             this.tiLog.M_CROP_BioFilter_Gas_O2           = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.Atmosphere', 'afMass(this.oMT.tiN2I.O2)', 'CROP_BioFilter Gas O2 Mass', 'kg'); % 9
             this.tiLog.M_CROP_BioFilter_Liquid_NH4OH     = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.FlowPhase', 'afMass(this.oMT.tiN2I.NH4OH)', 'CROP_BioFilter Liquid NH4OH Mass', 'kg'); % 10
             
-            this.tiLog.M_CROP_Tank_Liquid_COH4N2         = oLogger.addValue('Example:c:CROP:s:CROP_Tank.toPhases.TankSolution', 'afMass(this.oMT.tiN2I.COH4N2)', 'CROP_Tank Liquid COH4N2 Mass', 'kg'); % 11
+            this.tiLog.M_CROP_Tank_Liquid_CH4N2O         = oLogger.addValue('Example:c:CROP:s:CROP_Tank.toPhases.TankSolution', 'afMass(this.oMT.tiN2I.CH4N2O)', 'CROP_Tank Liquid CH4N2O Mass', 'kg'); % 11
             this.tiLog.M_CROP_Tank_Liquid_NH3            = oLogger.addValue('Example:c:CROP:s:CROP_Tank.toPhases.TankSolution', 'afMass(this.oMT.tiN2I.NH3)', 'CROP_Tank Liquid NH3 Mass', 'kg'); % 12
             this.tiLog.M_CROP_Tank_Liquid_NH4OH          = oLogger.addValue('Example:c:CROP:s:CROP_Tank.toPhases.TankSolution', 'afMass(this.oMT.tiN2I.NH4OH)', 'CROP_Tank Liquid NH4OH Mass', 'kg'); % 13
             
@@ -59,7 +59,7 @@ classdef setup < simulation.infrastructure
             this.tiLog.M_CROP_Tank_Liquid_HNO3           = oLogger.addValue('Example:c:CROP:s:CROP_Tank.toPhases.TankSolution', 'afMass(this.oMT.tiN2I.HNO3)', 'CROP_Tank Liquid HNO3 Mass', 'kg'); % 17
             
             this.tiLog.M_CROP_BioFilter_Liquid_pH        = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.BioPhase.toManips.substance', 'fpH', 'CROP_BioFilter Liquid pH', '-'); % 18
-            this.tiLog.M_CROP_BioFilter_Bio_COH4N2       = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.BioPhase', 'afMass(this.oMT.tiN2I.COH4N2)', 'CROP_BioFilter Bio COH4N2 Mass', 'kg'); % 19
+            this.tiLog.M_CROP_BioFilter_Bio_CH4N2O       = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.BioPhase', 'afMass(this.oMT.tiN2I.CH4N2O)', 'CROP_BioFilter Bio CH4N2O Mass', 'kg'); % 19
             this.tiLog.M_CROP_BioFilter_Bio_NH3          = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.BioPhase', 'afMass(this.oMT.tiN2I.NH3)', 'CROP_BioFilter Bio NH3 Mass', 'kg'); % 20
             this.tiLog.M_CROP_BioFilter_Bio_NH4OH        = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.BioPhase', 'afMass(this.oMT.tiN2I.NH4OH)', 'CROP_BioFilter Bio NH4OH Mass', 'kg'); % 21
             
