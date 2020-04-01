@@ -539,7 +539,7 @@ if ( bChanged || bForceExecution )
         for iOldTest = 1:length(tOldTests.tTests)
             % Check if the name of the old tutorial matches the new tutorial,
             % if it does, compare the tutorials
-            if strcmp(tTests(iI).name, tOldTests.tTests(iOldTest).name) && ~isempty(tTests(iI).run)
+            if strcmp(tTests(iI).name, tOldTests.tTests(iOldTest).name) && ~isempty(tTests(iI).run) && ~isempty(tOldTests.tTests(iOldTest).run)
                 
                 iTickDiff = tTests(iI).run.iTicks - tOldTests.tTests(iOldTest).run.iTicks;
                 mfData(iI,1) = iTickDiff;

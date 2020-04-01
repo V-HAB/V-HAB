@@ -6,6 +6,9 @@ classdef setup < simulation.infrastructure
     methods
         function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig, fSimTime) % Constructor function
             
+            if nargin < 3
+                ttMonitorConfig = struct();
+            end
             this@simulation.infrastructure('Test_Solver_MultiBranch_3', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             examples.multibranch_solver.systems.Example_3(this.oSimulationContainer, 'Example');

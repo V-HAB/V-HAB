@@ -268,14 +268,14 @@ classdef branch < base.branch
                 this.bTriggerSetFlowRateCallbackBound = true;
             end
         end
-        
+    end
+    methods (Access = {?solver.matter.base.branch, ?base.branch})
         function setFlowRate(this, fFlowRate, afPressureDrops)
             %% matter branch setFlowRate
             % INTERNAL FUNCTION! The registerHandler function of
             % base.branch provides access to this function for ONE solver,
             % and only that solver is allowed to set the flowrate for the
-            % branch. Unfortunatly since base.branch is a parent class this
-            % function cannot be protected or private.
+            % branch.
             %
             % sets the flowrate for the branch and all flow objects, as
             % well as the pressures for the flow objects
@@ -329,7 +329,6 @@ classdef branch < base.branch
             end
         end
     end
-    
     methods (Sealed = true)
         function seal(this)
             %% matter branch seal

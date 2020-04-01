@@ -294,7 +294,7 @@ for iStore = 1:length(tCurrentSystem.Stores)
         sTarget = [sTargetPhase, '.', sTargetExme];
         
         if strcmp(tP2P.sP2P_Type, 'components.matter.P2Ps.ManualP2P')
-            fprintf(sSystemFile,  ['oP2P = ', tP2P.sP2P_Type, '(this, this.toStores.', tStore.label, ', ''', tP2P.label, ''', ''', sSource, ', ''', sTarget, ');\n']);
+            fprintf(sSystemFile,  ['oP2P = ', tP2P.sP2P_Type, '(this.toStores.', tStore.label, ', ''', tP2P.label, ''', ''', sSource, ', ''', sTarget, ');\n']);
             
             csFields = fieldnames(tP2P);
             csStandardFields = {'id', 'label', 'sP2P_Type', 'sType', 'csToPlot', 'csToLog', 'ParentID', 'SourceID', 'TargetID'};

@@ -306,17 +306,13 @@ classdef flow < base
             end
             
             if fFlowRate ~= 0
-                % Uses the ideal gas law to calculate the density of the
-                % flow and from the density the volumetric flowrate. In non
-                % ideal case, or for liquid flows, this calculation is
-                % therefore not correct and should not be used! If a
-                % non-ideal or liquid case becomes necessary it should be
-                % discussed if this calculation can be moved to the matter
-                % table and use the calculateDensity function of the matter
-                % table.
-                fVolumetricFlowRate = fFlowRate / ...
-                                    ( this.fPressure * this.fMolarMass / ...
-                                    ( this.oMT.Const.fUniversalGas * this.fTemperature  ) );
+                % Get the current density and then calculate the volumetric
+                % flowrate from that value. As it uses the matter table, it
+                % is valid in all cases. For gases, if the ideal gas law is
+                % used to calculate the density, some discrepancies could
+                % occur, but this calculation is more accurate anyway
+                fCurrentDensity = this.getDensity();
+                fVolumetricFlowRate = fFlowRate / fCurrentDensity;
             else
                 % In some cases the pressure/temperature or other values
                 % for the flows are not "valid" if the flowrate is zero and

@@ -16,6 +16,9 @@ classdef setup < simulation.infrastructure
         function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig) % Constructor function
             % First we call the parent constructor and tell it the name of
             % this simulation we are creating.
+            if nargin < 3
+                ttMonitorConfig = struct();
+            end
             this@simulation.infrastructure('Test_PH_Calculation', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             % Creating the 'Example' system as a child of the root system
@@ -36,7 +39,7 @@ classdef setup < simulation.infrastructure
 
             % Adding the tank temperatures to the log
             oLogger.addValue('Example:s:Tank_1:p:Water.toManips.substance.oChemicalReactions', 'fCurrentTotalPhosphate',                        'kg/m^3', 'Concentration Phosphate');
-            oLogger.addValue('Example:s:Tank_1:p:Water.toManips.substance.oChemicalReactions', 'mfCurrentConcentrationAll(this.oMT.tiN2I.OHminus)',  'kg/m^3', 'Concentration OH-');
+            oLogger.addValue('Example:s:Tank_1:p:Water.toManips.substance.oChemicalReactions', 'mfCurrentConcentrationAll(this.oMT.tiN2I.OH)',  'kg/m^3', 'Concentration OH-');
             oLogger.addValue('Example:s:Tank_1:p:Water.toManips.substance.oChemicalReactions', 'mfCurrentConcentrationAll(this.oMT.tiN2I.Naplus)',   'kg/m^3', 'Concentration Naplus');
             oLogger.addValue('Example:s:Tank_1:p:Water.toManips.substance.oChemicalReactions', 'fCurrentCalculatedPH',                          '-',     'PH');
             oLogger.addValue('Example:s:Tank_1:p:Water.toManips.substance.oChemicalReactions', 'fCurrentVolume',                                'm^3',   'Volume');
