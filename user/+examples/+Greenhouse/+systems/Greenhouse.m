@@ -8,6 +8,8 @@ classdef Greenhouse < vsys
         
         % Maximum Time Step allowed for this system
         fMaxTimeStep = 3600;
+        
+        fDayModuleCounter;
     end
     
     methods
@@ -389,17 +391,22 @@ classdef Greenhouse < vsys
             end
         end
         
+        function createThermalStructure(this)
+            createThermalStructure@vsys(this);
+            
+            oConstantTemperatureHeatSource = components.thermal.heatsources.ConstantTemperature('BiomassSplitConstantTemperature');
+            this.toStores.BiomassSplit.toPhases.BiomassEdible.oCapacity.addHeatSource(oConstantTemperatureHeatSource);
+            
+            oConstantTemperatureHeatSource = components.thermal.heatsources.ConstantTemperature('InedibleBiomassSplitConstantTemperature');
+            this.toStores.BiomassSplit.toPhases.BiomassInedible.oCapacity.addHeatSource(oConstantTemperatureHeatSource);
+        end
+        
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
-            
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % comment if commented atmosphere CC in createMatterStructure 
             
             solver.matter.manual.branch(this.toBranches.N2BufferSupply);
             solver.matter.manual.branch(this.toBranches.CO2BufferSupply);
             solver.matter.manual.branch(this.toBranches.O2BufferSupply);
-            
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
             solver.matter.manual.branch(this.toBranches.Leakage);
             solver.matter.manual.branch(this.toBranches.SplitToEdible);
@@ -415,6 +422,7 @@ classdef Greenhouse < vsys
                 for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
                     oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
                     oPhase.setTimeStepProperties(tTimeStepProperties);
+                    oPhase.oCapacity.setTimeStepProperties(tTimeStepProperties);
                 end
             end
             
@@ -446,13 +454,6 @@ classdef Greenhouse < vsys
             fCO2 = ((this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afMass(this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.oMT.tiN2I.CO2) * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fMolarMass) / (this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fMass * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.oMT.afMolarMass(this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.oMT.tiN2I.CO2))) * 1e6;
         end
         
-        % placeholder for later. it should be possible for user comfort to
-        % add cultures via the following method. will be implemented after
-        % new plant model has been validated as inputs etc. have to be
-        % adjusted.
-%         function this = addCulture(this, sCultureName, sPlantSpecies, fGrowthArea, fEmergeTime, iConsecutiveGenerations, fHarvestTime, fPPFD, fH)
-%         end
-
         function update(this)
             
             % Atmosphere controllers required for standalone greenhouse. If
@@ -633,13 +634,11 @@ classdef Greenhouse < vsys
                 this.update();
             end
             
-            % In order to resynchronize the phase update ticks we update
-            % all of them in the exec
-            for iStore = 1:length(this.csStores)
-                for iPhase = 1:this.toStores.(this.csStores{iStore}).iPhases
-                    this.toStores.(this.csStores{iStore}).aoPhases(iPhase).registerUpdate();
-                end
+            % This code synchronizes everything once a day
+            if mod(this.oTimer.fTime, 86400) < this.fDayModuleCounter
+                this.oTimer.synchronizeCallBacks();
             end
+            this.fDayModuleCounter = mod(this.oTimer.fTime, 86400);
         end
     end 
 end

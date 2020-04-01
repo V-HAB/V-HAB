@@ -62,9 +62,10 @@ classdef ManualManipulator < matter.manips.substance.stationary
                 this.aarManualFlowsToCompound = zeros(this.oPhase.oMT.iSubstances, this.oPhase.oMT.iSubstances);
             end
             
-            % call the update function to set the manual flow rates as
-            % manipualtor flow rates
-            this.update()
+            % In this case, we have to call the phase massupdate to ensure
+            % we trigger the updates of the manipulators in the post tick!
+            this.oPhase.registerMassupdate();
+            
         end
     end
     methods (Access = protected)

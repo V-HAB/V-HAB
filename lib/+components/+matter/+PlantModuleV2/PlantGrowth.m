@@ -133,7 +133,7 @@ function [ oCulture ] =  PlantGrowth( oCulture, fSimTime)
             % substracted since it is assumed to be wrong)!
             oCulture.fWaterConsumptionRate =  oCulture.fWaterConsumptionRate  + oCulture.tfBiomassGrowthRates.fGrowthRateEdible + oCulture.tfBiomassGrowthRates.fGrowthRateInedible ;
 
-            components.matter.PlantModuleV2.functions.Plant_Module_Verification(oCulture);
+            %components.matter.PlantModuleV2.functions.Plant_Module_Verification(oCulture);
 
 
         % harvest time reached -> change state to harvest   

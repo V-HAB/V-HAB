@@ -112,8 +112,10 @@ classdef ConstantTemperature < thermal.heatsource
                     fExmeHeatFlow = fExmeHeatFlow + (this.oCapacity.aoExmes(iExme).iSign * this.oCapacity.aoExmes(iExme).fHeatFlow);
                 end
                 % Calculated in a way to adjust the capacity temperature
-                % within one minute
-                fTemperatureAdjustmentHeatFlow = (fRequiredTemperatureAdjustment * this.oCapacity.fTotalHeatCapacity) / 60;
+                % within one maximum step of the capacity (to ensure that
+                % we are recalculated before the time we used for this
+                % calculation is passed, thus preventing oscillations)
+                fTemperatureAdjustmentHeatFlow = (fRequiredTemperatureAdjustment * this.oCapacity.fTotalHeatCapacity) / this.oCapacity.fMaxStep;
                 
                 this.fHeatFlow = - fExmeHeatFlow - fHeatSourceFlow + fTemperatureAdjustmentHeatFlow;
                 

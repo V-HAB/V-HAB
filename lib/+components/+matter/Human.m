@@ -491,8 +491,8 @@ classdef Human < vsys
             % timesteps. Therefore, to prevent it from accidentially
             % activating this logic due to an "old" mass value, we also
             % check the bMassTransferActive property of the solver!
-            if this.toStores.Human.toPhases.Urine.fMass > (0.5 + sum(this.afInitialMassUrine)) && ~this.toBranches.Urine_Out.oHandler.bMassTransferActive
-                this.toBranches.Urine_Out.oHandler.setMassTransfer(0.5, 60);
+            if this.toStores.Human.toPhases.Urine.fMass > ((0.5 * this.iNumberOfHumans) + sum(this.afInitialMassUrine)) && ~this.toBranches.Urine_Out.oHandler.bMassTransferActive
+                this.toBranches.Urine_Out.oHandler.setMassTransfer(0.5  * this.iNumberOfHumans, 60);
             end
             
             % for feces a similar logic applies with 132 g of feces
@@ -500,8 +500,8 @@ classdef Human < vsys
             % this occurs about once per day. In the event that the
             % restroom visit is because of the feces mass, the human will
             % still empty the bladder
-            if this.toStores.Human.toPhases.Feces.fMass > (0.132 + sum(this.afInitialMassFeces)) && ~this.toBranches.Feces_Out.oHandler.bMassTransferActive
-                this.toBranches.Feces_Out.oHandler.setMassTransfer(this.toStores.Human.toPhases.Feces.fMass - sum(this.afInitialMassFeces), 360);
+            if this.toStores.Human.toPhases.Feces.fMass > ((0.132 * this.iNumberOfHumans)  + sum(this.afInitialMassFeces)) && ~this.toBranches.Feces_Out.oHandler.bMassTransferActive
+                this.toBranches.Feces_Out.oHandler.setMassTransfer(0.132 * this.iNumberOfHumans, 360);
             end
             
             %% Scheduler
@@ -781,7 +781,7 @@ classdef Human < vsys
             % water are missing from the human, the missing water is
             % consumed be the human model
             fWaterDifference = this.afInitialMassHuman(this.oMT.tiN2I.H2O) - this.toStores.Human.toPhases.HumanPhase.afMass(this.oMT.tiN2I.H2O);
-            if fWaterDifference > 0.5
+            if fWaterDifference > 0.5  && ~this.toBranches.Potable_Water_In.oHandler.bMassTransferActive
                 this.toBranches.Potable_Water_In.oHandler.setMassTransfer(-fWaterDifference, 60);
             end
             

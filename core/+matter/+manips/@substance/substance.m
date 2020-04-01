@@ -74,6 +74,16 @@ classdef (Abstract) substance < matter.manip
     end
     
     methods (Access = protected)
+        % The update function is the only function allowed to change
+        % afPartialFlows property, since that function actually changes the
+        % flowrates for the manip, it must be ensured that the massupdate
+        % of the phase is always performed before this, which is done by
+        % ensuring only the timer can call the update, since in the post
+        % tick the execution order is defined to execute mass udpates
+        % before manip updates! Unfortunatly, since the child
+        % classes must be allowed to override the update function, it is
+        % possible to abuse this to directly call the update from other
+        % functions of the child class. THIS SHOULD NOT BE DONE!
         function update(this, afPartialFlows, aarFlowsToCompound)
             %% Update
             % INTERNAL FUNCTION! Is executed within the post tick and

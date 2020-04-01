@@ -3,7 +3,8 @@ classdef (Abstract) flow < matter.phase
     % A phase that is modelled as containing no matter. For implementation
     % purposes the phase does have a mass, but the calculations enforce
     % zero mass change for the phase and calculate all values based on the
-    % inflows.
+    % inflows. Flow phases will only work correctly if used with either a
+    % residual or a multi branch solver!!
     
     properties (SetAccess = protected, GetAccess = public)
         % flow_nodes can be used within multi branch solvers to allow the
