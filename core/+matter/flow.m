@@ -186,7 +186,7 @@ classdef flow < base
             this.oOut = [];
         end
         
-        function fDensity = getDensity(this)
+        function fDensity = getDensity(this, sType, arPartials, afPP)
             %% getDensity
             % the Density property is set to empty when the setData
             % function of the flow is executed (when the matter properties
@@ -197,7 +197,11 @@ classdef flow < base
             % Outputs:
             % fDensity: Density of the matter of the flow in kg/m^3
             if isempty(this.fDensity)
-                this.fDensity = this.oMT.calculateDensity(this);
+                if nargin > 1
+                    this.fDensity = this.oMT.calculateDensity(sType, arPartials, this.fTemperature, afPP);
+                else
+                    this.fDensity = this.oMT.calculateDensity(this);
+                end
             end
             
             fDensity = this.fDensity;

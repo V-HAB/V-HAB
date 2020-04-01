@@ -138,10 +138,10 @@ else
     end
     
     % Isobar or isochor?
-    if nargin > 5 && varargin{5} == true
-        bUseIsobaricData = true;
-    else
+    if nargin > 5 && varargin{5} == false
         bUseIsobaricData = false;
+    else
+        bUseIsobaricData = true;
     end
     
 end

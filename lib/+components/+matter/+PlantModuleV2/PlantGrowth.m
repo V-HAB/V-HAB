@@ -144,11 +144,6 @@ function [ oCulture ] =  PlantGrowth( oCulture, fSimTime)
                 % set culture state to harvest
                 oCulture.iState = 2;
 
-                % Function needed in order to be able to verify plant
-                % module vs data stated in the BVAD
-                components.matter.PlantModuleV2.functions.Plant_Verification_Output(oCulture);
-
-
                 % get fieldnames for loop
                 csFieldNames = fieldnames(oCulture.tfMMECRates);
 
