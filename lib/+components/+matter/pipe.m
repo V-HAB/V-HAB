@@ -143,18 +143,16 @@ classdef pipe < matter.procs.f2f
             else
                 iInExme = 2;
             end
-            arPartials  = this.oBranch.coExmes{iInExme}.oPhase.arPartialMass;
-            sType       = this.oBranch.coExmes{iInExme}.oPhase.sType;
-            afPPIn      = this.oMT.calculatePartialPressures(sType, arPartials, oFlowIn.fPressure);
-            afPPOut     = this.oMT.calculatePartialPressures(sType, arPartials, oFlowOut.fPressure);
             
-            % Calculate density and flow speed
-            % As for the pressure above, we are using the average
-            % density between in- and outflow.
-            fDensityIn = oFlowIn.getDensity(sType, arPartials, afPPIn);
-            fDensityOut = oFlowOut.getDensity(sType, arPartials, afPPOut);
+            try            
+                fDensityIn = oFlowIn.getDensity();
+                fDensityOut = oFlowOut.getDensity();
+                
+                fDensity = (fDensityIn + fDensityOut) / 2;
+            catch
+                fDensity = this.oBranch.coExmes{iInExme}.oPhase.fDensity;
+            end
 
-            fDensity = (fDensityIn + fDensityOut) / 2;
             fFlowSpeed   = abs(fFlowRate) / ((pi / 4) * this.fDiameter^2 * fDensity);
 
             % Calculate dynamic viscosity
