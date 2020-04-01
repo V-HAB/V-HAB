@@ -73,7 +73,7 @@ classdef Human < vsys
     methods
         function this = Human(oParent, sName, bMale, fAge, fHumanMass, fHumanHeight, txCrewPlaner, iNumberOfHumans, trInitialFoodComposition)
             
-            this@vsys(oParent, sName, 60);
+            this@vsys(oParent, sName, 2 * 60);
             
             eval(this.oRoot.oCfgParams.configCode(this));
             
@@ -417,14 +417,22 @@ classdef Human < vsys
                     oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
                     
                     oPhase.setTimeStepProperties(tTimeStepProperties);
+                    oPhase.oCapacity.setTimeStepProperties(tTimeStepProperties);
                 end
             end
+            
+            % In the stomach the food conversion can result in generated
+            % mass errors, but since only occurs three times a day setting
+            % the allowed value of this to 0 for the stomach does not slow
+            % down the simulation significantly, but reduces the mass
+            % errors a lot.
+            tTimeStepProperties.fMassErrorLimit = 0;
+            this.toStores.Human.toPhases.Stomach.setTimeStepProperties(tTimeStepProperties);
                 
             this.setThermalSolvers();
             
             this.setState(1);
-            
-            this.fTimeStep = 60;
+            this.setTimeStep(this.fTimeStep);
         end
         
         function setIfFlows(this, varargin)
@@ -475,8 +483,16 @@ classdef Human < vsys
             % kept simple, similar to drinking, whenever the bladder
             % reaches a mass of 0.5 kg the human visits the toilet, on
             % average this happens ~3 times a day
-            if this.toStores.Human.toPhases.Urine.fMass > (1.7 + sum(this.afInitialMassUrine))
-                this.toBranches.Urine_Out.oHandler.setMassTransfer(this.toStores.Human.toPhases.Urine.fMass - sum(this.afInitialMassUrine), 60);
+            % Here the fixed time step results in something quite strange.
+            % Since the update of the phase masses occurs in the post tick
+            % logic, the phase mass is not yet updated when the 60 seconds
+            % timestep of this exec have passed. This means the exec
+            % actually sees the same amount of Urine in the phase for two
+            % timesteps. Therefore, to prevent it from accidentially
+            % activating this logic due to an "old" mass value, we also
+            % check the bMassTransferActive property of the solver!
+            if this.toStores.Human.toPhases.Urine.fMass > (0.5 + sum(this.afInitialMassUrine)) && ~this.toBranches.Urine_Out.oHandler.bMassTransferActive
+                this.toBranches.Urine_Out.oHandler.setMassTransfer(0.5, 60);
             end
             
             % for feces a similar logic applies with 132 g of feces
@@ -484,8 +500,7 @@ classdef Human < vsys
             % this occurs about once per day. In the event that the
             % restroom visit is because of the feces mass, the human will
             % still empty the bladder
-            if this.toStores.Human.toPhases.Feces.fMass > (0.132 + sum(this.afInitialMassFeces))
-                this.toBranches.Urine_Out.oHandler.setMassTransfer(this.toStores.Human.toPhases.Urine.fMass - sum(this.afInitialMassUrine), 60);
+            if this.toStores.Human.toPhases.Feces.fMass > (0.132 + sum(this.afInitialMassFeces)) && ~this.toBranches.Feces_Out.oHandler.bMassTransferActive
                 this.toBranches.Feces_Out.oHandler.setMassTransfer(this.toStores.Human.toPhases.Feces.fMass - sum(this.afInitialMassFeces), 360);
             end
             

@@ -28,6 +28,7 @@ classdef branch < solver.matter.base.branch
         % transfered
         bMassTransferActive = false;
         fMassTransferStartTime;
+        fMassTransferFinishTime;
     end
     
     properties (SetAccess = private, GetAccess = private) %, Transient = true)
@@ -115,7 +116,8 @@ classdef branch < solver.matter.base.branch
             end
             this.fTimeStep = fTime;
             this.bMassTransferActive = true;
-            this.fMassTransferStartTime = this.oBranch.oTimer.fTime;
+            this.fMassTransferStartTime  = this.oBranch.oTimer.fTime;
+            this.fMassTransferFinishTime = this.oBranch.oTimer.fTime + fTime;
             
             this.fRequestedFlowRate = fMass / fTime;
             this.fRequestedVolumetricFlowRate = [];
@@ -136,12 +138,23 @@ classdef branch < solver.matter.base.branch
             
             % In the case of a fixed mass transfer the flowrate is reset to
             % zero once it is finished (which should occur within one tick)
-            if this.bMassTransferActive && abs(this.oBranch.oTimer.fTime - (this.fMassTransferStartTime + this.fTimeStep)) < this.oBranch.oTimer.fMinimumTimeStep
+            if this.bMassTransferActive && abs(this.oBranch.oTimer.fTime - this.fMassTransferFinishTime) < this.oBranch.oTimer.fMinimumTimeStep
                 this.bMassTransferActive = false;
                 this.fRequestedFlowRate = 0;
                 
                 this.fTimeStep = inf;
                 this.setTimeStep(this.fTimeStep);
+            elseif this.bMassTransferActive && abs(this.oBranch.oTimer.fTime - this.fMassTransferFinishTime) > this.oBranch.oTimer.fMinimumTimeStep
+                % If the branch is called before the set mass transfer time
+                % step, the afLastExec property in the timer for this
+                % branch is updated, while the timestep remains. This can
+                % lead to the branch missing its update. Therefore, in
+                % every update that occurs during a mass transfer that
+                % does not fullfill the above conditions we have to reduce
+                % the time step:
+                this.fTimeStep = this.fMassTransferFinishTime - this.oBranch.oTimer.fTime;
+                
+                this.setTimeStep(this.fTimeStep, true);
             elseif ~isempty(this.fRequestedVolumetricFlowRate)
                 
                 if this.fRequestedVolumetricFlowRate >= 0

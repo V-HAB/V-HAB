@@ -13,7 +13,7 @@ classdef Example < vsys
     
     methods
         function this = Example(oParent, sName)
-            this@vsys(oParent, sName, 60);
+            this@vsys(oParent, sName, 2 * 60);
             
             %% crew planer
             % Since the crew schedule follows the same pattern every day,
@@ -177,11 +177,27 @@ classdef Example < vsys
             
             % set a fixed time step for the phases where the change rates
             % are not of interest
-            tTimeStepProperties.fFixedTimeStep = this.fTimeStep;
+            tTimeStepProperties.fFixedTimeStep = this.fTimeStep / 2;
             
             this.toStores.PotableWaterStorage.toPhases.PotableWater.setTimeStepProperties(tTimeStepProperties);
             this.toStores.UrineStorage.toPhases.Urine.setTimeStepProperties(tTimeStepProperties);
             this.toStores.FecesStorage.toPhases.Feces.setTimeStepProperties(tTimeStepProperties);
+            
+            this.toStores.PotableWaterStorage.toPhases.PotableWater.oCapacity.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.UrineStorage.toPhases.Urine.oCapacity.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.FecesStorage.toPhases.Feces.oCapacity.setTimeStepProperties(tTimeStepProperties);
+            
+            tTimeStepProperties = struct();
+            tTimeStepProperties.fMaxStep = this.fTimeStep;
+            this.toStores.Cabin.toPhases.CabinAir.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.FoodStore.toPhases.Food.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.FoodStore.toPhases.Food_Output_1.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.FoodStore.toPhases.Food_Output_2.setTimeStepProperties(tTimeStepProperties);
+            
+            this.toStores.Cabin.toPhases.CabinAir.oCapacity.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.FoodStore.toPhases.Food.oCapacity.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.FoodStore.toPhases.Food_Output_1.oCapacity.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.FoodStore.toPhases.Food_Output_2.oCapacity.setTimeStepProperties(tTimeStepProperties);
             
             this.setThermalSolvers();
         end

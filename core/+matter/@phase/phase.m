@@ -1238,7 +1238,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         function setOutdatedTS(this)
             %% setOutdatedTS
             % INTERNAL FUNCTION! This function is called by the
-            % registerUpdate function
+            % registerUpdate function or the massupdate. Since a massupdate
+            % must be called when flowrates change (which would be the use
+            % case when someone might want to call this function) it is not
+            % possible to access it, as external calls should call the
+            % massupdate anyway!
             %
             % Setting this to true multiple times in the timer is no
             % problem, therefore no check required
