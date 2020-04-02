@@ -69,6 +69,7 @@ end
 
 this.ttxMatter.(sCompoundName).trBaseComposition    = trBaseComposition;
 this.ttxMatter.(sCompoundName).bIndividualFile      = false;
+this.ttxMatter.(sCompoundName).sName                = sCompoundName;
 
 arBaseComposition = zeros(1,this.iSubstances);
 for iField = 1:length(csComposition)
