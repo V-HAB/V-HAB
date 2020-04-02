@@ -8,6 +8,8 @@ classdef Greenhouse < vsys
         
         % Maximum Time Step allowed for this system
         fMaxTimeStep = 3600;
+        
+        fDayModuleCounter;
     end
     
     methods
@@ -128,54 +130,58 @@ classdef Greenhouse < vsys
             
             matter.store(this, 'BiomassSplit', 4);
             
-            oBiomassEdibleSplit = matter.phases.liquid(...
+            oBiomassEdibleSplit = matter.phases.mixture(...
                 this.toStores.BiomassSplit, ...     % store containing phase
                 'BiomassEdible', ...                % phase name
+                'solid', ...
                 struct(...                          % phase contents    [kg]
                     ), ...
                 fTemperatureInit, ...               % phase temperature [K]
                 101325);
             
-            matter.procs.exmes.liquid(oBiomassEdibleSplit, 'BiomassEdible_Out_ToStorage');
-            matter.procs.exmes.liquid(oBiomassEdibleSplit, 'EdibleInedible_Split_P2P_Out');
+            matter.procs.exmes.mixture(oBiomassEdibleSplit, 'BiomassEdible_Out_ToStorage');
+            matter.procs.exmes.mixture(oBiomassEdibleSplit, 'EdibleInedible_Split_P2P_Out');
             
-            oBiomassInedibleSplit = matter.phases.liquid(...
+            oBiomassInedibleSplit = matter.phases.mixture(...
                 this.toStores.BiomassSplit, ...     % store containing phase
                 'BiomassInedible', ...              % phase name
+                'solid', ...
                 struct(...                          % phase contents    [kg]
                     ), ...
                 fTemperatureInit, ...               % phase temperature [K]
                 101325);
 
-            matter.procs.exmes.liquid(oBiomassInedibleSplit, 'BiomassInedible_Out_ToStorage');
-            matter.procs.exmes.liquid(oBiomassInedibleSplit, 'EdibleInedible_Split_P2P_In');
+            matter.procs.exmes.mixture(oBiomassInedibleSplit, 'BiomassInedible_Out_ToStorage');
+            matter.procs.exmes.mixture(oBiomassInedibleSplit, 'EdibleInedible_Split_P2P_In');
             
             %% Biomass Storage
             
             matter.store(this, 'BiomassEdible', 20);
             
-            oBiomassEdible = matter.phases.liquid(...
+            oBiomassEdible = matter.phases.mixture(...
                 this.toStores.BiomassEdible, ...    % store containing phase
                 'BiomassEdible', ...                % phase name
+                'solid', ...
                 struct(...                          % phase contents    [kg]
-                    'CabbageEdibleWet', 5, ...
-                    'StrawberryEdibleWet', 3), ...
+                    'Cabbage', 5, ...
+                    'Strawberries', 3), ...
                 fTemperatureInit, ...               % phase temperature [K]
                 101325);
             
-            matter.procs.exmes.liquid(oBiomassEdible, 'BiomassEdible_In_FromSplit');
+            matter.procs.exmes.mixture(oBiomassEdible, 'BiomassEdible_In_FromSplit');
             
             matter.store(this, 'BiomassInedible', 20);
             
-            oBiomassInedible = matter.phases.liquid(...
+            oBiomassInedible = matter.phases.mixture(...
                 this.toStores.BiomassInedible, ...  % store containing phase
                 'BiomassInedible', ...              % phase name
+                'solid', ...
                 struct(...                          % phase contents    [kg]
                     ), ...
                 fTemperatureInit, ...               % phase temperature [K]
                 101325);
             
-            matter.procs.exmes.liquid(oBiomassInedible, 'BiomassInedible_In_FromSplit');
+            matter.procs.exmes.mixture(oBiomassInedible, 'BiomassInedible_In_FromSplit');
             
             %% Leakage Buffer
             
@@ -339,9 +345,9 @@ classdef Greenhouse < vsys
                 matter.procs.exmes.gas(oAtmosphere,             [this.toChildren.(csPlantCultures{iI}).sName, '_AtmosphereCirculation_In']);
                 matter.procs.exmes.liquid(oWaterSupply,         [this.toChildren.(csPlantCultures{iI}).sName, '_WaterSupply_Out']);
                 matter.procs.exmes.liquid(oNutrientSupply,      [this.toChildren.(csPlantCultures{iI}).sName, '_NutrientSupply_Out']);
-                matter.procs.exmes.liquid(oBiomassEdibleSplit,  [this.toChildren.(csPlantCultures{iI}).sName, '_Biomass_In']);
+                matter.procs.exmes.mixture(oBiomassEdibleSplit,  [this.toChildren.(csPlantCultures{iI}).sName, '_Biomass_In']);
                 
-                csInedibleBiomass{iI} = [this.toChildren.(csPlantCultures{iI}).txPlantParameters.sPlantSpecies, 'InedibleWet'];
+                csInedibleBiomass{iI} = [this.toChildren.(csPlantCultures{iI}).txPlantParameters.sPlantSpecies, 'Inedible'];
             end
             
             %% Create Biomass Split P2P
@@ -385,17 +391,22 @@ classdef Greenhouse < vsys
             end
         end
         
+        function createThermalStructure(this)
+            createThermalStructure@vsys(this);
+            
+            oConstantTemperatureHeatSource = components.thermal.heatsources.ConstantTemperature('BiomassSplitConstantTemperature');
+            this.toStores.BiomassSplit.toPhases.BiomassEdible.oCapacity.addHeatSource(oConstantTemperatureHeatSource);
+            
+            oConstantTemperatureHeatSource = components.thermal.heatsources.ConstantTemperature('InedibleBiomassSplitConstantTemperature');
+            this.toStores.BiomassSplit.toPhases.BiomassInedible.oCapacity.addHeatSource(oConstantTemperatureHeatSource);
+        end
+        
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
-            
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % comment if commented atmosphere CC in createMatterStructure 
             
             solver.matter.manual.branch(this.toBranches.N2BufferSupply);
             solver.matter.manual.branch(this.toBranches.CO2BufferSupply);
             solver.matter.manual.branch(this.toBranches.O2BufferSupply);
-            
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
             solver.matter.manual.branch(this.toBranches.Leakage);
             solver.matter.manual.branch(this.toBranches.SplitToEdible);
@@ -411,6 +422,7 @@ classdef Greenhouse < vsys
                 for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
                     oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
                     oPhase.setTimeStepProperties(tTimeStepProperties);
+                    oPhase.oCapacity.setTimeStepProperties(tTimeStepProperties);
                 end
             end
             
@@ -442,13 +454,6 @@ classdef Greenhouse < vsys
             fCO2 = ((this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afMass(this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.oMT.tiN2I.CO2) * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fMolarMass) / (this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fMass * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.oMT.afMolarMass(this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.oMT.tiN2I.CO2))) * 1e6;
         end
         
-        % placeholder for later. it should be possible for user comfort to
-        % add cultures via the following method. will be implemented after
-        % new plant model has been validated as inputs etc. have to be
-        % adjusted.
-%         function this = addCulture(this, sCultureName, sPlantSpecies, fGrowthArea, fEmergeTime, iConsecutiveGenerations, fHarvestTime, fPPFD, fH)
-%         end
-
         function update(this)
             
             % Atmosphere controllers required for standalone greenhouse. If
@@ -629,13 +634,11 @@ classdef Greenhouse < vsys
                 this.update();
             end
             
-            % In order to resynchronize the phase update ticks we update
-            % all of them in the exec
-            for iStore = 1:length(this.csStores)
-                for iPhase = 1:this.toStores.(this.csStores{iStore}).iPhases
-                    this.toStores.(this.csStores{iStore}).aoPhases(iPhase).registerUpdate();
-                end
+            % This code synchronizes everything once a day
+            if mod(this.oTimer.fTime, 86400) < this.fDayModuleCounter
+                this.oTimer.synchronizeCallBacks();
             end
+            this.fDayModuleCounter = mod(this.oTimer.fTime, 86400);
         end
     end 
 end

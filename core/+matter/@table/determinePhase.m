@@ -18,6 +18,10 @@ if isnumeric(sSubstance)
     % phase indicator for each substance
     csSubstances = this.csSubstances(sSubstance ~= 0);
     
+    if any(sSubstance(this.abCompound))
+        error('resolve compound masses using the resolveCompoundMass function of the matter table before using the determine phase function!')
+    end
+    
     miPhase = zeros(1,this.iSubstances);
     for k = 1:length(csSubstances)
         [miPhase(this.tiN2I.(csSubstances{k})), ~] = determinePhaseForSubstance(this, csSubstances{k}, fTemperature, fPressure(this.tiN2I.(csSubstances{k})));

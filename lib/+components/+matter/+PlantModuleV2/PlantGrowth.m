@@ -133,7 +133,7 @@ function [ oCulture ] =  PlantGrowth( oCulture, fSimTime)
             % substracted since it is assumed to be wrong)!
             oCulture.fWaterConsumptionRate =  oCulture.fWaterConsumptionRate  + oCulture.tfBiomassGrowthRates.fGrowthRateEdible + oCulture.tfBiomassGrowthRates.fGrowthRateInedible ;
 
-            components.matter.PlantModuleV2.functions.Plant_Module_Verification(oCulture);
+            %components.matter.PlantModuleV2.functions.Plant_Module_Verification(oCulture);
 
 
         % harvest time reached -> change state to harvest   
@@ -143,11 +143,6 @@ function [ oCulture ] =  PlantGrowth( oCulture, fSimTime)
             if oCulture.iState == 1
                 % set culture state to harvest
                 oCulture.iState = 2;
-
-                % Function needed in order to be able to verify plant
-                % module vs data stated in the BVAD
-                components.matter.PlantModuleV2.functions.Plant_Verification_Output(oCulture);
-
 
                 % get fieldnames for loop
                 csFieldNames = fieldnames(oCulture.tfMMECRates);

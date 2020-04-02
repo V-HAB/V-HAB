@@ -13,7 +13,7 @@ classdef Example < vsys
     
     methods
         function this = Example(oParent, sName)
-            this@vsys(oParent, sName, 60);
+            this@vsys(oParent, sName, 2 * 60);
             
             %% crew planer
             % Since the crew schedule follows the same pattern every day,
@@ -127,16 +127,15 @@ classdef Example < vsys
             
             % Creates a store for the urine
             matter.store(this, 'UrineStorage', 10);
-            
-            oUrinePhase = matter.phases.mixture(this.toStores.UrineStorage, 'Urine', 'liquid', struct('C2H6O2N2', 0.059, 'H2O', 1.6), 295, 101325); 
+            oUrinePhase = matter.phases.mixture(this.toStores.UrineStorage, 'Urine', 'liquid', struct('Urine', 1.6), 295, 101325); 
             
             
             % Creates a store for the feces storage            
             matter.store(this, 'FecesStorage', 10);
-            oFecesPhase = matter.phases.mixture(this.toStores.FecesStorage, 'Feces', 'solid', struct('C42H69O13N5', 0.032, 'H2O', 0.1), 295, 101325); 
+            oFecesPhase = matter.phases.mixture(this.toStores.FecesStorage, 'Feces', 'solid', struct('Feces', 0.132), 295, 101325); 
             
             % Adds a food store to the system
-            tfFood = struct('Food', 100, 'CarrotsEdibleWet', 10);
+            tfFood = struct('Food', 100, 'Carrots', 10);
             oFoodStore = components.matter.FoodStore(this, 'FoodStore', 100, tfFood);
             
             
@@ -178,11 +177,27 @@ classdef Example < vsys
             
             % set a fixed time step for the phases where the change rates
             % are not of interest
-            tTimeStepProperties.fFixedTimeStep = this.fTimeStep;
+            tTimeStepProperties.fFixedTimeStep = this.fTimeStep / 2;
             
             this.toStores.PotableWaterStorage.toPhases.PotableWater.setTimeStepProperties(tTimeStepProperties);
             this.toStores.UrineStorage.toPhases.Urine.setTimeStepProperties(tTimeStepProperties);
             this.toStores.FecesStorage.toPhases.Feces.setTimeStepProperties(tTimeStepProperties);
+            
+            this.toStores.PotableWaterStorage.toPhases.PotableWater.oCapacity.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.UrineStorage.toPhases.Urine.oCapacity.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.FecesStorage.toPhases.Feces.oCapacity.setTimeStepProperties(tTimeStepProperties);
+            
+            tTimeStepProperties = struct();
+            tTimeStepProperties.fMaxStep = this.fTimeStep;
+            this.toStores.Cabin.toPhases.CabinAir.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.FoodStore.toPhases.Food.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.FoodStore.toPhases.Food_Output_1.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.FoodStore.toPhases.Food_Output_2.setTimeStepProperties(tTimeStepProperties);
+            
+            this.toStores.Cabin.toPhases.CabinAir.oCapacity.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.FoodStore.toPhases.Food.oCapacity.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.FoodStore.toPhases.Food_Output_1.oCapacity.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.FoodStore.toPhases.Food_Output_2.oCapacity.setTimeStepProperties(tTimeStepProperties);
             
             this.setThermalSolvers();
         end

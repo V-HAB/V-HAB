@@ -13,6 +13,14 @@ classdef setup < simulation.infrastructure
             
             this@simulation.infrastructure('Cabin', ptConfigParams, tSolverParams, ttMonitorConfig);
             
+            trBaseCompositionUrine.H2O      = 0.9644;
+            trBaseCompositionUrine.CH4N2O   = 0.0356;
+            this.oSimulationContainer.oMT.defineCompoundMass(this, 'Urine', trBaseCompositionUrine)
+            
+            trBaseCompositionFeces.H2O          = 0.7576;
+            trBaseCompositionFeces.DietaryFiber = 0.2424;
+            this.oSimulationContainer.oMT.defineCompoundMass(this, 'Feces', trBaseCompositionFeces)
+            
             examples.algae.systems.PhotobioreactorTutorial(this.oSimulationContainer, 'Cabin');
             
             %% Simulation length

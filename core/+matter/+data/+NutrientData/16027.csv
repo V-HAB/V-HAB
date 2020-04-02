@@ -1,0 +1,122 @@
+Source: USDA National Nutrient Database for Standard Reference 1 April 2018 Software v.3.9.5.3_2019-06-13
+Full Report (All Nutrients)
+Report Run at: September 05 2019 02:28 EDT
+"Nutrient data for: Beans, kidney, all types, mature seeds, raw"
+Food Group:  Legumes and Legume Products
+Common Name:
+Carbohydrate Factor: Fat Factor: Protein Factor: Nitrogen to Protein Conversion Factor: 
+Nutrient,Unit,1Value per 100 g,Data points,Std. Error,"1 cup = 184.0g",
+Proximates
+"Water",g,11.75,86,--,21.62
+"Energy",kcal,333,--,--,613
+"Energy",kJ,1393,--,--,2563
+"Protein",g,23.58,102,--,43.39
+"Total lipid (fat)",g,0.83,108,--,1.53
+"Ash",g,3.83,85,--,7.05
+"Carbohydrate, by difference",g,60.01,--,--,110.42
+"Fiber, total dietary",g,24.9,--,--,45.8
+"Sugars, total",g,2.23,--,--,4.10
+Minerals
+"Calcium, Ca",mg,143,71,--,263
+"Iron, Fe",mg,8.20,90,0.590,15.09
+"Magnesium, Mg",mg,140,69,--,258
+"Phosphorus, P",mg,407,66,--,749
+"Potassium, K",mg,1406,67,--,2587
+"Sodium, Na",mg,24,55,--,44
+"Zinc, Zn",mg,2.79,68,0.210,5.13
+"Copper, Cu",mg,0.958,64,--,1.763
+"Manganese, Mn",mg,1.021,68,--,1.879
+"Selenium, Se",µg,3.2,--,--,5.9
+Vitamins
+"Vitamin C, total ascorbic acid",mg,4.5,1,--,8.3
+"Thiamin",mg,0.529,53,--,0.973
+"Riboflavin",mg,0.219,53,--,0.403
+"Niacin",mg,2.060,48,--,3.790
+"Pantothenic acid",mg,0.780,32,0.022,1.435
+"Vitamin B-6",mg,0.397,32,0.007,0.730
+"Folate, total",µg,394,32,13.000,725
+"Folic acid",µg,0,--,--,0
+"Folate, food",µg,394,32,13.000,725
+"Folate, DFE",µg,394,--,--,725
+"Vitamin B-12",µg,0.00,--,--,0.00
+"Vitamin A, RAE",µg,0,--,--,0
+"Retinol",µg,0,--,--,0
+"Carotene, beta",µg,0,--,--,0
+"Carotene, alpha",µg,0,--,--,0
+"Cryptoxanthin, beta",µg,0,--,--,0
+"Vitamin A, IU",IU,0,--,--,0
+"Lycopene",µg,0,--,--,0
+"Lutein + zeaxanthin",µg,0,--,--,0
+"Vitamin E (alpha-tocopherol)",mg,0.22,--,--,0.40
+"Vitamin D (D2 + D3)",µg,0.0,--,--,0.0
+"Vitamin D",IU,0,--,--,0
+"Vitamin K (phylloquinone)",µg,19.0,--,--,35.0
+Lipids
+"Fatty acids, total saturated",g,0.120,--,--,0.221
+"4:0",g,0.000,--,--,0.000
+"6:0",g,0.000,--,--,0.000
+"8:0",g,0.000,--,--,0.000
+"10:0",g,0.000,--,--,0.000
+"12:0",g,0.000,--,--,0.000
+"16:0",g,0.106,--,--,0.195
+"18:0",g,0.014,--,--,0.026
+"Fatty acids, total monounsaturated",g,0.064,--,--,0.118
+"16:1 undifferentiated",g,0.000,--,--,0.000
+"18:1 undifferentiated",g,0.064,--,--,0.118
+"20:1",g,0.000,--,--,0.000
+"22:1 undifferentiated",g,0.000,--,--,0.000
+"Fatty acids, total polyunsaturated",g,0.457,--,--,0.841
+"18:2 undifferentiated",g,0.178,--,--,0.328
+"18:3 undifferentiated",g,0.279,--,--,0.513
+"18:4",g,0.000,--,--,0.000
+"20:4 undifferentiated",g,0.000,--,--,0.000
+"20:5 n-3 (EPA)",g,0.000,--,--,0.000
+"22:6 n-3 (DHA)",g,0.000,--,--,0.000
+"Fatty acids, total trans",g,0.000,--,--,0.000
+"Cholesterol",mg,0,--,--,0
+"Phytosterols",mg,127,--,--,234
+Amino Acids
+"Tryptophan",g,0.279,--,--,0.513
+"Threonine",g,0.992,--,--,1.825
+"Isoleucine",g,1.041,--,--,1.915
+"Leucine",g,1.882,--,--,3.463
+"Lysine",g,1.618,--,--,2.977
+"Methionine",g,0.355,--,--,0.653
+"Cystine",g,0.256,--,--,0.471
+"Phenylalanine",g,1.275,--,--,2.346
+"Tyrosine",g,0.664,--,--,1.222
+"Valine",g,1.233,--,--,2.269
+"Arginine",g,1.460,--,--,2.686
+"Histidine",g,0.656,--,--,1.207
+"Alanine",g,0.988,--,--,1.818
+"Aspartic acid",g,2.852,--,--,5.248
+"Glutamic acid",g,3.595,--,--,6.615
+"Glycine",g,0.920,--,--,1.693
+"Proline",g,1.000,--,--,1.840
+"Serine",g,1.282,--,--,2.359
+Other
+"Alcohol, ethyl",g,0.0,--,--,0.0
+"Caffeine",mg,0,--,--,0
+"Theobromine",mg,0,--,--,0
+Flavonoids
+Isoflavones
+"Glycitein",mg,0.00,15,0.000,0.00
+"Biochanin A",mg,0.04,25,0.130,0.07
+"Formononetin",mg,0.00,25,0.004,0.01
+"Coumestrol",mg,0.00,25,0.004,0.00
+1,"Nakamura, Y., Kaihara, A., Yoshii, K., Tsumura, Y., Ishimitsu, S., and Tonogai, Y. ","Content and composition of isoflavones in mature or immature beans and bean sprouts consumed in Japan.",2001,J. Health Sci.,47 pp. 394-394
+Langual Code(s)
+"E0150""WHOLE, NATURAL SHAPE"
+"A0152""VEGETABLE OR VEGETABLE PRODUCT (US CFR)"
+"K0003""NO PACKING MEDIUM USED"
+"Z0052""RIPE OR MATURE"
+"C0133""SEED, SKIN PRESENT, GERM PRESENT"
+"F0001""EXTENT OF HEAT TREATMENT NOT KNOWN"
+"H0138""WATER REMOVED"
+"M0001""CONTAINER OR WRAPPING NOT KNOWN"
+"G0003""COOKING METHOD NOT APPLICABLE"
+"B1113""KIDNEY BEAN"
+"N0001""FOOD CONTACT SURFACE NOT KNOWN"
+"A1286""1600 LEGUMES AND LEGUME PRODUCTS (USDA SR)"
+"J0116""DEHYDRATED OR DRIED"
+"P0024""HUMAN FOOD, NO AGE SPECIFICATION"

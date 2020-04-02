@@ -6,7 +6,7 @@ function [tVHAB_Objects, tConvertIDs] = extractXML(filepath, csValidTypes)
 
 % Open the XML and go to the relevant section containing the V-HAB objects
 DrawIoXML = tools.parseXML(filepath);
-XML_VSYS = DrawIoXML.Children.Children;
+XML_VSYS = DrawIoXML.Children(2).Children(2).Children(2).Children;
 
 % Initialize the struct which contains the draw IO components that will be
 % translated into V-HAB objects

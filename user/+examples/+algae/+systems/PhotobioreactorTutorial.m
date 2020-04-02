@@ -187,7 +187,7 @@ classdef PhotobioreactorTutorial< vsys
             %can fill food store with algae from harvest through exme
             %make sure enough food is in the store for entire time
             %should be per person around 1.5kg/d (from V-HAB Human Model Tutorial)
-            tfFood = struct('Food', 100, 'CarrotsEdibleWet', 10);
+            tfFood = struct('Food', 100, 'Carrots', 10);
             oFoodStore = components.matter.FoodStore(this, 'FoodStore', 100, tfFood);
             
             

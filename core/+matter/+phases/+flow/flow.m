@@ -3,7 +3,8 @@ classdef (Abstract) flow < matter.phase
     % A phase that is modelled as containing no matter. For implementation
     % purposes the phase does have a mass, but the calculations enforce
     % zero mass change for the phase and calculate all values based on the
-    % inflows.
+    % inflows. Flow phases will only work correctly if used with either a
+    % residual or a multi branch solver!!
     
     properties (SetAccess = protected, GetAccess = public)
         % flow_nodes can be used within multi branch solvers to allow the
@@ -132,8 +133,9 @@ classdef (Abstract) flow < matter.phase
                 fInwardsFlowRates = 0;
                 
                 % Get flow rates and partials from EXMEs
+                mfCompoundMassFlow = zeros(this.oMT.iSubstances,  this.oMT.iSubstances);
                 for iI = 1:this.iProcsEXME
-                    [ fFlowRate, arFlowPartials, ~ ] = this.coProcsEXME{iI}.getFlowData();
+                    [ fFlowRate, arFlowPartials, ~, arExMECompoundMass ] = this.coProcsEXME{iI}.getFlowData();
                     
                     % Include if EITHER an (real) inflow, OR a p2p (but not
                     % ourselves!) in either direction (p2ps can change
@@ -144,13 +146,18 @@ classdef (Abstract) flow < matter.phase
                         afInFlowrates(iI)  = fFlowRate;
                         aiOutFlows(iI)     = 0;
                         
+                        
                         %if ~this.coProcsEXME{iI}.bFlowIsAProcP2P
                         if fFlowRate > 0
                             fInwardsFlowRates = fInwardsFlowRates + fFlowRate;
+                            % Only the inflowing exme can actually change the mass
+                            % ratios of the phase. Outflowing exme must only be
+                            % considered as a total mass change before calculating
+                            % the new composition
+                            mfCompoundMassFlow = mfCompoundMassFlow + (fFlowRate .* arExMECompoundMass);
                         end
                     end
                 end
-
                 % Now we delete all of the rows in the mfInflowDetails matrix
                 % that belong to out-flows.
                 if any(aiOutFlows)
@@ -182,6 +189,12 @@ classdef (Abstract) flow < matter.phase
                 end
                 
                 afPartialInFlows = sum(mrInPartials, 1); %note we did multiply mrInPartials with flow rates above, so actually total partial flows!
+                
+                % The compound mass flow ratio is stored per compound mass (in
+                % the rows)
+                afCompoundMassFlow = sum(mfCompoundMassFlow,2);
+                this.arCompoundMass = mfCompoundMassFlow ./ afCompoundMassFlow;
+                this.arCompoundMass(afCompoundMassFlow == 0, :) = 0;
                 
             else
                 afPartialInFlows = sum(afPartialInFlows, 1);

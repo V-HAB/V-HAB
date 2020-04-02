@@ -159,9 +159,11 @@ classdef branch < solver.matter.base.branch
             % CALC GET THE FLOW RATE
             if this.bPositiveFlowDirection
                 iExme = 1;
+                iOtherExme = 2;
                 iDir  = 1;
             else 
                 iExme = 2;
+                iOtherExme = 1;
                 iDir  = -1;
             end
             
@@ -213,6 +215,15 @@ classdef branch < solver.matter.base.branch
                 update@solver.matter.base.branch(this, this.fRequestedFlowRate);
                 this.updateFlowProcs();
                 this.fLastUpdateTime = this.oBranch.oTimer.fTime;
+            end
+            
+            % Since the residual solver can change the flowrates for
+            % phases, we update the phase partial pressure for flow phases
+            if oPhase.bFlow
+                oPhase.updatePartials();
+            end
+            if this.oBranch.coExmes{iOtherExme}.oPhase.bFlow
+                this.oBranch.coExmes{iOtherExme}.oPhase.updatePartials();
             end
             
             this.fResidualFlowRatePrev = this.fRequestedFlowRate;

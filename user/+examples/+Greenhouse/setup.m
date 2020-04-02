@@ -11,6 +11,8 @@ classdef setup < simulation.infrastructure
             % Possible to change the constructor paths and params for the
             % monitors
             ttMonitorConfig = struct();
+            ttMonitorConfig.oTimeStepObserver.sClass = 'simulation.monitors.timestepObserver';
+            ttMonitorConfig.oTimeStepObserver.cParams = { 0 };
             
             % call superconstructor (with possible altered monitor configs)
             this@simulation.infrastructure('Greenhouse', ptConfigParams, tSolverParams, ttMonitorConfig);

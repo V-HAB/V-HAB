@@ -225,6 +225,14 @@ classdef (Abstract) p2p < matter.flow & event.source
     
     
     methods (Access = protected)
+        % The update function is the only function allowed to use the
+        % setMatterProperties function, since that function actually
+        % changes the flowrates for the P2P, it must be ensured that the
+        % massupdate is always performed before this, which is done by
+        % never calling the update directly. Unfortunatly, since the child
+        % classes must be allowed to override the update function, it is
+        % possible to abuse this to directly call the update from other
+        % functions of the child class. THIS SHOULD NOT BE DONE!
         function update(this, fFlowRate, arPartials)
             %% update
             % Calculate new flow rate in [kg/s]. This function itself does
@@ -320,6 +328,16 @@ classdef (Abstract) p2p < matter.flow & event.source
             end
         end
         
+        % The set matter properties function should only be called by the
+        % update function of this class. However, since it has to override
+        % the setMatterProperties function from its superclass matter.flow
+        % the access rights cannot be set to private. Usually the p2p
+        % updates are called  by the phase massupdates, therefore making it
+        % unnecessary for the P2Ps to call the massupdates. However, in
+        % some use cases (e.g. the manual P2P) it is not the phase
+        % massupdate which triggers recalculations for the P2Ps. To prevent
+        % these cases from accidentially performing invalid operations,
+        % this access restriction is necessary.
         function setMatterProperties(this, fFlowRate, arPartialMass, fTemperature, fPressure)
             %% setMatterProperties
             % is the function used by the update function to actually set
@@ -366,6 +384,11 @@ classdef (Abstract) p2p < matter.flow & event.source
             if (nargin < 4) || isempty(fTemperature), fTemperature = fExMeTemperature; end
             if (nargin < 5) || isempty(fPressure), fPressure = fExMePressure; end
                 
+            % Connected phases have to do a massupdate before we set the
+            % new flow rate - so the mass for the LAST time step, with the
+            % old flow rate, is actually moved from tank to tank.
+            this.oIn.oPhase.registerMassupdate();
+            this.oOut.oPhase.registerMassupdate();
             
             setMatterProperties@matter.flow(this, fFlowRate, arPartialMass, fTemperature, fPressure);
             

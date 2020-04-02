@@ -30,6 +30,11 @@ classdef flow < base
         % translate, e.g. this.oMT.tiN2I)
         arPartialMass;
         
+        % To model masses consisting of more than one substance, compound
+        % masses can be defined. If these are transported through flows,
+        % their current composition is stored in this struct
+        arCompoundMass;
+        
         % Reference to the matter table
         oMT;
         
@@ -87,7 +92,8 @@ classdef flow < base
                 end
                 
                 % Initialize the mass fractions array with zeros.
-                this.arPartialMass = zeros(1, this.oMT.iSubstances);
+                this.arPartialMass  = zeros(1, this.oMT.iSubstances);
+                this.arCompoundMass = zeros(this.oMT.iSubstances, this.oMT.iSubstances);
                 
                 this.tfPropertiesAtLastMassPropertySet.fTemperature = -1;
                 this.tfPropertiesAtLastMassPropertySet.fPressure    = -1;
@@ -157,6 +163,7 @@ classdef flow < base
                 if oPhase.fMass ~= 0
                     this.arPartialMass = oPhase.arPartialMass;
                     this.fMolarMass    = oPhase.fMolarMass;
+                    this.arCompoundMass        = oPhase.arCompoundMass;
                     this.fSpecificHeatCapacity = oPhase.oCapacity.fSpecificHeatCapacity;
                     
                     this.afPartialPressure = this.oMT.calculatePartialPressures(this);
@@ -348,7 +355,7 @@ classdef flow < base
         end
         
         
-        function setMatterProperties(this, fFlowRate, arPartialMass, fTemperature, fPressure)
+        function setMatterProperties(this, fFlowRate, arPartialMass, fTemperature, fPressure, arCompoundMass)
             %% setMatterProperties
             % For derived classes of flow, can set the matter properties 
             % through this method manually. In contrast to setData, this 
@@ -379,6 +386,11 @@ classdef flow < base
             
             this.fSpecificHeatCapacity = oPhase.oCapacity.fSpecificHeatCapacity;
             this.fMolarMass            = oPhase.fMolarMass;
+            if nargin > 5
+                this.arCompoundMass    = arCompoundMass;
+            else
+                this.arCompoundMass    = oPhase.arCompoundMass;
+            end
         end
         
     end
@@ -459,7 +471,8 @@ classdef flow < base
                 arPhasePartialMass         = oExme.oPhase.arPartialMass;
                 fPhaseMolarMass            = oExme.oPhase.fMolarMass;
                 fPhaseSpecificHeatCapacity = oExme.oPhase.oCapacity.fSpecificHeatCapacity;
-                        
+                arFlowCompoundMass         = oExme.oPhase.arCompoundMass;
+
                 % This can occur for example if a flow phase is used, which
                 % has an outflow, but not yet an inflow. In that case the
                 % partial mass of the phase is zero (as nothing flows in)
@@ -535,6 +548,7 @@ classdef flow < base
                 if ~isempty(oExme)
                     oFlow.arPartialMass         = arPhasePartialMass;
                     oFlow.fMolarMass            = fPhaseMolarMass;
+                    oFlow.arCompoundMass        = arFlowCompoundMass;
                     
                     oFlow.fSpecificHeatCapacity = fPhaseSpecificHeatCapacity;
                 end

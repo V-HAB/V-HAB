@@ -1,0 +1,100 @@
+Source: USDA National Nutrient Database for Standard Reference 1 April 2018 Software v.3.9.5.3_2019-06-13
+Full Report (All Nutrients)
+Report Run at: September 05 2019 08:41 EDT
+"Nutrient data for: Bratwurst, veal, cooked"
+Food Group:  Sausages and Luncheon Meats
+Common Name:
+Carbohydrate Factor: Fat Factor: Protein Factor: Nitrogen to Protein Conversion Factor: 
+Nutrient,Unit,1Value per 100 g,Data points,Std. Error,"1 serving 2.96 oz = 84.0g",
+Proximates
+"Water",g,53.51,--,--,44.95
+"Energy",kcal,341,--,--,286
+"Energy",kJ,1428,--,--,1200
+"Protein",g,13.99,--,--,11.75
+"Total lipid (fat)",g,31.70,--,--,26.63
+"Ash",g,0.80,--,--,0.67
+"Carbohydrate, by difference",g,0.00,--,--,0.00
+"Fiber, total dietary",g,0.0,--,--,0.0
+"Sugars, total",g,0.00,--,--,0.00
+Minerals
+"Calcium, Ca",mg,11,--,--,9
+"Iron, Fe",mg,0.74,--,--,0.62
+"Magnesium, Mg",mg,16,--,--,13
+"Phosphorus, P",mg,150,--,--,126
+"Potassium, K",mg,231,--,--,194
+"Sodium, Na",mg,60,--,--,50
+"Zinc, Zn",mg,2.05,--,--,1.72
+"Copper, Cu",mg,0.081,--,--,0.068
+"Manganese, Mn",mg,0.049,--,--,0.041
+"Selenium, Se",µg,19.2,--,--,16.1
+Vitamins
+"Vitamin C, total ascorbic acid",mg,0.0,--,--,0.0
+"Thiamin",mg,0.054,--,--,0.045
+"Riboflavin",mg,0.192,--,--,0.161
+"Niacin",mg,5.430,--,--,4.561
+"Pantothenic acid",mg,0.958,--,--,0.805
+"Vitamin B-6",mg,0.307,--,--,0.258
+"Folate, total",µg,9,--,--,8
+"Folic acid",µg,0,--,--,0
+"Folate, food",µg,9,--,--,8
+"Folate, DFE",µg,9,--,--,8
+"Vitamin B-12",µg,0.98,--,--,0.82
+"Vitamin A, RAE",µg,0,--,--,0
+"Retinol",µg,0,--,--,0
+"Carotene, beta",µg,0,--,--,0
+"Carotene, alpha",µg,0,--,--,0
+"Cryptoxanthin, beta",µg,0,--,--,0
+"Vitamin A, IU",IU,0,--,--,0
+"Lycopene",µg,0,--,--,0
+"Lutein + zeaxanthin",µg,0,--,--,0
+Lipids
+"Fatty acids, total saturated",g,14.940,--,--,12.550
+"4:0",g,0.000,--,--,0.000
+"6:0",g,0.000,--,--,0.000
+"8:0",g,0.000,--,--,0.000
+"10:0",g,0.014,--,--,0.012
+"12:0",g,0.028,--,--,0.024
+"14:0",g,0.392,--,--,0.329
+"16:0",g,2.266,--,--,1.903
+"18:0",g,4.828,--,--,4.056
+"Fatty acids, total monounsaturated",g,13.000,--,--,10.920
+"16:1 undifferentiated",g,0.448,--,--,0.376
+"18:1 undifferentiated",g,3.427,--,--,2.879
+"20:1",g,0.000,--,--,0.000
+"22:1 undifferentiated",g,0.000,--,--,0.000
+"Fatty acids, total polyunsaturated",g,1.614,--,--,1.356
+"18:2 undifferentiated",g,0.587,--,--,0.493
+"18:3 undifferentiated",g,0.070,--,--,0.059
+"18:4",g,0.000,--,--,0.000
+"20:4 undifferentiated",g,0.126,--,--,0.106
+"20:5 n-3 (EPA)",g,0.000,--,--,0.000
+"22:5 n-3 (DPA)",g,0.000,--,--,0.000
+"22:6 n-3 (DHA)",g,0.000,--,--,0.000
+"Cholesterol",mg,79,--,--,66
+Amino Acids
+"Tryptophan",g,0.142,--,--,0.119
+"Threonine",g,0.611,--,--,0.513
+"Isoleucine",g,0.689,--,--,0.579
+"Leucine",g,1.113,--,--,0.935
+"Lysine",g,1.153,--,--,0.969
+"Methionine",g,0.327,--,--,0.275
+"Cystine",g,0.158,--,--,0.133
+"Phenylalanine",g,0.564,--,--,0.474
+"Tyrosine",g,0.446,--,--,0.375
+"Valine",g,0.773,--,--,0.649
+"Arginine",g,0.823,--,--,0.691
+"Histidine",g,0.508,--,--,0.427
+"Alanine",g,0.832,--,--,0.699
+"Aspartic acid",g,1.207,--,--,1.014
+"Glutamic acid",g,2.213,--,--,1.859
+"Glycine",g,0.719,--,--,0.604
+"Proline",g,0.584,--,--,0.491
+"Serine",g,0.524,--,--,0.440
+Other
+"Alcohol, ethyl",g,0.0,--,--,0.0
+"Caffeine",mg,0,--,--,0
+"Theobromine",mg,0,--,--,0
+
+
+Sources of Data
+1,"Penn Valley Farms","Nutrient Composition of Penn Valley Farms, Ltd. Luncheon Meats",1999,,ChicagoIL

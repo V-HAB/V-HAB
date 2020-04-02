@@ -87,7 +87,7 @@ classdef FuelCell < vsys
             
             oCooling =  this.toStores.FuelCell.createPhase(  'liquid',      'CoolingSystem',0.1, struct('H2O', 1),  340, 1e5);
             
-            matter.store(this, 'O2_WaterSeperation', 0.01);
+            matter.store(this, 'O2_WaterSeperation', 0.01 + 1e-6);
             oO2_Dryer       = this.toStores.O2_WaterSeperation.createPhase(  'gas', 'flow', 'O2',   1e-6, struct('O2', 1e5),  fInitialTemperature, 0.8);
             oRecoveredWater = this.toStores.O2_WaterSeperation.createPhase(  'liquid',      'Water',   0.01, struct('H2O', 1),  fInitialTemperature, 1e5);
             

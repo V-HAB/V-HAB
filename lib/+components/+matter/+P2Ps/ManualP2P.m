@@ -14,6 +14,7 @@ classdef ManualP2P < matter.procs.p2ps.stationary
         bMassTransferActive = false;
         fMassTransferStartTime;
         fMassTransferTime;
+        fMassTransferFinishTime;
         
     end
     
@@ -44,15 +45,14 @@ classdef ManualP2P < matter.procs.p2ps.stationary
             end
                 
             this.afFlowRates = afPartialFlowRates;
-            fFlowRate = sum(afPartialFlowRates);
-            if fFlowRate == 0
-                arPartialFlowRates = zeros(1,this.oMT.iSubstances);
-            else
-                arPartialFlowRates = afPartialFlowRates/fFlowRate;
-            end
             
-            % extract specified substance with desired flow rate
-            this.setMatterProperties(fFlowRate, arPartialFlowRates);
+            % Connected phases have to do a massupdate before we set the
+            % new flow rate - so the mass for the LAST time step, with the
+            % old flow rate, is actually moved from tank to tank. In the
+            % massupdate the update for the P2P will be triggered, which is
+            % then executed in the post tick after the phase massupdates
+            this.oIn.oPhase.registerMassupdate();
+            this.oOut.oPhase.registerMassupdate();
         end
         
         function setMassTransfer(this, afPartialMasses, fTime)
@@ -78,23 +78,23 @@ classdef ManualP2P < matter.procs.p2ps.stationary
             this.bMassTransferActive = true;
             this.fMassTransferStartTime = this.oTimer.fTime;
             this.fMassTransferTime = fTime;
+            this.fMassTransferFinishTime = this.oTimer.fTime + fTime;
             
             % transforms the specified flowrates into the overall flowrate
             % and the partial mass ratios.
             this.afFlowRates = afPartialMasses ./ fTime;
-            fFlowRate = sum(this.afFlowRates);
-            if fFlowRate == 0
-                arPartialFlowRates = zeros(1,this.oMT.iSubstances);
-            else
-                arPartialFlowRates = this.afFlowRates/fFlowRate;
-            end
             
             % we use true to reset the last time the time step for this
             % manip was bound
             this.setTimeStep(fTime, true);
             
-            % extract specified substance with desired flow rate
-            this.setMatterProperties(fFlowRate, arPartialFlowRates);
+            % Connected phases have to do a massupdate before we set the
+            % new flow rate - so the mass for the LAST time step, with the
+            % old flow rate, is actually moved from tank to tank. In the
+            % massupdate the update for the P2P will be triggered, which is
+            % then executed in the post tick after the phase massupdates
+            this.oIn.oPhase.registerMassupdate();
+            this.oOut.oPhase.registerMassupdate();
         end
     end
     methods (Access = protected)
@@ -106,14 +106,34 @@ classdef ManualP2P < matter.procs.p2ps.stationary
                 this.setTimeStep(fTimeStep, true);
             end
             
-            if this.bMassTransferActive && this.oTimer.fTime >= (this.fMassTransferStartTime + this.fMassTransferTime)
+            if this.bMassTransferActive && abs(this.oTimer.fTime - this.fMassTransferFinishTime) < this.oTimer.fMinimumTimeStep
                 
-                arPartialFlowRates = zeros(1,this.oMT.iSubstances);
-                fFlowRate = 0;
-                this.setMatterProperties(fFlowRate, arPartialFlowRates);
+                this.afFlowRates = zeros(1,this.oMT.iSubstances);
+                
                 this.bMassTransferActive = false;
                 this.setTimeStep(inf, true);
+                
+            elseif this.bMassTransferActive && abs(this.oTimer.fTime - this.fMassTransferFinishTime) > this.oTimer.fMinimumTimeStep
+                % If the branch is called before the set mass transfer time
+                % step, the afLastExec property in the timer for this
+                % branch is updated, while the timestep remains. This can
+                % lead to the branch missing its update. Therefore, in
+                % every update that occurs during a mass transfer that
+                % does not fullfill the above conditions we have to reduce
+                % the time step:
+                fTimeStep = this.fMassTransferFinishTime - this.oTimer.fTime;
+                
+                this.setTimeStep(fTimeStep, true);
             end
+            
+            fFlowRate = sum(this.afFlowRates);
+            if fFlowRate == 0
+                arPartialFlowRates = zeros(1,this.oMT.iSubstances);
+            else
+                arPartialFlowRates = this.afFlowRates/fFlowRate;
+            end
+            
+            update@matter.procs.p2p(this, fFlowRate, arPartialFlowRates);
         end
     end
 end

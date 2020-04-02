@@ -11,6 +11,14 @@ classdef setup < simulation.infrastructure
             ttMonitorConfig.oTimeStepObserver.cParams = { 0 };
             this@simulation.infrastructure('Example_Human_1_Model', ptConfigParams, tSolverParams, ttMonitorConfig);
             
+            trBaseCompositionUrine.H2O      = 0.9644;
+            trBaseCompositionUrine.C2H6O2N2 = 0.0356;
+            this.oSimulationContainer.oMT.defineCompoundMass(this, 'Urine', trBaseCompositionUrine)
+            
+            trBaseCompositionFeces.H2O          = 0.7576;
+            trBaseCompositionFeces.C42H69O13N5  = 0.2424;
+            this.oSimulationContainer.oMT.defineCompoundMass(this, 'Feces', trBaseCompositionFeces)
+            
             examples.human_model.systems.Example(this.oSimulationContainer, 'Example');
             
             %% Simulation length

@@ -89,6 +89,10 @@ classdef capacity < base & event.source
         % change is 1.47 K
         rMaxChange = 0.005; % [-]
         
+        % The minimal and maximal time step of the capacity:
+        fMaxStep = 20;
+        fMinStep = 1e-8;
+        
         % as for the phase in the matter domain, the time step for the
         % capacity can also be set to a fixed value
         fFixedTimeStep; % [s]
@@ -587,12 +591,18 @@ classdef capacity < base & event.source
             %
             % rMaxChange:   Maximum allowed percentage change in the total
             %               temperature of the capacity
-            %
+            % fMaxStep:     Maximum time step in seconds
+            % fMinStep:     Minimum time step in seconds
+            % fFixedTimeStep:     Fixed (constant) time step in seconds, if this
+            %               property is set all other time step properties
+            %               will be ignored and the set time step will be
+            %               used
+            
             % In order to define these provide a struct with the fieldnames
             % as described here to this function for the values that you
             % want to set
             
-            csPossibleFieldNames = {'rMaxChange', 'fFixedTimeStep'};
+            csPossibleFieldNames = {'rMaxChange', 'fFixedTimeStep', 'fMaxStep', 'fMinStep'};
             
             % Gets the fieldnames of the struct to easier loop through them
             csFieldNames = fieldnames(tTimeStepProperties);
@@ -753,7 +763,7 @@ classdef capacity < base & event.source
                 if ~isempty(this.fFixedTimeStep)
                     % If a fixed time step is set just use that value as
                     % time step
-                    fNewStep = this.oPhase.fFixedTimeStep;
+                    fNewStep = this.fFixedTimeStep;
                     
                     fNewStep = min(fNewStep, fMaximumTimeStep);
                 else
@@ -775,8 +785,8 @@ classdef capacity < base & event.source
                     % If our newly calculated time step is larger than the
                     % maximum time step set for this phase, we use this
                     % instead.
-                    if fNewStep > this.oPhase.fMaxStep
-                        fNewStep = this.oPhase.fMaxStep;
+                    if fNewStep > this.fMaxStep
+                        fNewStep = this.fMaxStep;
                         if ~base.oDebug.bOff
                             this.out(3, 1, 'max-time-step', 'Phase %s-%s-%s setting maximum timestep of %f', { this.oContainer.sName, this.oPhase.oStore.sName, this.sName, this.oPhase.fMaxStep });
                         end
@@ -785,8 +795,8 @@ classdef capacity < base & event.source
                     % step for the phase the minimal time step is used
                     % (standard case is that fMinStep is 0, but the user
                     % can set it to a different value)
-                    elseif fNewStep < this.oPhase.fMinStep
-                        fNewStep = this.oPhase.fMinStep;
+                    elseif fNewStep < this.fMinStep
+                        fNewStep = this.fMinStep;
                         %TODO Make this output a lower level debug message.
                        if ~base.oDebug.bOff
                            this.out(3, 1, 'min-time-step', 'Phase %s-%s-%s setting minimum timestep', { this.oContainer.sName, this.oPhase.oStore.sName, this.sName });

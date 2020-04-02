@@ -39,11 +39,14 @@ if strcmp(sTarget, 'MatterData')
     csColumnNames = textscan(sFirstRow, '%s','Delimiter',';');
     csColumnNames = csColumnNames{1};
     
+    abDeletEmptyColumns = false(length(csColumnNames),1);
     for iI = 1:length(csColumnNames)
         if strcmp(csColumnNames{iI},'')
-            csColumnNames(iI) = [];
+            abDeletEmptyColumns(iI) = true;
         end
     end
+    
+    csColumnNames(abDeletEmptyColumns) = [];
     
     iNumberOfColumns = length(csColumnNames);
     

@@ -17,15 +17,23 @@ if length(varargin) == 1
         oPhase = varargin{1};
         tbReference.bPhase = true;
         
+        if varargin{1}.fMass == 0
+            arPartialMass = zeros(1, this.iSubstances);
+        else
+            afMass = this.resolveCompoundMass(varargin{1}.afMass, varargin{1}.arCompoundMass);
+            arPartialMass = afMass / varargin{1}.fMass;
+        end
     elseif isa(varargin{1}, 'matter.flow')
         sMatterState = varargin{1}.oBranch.getInEXME().oPhase.sType;
         oPhase = varargin{1}.oBranch.getInEXME().oPhase;
         tbReference.bFlow = true;
         
+        % For flows not partial masses but partial mass ratios are stored
+        arPartialMass = this.resolveCompoundMass(varargin{1}.arPartialMass, varargin{1}.arCompoundMass);
     end
     
     fTemperature = varargin{1}.fTemperature;
-    arPartialMass = varargin{1}.arPartialMass;
+    
     fPressure = varargin{1}.fPressure;
     
     if strcmp(sMatterState, 'gas')
@@ -130,10 +138,10 @@ else
     end
     
     % Isobar or isochor?
-    if nargin > 5 && varargin{5} == true
-        bUseIsobaricData = true;
-    else
+    if nargin > 5 && varargin{5} == false
         bUseIsobaricData = false;
+    else
+        bUseIsobaricData = true;
     end
     
 end

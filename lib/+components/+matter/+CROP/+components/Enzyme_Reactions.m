@@ -10,7 +10,7 @@ classdef Enzyme_Reactions < matter.manips.substance.stationary
         
         % A concentration array which contains the concentrations of all 
         % reactants (C_tot in the thesis):
-        % 1:H2O, 2:CO2, 3:O2, 4:COH4N2, 5:NH3, 6:NH4OH, 7:HNO2, 8:HNO3,
+        % 1:H2O, 2:CO2, 3:O2, 4:CH4N2O, 5:NH3, 6:NH4OH, 7:HNO2, 8:HNO3,
         % 9:A.E, 10:A.ES, 11:A.I, 12:A.EI, 13:A.ESI, 14:A.EP, 15:A.EPI,
         % 16:B.E, 17:B.ES1, 18:B.I, 19:B.EI, 20:B.ESI1, 21:B.EP, 22:B.EPI,
         % 23:B.ES2, 24:B.ESI2, 25:C.E, 26:C.ES, 27:C.I, 28:C.EI, 29:C.ESI, 
@@ -120,7 +120,7 @@ classdef Enzyme_Reactions < matter.manips.substance.stationary
             % ***********************************************************
 
             % Also to avoid numerical oscillation
-            if abs(afCurrentMasses_Bio(tiN2I.COH4N2)-1e-4)>0.5e-5 || ...
+            if abs(afCurrentMasses_Bio(tiN2I.CH4N2O)-1e-4)>0.5e-5 || ...
                abs(afCurrentMasses_Bio(tiN2I.NH3)-1e-4)>0.5e-5 || ...
                abs(afCurrentMasses_Bio(tiN2I.NH4OH)-1e-4)>0.5e-5 || ...
                abs(afCurrentMasses_Bio(tiN2I.HNO2)-1e-4)>0.5e-5 || ...
@@ -148,9 +148,9 @@ classdef Enzyme_Reactions < matter.manips.substance.stationary
             this.afConcentration(2) = afCurrentMasses_Flow(tiN2I.CO2) / (afMolMass(tiN2I.CO2) * fVolume);
             this.afConcentration(3) = afCurrentMasses_Flow(tiN2I.O2) / (afMolMass(tiN2I.O2) * fVolume);
             
-            this.afConcentration(4)  = afCurrentMasses_Flow(tiN2I.COH4N2) / (afMolMass(tiN2I.COH4N2) * fVolume);
-            this.afConcentration(10) = afCurrentMasses_Bio(tiN2I.COH4N2_AES) / (afMolMass(tiN2I.COH4N2_AES) * fVolume); %%% A.ES
-            this.afConcentration(13) = afCurrentMasses_Bio(tiN2I.COH4N2_AESI)/ (afMolMass(tiN2I.COH4N2_AESI) * fVolume); %%% A.ESI
+            this.afConcentration(4)  = afCurrentMasses_Flow(tiN2I.CH4N2O) / (afMolMass(tiN2I.CH4N2O) * fVolume);
+            this.afConcentration(10) = afCurrentMasses_Bio(tiN2I.CH4N2O_AES) / (afMolMass(tiN2I.CH4N2O_AES) * fVolume); %%% A.ES
+            this.afConcentration(13) = afCurrentMasses_Bio(tiN2I.CH4N2O_AESI)/ (afMolMass(tiN2I.CH4N2O_AESI) * fVolume); %%% A.ESI
             this.afConcentration(5)  = afCurrentMasses_Flow(tiN2I.NH3) / (afMolMass(tiN2I.NH3) * fVolume);
             this.afConcentration(14) = 0.5*afCurrentMasses_Bio(tiN2I.NH3_AEP) / (afMolMass(tiN2I.NH3_AEP) * fVolume); %%% A.EP
             this.afConcentration(15) = 0.5*afCurrentMasses_Bio(tiN2I.NH3_AEPI) / (afMolMass(tiN2I.NH3_AEPI) * fVolume); %%% A.EPI
@@ -197,7 +197,7 @@ classdef Enzyme_Reactions < matter.manips.substance.stationary
             % a matter for calculation but not the concentration.
             
             % Mass reaction rates external reactants
-            afPartialFlowRates(this.oMT.tiN2I.COH4N2) = afReactionRate(4) * (afMolMass(tiN2I.COH4N2) * fVolume);
+            afPartialFlowRates(this.oMT.tiN2I.CH4N2O) = afReactionRate(4) * (afMolMass(tiN2I.CH4N2O) * fVolume);
             afPartialFlowRates(this.oMT.tiN2I.NH3) = afReactionRate(5) * (afMolMass(tiN2I.NH3) * fVolume);
             afPartialFlowRates(this.oMT.tiN2I.NH4OH) = afReactionRate(6) * (afMolMass(tiN2I.NH4OH) * fVolume);
             afPartialFlowRates(this.oMT.tiN2I.H2O) = afReactionRate(1) * (afMolMass(tiN2I.H2O) * fVolume);
@@ -208,8 +208,8 @@ classdef Enzyme_Reactions < matter.manips.substance.stationary
             
             % Mass reaction rates of internal reactants
             % of enzyme reaction A (E^A, I^A and EI^A not included, see calculation above)
-            afPartialFlowRates(this.oMT.tiN2I.COH4N2_AES) = afReactionRate(10) * (afMolMass(tiN2I.COH4N2_AES) * fVolume); %%% A.ES
-            afPartialFlowRates(this.oMT.tiN2I.COH4N2_AESI) = afReactionRate(13) * (afMolMass(tiN2I.COH4N2_AESI) * fVolume); %%% A.ESI
+            afPartialFlowRates(this.oMT.tiN2I.CH4N2O_AES) = afReactionRate(10) * (afMolMass(tiN2I.CH4N2O_AES) * fVolume); %%% A.ES
+            afPartialFlowRates(this.oMT.tiN2I.CH4N2O_AESI) = afReactionRate(13) * (afMolMass(tiN2I.CH4N2O_AESI) * fVolume); %%% A.ESI
             afPartialFlowRates(this.oMT.tiN2I.NH3_AEP) = 2 * afReactionRate(14) * (afMolMass(tiN2I.NH3_AEP) * fVolume); %%% A.EP
             afPartialFlowRates(this.oMT.tiN2I.NH3_AEPI) = 2 * afReactionRate(15) * (afMolMass(tiN2I.NH3_AEPI) * fVolume);%%% A.EPI
             

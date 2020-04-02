@@ -69,6 +69,21 @@ classdef table < base
         % values with simple for-loops.
         afMolarMass;
         
+        % An array containing the elemental charge of each substance 
+        % We keep this in a separate array to enable fast calculation of
+        % the total charge of a phase or flow. The order in which the
+        % substances are stored is identical to the order in ttxMatter.
+        % Also, using an array makes it easy to loop through the individual
+        % values with simple for-loops.
+        aiCharge;
+        
+        % An array containing the nutritional energy of each substance in
+        % J/kg to enable fast calculation of energy content for a phase.
+        % Note that "compound" food like a tomatoe must be split into its
+        % components by using the resolveCompoundMass function before it
+        % can correctly calculate the nutritional content
+        afNutritionalEnergy;
+        
         % This struct maps all substance names according to an index, hence
         % the name N2I, for 'name to index'. The index corresponds to the
         % order in which the substances are stored in ttxMatter.
@@ -85,6 +100,9 @@ classdef table < base
         % cell array for all edible substances
         csEdibleSubstances;
         
+        % boolean vector to identify edible compound mass
+        abEdibleSubstances;
+        
         % A cell array with the names of all substances contained in the
         % matter table
         csSubstances;
@@ -96,6 +114,9 @@ classdef table < base
         % defined in the matter table and contains the entry true for each
         % substance that can absorb something else
         abAbsorber;
+        
+        % A boolean array 
+        abCompound;
         
         % This struct allows the conversion of shortcut to name
         tsS2N;
@@ -196,7 +217,10 @@ classdef table < base
             % filled with data. This is done to preallocate the memory. If
             % it is not done, MATLAB gives a warning and suggests to do
             % this.
-            this.afMolarMass = zeros(1, this.iSubstances);
+            this.afMolarMass         = zeros(1, this.iSubstances);
+            this.afNutritionalEnergy = zeros(1, this.iSubstances);
+            this.abEdibleSubstances  = false(1, this.iSubstances);
+            
             this.tiN2I       = struct();
             this.tsS2N       = struct();
             this.tsN2S       = struct();
@@ -261,7 +285,9 @@ classdef table < base
                 
                 % And finally we create an entry in the molar mass array.
                 this.afMolarMass(iI) = fMolarMass;
+                this.aiCharge(iI)    = tSubstance.iCharge;
                 
+                this.afNutritionalEnergy(iI) = tSubstance.fNutritionalEnergy;
             end
             
             %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -313,6 +339,8 @@ classdef table < base
             % Get list of substance indices.
             this.csI2N = fieldnames(this.tiN2I);
             
+            % define all current substance to be no compounds
+            this.abCompound = false(1, this.iSubstances);
             
             %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Importing additional data %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -323,9 +351,10 @@ classdef table < base
             % cases, however, additional information is required for a
             % substance. The following functions import these data into the
             % matter table. 
-            importNutrientData(this);
             importAbsorberData(this);
             importAntoineData(this);
+            importNutrientData(this);
+            importPlantData(this);
             
             %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Saving the data %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

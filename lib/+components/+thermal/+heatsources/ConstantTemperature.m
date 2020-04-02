@@ -6,7 +6,7 @@ classdef ConstantTemperature < thermal.heatsource
     % placed and sets itself that heat flow to maintain the temperature.
     
     properties (SetAccess = protected, GetAccess = public)
-        
+        fTemperature;
     end
     
     methods
@@ -17,11 +17,16 @@ classdef ConstantTemperature < thermal.heatsource
             
         end
         
-        function setCapacity(this, oCapacity)
+        function setCapacity(this, oCapacity, fTemperature)
             % overwrite the generic setCapacity function so that we can
             % bind a callback to the capacity temperature update
             if isempty(this.oCapacity)
-                this.oCapacity = oCapacity;
+                this.oCapacity      = oCapacity;
+                if nargin < 3
+                    this.fTemperature   = oCapacity.fTemperature;
+                else
+                    this.fTemperature   = fTemperature;
+                end
             else
                 this.throw('setCapacity', 'Heatsource already has a capacity object');
             end
@@ -34,6 +39,18 @@ classdef ConstantTemperature < thermal.heatsource
             oCapacity.bind('calculateFlowConstantTemperature',@(~)this.update());
         end
         
+        function setTemperature(this, fTemperature)
+            % This function allows the user to set a desired target
+            % temperature for the constant temperature heat source, also
+            % enabling it to be used to keep a specific temperature, if
+            % that temperature changes over the simulation
+            this.fTemperature = fTemperature;
+            
+            % tell the capacity to update, also triggering the update of
+            % this heatsource
+            this.oCapacity.setOutdatedTS();
+        end
+        
         function update(this,~)
             
             fHeatSourceFlow = 0;
@@ -42,6 +59,10 @@ classdef ConstantTemperature < thermal.heatsource
                     fHeatSourceFlow = fHeatSourceFlow + this.oCapacity.coHeatSource{iHeatSource}.fHeatFlow;
                 end
             end
+            % calculate the temperature by which we have to adjust the
+            % capacity temperature to reach the desired target temperature
+            % (positive values represent a heatup)
+            fRequiredTemperatureAdjustment = this.fTemperature - this.oCapacity.fTemperature;
             
             if this.oCapacity.oPhase.bFlow
                 % For a flow node it is possible that the mass flows have
@@ -83,18 +104,22 @@ classdef ConstantTemperature < thermal.heatsource
                 if fOverallHeatCapacityFlow == 0
                     this.fHeatFlow = 0;
                 else
-                    this.fHeatFlow = - fHeatSourceFlow + ((this.oCapacity.fTemperature - (sum(mfFlowRate .* mfSpecificHeatCapacity .* mfTemperature) / fOverallHeatCapacityFlow)) * fOverallHeatCapacityFlow);
+                    this.fHeatFlow = - fHeatSourceFlow + (((this.oCapacity.fTemperature + fRequiredTemperatureAdjustment) - (sum(mfFlowRate .* mfSpecificHeatCapacity .* mfTemperature) / fOverallHeatCapacityFlow)) * fOverallHeatCapacityFlow);
                 end
             else
                 fExmeHeatFlow = 0;
                 for iExme = 1:length(this.oCapacity.aoExmes)
                     fExmeHeatFlow = fExmeHeatFlow + (this.oCapacity.aoExmes(iExme).iSign * this.oCapacity.aoExmes(iExme).fHeatFlow);
                 end
-
-                this.fHeatFlow = - fExmeHeatFlow - fHeatSourceFlow;
+                % Calculated in a way to adjust the capacity temperature
+                % within one maximum step of the capacity (to ensure that
+                % we are recalculated before the time we used for this
+                % calculation is passed, thus preventing oscillations)
+                fTemperatureAdjustmentHeatFlow = (fRequiredTemperatureAdjustment * this.oCapacity.fTotalHeatCapacity) / this.oCapacity.fMaxStep;
+                
+                this.fHeatFlow = - fExmeHeatFlow - fHeatSourceFlow + fTemperatureAdjustmentHeatFlow;
+                
             end
         end
     end
-    
 end
-

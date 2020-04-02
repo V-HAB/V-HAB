@@ -1,0 +1,97 @@
+Source: USDA National Nutrient Database for Standard Reference 1 April 2018 Software v.3.9.5.3_2019-06-13
+Full Report (All Nutrients)
+Report Run at: September 05 2019 02:29 EDT
+"Nutrient data for: Wheat, soft white"
+Food Group:  Cereal Grains and Pasta
+Common Name:
+Carbohydrate Factor: Fat Factor: Protein Factor: Nitrogen to Protein Conversion Factor: 
+Nutrient,Unit,1Value per 100 g,Data points,Std. Error,"1 cup = 168.0g",
+Proximates
+"Water",g,10.42,126,0.140,17.51
+"Energy",kcal,340,--,--,571
+"Energy",kJ,1423,--,--,2391
+"Protein",g,10.69,124,0.140,17.96
+"Total lipid (fat)",g,1.99,98,0.010,3.34
+"Ash",g,1.54,125,0.010,2.59
+"Carbohydrate, by difference",g,75.36,--,--,126.60
+"Fiber, total dietary",g,12.7,--,--,21.3
+"Sugars, total",g,0.41,--,--,0.69
+Minerals
+"Calcium, Ca",mg,34,123,0.000,57
+"Iron, Fe",mg,5.37,123,0.320,9.02
+"Magnesium, Mg",mg,90,123,2.000,151
+"Phosphorus, P",mg,402,123,14.000,675
+"Potassium, K",mg,435,123,7.000,731
+"Sodium, Na",mg,2,--,--,3
+"Zinc, Zn",mg,3.46,123,0.180,5.81
+"Copper, Cu",mg,0.426,123,0.022,0.716
+"Manganese, Mn",mg,3.406,123,0.084,5.722
+Vitamins
+"Vitamin C, total ascorbic acid",mg,0.0,--,--,0.0
+"Thiamin",mg,0.410,124,0.005,0.689
+"Riboflavin",mg,0.107,124,0.001,0.180
+"Niacin",mg,4.766,124,0.052,8.007
+"Pantothenic acid",mg,0.850,--,--,1.428
+"Vitamin B-6",mg,0.378,128,0.008,0.635
+"Folate, total",µg,41,--,--,69
+"Folic acid",µg,0,--,--,0
+"Folate, food",µg,41,--,--,69
+"Folate, DFE",µg,41,--,--,69
+"Vitamin B-12",µg,0.00,--,--,0.00
+"Vitamin B-12, added",µg,0.00,--,--,0.00
+"Vitamin A, RAE",µg,0,--,--,0
+"Retinol",µg,0,--,--,0
+"Carotene, beta",µg,5,--,--,8
+"Carotene, alpha",µg,0,--,--,0
+"Cryptoxanthin, beta",µg,0,--,--,0
+"Vitamin A, IU",IU,9,--,--,15
+"Lycopene",µg,0,--,--,0
+"Lutein + zeaxanthin",µg,220,--,--,370
+"Vitamin E (alpha-tocopherol)",mg,1.01,1,--,1.70
+"Vitamin E, added",mg,0.00,--,--,0.00
+"Vitamin D (D2 + D3)",µg,0.0,--,--,0.0
+"Vitamin D",IU,0,--,--,0
+"Vitamin K (phylloquinone)",µg,1.9,--,--,3.2
+Lipids
+"Fatty acids, total saturated",g,0.368,--,--,0.618
+"4:0",g,0.000,--,--,0.000
+"6:0",g,0.000,--,--,0.000
+"8:0",g,0.000,--,--,0.000
+"10:0",g,0.000,--,--,0.000
+"12:0",g,0.000,--,--,0.000
+"14:0",g,0.003,103,--,0.005
+"16:0",g,0.346,103,--,0.581
+"18:0",g,0.018,103,--,0.030
+"Fatty acids, total monounsaturated",g,0.227,--,--,0.381
+"16:1 undifferentiated",g,0.010,103,--,0.017
+"18:1 undifferentiated",g,0.217,103,--,0.365
+"20:1",g,0.000,--,--,0.000
+"22:1 undifferentiated",g,0.000,--,--,0.000
+"Fatty acids, total polyunsaturated",g,0.837,--,--,1.406
+"18:2 undifferentiated",g,0.800,103,--,1.344
+"18:3 undifferentiated",g,0.036,103,--,0.060
+"18:4",g,0.000,--,--,0.000
+"20:4 undifferentiated",g,0.000,--,--,0.000
+"20:5 n-3 (EPA)",g,0.000,--,--,0.000
+"22:5 n-3 (DPA)",g,0.000,--,--,0.000
+"22:6 n-3 (DHA)",g,0.000,--,--,0.000
+"Cholesterol",mg,0,--,--,0
+Amino Acids
+Other
+"Alcohol, ethyl",g,0.0,--,--,0.0
+"Caffeine",mg,0,--,--,0
+"Theobromine",mg,0,--,--,0
+Langual Code(s)
+"M0001""CONTAINER OR WRAPPING NOT KNOWN"
+"P0024""HUMAN FOOD, NO AGE SPECIFICATION"
+"A1290""2000 CEREAL GRAINS AND PASTA (USDA SR)"
+"E0150""WHOLE, NATURAL SHAPE"
+"C0155""SEED"
+"F0001""EXTENT OF HEAT TREATMENT NOT KNOWN"
+"G0003""COOKING METHOD NOT APPLICABLE"
+"N0001""FOOD CONTACT SURFACE NOT KNOWN"
+"K0003""NO PACKING MEDIUM USED"
+"A0125""GRAIN OR STARCH PRODUCT (US CFR)"
+"H0001""TREATMENT APPLIED NOT KNOWN"
+"B1421""SOFT WHEAT"
+"J0001""PRESERVATION METHOD NOT KNOWN"
