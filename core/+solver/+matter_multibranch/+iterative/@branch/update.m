@@ -292,10 +292,13 @@ function update(this)
                 if this.iIteration == 1 || ~strcmp(this.sMode, 'complex')
                     this.afFlowRates(iB) = afResults(iColumn);
                 else
-                    % in order for the solver to converge better
+                    % In order for the solver to converge better
                     % the flowrates are smoothed out with this
-                    % calculation
-                    this.afFlowRates(iB) = (this.afFlowRates(iB) * 5 + afResults(iColumn)) / 6;
+                    % calculation. We don't do this if the current branch
+                    % is being corrected for oscillating. 
+                    if ~(this.abOscillationCorrectedBranches(iB) && this.bFinalLoop)
+                        this.afFlowRates(iB) = (this.afFlowRates(iB) * 5 + afResults(iColumn)) / 6;
+                    end
                 end
             elseif isa(oObj, 'matter.phases.flow.flow')
                 if afResults(iColumn) < 0
@@ -311,6 +314,10 @@ function update(this)
                     oObj.setPressure(afResults(iColumn));
                 end
             end
+        end
+        
+        if this.bOscillationSuppression && this.bFinalLoop
+            this.abOscillationCorrectedBranches = false(this.iBranches,1);
         end
         
         % For the branches which were removed beforehand because they have
@@ -351,13 +358,104 @@ function update(this)
         
         if ~base.oDebug.bOff, this.out(1, 2, 'solve-flow-rates', 'Iteration: %i with error %.12f', { this.iIteration, rError }); end
         
+        % Check if we have reached the maximum number of iterations.
         if this.iIteration > this.iMaxIterations
-            % if you reach this, please view debugging tipps at the
-            % beginning of this file!
-            keyboard();
-            this.throw('update', 'too many iterations, error %.12f', rError);
+            
+            % Check if oscillation suppression is turned on.
+            if this.bOscillationSuppression 
+                
+                % Checking if we have not done this in the previous
+                % iteration so we don't do it twice. 
+                if ~this.bBranchOscillationSuppressionActive
+                    % First we need to find out, which branches are
+                    % oscillating. So we get all of the individual errors.
+                    arErrors = abs(afFrsDiff ./ afPrevFrs);
+                    
+                    % Now we find the branches that have the maximum error.
+                    aiOffendingBranches = find(arErrors == rError);
+                    
+                    % How many are there?
+                    iNumberOfOffendingBranches = length(aiOffendingBranches);
+                    
+                    % Creating a boolean array to see if we have resolved
+                    % all of them in the end.
+                    abResolvableBranches = false(iNumberOfOffendingBranches,1);
+                    
+                    % We need a simple counter to go through the
+                    % abResolvableBranches array.
+                    iCounter = 1;
+                    
+                    % What we will actually do here is average the
+                    % calculated flow rates in the offending branches. The
+                    % following two values determine over how many
+                    % iterations we will average. Here it is hard-coded to
+                    % be the last 501 iterations. 
+                    iLowerRangeLimit = this.iMaxIterations - 500;
+                    iUpperRangeLimit = this.iMaxIterations + 1;
+                    
+                    % Now we go through all offending branches.
+                    for iBranch = aiOffendingBranches
+                        % As an additional safe guard against setting
+                        % unrealistic flow rates we calculate both the mean
+                        % and the median of the flow rates in the defined
+                        % range and see how far they are apart.
+                        fMean = mean(mfFlowRates(iLowerRangeLimit:iUpperRangeLimit,iBranch));
+                        fMedian = median(mfFlowRates(iLowerRangeLimit:iUpperRangeLimit,iBranch));
+                        
+                        % Defining how large the difference between the
+                        % mean and median is allowed to be. Here it is hard
+                        % coded to be 0.5%.
+                        fAllowedDifference = 0.005;
+                        
+                        % If the difference between mean and median is
+                        % small enough, we actually make a change in the
+                        % calculated flow rates. 
+                        if abs(1 - fMean/fMedian) < fAllowedDifference 
+                            % Setting the offending branch's flow rate to
+                            % the mean of the past 501 iterations.
+                            this.afFlowRates(iBranch) = fMean;
+                            
+                            % Setting the corresponding field in the
+                            % abResolvableBranches array to true so we know
+                            % if we got them all.
+                            abResolvableBranches(iCounter) = true;
+                            
+                            % We also need to capture for which branch we
+                            % have done this so it is not overwritten again
+                            % in the 'Final Loop' of this solver update
+                            % step.
+                            this.abOscillationCorrectedBranches(iBranch) = true;
+                        end
+                        
+                        % Incrementing the counter. 
+                        iCounter = iCounter + 1;
+                    end
+                    
+                    % Checking if we resolved all oscillating branches.
+                    if all(abResolvableBranches)
+                        % We did it! So we set bFinalLoop to true and set
+                        % the oscillation suppression to active, that way
+                        % we skip the 'too many iterations' error and just
+                        % finish this method. 
+                        this.bFinalLoop = true;
+                        this.bBranchOscillationSuppressionActive = true;
+                    else
+                        % if you reach this, please view debugging tipps at the
+                        % beginning of this file!
+                        keyboard();
+                        this.throw('update', 'too many iterations, error %.12f', rError);
+                    end
+                end
+            else
+                % if you reach this, please view debugging tipps at the
+                % beginning of this file!
+                keyboard();
+                this.throw('update', 'too many iterations, error %.12f', rError);
+            end
         end
     end
+    
+    this.bBranchOscillationSuppressionActive = false;
     
     %% Setting of final results to afFlowRates
     % during the iteration it is necessary to adapt the results for the
@@ -430,11 +528,12 @@ function update(this)
                 this.chSetBranchFlowRate{iB}(0, afDeltaPressures);
             else
                 
-                % For constant flowrate boundary conditions it is possible that
-                % the pressure drop values are slightly of in some cases. E.g.
-                % desorbing CO2 into vacuum where the phase pressures are also
-                % very small. Therefore we limit the pressure drops from F2Fs
-                % in the branch to the total pressure difference in the branch
+                % For constant flowrate boundary conditions it is possible
+                % that the pressure drop values are slightly off in some
+                % cases. E.g. desorbing CO2 into vacuum where the phase
+                % pressures are also very small. Therefore we limit the
+                % pressure drops from F2Fs in the branch to the total
+                % pressure difference in the branch
                 fPressureDifferenceBranch = sign(this.afFlowRates(iB)) * (this.aoBranches(iB).coExmes{1}.oPhase.fPressure - this.aoBranches(iB).coExmes{2}.oPhase.fPressure);
                 if sum(afDeltaPressures) > fPressureDifferenceBranch
                     afDeltaPressures = afDeltaPressures .* (fPressureDifferenceBranch/sum(afDeltaPressures));

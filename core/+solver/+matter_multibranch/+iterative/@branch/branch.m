@@ -356,6 +356,19 @@ classdef branch < base & event.source
         
         % The current time step of the solver in seconds
         fTimeStep;
+        
+        % Boolean indicating if oscillation suppression is turned on at all
+        % for all branches. 
+        bOscillationSuppression = true;
+        
+        % A boolean array indicating which branches are being corrected for
+        % oscillating in the current update step.
+        abOscillationCorrectedBranches;
+        
+        % A boolean used in the update() method to skip the 'too many
+        % iterations' error when the oscillating branches have been
+        % corrected. 
+        bBranchOscillationSuppressionActive = false;
     end
     
     
@@ -377,6 +390,7 @@ classdef branch < base & event.source
             this.abCheckForChokedFlow = false(this.iBranches,1);
             this.abChokedBranches = false(this.iBranches,1);
             this.cafChokedBranchPressureDiffs = cell(this.iBranches,1);
+            this.abOscillationCorrectedBranches = false(this.iBranches,1);
             this.mbExternalBoundaryBranches = zeros(this.iBranches,1);
             this.oMT        = this.aoBranches(1).oMT;
             this.oTimer     = this.aoBranches(1).oTimer;
@@ -440,11 +454,18 @@ classdef branch < base & event.source
             %                   considered to have no pressure difference
             %                   and therefore to have 0 kg/s flowrate
             %
+            % bOscillationSuppression: In some cases the solver may be
+            %                   oscillating around a very small value. This
+            %                   will still cause the error to be larger
+            %                   than the maximum error. This setting can be
+            %                   used to just set the flow rate to the mean
+            %                   value of the last 500 iterations. 
+            %
             % In order to define these provide a struct with the fieldnames
             % as described here to this function for the values that you
             % want to set
             
-            csPossibleFieldNames = {'fMaxError', 'iMaxIterations', 'iIterationsBetweenP2PUpdate', 'fMinimumTimeStep', 'fMinPressureDiff'};
+            csPossibleFieldNames = {'fMaxError', 'iMaxIterations', 'iIterationsBetweenP2PUpdate', 'fMinimumTimeStep', 'fMinPressureDiff', 'bOscillationSuppression'};
             
             % Gets the fieldnames of the struct to easier loop through them
             csFieldNames = fieldnames(tSolverProperties);
