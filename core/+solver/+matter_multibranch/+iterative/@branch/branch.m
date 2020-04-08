@@ -357,8 +357,17 @@ classdef branch < base & event.source
         % The current time step of the solver in seconds
         fTimeStep;
         
+        % Boolean indicating if oscillation suppression is turned on at all
+        % for all branches. 
         bOscillationSuppression = true;
+        
+        % A boolean array indicating which branches are being corrected for
+        % oscillating in the current update step.
         abOscillationCorrectedBranches;
+        
+        % A boolean used in the update() method to skip the 'too many
+        % iterations' error when the oscillating branches have been
+        % corrected. 
         bBranchOscillationSuppressionActive = false;
     end
     
