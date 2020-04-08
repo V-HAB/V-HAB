@@ -188,7 +188,11 @@ classdef branch < base & event.source
         % number of total branches in the network
         iBranches;
         
-        % last time at which the solver was updated
+        % A cell containing all UUIDs of the branches that are solved by
+        % this solver. 
+        csBranchUUIDs;
+        
+        % Last time the solver was updated
         fLastUpdate = -10;
         
         % Mode:
@@ -407,6 +411,9 @@ classdef branch < base & event.source
                 this.chSetBranchFlowRate{iB} = this.aoBranches(iB).registerHandler(this);
                 
                 this.aoBranches(iB).bind('outdated', @this.registerUpdate);
+                
+                this.csBranchUUIDs{iB} = this.aoBranches(iB).sUUID;
+
             end
             
             
