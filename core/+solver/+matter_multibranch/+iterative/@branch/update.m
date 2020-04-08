@@ -295,7 +295,9 @@ function update(this)
                     % in order for the solver to converge better
                     % the flowrates are smoothed out with this
                     % calculation
-                    this.afFlowRates(iB) = (this.afFlowRates(iB) * 5 + afResults(iColumn)) / 6;
+                    if ~(this.abOscillationCorrectedBranches(iB) && this.bFinalLoop)
+                        this.afFlowRates(iB) = (this.afFlowRates(iB) * 5 + afResults(iColumn)) / 6;
+                    end
                 end
             elseif isa(oObj, 'matter.phases.flow.flow')
                 if afResults(iColumn) < 0
@@ -311,6 +313,10 @@ function update(this)
                     oObj.setPressure(afResults(iColumn));
                 end
             end
+        end
+        
+        if this.bOscillationSuppression && this.bFinalLoop
+            this.abOscillationCorrectedBranches = false(this.iBranches,1);
         end
         
         % For the branches which were removed beforehand because they have
@@ -352,12 +358,59 @@ function update(this)
         if ~base.oDebug.bOff, this.out(1, 2, 'solve-flow-rates', 'Iteration: %i with error %.12f', { this.iIteration, rError }); end
         
         if this.iIteration > this.iMaxIterations
-            % if you reach this, please view debugging tipps at the
-            % beginning of this file!
-            keyboard();
-            this.throw('update', 'too many iterations, error %.12f', rError);
+            
+            if this.bOscillationSuppression 
+                if ~this.bBranchOscillationSuppressionActive
+                    arErrors = abs(afFrsDiff ./ afPrevFrs);
+                    
+                    aiOffendingBranches = find(arErrors == rError);
+                    
+                    iNumberOfOffendingBranches = length(aiOffendingBranches);
+                    
+                    abResolvableBranches = false(iNumberOfOffendingBranches,1);
+                    
+                    iCounter = 1;
+                    
+                    iLowerRangeLimit = this.iMaxIterations - 500;
+                    iUpperRangeLimit = this.iMaxIterations + 1;
+                    
+                    for iBranch = aiOffendingBranches
+                        fMean = mean(mfFlowRates(iLowerRangeLimit:iUpperRangeLimit,iBranch));
+                        fMedian = median(mfFlowRates(iLowerRangeLimit:iUpperRangeLimit,iBranch));
+                        fAverage = (max(mfFlowRates(iLowerRangeLimit:iUpperRangeLimit,iBranch)) + min(mfFlowRates(iLowerRangeLimit:iUpperRangeLimit,iBranch))) /2;
+                        
+                        fAllowedDifference = 0.005;
+                        
+                        if (1 - fMean/fMedian)  < fAllowedDifference %&& ...
+                                %(1 - fMean/fAverage) < fAllowedDifference
+                            this.afFlowRates(iBranch) = fMean;
+                            abResolvableBranches(iCounter) = true;
+                            this.abOscillationCorrectedBranches(iBranch) = true;
+                        end
+                        
+                        iCounter = iCounter + 1;
+                    end
+                    
+                    if all(abResolvableBranches)
+                        this.bFinalLoop = true;
+                        this.bBranchOscillationSuppressionActive = true;
+                    else
+                        % if you reach this, please view debugging tipps at the
+                        % beginning of this file!
+                        keyboard();
+                        this.throw('update', 'too many iterations, error %.12f', rError);
+                    end
+                end
+            else
+                % if you reach this, please view debugging tipps at the
+                % beginning of this file!
+                keyboard();
+                this.throw('update', 'too many iterations, error %.12f', rError);
+            end
         end
     end
+    
+    this.bBranchOscillationSuppressionActive = false;
     
     %% Setting of final results to afFlowRates
     % during the iteration it is necessary to adapt the results for the
