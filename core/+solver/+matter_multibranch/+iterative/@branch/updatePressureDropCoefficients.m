@@ -30,7 +30,7 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
         
         % Get the corresponding column from the matrix for this branch (we
         % already have the row)
-        iCol = this.piObjUuidsToColIndex(oBranch.sUUID);
+        iCol = this.tiObjUuidsToColIndex.(oBranch.sUUID);
         
         % Now we get the corresponding row of this branch in the
         % afBoundaryConditions and aafPhasePressuresAndFlowRates matrix

@@ -141,7 +141,9 @@ function update(this)
             abRemoveColumn = false(1,length(mfPhasePressuresAndFlowRates));
             
             % Setting the columns we want to remove to true
-            abRemoveColumn(cell2mat(this.piObjUuidsToColIndex.values({aoZeroFlowBranches.sUUID}))) = true;
+            for sBranchUUID = {aoZeroFlowBranches.sUUID}
+                abRemoveColumn(this.tiObjUuidsToColIndex.(sBranchUUID{1})) = true;
+            end
             
             % Setting the rows we want to remove to true
             abRemoveRow(this.miBranchIndexToRowID(abZeroFlowBranches)) = true;

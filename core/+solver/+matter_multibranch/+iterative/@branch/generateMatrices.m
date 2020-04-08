@@ -72,7 +72,7 @@ function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatri
                 if ~base.oDebug.bOff, this.out(1, 3, 'props', 'Phase %s-%s: Pressure %f', { oP.oStore.sName, oP.sName, oE.getExMeProperties() }); end
                 
             else
-                iCol = this.piObjUuidsToColIndex(oP.sUUID);
+                iCol = this.tiObjUuidsToColIndex.(oP.sUUID);
                 
                 aafPhasePressuresAndFlowRates(iRow, iCol) = iSign;
             end
@@ -111,7 +111,7 @@ function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatri
             iSign = oP.coProcsEXME{iB}.iSign;
             
             % Not solved by us? Use as boundary cond flow rate!
-            if ~this.piObjUuidsToColIndex.isKey(oB.sUUID)
+            if ~isfield(this.tiObjUuidsToColIndex, oB.sUUID)
                 fFrSum = fFrSum - iSign * oB.fFlowRate;
                 if oB.fFlowRate ~= 0
                     bExternalBranch = true;
@@ -119,7 +119,7 @@ function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatri
             else
                 miBranches(iB) = find(this.aoBranches == oB);
                 
-                iCol = this.piObjUuidsToColIndex(oB.sUUID);
+                iCol = this.tiObjUuidsToColIndex.(oB.sUUID);
                 
                 aafPhasePressuresAndFlowRates(iRow, iCol) = iSign;
                 iAdded = iAdded + 1;

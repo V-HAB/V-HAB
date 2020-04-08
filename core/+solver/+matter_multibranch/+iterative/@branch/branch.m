@@ -182,8 +182,9 @@ classdef branch < base & event.source
     end
     
     properties (SetAccess = private, GetAccess = public)
-       	% array containing the branches which are solved by this solver
+       	% array containing the branches that are solved by this solver
         aoBranches;
+        
         % number of total branches in the network
         iBranches;
         
@@ -245,11 +246,11 @@ classdef branch < base & event.source
         % Boundary nodes
         poBoundaryPhases;
         
-        % Maps variable pressure phases / branches, using their UUIDs, to
+        % Struct variable pressure phases / branches, using their UUIDs, to
         % the according column in the solving matrix
-        piObjUuidsToColIndex;
+        tiObjUuidsToColIndex;
         
-        % Maps variable which provides the corresponding object to a column
+        % Maps variable that provides the corresponding object to a column
         % index number (each column represents either a gas flow node or a
         % branch)
         poColIndexToObj;
@@ -274,9 +275,11 @@ classdef branch < base & event.source
         % flowrates for all branches is smaller than this the solver
         % considers the system solved
         fMaxError = 1e-4; % percent
+        
         % The maximum number of iterations defines how often the solver
         % iterates before resulting in an error
         iMaxIterations = 1000;
+        
         % This value can be used to force more frequent P2P updates (every
         % X iterations). Or the standard approach is to have the solver
         % solve the branch flowrates and then calculate the P2P flowrates.
@@ -284,12 +287,14 @@ classdef branch < base & event.source
         % again till converged. This is repeated until overall convergence
         % is achieved
         iIterationsBetweenP2PUpdate = 1000;
+        
         % The solver calculates a maximum time step, after which the phases
         % equalized their pressures. If this time step is exceed
         % oscillations can occur. This timestep represents the lowest
         % possible value for that time step (indepdentent from phase time
         % steps)
         fMinimumTimeStep = 1e-8; % s
+        
         % The minimum pressure difference defines how many Pa of pressure
         % difference must be present before the solver starts calculating
         % the branch. If the difference is below the value, the branch will
@@ -647,7 +652,6 @@ classdef branch < base & event.source
             % Initialized variable pressure phases / branches
             
             this.poVariablePressurePhases = containers.Map();
-            this.piObjUuidsToColIndex     = containers.Map();
             this.poBoundaryPhases         = containers.Map();
             this.poColIndexToObj          = containers.Map('KeyType', 'uint32', 'ValueType', 'any');
             
@@ -668,7 +672,7 @@ classdef branch < base & event.source
 
                             iColIndex = iColIndex + 1;
 
-                            this.piObjUuidsToColIndex(oPhase.sUUID) = iColIndex;
+                            this.tiObjUuidsToColIndex.(oPhase.sUUID) = iColIndex;
                             this.poColIndexToObj(iColIndex) = oPhase;
                         end
                         
@@ -687,7 +691,7 @@ classdef branch < base & event.source
                 iColIndex = iColIndex + 1;
                 oBranch = this.aoBranches(iBranch);
                 
-                this.piObjUuidsToColIndex(oBranch.sUUID) = iColIndex;
+                this.tiObjUuidsToColIndex.(oBranch.sUUID) = iColIndex;
                 this.poColIndexToObj(iColIndex) = oBranch;
                 
                 oBranch.bind('outdated', @this.registerUpdate);
@@ -701,7 +705,7 @@ classdef branch < base & event.source
             
             
             this.csVariablePressurePhases = this.poVariablePressurePhases.keys();
-            this.csObjUuidsToColIndex     = this.piObjUuidsToColIndex.keys();
+            this.csObjUuidsToColIndex     = fieldnames(this.tiObjUuidsToColIndex);
             this.csBoundaryPhases         = this.poBoundaryPhases.keys();
         end
         

@@ -19,7 +19,7 @@ function updateBranchLevelNetwork(this, aafPhasePressuresAndFlowRates, afBoundar
     % direction, also get the current branch to column index matrix
     miBranchToColumnIndex = zeros(this.iBranches,1);
     for iBranch = 1:this.iBranches
-        iCol = this.piObjUuidsToColIndex(this.aoBranches(iBranch).sUUID);
+        iCol = this.tiObjUuidsToColIndex.(this.aoBranches(iBranch).sUUID);
         mbCol = miNewColToOriginalCol == iCol;
         if any(mbCol)
             miBranchToColumnIndex(iBranch) = find(mbCol);
