@@ -101,7 +101,7 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
                     fFlowRate = this.fInitializationFlowRate;
 
                     % Negative pressure difference? Negative guess!
-                    if oBranch.coExmes{1}.getExMeProperties() < oBranch.coExmes{2}.getExMeProperties()
+                    if oBranch.coExmes{1}.oPhase.fPressure < oBranch.coExmes{2}.oPhase.fPressure
                         fFlowRate = -1 * fFlowRate;
                     end
                 end
