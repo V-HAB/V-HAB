@@ -483,15 +483,17 @@ function update(this)
     % case) where all desorption flowrates from the flow node p2ps are
     % summed up!
     
-    if ~base.oDebug.bOff, this.out(1, 1, 'solve-flow-rates', 'Iterations: %i', { this.iIteration }); end
-    
-    for iColumn = 1:length(this.csObjUuidsToColIndex)
-        oObj = this.poColIndexToObj(iColumn);
+    if ~base.oDebug.bOff
+        this.out(1, 1, 'solve-flow-rates', 'Iterations: %i', { this.iIteration });
         
-        if isa(oObj, 'matter.branch')
-            iB = find(this.aoBranches == oObj, 1);
+        for iColumn = 1:length(this.csObjUuidsToColIndex)
+            oObj = this.coColIndexToObj{iColumn};
             
-            if ~base.oDebug.bOff, this.out(1, 2, 'solve-flow-rates', 'Branch: %s\t%.24f', { oObj.sName, this.afFlowRates(iB) }); end
+            if strcmp(oObj.sObjectType, 'branch')
+                abBranch = this.aoBranches == oObj;
+                
+                this.out(1, 2, 'solve-flow-rates', 'Branch: %s\t%.24f', { oObj.sName, this.afFlowRates(abBranch) });
+            end
         end
     end
     
