@@ -289,17 +289,17 @@ function update(this)
             % TO DO: if we can find a way to do this with a boolean it
             % would be a good speed optimization!
             if isa(oObj, 'matter.branch')
-                iB = find(this.aoBranches == oObj, 1);
+                aiBranch = this.aoBranches == oObj;
                 
                 if this.iIteration == 1 || ~strcmp(this.sMode, 'complex')
-                    this.afFlowRates(iB) = afResults(iColumn);
+                    this.afFlowRates(aiBranch) = afResults(iColumn);
                 else
                     % In order for the solver to converge better
                     % the flowrates are smoothed out with this
                     % calculation. We don't do this if the current branch
                     % is being corrected for oscillating. 
-                    if ~(this.abOscillationCorrectedBranches(iB) && this.bFinalLoop)
-                        this.afFlowRates(iB) = (this.afFlowRates(iB) * 5 + afResults(iColumn)) / 6;
+                    if ~(this.abOscillationCorrectedBranches(aiBranch) && this.bFinalLoop)
+                        this.afFlowRates(aiBranch) = (this.afFlowRates(aiBranch) * 5 + afResults(iColumn)) / 6;
                     end
                 end
             elseif isa(oObj, 'matter.phases.flow.flow')
@@ -468,8 +468,8 @@ function update(this)
         oObj = this.coColIndexToObj{aiNewColToOriginalCol(iColumn)};
         
         if isa(oObj, 'matter.branch')
-            iB = find(this.aoBranches == oObj, 1);
-            this.afFlowRates(iB) = afResults(iColumn);
+            abBranch = this.aoBranches == oObj;
+            this.afFlowRates(abBranch) = afResults(iColumn);
         end
     end
     
