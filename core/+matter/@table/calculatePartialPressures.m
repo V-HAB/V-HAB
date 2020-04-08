@@ -16,18 +16,11 @@ function afPartialPressures = calculatePartialPressures(this, varargin)
 
 % Case one - just a phase or flow object provided
 if length(varargin) == 1
-    bIsaMatterPhase = isa(varargin{1}, 'matter.phase');
-    bIsaMatterFlow  = isa(varargin{1}, 'matter.flow');
     
-    if ~bIsaMatterPhase && ~bIsaMatterFlow
-        this.throw('calculatePartialPressures', 'If only one param provided, has to be a matter.phase or matter.flow (derivative)');
-    end
-    
-    
-    % initialize attributes from input object
+    % Initialize attributes from input object
     % Getting the phase type (gas, liquid, solid) depending on the object
     % type, also setting the afMass array. 
-    if bIsaMatterPhase
+    if strcmp(varargin{1}.sObjectType, 'phase')
         switch varargin{1}.sType
             case 'gas'
                 sPhase = varargin{1}.sType;
@@ -39,7 +32,9 @@ if length(varargin) == 1
         
         afMass = varargin{1}.afMass;
         
-    elseif bIsaMatterFlow
+        fPressure = varargin{1}.fMass * varargin{1}.fMassToPressure;
+        
+    elseif strcmp(varargin{1}.sObjectType, 'flow')
         oFlow = varargin{1};
         % Calculating the number of mols for each species
         afMols = oFlow.arPartialMass ./ this.afMolarMass;
@@ -58,16 +53,12 @@ if length(varargin) == 1
         afPartialPressures = arFractions .* oFlow.fPressure;
         
         return;
+    else
+        this.throw('calculatePartialPressures', 'If only one param provided, has to be a matter.phase or matter.flow (derivative)');
     end
     
     fTemperature = varargin{1}.fTemperature;
 
-    if bIsaMatterPhase
-        fPressure = varargin{1}.fMass * varargin{1}.fMassToPressure;
-    else
-        fPressure = varargin{1}.fPressure;
-    end
-    
     if isempty(fPressure) || isnan(fPressure)
         fPressure = this.Standard.Pressure; % std pressure (Pa)
         fTemperature = this.Standard.Temperature; % std temperature (K)

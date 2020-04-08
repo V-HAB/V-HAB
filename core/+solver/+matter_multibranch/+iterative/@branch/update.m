@@ -288,7 +288,7 @@ function update(this)
             
             % TO DO: if we can find a way to do this with a boolean it
             % would be a good speed optimization!
-            if isa(oObj, 'matter.branch')
+            if strcmp(oObj.sObjectType, 'branch')
                 aiBranch = this.aoBranches == oObj;
                 
                 if this.iIteration == 1 || ~strcmp(this.sMode, 'complex')
@@ -302,7 +302,7 @@ function update(this)
                         this.afFlowRates(aiBranch) = (this.afFlowRates(aiBranch) * 5 + afResults(iColumn)) / 6;
                     end
                 end
-            elseif isa(oObj, 'matter.phases.flow.flow')
+            elseif strcmp(oObj.sObjectType, 'phase')
                 if afResults(iColumn) < 0
                     % This case occurs for example if a manual solver
                     % flowrate is used as boundary condition and forces the
@@ -467,7 +467,7 @@ function update(this)
     for iColumn = 1:iNewRows
         oObj = this.coColIndexToObj{aiNewColToOriginalCol(iColumn)};
         
-        if isa(oObj, 'matter.branch')
+        if strcmp(oObj.sObjectType, 'branch')
             abBranch = this.aoBranches == oObj;
             this.afFlowRates(abBranch) = afResults(iColumn);
         end

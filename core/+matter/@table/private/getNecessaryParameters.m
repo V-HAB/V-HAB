@@ -5,23 +5,20 @@ tbReference.bFlow = false;
 tbReference.bNone = false;
 
 if length(varargin) == 1
-    if ~isa(varargin{1}, 'matter.phase') && ~isa(varargin{1}, 'matter.flow')
-        this.throw('calculateDensity', 'If only one param provided, has to be a matter.phase or matter.flow (derivative)');
-    end
-    
     % Initialize attributes from input object
     % Getting the phase type (gas, liquid, solid) depending on the object
     % type
-    if isa(varargin{1}, 'matter.phase')
+    if strcmp(varargin{1}.sObjectType, 'phase')
         sMatterState = varargin{1}.sType;
         oPhase = varargin{1};
         tbReference.bPhase = true;
         
-    elseif isa(varargin{1}, 'matter.flow')
+    elseif strcmp(varargin{1}.sObjectType, 'flow')
         sMatterState = varargin{1}.oBranch.getInEXME().oPhase.sType;
         oPhase = varargin{1}.oBranch.getInEXME().oPhase;
         tbReference.bFlow = true;
-        
+    else
+        this.throw('calculateDensity', 'If only one param provided, has to be a matter.phase or matter.flow (derivative)');
     end
     
     fTemperature = varargin{1}.fTemperature;
