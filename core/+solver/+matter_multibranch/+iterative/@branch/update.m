@@ -236,8 +236,8 @@ function update(this)
                 this.out(5,1, 'solver', 'NaNs in the Multi-Branch Solver Phase Pressures and/or Flow Rates!');
                 [~, aiColumns] = find(isnan(mfPhasePressuresAndFlowRates));
                 for iObject = 1:length(aiColumns)
-                    sObjectType = this.poColIndexToObj(aiColumns(iObject)).sEntity;
-                    sObjectName = this.poColIndexToObj(aiColumns(iObject)).sName;
+                    sObjectType = this.coColIndexToObj{aiColumns(iObject)}.sEntity;
+                    sObjectName = this.coColIndexToObj{aiColumns(iObject)}.sName;
                     this.out(5,2, 'solver', 'A NaN value has occured in the %s ''%s''.', {sObjectType, sObjectName});
                 end
             end
@@ -245,8 +245,8 @@ function update(this)
                 this.out(5,1, 'solver', 'NaNs in the Multi-Branch Solver Boundary Conditions!');
                 aiRows = find(isnan(afBoundaryConditions));
                 for iObject = 1:length(aiRows)
-                    sObjectType = this.poColIndexToObj(aiRows(iObject)).sEntity;
-                    sObjectName = this.poColIndexToObj(aiRows(iObject)).sName;
+                    sObjectType = this.coColIndexToObj{aiRows(iObject)}.sEntity;
+                    sObjectName = this.coColIndexToObj{aiRows(iObject)}.sName;
                     this.out(5,2, 'solver', 'A NaN value has occured in the %s ''%s''.', {sObjectType, sObjectName});
                 end
             end
@@ -284,7 +284,7 @@ function update(this)
             % from the matrix represents the row index from the vector. So
             % the column index from aafPhasePressuresAndFlowRates
             % corresponds to a row index in afResults!
-            oObj = this.poColIndexToObj(aiNewColToOriginalCol(iColumn));
+            oObj = this.coColIndexToObj{aiNewColToOriginalCol(iColumn)};
             
             % TO DO: if we can find a way to do this with a boolean it
             % would be a good speed optimization!
@@ -465,7 +465,7 @@ function update(this)
     % converged, the actual results must be used to ensure that the zero
     % sum of mass flows over the gas flow nodes is maintained!
     for iColumn = 1:iNewRows
-        oObj = this.poColIndexToObj(aiNewColToOriginalCol(iColumn));
+        oObj = this.coColIndexToObj{aiNewColToOriginalCol(iColumn)};
         
         if isa(oObj, 'matter.branch')
             iB = find(this.aoBranches == oObj, 1);

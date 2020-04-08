@@ -104,7 +104,7 @@ function updateBranchLevelNetwork(this, aafPhasePressuresAndFlowRates, afBoundar
                 % require the negative entries here
                 miBranchesNext = find(aafZeroSumMatrix(miPhases(iPhase), :) == -1);
                 for iK = 1:length(miBranchesNext)
-                    oB = this.poColIndexToObj(miNewColToOriginalCol(miBranchesNext(iK)));
+                    oB = this.coColIndexToObj{miNewColToOriginalCol(miBranchesNext(iK))};
                     iB = find(this.aoBranches == oB);
                     miBranchesNext(1, iK) = iB;
                 end
@@ -151,7 +151,7 @@ function updateBranchLevelNetwork(this, aafPhasePressuresAndFlowRates, afBoundar
                     % require the negative entries here
                     miBranchesNext = find(aafZeroSumMatrix(miPhases(iPhase), :) == -1);
                     for iK = 1:length(miBranchesNext)
-                        oB = this.poColIndexToObj(miNewColToOriginalCol(miBranchesNext(iK)));
+                        oB = this.coColIndexToObj{miNewColToOriginalCol(miBranchesNext(iK))};
                         iB = find(this.aoBranches == oB);
                         miBranchesNext(1, iK) = iB;
                         

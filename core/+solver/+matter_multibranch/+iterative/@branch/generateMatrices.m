@@ -49,7 +49,7 @@ function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatri
             oE = oB.coExmes{iP};
             oP = oB.coExmes{iP}.oPhase;
             
-            if this.poBoundaryPhases.isKey(oP.sUUID)
+            if isfield(this.toBoundaryPhases, oP.sUUID)
                 % NEGATIVE - right side! For second iteration, sign would
                 % be negative - i.e. value added!
                 % If both are boundary conditions, that means
@@ -87,7 +87,7 @@ function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatri
     % rates is zero (or the BC/p2p conds)
     for iP = 1:iVariablePressurePhases
         iRow   = iRow + 1;
-        oP     = this.poVariablePressurePhases(this.csVariablePressurePhases{iP});
+        oP     = this.toVariablePressurePhases.(this.csVariablePressurePhases{iP});
         fFrSum = 0;
         iAdded = 0;
         

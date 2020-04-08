@@ -148,7 +148,7 @@ classdef branch < base & event.source
     %      +     x2      -      x4                              = 0         (VI)
     %                                        +      x6 -     x7 = 0         (VII)
     %
-    % According to this.poColIndexToObj the columns represent the following
+    % According to this.coColIndexToObj the columns represent the following
     % objects: (phases are gas flow nodes)
     %   x1 ,  x2   ,  x3  ,   x4  ,   x5 ,   x6  ,  x7
     % phase, branch, phase, branch, phase, branch, branch
@@ -245,19 +245,19 @@ classdef branch < base & event.source
         iIteration = 0;
         
         % Variable pressure phases by UUID
-        poVariablePressurePhases;
+        toVariablePressurePhases;
         
         % Boundary nodes
-        poBoundaryPhases;
+        toBoundaryPhases;
         
         % Struct variable pressure phases / branches, using their UUIDs, to
         % the according column in the solving matrix
         tiObjUuidsToColIndex;
         
-        % Maps variable that provides the corresponding object to a column
+        % Cell variable that provides the corresponding object to a column
         % index number (each column represents either a gas flow node or a
         % branch)
-        poColIndexToObj;
+        coColIndexToObj;
         
         
         %TODO These properties should be transient. That requires a static
@@ -658,9 +658,8 @@ classdef branch < base & event.source
         function initialize(this)
             % Initialized variable pressure phases / branches
             
-            this.poVariablePressurePhases = containers.Map();
-            this.poBoundaryPhases         = containers.Map();
-            this.poColIndexToObj          = containers.Map('KeyType', 'uint32', 'ValueType', 'any');
+            this.toVariablePressurePhases = struct();
+            this.toBoundaryPhases         = struct();
             
             iColIndex = 0;
             
@@ -673,21 +672,21 @@ classdef branch < base & event.source
                     % present yet, generate index for matrix column
                     if isa(oPhase, 'matter.phases.flow.flow')
                         abIsFlowNode(iPhase) = true;
-                        if ~this.poVariablePressurePhases.isKey(oPhase.sUUID)
+                        if ~isfield(this.toVariablePressurePhases, oPhase.sUUID)
 
-                            this.poVariablePressurePhases(oPhase.sUUID) = oPhase;
+                            this.toVariablePressurePhases.(oPhase.sUUID) = oPhase;
 
                             iColIndex = iColIndex + 1;
 
                             this.tiObjUuidsToColIndex.(oPhase.sUUID) = iColIndex;
-                            this.poColIndexToObj(iColIndex) = oPhase;
+                            this.coColIndexToObj{iColIndex} = oPhase;
                         end
                         
                     % 'Real' phase - boundary condition
                     else
                         abIsFlowNode(iPhase) = false;
-                        if ~this.poBoundaryPhases.isKey(oPhase.sUUID)
-                            this.poBoundaryPhases(oPhase.sUUID) = oPhase;
+                        if ~(isfield(this.toBoundaryPhases, oPhase.sUUID))
+                            this.toBoundaryPhases.(oPhase.sUUID) = oPhase;
                         end
                     end
                     
@@ -699,7 +698,7 @@ classdef branch < base & event.source
                 oBranch = this.aoBranches(iBranch);
                 
                 this.tiObjUuidsToColIndex.(oBranch.sUUID) = iColIndex;
-                this.poColIndexToObj(iColIndex) = oBranch;
+                this.coColIndexToObj{iColIndex} = oBranch;
                 
                 oBranch.bind('outdated', @this.registerUpdate);
                 if oBranch.bOutdated
@@ -711,9 +710,9 @@ classdef branch < base & event.source
             end
             
             
-            this.csVariablePressurePhases = this.poVariablePressurePhases.keys();
+            this.csVariablePressurePhases = fieldnames(this.toVariablePressurePhases);
             this.csObjUuidsToColIndex     = fieldnames(this.tiObjUuidsToColIndex);
-            this.csBoundaryPhases         = this.poBoundaryPhases.keys();
+            this.csBoundaryPhases         = fieldnames(this.toBoundaryPhases);
         end
         
         function registerUpdate(this, ~)
@@ -768,8 +767,8 @@ classdef branch < base & event.source
             % Now check for the maximum allowable time step with the
             % current flow rate (the pressure differences in the branches
             % are not allowed to change their sign within one tick)
-            for iBoundaryPhase = 1:this.poBoundaryPhases.Count
-                oBoundary = this.poBoundaryPhases(this.csBoundaryPhases{iBoundaryPhase});
+            for iBoundaryPhase = 1:length(this.csBoundaryPhases)
+                oBoundary = this.toBoundaryPhases.(this.csBoundaryPhases{iBoundaryPhase});
                 
                 tfTotalMassChangeBoundary.(oBoundary.sUUID) = 0;
                 for iExme = 1:length(oBoundary.coProcsEXME)
@@ -794,7 +793,7 @@ classdef branch < base & event.source
                             try
                                 coRightSide = this.tBoundaryConnection.(csBoundaries{iBoundaryLeft});
 
-                                oLeftBoundary = this.poBoundaryPhases(csBoundaries{iBoundaryLeft});
+                                oLeftBoundary = this.toBoundaryPhases.(csBoundaries{iBoundaryLeft});
 
                             catch
                                 continue
