@@ -177,7 +177,7 @@ classdef branch < base & event.source
             % and subsequently CALL THE PARENT METHOD by
             % update@solver.matter.base.branch(this);
             
-            if ~base.oDebug.bOff, this.out(1, 1, 'update', 'Setting flow rate %f for branch %s', { fFlowRate, this.oBranch.sName }); end
+            if ~base.oDebug.bOff && nargin >= 2, this.out(1, 1, 'update', 'Setting flow rate %f for branch %s', { fFlowRate, this.oBranch.sName }); end
             
             this.fLastUpdate = this.oBranch.oTimer.fTime;
             

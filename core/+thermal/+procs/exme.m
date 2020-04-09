@@ -37,7 +37,7 @@ classdef exme < base
         % (only for massbound transfer). The reduction/increase in thermal
         % energy from increasing or decreasing mass is handled by the total
         % heat capacity change instead and doing it through the exmes as
-        % well would result in inconsitencies
+        % well would result in inconsistencies
         fHeatFlow = 0;
     end
     

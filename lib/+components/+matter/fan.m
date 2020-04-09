@@ -39,7 +39,7 @@ classdef fan < matter.procs.f2f
     properties (SetAccess = protected, GetAccess = public)
         
         % Boolean variable determining if the fan is turned on at all
-        bTurnedOn = true;
+        bTurnedOn = false;
         
         % Power Consumtion of the fan in [W]
         fPowerConsumtionFan = 0;
