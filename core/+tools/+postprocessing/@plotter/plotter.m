@@ -296,7 +296,7 @@ classdef plotter < base
                     coPlotsReArranged{iI} = coPlots{iI};
                 end
                 
-                coPlots = coPlotsReArranged;
+                coPlots = coPlotsReArranged';
             end
             
             % We now have all we need, so we can add another entry to the

@@ -5,7 +5,7 @@ function iIndex = addValueToLog(this, tLogProp)
 
 % Initializing a local variable to hold the object from which we want to
 % add a property to the log.
-oObject   = [];
+oObject = [];
 
 % Replace shorthand to full path (e.g. :s: to .toStores.) and prefix so
 % object is reachable through eval().

@@ -190,6 +190,7 @@ function saveFigureAs(hButton,~)
     % again. 
     %TODO File MATLAB Bug Report.
     drawnow();
+    pause(0.1);
     hFigure.Position = [fFigureLeft fFigureBottom fFigureWidth fFigureHeight];
     
     
@@ -781,22 +782,33 @@ function [ fFigureWidth, fFigureHeight, sFontName, fFontSize, ...
     % due to the size of the button.
     iVerticalPosition = iVerticalPosition - iLineHeight * 2.5;
     
-    % Creating the button
-    uicontrol('Parent',oDialog,...
+    % Creating the 'Done' button
+    oButton = uicontrol('Parent',oDialog,...
               'Position',[50 iVerticalPosition 70 30],...
               'String','Done',...
               'FontSize',12,...
+              'FontWeight','bold',...
+              'ForegroundColor','#0072BD',...
               'Callback',@finish);
     
     %% Save as default button
           
-    % Creating the button
+    % Creating the 'Save as default' button
     uicontrol('Parent',oDialog,...
               'Position',[150 iVerticalPosition 140 30],...
               'String','Save as default',...
               'FontSize',12,...
               'Callback',@saveAsDefault);
-
+    
+          
+    % Saving a handle to the Done button callback to the dialog properties
+    % so we can call it from the KeyPressFcn.
+    oDialog.UserData.hDoneButton = oButton;
+    
+    % Now we need to assign the key press function to this dialog.
+    oDialog.KeyPressFcn = @KeyPressFunction;
+    
+    
     %% Wait for d to close before running to completion
     uiwait(oDialog);
     
@@ -897,6 +909,24 @@ function [ fFigureWidth, fFigureHeight, sFontName, fFontSize, ...
             
             bAutoAdjustYAxis_Preset = tPresets.bAutoAdjustYAxis;
             
+        end
+    end
+
+    function KeyPressFunction(oFigure, oKeyData)
+        %KEYPRESSFUNCTION Enables keyboard control of the Done button
+        % By pressing the return key the user can finish the dialog.
+        
+        % We need to catch all sorts of stray inputs, so we enclose this entire
+        % function in a try-catch-block. That way we can just throw errors to
+        % silently abort.
+        try
+            if strcmp(oKeyData.Key,'return')
+                % Executing the button callback.
+                oFigure.UserData.hDoneButton.Callback(oFigure.UserData.hDoneButton, NaN);
+            end
+        catch
+            % We want this to fail silently if there are inadvertent button
+            % presses, so we don't put anything in here.
         end
     end
         
