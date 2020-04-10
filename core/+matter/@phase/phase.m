@@ -8,6 +8,14 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % State of matter in phase (e.g. gas, liquid, solid), used for
         % example by the EXMEs to check compatibility.
         sType;
+        
+    end
+    
+    properties (Constant)
+        % In order to remove the need for numerous calls to isa(),
+        % especially in the matter table, this property can be used to see
+        % if an object is derived from this class. 
+        sObjectType = 'phase';
     end
 
     % These properties (including the mass vlaues) are not private because

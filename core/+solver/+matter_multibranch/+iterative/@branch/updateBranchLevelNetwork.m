@@ -19,7 +19,7 @@ function updateBranchLevelNetwork(this, aafPhasePressuresAndFlowRates, afBoundar
     % direction, also get the current branch to column index matrix
     miBranchToColumnIndex = zeros(this.iBranches,1);
     for iBranch = 1:this.iBranches
-        iCol = this.piObjUuidsToColIndex(this.aoBranches(iBranch).sUUID);
+        iCol = this.tiObjUuidsToColIndex.(this.aoBranches(iBranch).sUUID);
         mbCol = miNewColToOriginalCol == iCol;
         if any(mbCol)
             miBranchToColumnIndex(iBranch) = find(mbCol);
@@ -104,7 +104,7 @@ function updateBranchLevelNetwork(this, aafPhasePressuresAndFlowRates, afBoundar
                 % require the negative entries here
                 miBranchesNext = find(aafZeroSumMatrix(miPhases(iPhase), :) == -1);
                 for iK = 1:length(miBranchesNext)
-                    oB = this.poColIndexToObj(miNewColToOriginalCol(miBranchesNext(iK)));
+                    oB = this.coColIndexToObj{miNewColToOriginalCol(miBranchesNext(iK))};
                     iB = find(this.aoBranches == oB);
                     miBranchesNext(1, iK) = iB;
                 end
@@ -151,7 +151,7 @@ function updateBranchLevelNetwork(this, aafPhasePressuresAndFlowRates, afBoundar
                     % require the negative entries here
                     miBranchesNext = find(aafZeroSumMatrix(miPhases(iPhase), :) == -1);
                     for iK = 1:length(miBranchesNext)
-                        oB = this.poColIndexToObj(miNewColToOriginalCol(miBranchesNext(iK)));
+                        oB = this.coColIndexToObj{miNewColToOriginalCol(miBranchesNext(iK))};
                         iB = find(this.aoBranches == oB);
                         miBranchesNext(1, iK) = iB;
                         

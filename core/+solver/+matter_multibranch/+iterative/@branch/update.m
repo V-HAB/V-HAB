@@ -132,6 +132,7 @@ function update(this)
             % can change their pressure
             if all(abZeroFlowBranches)
                 this.afFlowRates = zeros(1, this.iBranches);
+                iNewRows = [];
                 break
             end
             aoZeroFlowBranches = this.aoBranches(abZeroFlowBranches);
@@ -141,7 +142,9 @@ function update(this)
             abRemoveColumn = false(1,length(mfPhasePressuresAndFlowRates));
             
             % Setting the columns we want to remove to true
-            abRemoveColumn(cell2mat(this.piObjUuidsToColIndex.values({aoZeroFlowBranches.sUUID}))) = true;
+            for sBranchUUID = {aoZeroFlowBranches.sUUID}
+                abRemoveColumn(this.tiObjUuidsToColIndex.(sBranchUUID{1})) = true;
+            end
             
             % Setting the rows we want to remove to true
             abRemoveRow(this.miBranchIndexToRowID(abZeroFlowBranches)) = true;
@@ -234,8 +237,8 @@ function update(this)
                 this.out(5,1, 'solver', 'NaNs in the Multi-Branch Solver Phase Pressures and/or Flow Rates!');
                 [~, aiColumns] = find(isnan(mfPhasePressuresAndFlowRates));
                 for iObject = 1:length(aiColumns)
-                    sObjectType = this.poColIndexToObj(aiColumns(iObject)).sEntity;
-                    sObjectName = this.poColIndexToObj(aiColumns(iObject)).sName;
+                    sObjectType = this.coColIndexToObj{aiColumns(iObject)}.sEntity;
+                    sObjectName = this.coColIndexToObj{aiColumns(iObject)}.sName;
                     this.out(5,2, 'solver', 'A NaN value has occured in the %s ''%s''.', {sObjectType, sObjectName});
                 end
             end
@@ -243,8 +246,8 @@ function update(this)
                 this.out(5,1, 'solver', 'NaNs in the Multi-Branch Solver Boundary Conditions!');
                 aiRows = find(isnan(afBoundaryConditions));
                 for iObject = 1:length(aiRows)
-                    sObjectType = this.poColIndexToObj(aiRows(iObject)).sEntity;
-                    sObjectName = this.poColIndexToObj(aiRows(iObject)).sName;
+                    sObjectType = this.coColIndexToObj{aiRows(iObject)}.sEntity;
+                    sObjectName = this.coColIndexToObj{aiRows(iObject)}.sName;
                     this.out(5,2, 'solver', 'A NaN value has occured in the %s ''%s''.', {sObjectType, sObjectName});
                 end
             end
@@ -282,25 +285,25 @@ function update(this)
             % from the matrix represents the row index from the vector. So
             % the column index from aafPhasePressuresAndFlowRates
             % corresponds to a row index in afResults!
-            oObj = this.poColIndexToObj(aiNewColToOriginalCol(iColumn));
+            oObj = this.coColIndexToObj{aiNewColToOriginalCol(iColumn)};
             
             % TO DO: if we can find a way to do this with a boolean it
             % would be a good speed optimization!
-            if isa(oObj, 'matter.branch')
-                iB = find(this.aoBranches == oObj, 1);
+            if strcmp(oObj.sObjectType, 'branch')
+                aiBranch = this.aoBranches == oObj;
                 
                 if this.iIteration == 1 || ~strcmp(this.sMode, 'complex')
-                    this.afFlowRates(iB) = afResults(iColumn);
+                    this.afFlowRates(aiBranch) = afResults(iColumn);
                 else
                     % In order for the solver to converge better
                     % the flowrates are smoothed out with this
                     % calculation. We don't do this if the current branch
                     % is being corrected for oscillating. 
-                    if ~(this.abOscillationCorrectedBranches(iB) && this.bFinalLoop)
-                        this.afFlowRates(iB) = (this.afFlowRates(iB) * 5 + afResults(iColumn)) / 6;
+                    if ~(this.abOscillationCorrectedBranches(aiBranch) && this.bFinalLoop)
+                        this.afFlowRates(aiBranch) = (this.afFlowRates(aiBranch) * 5 + afResults(iColumn)) / 6;
                     end
                 end
-            elseif isa(oObj, 'matter.phases.flow.flow')
+            elseif strcmp(oObj.sObjectType, 'phase')
                 if afResults(iColumn) < 0
                     % This case occurs for example if a manual solver
                     % flowrate is used as boundary condition and forces the
@@ -462,14 +465,12 @@ function update(this)
     % next iteration so that the solver can converge. However after it has
     % converged, the actual results must be used to ensure that the zero
     % sum of mass flows over the gas flow nodes is maintained!
-    if ~all(abZeroFlowBranches)
-        for iColumn = 1:iNewRows
-            oObj = this.poColIndexToObj(aiNewColToOriginalCol(iColumn));
-
-            if isa(oObj, 'matter.branch')
-                iB = find(this.aoBranches == oObj, 1);
-                this.afFlowRates(iB) = afResults(iColumn);
-            end
+    for iColumn = 1:iNewRows
+        oObj = this.coColIndexToObj{aiNewColToOriginalCol(iColumn)};
+        
+        if strcmp(oObj.sObjectType, 'branch')
+            abBranch = this.aoBranches == oObj;
+            this.afFlowRates(abBranch) = afResults(iColumn);
         end
     end
     
@@ -483,15 +484,17 @@ function update(this)
     % case) where all desorption flowrates from the flow node p2ps are
     % summed up!
     
-    if ~base.oDebug.bOff, this.out(1, 1, 'solve-flow-rates', 'Iterations: %i', { this.iIteration }); end
-    
-    for iColumn = 1:length(this.csObjUuidsToColIndex)
-        oObj = this.poColIndexToObj(iColumn);
+    if ~base.oDebug.bOff
+        this.out(1, 1, 'solve-flow-rates', 'Iterations: %i', { this.iIteration });
         
-        if isa(oObj, 'matter.branch')
-            iB = find(this.aoBranches == oObj, 1);
+        for iColumn = 1:length(this.csObjUuidsToColIndex)
+            oObj = this.coColIndexToObj{iColumn};
             
-            if ~base.oDebug.bOff, this.out(1, 2, 'solve-flow-rates', 'Branch: %s\t%.24f', { oObj.sName, this.afFlowRates(iB) }); end
+            if strcmp(oObj.sObjectType, 'branch')
+                abBranch = this.aoBranches == oObj;
+                
+                this.out(1, 2, 'solve-flow-rates', 'Branch: %s\t%.24f', { oObj.sName, this.afFlowRates(abBranch) });
+            end
         end
     end
     

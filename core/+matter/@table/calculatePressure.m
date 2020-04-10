@@ -11,7 +11,7 @@ if iNumArgs == 1 %nargin < 3
     
     % Get data from object: The state of matter (gas, liquid, solid)
     % and |afMasses| array, depending on the object type.
-    if isa(oMatterRef, 'matter.phase')
+    if strcmp(oMatterRef.sObjectType, 'phase')
         
         sMatterState = oMatterRef.sType;
         arPartialMass = oMatterRef.arPartialMass;
@@ -19,14 +19,14 @@ if iNumArgs == 1 %nargin < 3
         afMass = oPhase.afMass;
         fCurrentPressure = oPhase.fPressure;
         
-    elseif isa(oMatterRef, 'matter.procs.p2p')
+    elseif strcmp(oMatterRef.sObjectType, 'p2p')
         sMatterState = oMatterRef.sType;
         arPartialMass = oMatterRef.arPartialMass;
         oPhase = oMatterRef.getInEXME().oPhase;
         afMass = oPhase.afMass;
         fCurrentPressure = oPhase.fPressure;
         
-    elseif isa(oMatterRef, 'matter.flow')
+    elseif strcmp(oMatterRef.sObjectType, 'flow')
         sMatterState = oMatterRef.oBranch.getInEXME().oPhase.sType;
         arPartialMass = oMatterRef.arPartialMass;
         if oMatterRef.fFlowRate >= 0

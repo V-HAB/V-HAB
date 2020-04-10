@@ -23,7 +23,7 @@ function fMolAmount = calculateMolAmount(this, varargin) % afMasses)
 
     % Handle two variants of calling this method: With an object where the
     % necessary data can be retrieved from, or the data itself.
-    if isa(varargin{1}, 'matter.phase')
+    if strcmp(varargin{1}.sObjectType, 'phase')
         %TODO: Delete this part and put it into the corresponding classes
         %      instead (the matter table should not know about other
         %      objects).
@@ -31,7 +31,7 @@ function fMolAmount = calculateMolAmount(this, varargin) % afMasses)
         % Get data from object: |afMasses| array from |matter.phase| object
         afMasses = varargin{1}.afMass;
 
-    elseif isa(varargin{1}, 'matter.flow')
+    elseif strcmp(varargin{1}.sObjectType, 'flow')
         %TODO: Delete this part and put it into the corresponding classes
         %      instead (the matter table should not know about other
         %      objects). Also, it is confusing that this method may return

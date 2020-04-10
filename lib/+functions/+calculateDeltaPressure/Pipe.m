@@ -110,7 +110,7 @@ if (fRe < 2320) % check roughness limit
 elseif fRoughness == 0 && 2320 <= fRe && fRe < 100000
     %definition of the friction factor according to [9] section Lab
     %equation (5)
-    fFriction_Factor = 0.3164/nthroot(fRe,4);
+    fFriction_Factor = 0.3164/(fRe^(1/4));
     
     % To prevent oscillations in the solver we smooth the transition
     % between laminar and non laminar flows:

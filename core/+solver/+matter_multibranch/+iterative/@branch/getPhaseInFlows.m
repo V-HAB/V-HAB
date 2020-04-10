@@ -17,24 +17,24 @@ for iExme = 1:oPhase.iProcsEXME
     
     oBranch = oProcExme.oFlow.oBranch;
     
-    % If the branch is not part of this network solver
-    % consider it as constant boundary flowrate. TO DO:
-    % check this condition!
-    if ~(oBranch.oHandler == this)
+    
+    % Find branch index
+    abBranchIndex = strcmp(oBranch.sUUID, this.csBranchUUIDs);
+    
+    % If the branch is not part of this network solver we consider the
+    % branch as a constant boundary flowrate.
+    if ~any(abBranchIndex)
         [ fFlowRate, arFlowPartials, ~ ] = oProcExme.getFlowData();
         
         % Dynamically solved branch - get CURRENT flow
         % rate (last iteration), not last time step
         % flow rate!!
     else
-        
-        % Find branch index
-        iBranchIdx = find(this.aoBranches == oBranch, 1);
-        
-        fFlowRate = oProcExme.iSign * this.afFlowRates(iBranchIdx);
+        % Get the flow rate
+        fFlowRate = oProcExme.iSign * this.afFlowRates(abBranchIndex);
         
         if fFlowRate > 0
-            if this.afFlowRates(iBranchIdx) >= 0
+            if this.afFlowRates(abBranchIndex) >= 0
                 arFlowPartials = oBranch.coExmes{1}.oPhase.arPartialMass;
             else
                 arFlowPartials = oBranch.coExmes{2}.oPhase.arPartialMass;

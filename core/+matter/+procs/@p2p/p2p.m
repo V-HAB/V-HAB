@@ -32,8 +32,6 @@ classdef (Abstract) p2p < matter.flow & event.source
         bTriggersetMatterPropertiesCallbackBound = false;
     end
     
-    
-    
     methods
         function this = p2p(oStore, sName, xIn, xOut)
             %% p2p class constructor.
@@ -55,6 +53,13 @@ classdef (Abstract) p2p < matter.flow & event.source
             
             % Parent constructor
             this@matter.flow(oStore);
+            
+            % Overwriting the this.sObjectType property that is inherited
+            % from matter.flow.
+            % In order to remove the need for numerous calls to isa(),
+            % especially in the matter table, this property can be used to see
+            % if an object is derived from this class.
+            this.sObjectType = 'p2p';
             
             if ischar(xIn)
                 % Phases / ports

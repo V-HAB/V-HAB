@@ -35,6 +35,13 @@ classdef branch < base.branch
         oThermalBranch;
     end
     
+    properties (Constant)
+        % In order to remove the need for numerous calls to isa(),
+        % especially in the matter table, this property can be used to see
+        % if an object is derived from this class. 
+        sObjectType = 'branch';
+    end
+    
     methods
         function this = branch(oContainer, xLeft, csProcs, xRight, sCustomName)
             %% matter branch class constructor
