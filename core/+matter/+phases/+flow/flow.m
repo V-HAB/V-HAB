@@ -21,6 +21,10 @@ classdef (Abstract) flow < matter.phase
         % Initial mass for information and debugging purposes. If
         % everything works correctly the phase should not change its mass!
         fInitialMass;
+        
+        % An array of zeros will be stored here to avoid having to call
+        % zeros() a lot. 
+        mfEmptyCompoundMassFlow;
     end
     
     methods
@@ -46,6 +50,8 @@ classdef (Abstract) flow < matter.phase
             this.fInitialMass = this.fMass;
             
             this.fDensity = this.fMass / this.fVolume;
+            
+            this.mfEmptyCompoundMassFlow = zeros(this.oMT.iSubstances,  this.oMT.iSubstances);
             
             % Mass change must be zero for flow nodes, if that is not the
             % case, this enforces V-HAB to make a minimum size time step to
@@ -94,13 +100,6 @@ classdef (Abstract) flow < matter.phase
             % afPartialInFlows: Vector with the length (1, oMT.iSubstances)
             %                   with a partial mass flow in kg/s for each
             %                   substance
-            if isempty(this.fPressure)
-                if ~base.oDebug.bOff
-                    this.out(1, 1, 'skip-partials', '%s-%s: skip at %i (%f) - no pressure (i.e. before multi solver executed at least once)!', { this.oStore.sName, this.sName, this.oTimer.iTick, this.oTimer.fTime });
-                end
-                
-                return;
-            end
             
             % Store needs to be sealed (else problems with initial
             % conditions). Last partials update needs to be in the past,
@@ -132,8 +131,11 @@ classdef (Abstract) flow < matter.phase
                 % is actually a real flow rate.
                 fInwardsFlowRates = 0;
                 
+                mfCompoundMassFlow = this.mfEmptyCompoundMassFlow;
+                
+                bCompoundMassesPresent = false;
+                
                 % Get flow rates and partials from EXMEs
-                mfCompoundMassFlow = zeros(this.oMT.iSubstances,  this.oMT.iSubstances);
                 for iI = 1:this.iProcsEXME
                     [ fFlowRate, arFlowPartials, ~, arExMECompoundMass ] = this.coProcsEXME{iI}.getFlowData();
                     
@@ -154,7 +156,14 @@ classdef (Abstract) flow < matter.phase
                             % ratios of the phase. Outflowing exme must only be
                             % considered as a total mass change before calculating
                             % the new composition
-                            mfCompoundMassFlow = mfCompoundMassFlow + (fFlowRate .* arExMECompoundMass);
+                            if any(arExMECompoundMass, 'all')
+                                mfCompoundMassFlow = mfCompoundMassFlow + (fFlowRate .* arExMECompoundMass);
+                                bCompoundMassesPresent = true;
+                            else
+                                if ~bCompoundMassesPresent
+                                    bCompoundMassesPresent = false;
+                                end
+                            end
                         end
                     end
                 end
@@ -190,12 +199,13 @@ classdef (Abstract) flow < matter.phase
                 
                 afPartialInFlows = sum(mrInPartials, 1); %note we did multiply mrInPartials with flow rates above, so actually total partial flows!
                 
-                % The compound mass flow ratio is stored per compound mass (in
-                % the rows)
-                afCompoundMassFlow = sum(mfCompoundMassFlow,2);
-                this.arCompoundMass = mfCompoundMassFlow ./ afCompoundMassFlow;
-                this.arCompoundMass(afCompoundMassFlow == 0, :) = 0;
-                
+                if bCompoundMassesPresent
+                    % The compound mass flow ratio is stored per compound mass (in
+                    % the rows)
+                    afCompoundMassFlow = sum(mfCompoundMassFlow,2);
+                    this.arCompoundMass = mfCompoundMassFlow ./ afCompoundMassFlow;
+                    this.arCompoundMass(afCompoundMassFlow == 0, :) = 0;
+                end
             else
                 afPartialInFlows = sum(afPartialInFlows, 1);
             end

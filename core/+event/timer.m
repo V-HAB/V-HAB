@@ -624,7 +624,7 @@ classdef timer < base
                 % post ticks where set during execution of the previous
                 % ones, and if that is the case we iterate the post tick
                 % calculations
-                bExecutePostTicks = any(any(cellfun(@(cCell) any(cCell), this.cabPostTickControl(1:end-1,:))));
+                bExecutePostTicks = any(cellfun(@(cCell) any(cCell), this.cabPostTickControl(1:end-1,:)), 'all');
             end
             
             %% Time Step post physics calculation

@@ -84,6 +84,7 @@ classdef (Abstract) p2p < matter.flow & event.source
                 oPhaseIn = xIn;
                 matter.procs.exmes.(oPhaseIn.sType)(oPhaseIn,       [sName, '_In']);
                 sExMeIn = ['.' , sName, '_In'];
+
             end
             
             if ischar(xOut)
