@@ -17,13 +17,19 @@ for iExme = 1:oPhase.iProcsEXME
     
     oBranch = oProcExme.oFlow.oBranch;
     
-    % If the branch is not part of this network solver the statments in the
-    % following try-block will fail. We then consider the branch as a
-    % constant boundary flowrate.
-    try
-        % Find branch index
-        abBranchIndex = strcmp(oBranch.sUUID, this.csBranchUUIDs);
+    
+    % Find branch index
+    abBranchIndex = strcmp(oBranch.sUUID, this.csBranchUUIDs);
+    
+    % If the branch is not part of this network solver we consider the
+    % branch as a constant boundary flowrate.
+    if ~any(abBranchIndex)
+        [ fFlowRate, arFlowPartials, ~ ] = oProcExme.getFlowData();
         
+        % Dynamically solved branch - get CURRENT flow
+        % rate (last iteration), not last time step
+        % flow rate!!
+    else
         % Get the flow rate
         fFlowRate = oProcExme.iSign * this.afFlowRates(abBranchIndex);
         
@@ -34,13 +40,6 @@ for iExme = 1:oPhase.iProcsEXME
                 arFlowPartials = oBranch.coExmes{2}.oPhase.arPartialMass;
             end
         end
-        
-    catch oError  %#ok<NASGU> Don't need to do anything with the error here
-        [ fFlowRate, arFlowPartials, ~ ] = oProcExme.getFlowData();
-        
-        % Dynamically solved branch - get CURRENT flow
-        % rate (last iteration), not last time step
-        % flow rate!!
     end
     
     % Only for INflows
