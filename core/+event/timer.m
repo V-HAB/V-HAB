@@ -140,6 +140,16 @@ classdef timer < base
         % and after that only the values changes
         cabPostTickControl;
         
+        % In order to accelerate the check if there are sill callbacks to
+        % be executed, this boolean array will be initialized false in the
+        % constructor with the same dimensions as cabPostTickControl. The
+        % values will be set to true once a callback is registered in
+        % registerPostTick(). Using this array, the number of cells in
+        % cabPostTickControl that need to be checked using the any() calls
+        % at the end of the while loop in tick() is greatly reduced for
+        % most models, thus increasing performance.
+        abCallbacksRegistered;
+        
         % In order to decide whether a newly bound post tick is from an
         % earlier group and level as the one we are currently execution
         % these two properties store the corresponding number from
@@ -226,6 +236,7 @@ classdef timer < base
             % when actually executing the callbacks.
             this.txPostTicks = txPostTicksFull;
             this.cabPostTickControl = cell(iPostTickGroups,iPostTickLevels);
+            this.abCallbacksRegistered = false(iPostTickGroups,iPostTickLevels);
             this.csPostTickGroups = fieldnames(this.txPostTicks);
         end
 
@@ -373,6 +384,12 @@ classdef timer < base
             % Initializing the appropriate item in the cabPostTickControl
             % cell with a logical false, so it is not executed at first.
             this.cabPostTickControl{iPostTickGroup, iPostTickLevel}(iPostTickNumber) = false;
+            
+            switch iPostTickGroup
+                case {1,2,3}
+                    this.abCallbacksRegistered(iPostTickGroup, iPostTickLevel) = true;
+                otherwise
+            end
             
             % To allow the user to easily set the post tick that was
             % registered we return a function handle which already contains
@@ -624,7 +641,7 @@ classdef timer < base
                 % post ticks where set during execution of the previous
                 % ones, and if that is the case we iterate the post tick
                 % calculations
-                bExecutePostTicks = any(cellfun(@(cCell) any(cCell), this.cabPostTickControl(1:end-1,:)), 'all');
+                bExecutePostTicks = any(cellfun(@(cCell) any(cCell), this.cabPostTickControl(this.abCallbacksRegistered)), 'all');
             end
             
             %% Time Step post physics calculation
