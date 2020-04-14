@@ -1,4 +1,4 @@
-function [ cParams, sDefaultPhase ] = liquid(oStore, fVolume, trMassRatios, fTemperature, fPressure)
+function [ cParams, sDefaultPhase ] = solid(oStore, fVolume, trMassRatios, fTemperature, fPressure)
 %helper to create a water phase
 %
 % Parameters:
@@ -34,7 +34,7 @@ mrResolvedMassRatios = oStore.oMT.resolveCompoundMass(mrMassRatios, arCompoundMa
 % Now we calculate the overall density using the mass ratio struct as input
 % for the calculate function
 afPressures = ones(1, oStore.oMT.iSubstances) .* fPressure;
-fDensity = oStore.oMT.calculateDensity('liquid', mrResolvedMassRatios, fTemperature, afPressures);
+fDensity = oStore.oMT.calculateDensity('solid', mrResolvedMassRatios, fTemperature, afPressures);
 
 % Using this density we can calculate the overall mass that should be in
 % the phase
@@ -50,10 +50,10 @@ end
 
 % Create cParams for a whole matter.phases.liquid standard phase. If user does
 % not want to use all of them, can just use
-cParams = { tfMass fTemperature fPressure};
+cParams = { tfMass fTemperature};
 
 % Default class - required for automatic construction of phase. Helper re-
 % turns the default phase that could be constructed with this set of params
-sDefaultPhase = 'matter.phases.liquid';
+sDefaultPhase = 'matter.phases.solid';
 
 end

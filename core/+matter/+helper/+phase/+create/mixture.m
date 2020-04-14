@@ -17,13 +17,14 @@ csSubstances = fieldnames(trMassRatios);
 arCompoundMass = zeros(oStore.oMT.iSubstances, oStore.oMT.iSubstances);
 % from the struct we create the mass ratio vector
 for iSubstance = 1:length(csSubstances)
-    mrMassRatios(oStore.oMT.tiN2I.(csSubstances{iSubstance})) = trMassRatios.(csSubstances{iSubstance});
+    iMatterIndexSubstance = oStore.oMT.tiN2I.(csSubstances{iSubstance});
+    mrMassRatios(iMatterIndexSubstance) = trMassRatios.(csSubstances{iSubstance});
     
-    if oStore.oMT.abCompound(iSubstance)
+    if oStore.oMT.abCompound(iMatterIndexSubstance)
         trBaseComposition = oStore.oMT.ttxMatter.(csSubstances{iSubstance}).trBaseComposition;
         csEntries = fieldnames(trBaseComposition);
         for iEntry = 1:length(csEntries)
-            arCompoundMass(iSubstance, oStore.oMT.tiN2I.(csEntries{iEntry})) = trBaseComposition.(csEntries{iEntry});
+            arCompoundMass(iMatterIndexSubstance, oStore.oMT.tiN2I.(csEntries{iEntry})) = trBaseComposition.(csEntries{iEntry});
         end
     end
 end
