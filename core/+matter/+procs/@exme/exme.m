@@ -190,16 +190,17 @@ classdef exme < base
                 
                 if fFlowRate > 0
                     % The flow rate is larger than zero, this means we use
-                    % the properties of the incoming flow.
-                    %CHECK do we need to get that from other side, in
-                    %      case that changed? Shouldn't need that, when
-                    %      mass is extracted on the other side, the
-                    %      arPartialMass from that phase is used - but
-                    %      if that get's updated, fr recalc is called
-                    %      on all branches which would set the new
-                    %      arPartials on all flows ... right?
-                    
-                    arPartials   = this.oFlow.arPartialMass;
+                    % the properties of the incoming flow. We have to get
+                    % it from the other side only in case the phase from
+                    % which the mass is taken is a flow phase. For that
+                    % case however, we have to check which exme is the
+                    % inexme of the branch. However, if we have to do this
+                    % anyway, we can do it for all cases
+                    if this.oFlow.fFlowRate >= 0
+                        arPartials   = this.oFlow.oBranch.coExmes{1}.oPhase.arPartialMass;
+                    else
+                        arPartials   = this.oFlow.oBranch.coExmes{2}.oPhase.arPartialMass;
+                    end
                     afProperties = [ this.oFlow.fTemperature this.oFlow.fSpecificHeatCapacity ];
                     arCompoundMass = this.oFlow.arCompoundMass;
                     
