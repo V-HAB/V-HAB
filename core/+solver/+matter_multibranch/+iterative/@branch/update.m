@@ -407,8 +407,8 @@ function update(this)
                         
                         % Defining how large the difference between the
                         % mean and median is allowed to be. Here it is hard
-                        % coded to be 0.5%.
-                        fAllowedDifference = 0.005;
+                        % coded to be 50%.
+                        fAllowedDifference = 0.5;
                         
                         % If the difference between mean and median is
                         % small enough, we actually make a change in the
