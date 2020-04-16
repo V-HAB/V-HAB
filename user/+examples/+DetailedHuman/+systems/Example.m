@@ -29,7 +29,7 @@ classdef Example < vsys
             
             %% Nominal Operation
             
-            tMealTimes.Breakfast = 0*3600;
+            tMealTimes.Breakfast = 0.1*3600;
             tMealTimes.Lunch = 6*3600;
             tMealTimes.Dinner = 15*3600;
             
@@ -81,7 +81,7 @@ classdef Example < vsys
                 txCrewPlaner.ctEvents = ctEvents(:, iCrewMember);
                 txCrewPlaner.tMealTimes = tMealTimes;
                 
-                components.matter.DetailedHuman.Human(this, ['Human_', num2str(iCrewMember)], txCrewPlaner);
+                components.matter.DetailedHuman.Human(this, ['Human_', num2str(iCrewMember)], txCrewPlaner, 60);
                 
                 clear txCrewPlaner;
             end
@@ -140,18 +140,20 @@ classdef Example < vsys
                 matter.procs.exmes.liquid(oPotableWaterPhase,   ['DrinkingOut', num2str(iHuman)]);
                 matter.procs.exmes.mixture(oFecesPhase,         ['Feces_In',    num2str(iHuman)]);
                 matter.procs.exmes.mixture(oUrinePhase,         ['Urine_In',    num2str(iHuman)]);
+                matter.procs.exmes.gas(oCabinPhase,             ['Perspiration',num2str(iHuman)]);
 
                 % Add interface branches for each human
                 matter.branch(this, ['Air_Out',         num2str(iHuman)],  	{}, [oCabinPhase.oStore.sName,             '.AirOut',      num2str(iHuman)]);
                 matter.branch(this, ['Air_In',          num2str(iHuman)], 	{}, [oCabinPhase.oStore.sName,             '.AirIn',       num2str(iHuman)]);
                 matter.branch(this, ['Feces',           num2str(iHuman)],  	{}, [oFecesPhase.oStore.sName,             '.Feces_In',    num2str(iHuman)]);
                 matter.branch(this, ['PotableWater',    num2str(iHuman)], 	{}, [oPotableWaterPhase.oStore.sName,      '.DrinkingOut', num2str(iHuman)]);
-                matter.branch(this, ['Urine',           num2str(iHuman)], 	{}, [oUrinePhase.oStore.sName,             '.Urine_In',	num2str(iHuman)]);
+                matter.branch(this, ['Urine',           num2str(iHuman)], 	{}, [oUrinePhase.oStore.sName,             '.Urine_In',    num2str(iHuman)]);
+                matter.branch(this, ['Perspiration',    num2str(iHuman)], 	{}, [oCabinPhase.oStore.sName,             '.Perspiration',num2str(iHuman)]);
 
 
                 % register each human at the food store
                 requestFood = oFoodStore.registerHuman(['Solid_Food_', num2str(iHuman)]);
-                this.toChildren.(['Human_', num2str(iHuman)]).Digestion.bindRequestFoodFunction(requestFood);
+                this.toChildren.(['Human_', num2str(iHuman)]).toChildren.Digestion.bindRequestFoodFunction(requestFood);
 
                 % Set the interfaces for each human
                 this.toChildren.(['Human_',         num2str(iHuman)]).setIfFlows(...
@@ -160,10 +162,18 @@ classdef Example < vsys
                                 ['PotableWater',    num2str(iHuman)],...
                                 ['Solid_Food_',     num2str(iHuman)],...
                                 ['Feces',           num2str(iHuman)],...
-                                ['Urine',           num2str(iHuman)]);
-                            
+                                ['Urine',           num2str(iHuman)],...
+                                ['Perspiration',    num2str(iHuman)]);
+            end
+        end
+        
+        function createThermalStructure(this)
+            createThermalStructure@vsys(this);
+               
+            for iHuman = 1:this.iNumberOfCrewMembers
                 % Add thermal IF for humans
-                thermal.procs.exme(oCapacitySpace, ['SensibleHeatOutput_Human_',    num2str(iHuman)]);
+                oCabinPhase = this.toStores.Cabin.toPhases.CabinAir;
+                thermal.procs.exme(oCabinPhase.oCapacity, ['SensibleHeatOutput_Human_',    num2str(iHuman)]);
                 
                 thermal.branch(this, ['SensibleHeatOutput_Human_',    num2str(iHuman)], {}, [oCabinPhase.oStore.sName '.SensibleHeatOutput_Human_',    num2str(iHuman)], ['SensibleHeatOutput_Human_',    num2str(iHuman)]);
                 
@@ -171,7 +181,6 @@ classdef Example < vsys
                                 ['SensibleHeatOutput_Human_',    num2str(iHuman)]);
             end
         end
-        
         
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
