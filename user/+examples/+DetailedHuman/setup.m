@@ -240,20 +240,14 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Example:c:Human_1.toBranches.DuodenumToMetabolism.aoFlows(1)',                               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C3H7NO2)',    	'kg/s',     'Digested Protein from Duodenum');
             oLog.addValue('Example:c:Human_1.toBranches.DuodenumToMetabolism.aoFlows(1)',                               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C51H98O6)',   	'kg/s',     'Digested Fat from Duodenum');
             oLog.addValue('Example:c:Human_1.toBranches.DuodenumToMetabolism.aoFlows(1)',                               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C6H12O6)',    	'kg/s',     'Digested Glucose from Duodenum');
-            oLog.addValue('Example:c:Human_1.toBranches.DuodenumToMetabolism.aoFlows(1)',                               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',       	'kg/s',     'Digested H2O from Duodenum');
-            oLog.addValue('Example:c:Human_1.toBranches.DuodenumToMetabolism.aoFlows(1)',                               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',     	'kg/s',     'Digested Sodium from Duodenum');
             
             oLog.addValue('Example:c:Human_1.toBranches.JejunumToMetabolism.aoFlows(1)',                                'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C3H7NO2)',    	'kg/s',     'Digested Protein from Jejunum');
             oLog.addValue('Example:c:Human_1.toBranches.JejunumToMetabolism.aoFlows(1)',                                'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C51H98O6)',   	'kg/s',     'Digested Fat from Jejunum');
             oLog.addValue('Example:c:Human_1.toBranches.JejunumToMetabolism.aoFlows(1)',                                'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C6H12O6)',    	'kg/s',     'Digested Glucose from Jejunum');
-            oLog.addValue('Example:c:Human_1.toBranches.JejunumToMetabolism.aoFlows(1)',                                'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',       	'kg/s',     'Digested H2O from Jejunum');
-            oLog.addValue('Example:c:Human_1.toBranches.JejunumToMetabolism.aoFlows(1)',                                'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',     	'kg/s',     'Digested Sodium from Jejunum');
             
             oLog.addValue('Example:c:Human_1.toBranches.IleumToMetabolism.aoFlows(1)',                                  'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C3H7NO2)',    	'kg/s',     'Digested Protein from Ileum');
             oLog.addValue('Example:c:Human_1.toBranches.IleumToMetabolism.aoFlows(1)',                                  'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C51H98O6)',   	'kg/s',     'Digested Fat from Ileum');
             oLog.addValue('Example:c:Human_1.toBranches.IleumToMetabolism.aoFlows(1)',                                  'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C6H12O6)',    	'kg/s',     'Digested Glucose from Ileum');
-            oLog.addValue('Example:c:Human_1.toBranches.IleumToMetabolism.aoFlows(1)',                                  'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',       	'kg/s',     'Digested H2O from Ileum');
-            oLog.addValue('Example:c:Human_1.toBranches.IleumToMetabolism.aoFlows(1)',                                  'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',     	'kg/s',     'Digested Sodium from Ileum');
             
             % Readsorption Branches
             oLog.addValue('Example:c:Human_1.toBranches.ReadsorptionFromDuodenum.aoFlows(1)',                           'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',          'kg/s',     'H2O Readsorption Duodenum');
@@ -394,16 +388,6 @@ classdef setup < simulation.infrastructure
                 end
             end
             
-            % For the flows to metabolism, all phases except stomach and
-            % large intestine, and all masses except for dietary fiber
-            tfMetabolismFlows = struct();
-            for iMass = 1:(iMasses - 1)
-                tfMetabolismFlows.(csMasses{iMass}) = cell(1, iPhases - 2);
-                for iPhase = 2:(iPhases - 1)
-                    tfMetabolismFlows.(csMasses{iMass}){iPhase - 1} = ['"Digested ', csMasses{iMass}, ' from ', csPhases{iPhase}, '"'];
-                end
-            end
-            
             % For the transport flows inside the digestion layer, consider
             % all phases and masses again:
             tfTransportFlows = struct();
@@ -413,6 +397,20 @@ classdef setup < simulation.infrastructure
                     tfTransportFlows.(csMasses{iMass}){iPhase} = ['"', csMasses{iMass}, ' from ', csPhases{iPhase}, '"'];
                 end
                 tfTransportFlows.(csMasses{iMass}){iPhases + 1} = ['"Stomach ', csMasses{iMass}, ' Flow Rate"'];
+            end
+            
+            % For the flows to metabolism, all phases except stomach and
+            % large intestine, and for masses only the major nutrients
+            % (water and sodium are handled in the readsorption part)
+            csMasses = {'Protein', 'Fat', 'Glucose'};
+            iMasses = length(csMasses);
+            
+            tfMetabolismFlows = struct();
+            for iMass = 1:(iMasses - 1)
+                tfMetabolismFlows.(csMasses{iMass}) = cell(1, iPhases - 2);
+                for iPhase = 2:(iPhases - 1)
+                    tfMetabolismFlows.(csMasses{iMass}){iPhase - 1} = ['"Digested ', csMasses{iMass}, ' from ', csPhases{iPhase}, '"'];
+                end
             end
             
             % For secretion and readsorption only water and sodium
@@ -444,7 +442,7 @@ classdef setup < simulation.infrastructure
             end
             oPlotter.defineFigure(coPlot,  'Digestion Masses');
             
-            coPlot = cell(3,2);
+            coPlot = cell(3,1);
             csFlows = fieldnames(tfMetabolismFlows);
             iFlows = length(csFlows);
             for iFlow = 1:iFlows

@@ -275,8 +275,16 @@ classdef container < sys
                 this.throw('addBranch', 'Branch with name "%s" already exists!', oBranch.sName);
                 
             end
-            
-            this.aoBranches(end + 1, 1)     = oBranch;
+            try
+                this.aoBranches(end + 1, 1)     = oBranch;
+            catch oErr
+                if isa(oBranch, 'components.matter.DetailedHuman.components.P2P_Branch.branch')
+                    % do nothing, we just cannot access these through
+                    % aoBranches
+                else
+                    rethrow(oErr)
+                end
+            end
             if ~isempty(oBranch.sCustomName)
                 if isfield(this.toBranches, oBranch.sCustomName)
                     this.throw('addBranch', 'Branch with custom name "%s" already exists!', oBranch.sCustomName);

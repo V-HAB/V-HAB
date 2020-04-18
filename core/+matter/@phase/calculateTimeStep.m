@@ -42,7 +42,7 @@ else
     % This calculation limits the maximum mass loss that occurs within one
     % tick to 1e-8 kg. Adding the 1e-8 kg is necessary to prevent extremly
     % small time steps
-    fMaxFlowStep = min(abs((1e-8 + this.afMass(abOutFlows)) ./ afPartialFlows(abOutFlows)));
+    fMaxFlowStep = min(abs((this.fMassErrorLimit + this.afMass(abOutFlows)) ./ afPartialFlows(abOutFlows)));
     
     % If we have set a fixed time step for this phase, we can just continue
     % without doing any calculations.

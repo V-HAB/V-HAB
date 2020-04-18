@@ -5,8 +5,11 @@ classdef liquid < matter.phase
     properties (Constant)
         % State of matter in phase (e.g. gas, liquid, ?)
         sType = 'liquid';
+        
     end
-    
+    properties (SetAccess = protected, GetAccess = public)
+        fInitialPressure;
+    end
     methods
         
         function this = liquid(oStore, sName, tfMasses, fTemperature, fPressure)
@@ -31,8 +34,10 @@ classdef liquid < matter.phase
             
             if nargin > 4
                 this.fMassToPressure    = fPressure / this.fMass;
+                this.fInitialPressure   = fPressure;
             else
                 this.fMassToPressure    = this.oMT.Standard.Pressure / this.fMass;
+                this.fInitialPressure   = this.oMT.Standard.Pressure;
             end
             
             this.fDensity = this.oMT.calculateDensity(this);
@@ -56,6 +61,13 @@ classdef liquid < matter.phase
             for k = 1:length(this.coProcsEXME)
                 this.coProcsEXME{1, k}.update();
             end
+        end
+        function fPressure = get_fPressure(this)
+            %% get_fPressure
+            % defines how to calculate the dependent fPressure property.
+            % Can be overloaded by child classes which require a different
+            % calculation (e.g. flow phases)
+            fPressure = this.fInitialPressure;
         end
     end
 end
