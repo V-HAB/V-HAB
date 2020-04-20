@@ -95,10 +95,10 @@ for iSystem = 1:length(tVHAB_Objects.System)
     for iSubsystem = 1:length(tCurrentSystem.Subsystem)
         tSubsystem = tCurrentSystem.Subsystem{iSubsystem};
         
-        sInput = [' tInput.sName = ''', tSubsystem.label, ''';\n '];
+        sInput = 'tInput = struct();\n';
         
         csFields = fieldnames(tSubsystem);
-        csStandardFields = {'id', 'label', 'sSubsystemPath', 'sType', 'csToPlot', 'csToLog', 'ParentID', 'fTimeStep', 'Input', 'Output', 'sName'};
+        csStandardFields = {'id', 'label', 'sSubsystemPath', 'sType', 'csToPlot', 'csToLog', 'ParentID', 'fTimeStep', 'Input', 'Output'};
         for iField = 1:length(csFields)
             bStandard = false;
             for iStandardField = 1:length(csStandardFields)
@@ -131,7 +131,7 @@ for iSystem = 1:length(tVHAB_Objects.System)
         
         
         fprintf(sSystemFile, sInput);
-        fprintf(sSystemFile, ['             ', tSubsystem.sSubsystemPath ,'(this, ''', tSubsystem.label, ''', ', tSubsystem.fTimeStep, ', tInput);\n']);
+        fprintf(sSystemFile, ['             ', tSubsystem.sSubsystemPath ,'(this, ''', tSubsystem.label, ''', ', tSubsystem.fTimeStep, ', tInput);\n\n']);
     end
     
     fprintf(sSystemFile, '     	end\n\n');

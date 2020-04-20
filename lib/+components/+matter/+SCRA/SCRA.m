@@ -10,10 +10,6 @@ classdef SCRA < vsys
     properties
         
         fCoolantTemperature;
-        
-        oCDRA_CO2_OutletBranch;
-        oOGA_H2_OutletBranch;
-        
         aoMultiSolverBranches;
     end
     
@@ -242,7 +238,7 @@ classdef SCRA < vsys
             
             solver.matter.residual.branch(this.toBranches.CRA_RecWaterOut);
             
-            solver.matter.manual.branch(this.toBranches.CRA_H2_In);
+            solver.matter.residual.branch(this.toBranches.CRA_H2_In);
             
             solver.matter.manual.branch(this.toBranches.CRA_CoolantLoopIn);
             solver.matter.manual.branch(this.toBranches.CRA_CoolantLoopOut);
@@ -282,28 +278,6 @@ classdef SCRA < vsys
             this.connectIF('SCRA_Condensate_Out',   sOutlet2);
             this.connectIF('SCRA_CoolantIn',        sCoolantIn);
             this.connectIF('SCRA_CoolantOut',       sCoolantOut);
-            
-            oSCRA_H2_Phase = this.toBranches.CRA_H2_In.coExmes{2}.oPhase;
-            
-            csExmes = fieldnames(oSCRA_H2_Phase.toProcsEXME);
-            for iExme = 1:length(csExmes)
-                
-                if isa(oSCRA_H2_Phase.toProcsEXME.(csExmes{iExme}).oFlow.oBranch.oContainer, 'components.matter.OGA.OGA')
-                    this.oOGA_H2_OutletBranch = oSCRA_H2_Phase.toProcsEXME.(csExmes{iExme}).oFlow.oBranch;
-                    this.oOGA_H2_OutletBranch.bind('setFlowRate',@(~)this.updateH2Flow());
-                end
-            end
-        end
-        
-        function updateCO2Flow(this)
-            this.toBranches.CRA_CO2_In.oHandler.setFlowRate(- this.oCDRA_CO2_OutletBranch.fFlowRate);
-            
-            this.toBranches.Sabatier1to2.setOutdated();
-        end
-        function updateH2Flow(this)
-            this.toBranches.CRA_H2_In.oHandler.setFlowRate(- this.oOGA_H2_OutletBranch.fFlowRate);
-            
-            this.toBranches.Sabatier1to2.setOutdated();
         end
     end
     

@@ -34,31 +34,34 @@ classdef FuelCell < vsys
     
     
     methods
-        function this = FuelCell(oParent, sName, fTimeStep, iCells, tOptionalInputs)
-            % The optional input struct can contain the following fields:
-            % fMembraneArea
-            % fMembraneThickness
-            % fMaxCurrentDensity
-            % rMaxReactingH2
-            % rMaxReactingO2
-            
+        function this = FuelCell(oParent, sName, fTimeStep, txInput)
+            % txInput has the required field:
+            % iCells:   The number of cells for the fuel cell
+            %
+            % And the optional fields:
+            % fMembraneArea:        The area of one cell membrane in m^2
+            % fMembraneThickness:   the thickness of one cell membrane in m
+            % fMaxCurrentDensity:   the maximum current density in A/m^2
+            % rMaxReactingH2:       Maximum ratio of H2/O2 that passes 
+            % rMaxReactingO2:       through the fuel cell that can be
+            %                       reacted.
+            % fPower:               The electrical power of the fuel cell
+            %                       in W
             this@vsys(oParent, sName, fTimeStep);
             
-            this.iCells = iCells;
-            
-            if nargin > 4
-                csFields = fieldnames(tOptionalInputs);
-                csValidFields = {'fMembraneArea',...
-                                 'fMembraneThickness',...
-                                 'fMaxCurrentDensity',...
-                                 'rMaxReactingH2',...
-                                 'rMaxReactingO2'};
-                for iField = 1:length(csFields)
-                    if any(strcmp(csValidFields, csFields{iField}))
-                        this.(csFields{iField}) = tOptionalInputs.(csFields{iField});
-                    else
-                        error(['Invalid input ', csFields{iField}, ' for the Fuel Cell']);
-                    end
+            csFields = fieldnames(txInput);
+            csValidFields = {'iCells',...
+                             'fMembraneArea',...
+                             'fMembraneThickness',...
+                             'fMaxCurrentDensity',...
+                             'rMaxReactingH2',...
+                             'rMaxReactingO2',...
+                             'fPower'};
+            for iField = 1:length(csFields)
+                if any(strcmp(csValidFields, csFields{iField}))
+                    this.(csFields{iField}) = txInput.(csFields{iField});
+                else
+                    error(['Invalid input ', csFields{iField}, ' for the Fuel Cell']);
                 end
             end
             

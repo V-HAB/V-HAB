@@ -29,14 +29,15 @@ classdef RFCS < vsys
             
             this.afPower(:,2) = this.afPower(:,2) .* this.rSolarpanelEfficiency .* this.fSolarPanelArea;
             
-            tOptionalInputsEly.fMembraneArea        = 1e-3;
-            tOptionalInputsEly.fMembraneThickness   = 50e-6;
-            tOptionalInputsEly.fMaxCurrentDensity   = 20000;
+            tInputsEly.iCells               = 30;
+            tInputsEly.fMembraneArea        = 1e-3;
+            tInputsEly.fMembraneThickness   = 50e-6;
+            tInputsEly.fMaxCurrentDensity   = 20000;
             
-            components.matter.Electrolyzer.Electrolyzer(this, 'Electrolyzer', 5*60, 30, tOptionalInputsEly);
+            components.matter.Electrolyzer.Electrolyzer(this, 'Electrolyzer', 5*60, tInputsEly);
             
-            
-            components.matter.FuelCell.FuelCell(this, 'FuelCell', 5*60, 30);
+            tInputsFC.iCells               = 30;
+            components.matter.FuelCell.FuelCell(this, 'FuelCell', 5*60, tInputsFC);
         end
         
         

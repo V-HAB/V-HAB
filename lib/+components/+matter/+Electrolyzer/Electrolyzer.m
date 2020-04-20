@@ -30,30 +30,36 @@ classdef Electrolyzer < vsys
     end
     
     methods
-        function this = Electrolyzer(oParent, sName, fTimeStep, iCells, tOptionalInputs)
-            % The optional input struct can contain the following fields:
-            % fMembraneArea
-            % fMembraneThickness
-            % fMaxCurrentDensity
-            % fChargeTransferAnode
-            % fChargeTransferCatode
+        function this = Electrolyzer(oParent, sName, fTimeStep, txInput)
+            % txInput has the required field:
+            % iCells:   The number of cells for the electrolyzer
+            %
+            % And the optional fields:
+            % fMembraneArea:        The area of one cell membrane in m^2
+            % fMembraneThickness:   the thickness of one cell membrane in m
+            % fMaxCurrentDensity:   the maximum current density in A/m^2
+            % fChargeTransferAnode: Charge transfer coefficient of anode and
+            % fChargeTransferCatode: cathode. Base values are from
+            %                        http://www.electrochemsci.org/papers/vol7/7054143.pdf table 2
+            % fPower:               The electrical power of the
+            %                       electrolyzer in W
+            
             
             this@vsys(oParent, sName, fTimeStep);
             
-            this.iCells = iCells;
-            if nargin > 4
-                csFields = fieldnames(tOptionalInputs);
-                csValidFields = {'fMembraneArea',...
-                                 'fMembraneThickness',...
-                                 'fMaxCurrentDensity',...
-                                 'fChargeTransferAnode',...
-                                 'fChargeTransferCatode'};
-                for iField = 1:length(csFields)
-                    if any(strcmp(csValidFields, csFields{iField}))
-                        this.(csFields{iField}) = tOptionalInputs.(csFields{iField});
-                    else
-                        error(['Invalid input ', csFields{iField}, ' for the electrolyzer']);
-                    end
+            csFields = fieldnames(txInput);
+            csValidFields = {'iCells',...
+                             'fMembraneArea',...
+                             'fMembraneThickness',...
+                             'fMaxCurrentDensity',...
+                             'fChargeTransferAnode',...
+                             'fChargeTransferCatode',...
+                             'fPower'};
+            for iField = 1:length(csFields)
+                if any(strcmp(csValidFields, csFields{iField}))
+                    this.(csFields{iField}) = txInput.(csFields{iField});
+                else
+                    error(['Invalid input ', csFields{iField}, ' for the electrolyzer']);
                 end
             end
             
