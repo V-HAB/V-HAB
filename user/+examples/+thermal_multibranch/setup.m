@@ -37,7 +37,7 @@ classdef setup < simulation.infrastructure
             %% Simulation length
             % Stop when specific time in simulation is reached or after 
             % specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 3600 * 1; % In seconds
+            this.fSimTime = 3600 * 24; % In seconds
             
             if nargin >= 3 && ~isempty(fSimTime)
                 this.fSimTime = fSimTime;
@@ -58,13 +58,81 @@ classdef setup < simulation.infrastructure
             
             oLog = this.toMonitors.oLogger;
             
+            iNodesPerDirection = this.oSimulationContainer.toChildren.Example.iNodesPerDirection;
+            
+            for iX = 1:iNodesPerDirection
+                for iY = 1:iNodesPerDirection
+                    for iZ = 1:iNodesPerDirection
+                        sNodeName = ['Node_X', num2str(iX),'_Y', num2str(iY),'_Z', num2str(iZ)];
+                        
+                        oLog.addValue(['Example:s:Cube.toPhases.', sNodeName],	'fTemperature',	'K',   ['Temperature ', sNodeName]);
+                    end
+                end
+            end
         end
         
         function plot(this) % Plotting the results
             
+            close all
             %% Define plots
             
             oPlotter = plot@simulation.infrastructure(this);
+            oLogger = this.toMonitors.oLogger;
+            
+            iNodesPerDirection = this.oSimulationContainer.toChildren.Example.iNodesPerDirection;
+            
+            afTime = oLogger.afTime;
+            afTime(isnan(afTime)) = [];
+            iTicks = length(afTime);
+            
+            mfLoggedTemperatures = zeros(iNodesPerDirection, iNodesPerDirection, iNodesPerDirection, iTicks);
+            
+            for iX = 1:iNodesPerDirection
+                for iY = 1:iNodesPerDirection
+                    for iZ = 1:iNodesPerDirection
+                        
+                        sNodeName = ['Node_X', num2str(iX),'_Y', num2str(iY),'_Z', num2str(iZ)];
+                        
+                        for iLogEntry = 1:oLogger.iNumberOfLogItems
+                            if strcmp(oLogger.tLogValues(iLogEntry).sLabel, ['Temperature ', sNodeName])
+                                iLogIndex = oLogger.tLogValues(iLogEntry).iIndex;
+                                mfLoggedTemperatures(iX, iY, iZ, :) = oLogger.mfLog(1:iTicks, iLogIndex);
+                            end
+                        end
+                        
+                    end
+                end
+            end
+            mfFinalTemperatures = mfLoggedTemperatures(:, :, :, end);
+            [X,Y,Z] = meshgrid(1:1:iNodesPerDirection);
+            [Xq,Yq,Zq] = meshgrid(1:0.5:iNodesPerDirection);
+
+            mfInterpolatedTemperature = interp3(X,Y,Z,mfFinalTemperatures,Xq,Yq,Zq);
+            
+            xslice = [1, round(iNodesPerDirection / 2, 0), iNodesPerDirection];   
+            yslice = [iNodesPerDirection];
+            zslice = round(iNodesPerDirection / 2, 0);
+            figure
+            slice(Xq,Yq,Zq,mfInterpolatedTemperature,xslice,yslice,zslice)
+            
+            csTemperatures = cell(iNodesPerDirection^3);
+            iNode = 1;
+            for iX = 1:iNodesPerDirection
+                for iY = 1:iNodesPerDirection
+                    for iZ = 1:iNodesPerDirection
+                        sNodeName = ['Node_X', num2str(iX),'_Y', num2str(iY),'_Z', num2str(iZ)];
+                        
+                        csTemperatures{iNode} = ['"Temperature ', sNodeName, '"'];
+                        
+                        iNode = iNode + 1;
+                    end
+                end
+            end
+            
+            tPlotOptions = struct('sTimeUnit','seconds');
+            coPlots{1,1} = oPlotter.definePlot(csTemperatures, 'Temperatures', tPlotOptions);
+            
+            oPlotter.defineFigure(coPlots, 'Cube Temperatures');
             
             oPlotter.plot();
         end

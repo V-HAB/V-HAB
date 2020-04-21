@@ -110,6 +110,21 @@ classdef branch < base & event.source
         % calculations
         mfConnectivityMatrix;
         
+        % As a performance enhancement, these booleans are set to true once
+        % a callback is bound to the 'update' and 'register_update'
+        % triggers, respectively. Only then are the triggers actually sent.
+        % This saves quite some computational time since the trigger()
+        % method takes some time to execute, even if nothing is bound to
+        % them.
+        bTriggerUpdateCallbackBound = false;
+        bTriggerRegisterUpdateCallbackBound = false;
+        
+        % Flag to decide if this solver needs to be recalculate for every
+        % change in the heat flows of the attached capacities (e.g.
+        % infinite conduction thermal solver). Flag is called residual
+        % because the matter side residual solver was the first solver
+        % which required this
+        bResidual = false;
     end
     
     properties (SetAccess = private, GetAccess = private)
@@ -128,7 +143,6 @@ classdef branch < base & event.source
         % method (loadobj) to be implemented in this class, so when the
         % simulation is re-loaded from a .mat file, the properties are
         % reset to their proper values.
-        
         hBindPostTickUpdate;
         hBindPostTickTimeStepCalculation;
     end
@@ -139,12 +153,6 @@ classdef branch < base & event.source
             this.aoBranches = aoBranches;
             this.iBranches = length(this.aoBranches);
             this.chSetBranchHeatFlows = cell(1, this.iBranches);
-            
-            for iB = 1:this.iBranches 
-                this.chSetBranchHeatFlows{iB} = this.aoBranches(iB).registerHandler(this);
-                
-                this.aoBranches(iB).bind('outdated', @this.registerUpdate);
-            end
             
             this.oTimer     = this.aoBranches(1).oTimer;
             
@@ -164,6 +172,17 @@ classdef branch < base & event.source
             this.update();
         end
         
+        function [ this, unbindCallback ] = bind(this, sType, callBack)
+            [ this, unbindCallback ] = bind@event.source(this, sType, callBack);
+            
+            if strcmp(sType, 'update')
+                this.bTriggerUpdateCallbackBound = true;
+            
+            elseif strcmp(sType, 'register_update')
+                this.bTriggerRegisterUpdateCallbackBound = true;
+            
+            end
+        end
     end
     
     methods (Access = protected)
@@ -179,8 +198,7 @@ classdef branch < base & event.source
             
             for iB = 1:this.iBranches
                 for iE = 1:2
-                    keyboard()
-                    this.aoBranches(iB).coExmes{iE}.oPhase.registerMassupdate();
+                    this.aoBranches(iB).coExmes{iE}.oCapacity.registerUpdateTemperature();
                 end
             end
             
@@ -192,7 +210,7 @@ classdef branch < base & event.source
             if ~base.oDebug.bOff, this.out(1, 1, 'registerUpdate', 'Registering update() method on the multi-branch solver.'); end
             
             this.hBindPostTickUpdate();
-            this.hBindPostTickTimeStepCalculation();
+            %this.hBindPostTickTimeStepCalculation();
             
             this.bRegisteredOutdated = true;
             this.fLastSetOutdated = this.oTimer.fTime;
@@ -294,68 +312,60 @@ classdef branch < base & event.source
                 this.mfConnectivityMatrix(iBranch, iLeftCapacityIndex)   = 1;
                 this.mfConnectivityMatrix(iBranch, iRightCapacityIndex)  = -1;
             end
+            
+            for iB = 1:this.iBranches 
+                this.chSetBranchHeatFlows{iB} = this.aoBranches(iB).registerHandler(this);
+                
+                this.aoBranches(iB).bind('outdated', @this.registerUpdate);
+            end
+            
         end
         
         function update(this)
             % update the thermal solver
             
-            keyboard()
-            
-            % The first step is to divide
-            
-            % we update the conductors in the branch and identify any
-            % radiative conductors (all others are considered conductive,
-            % because the heat transfer for them scales with T while
-            % radiative heat transfer scales with T^4)
-            afResistances = zeros(1,this.oBranch.iConductors);
-            bRadiative    = false;
-            bConductive   = false;
-            
-            for iConductor = 1:this.oBranch.iConductors
-                if this.oBranch.coConductors{iConductor}.bRadiative
-                    bRadiative = true;
-                else
-                    bConductive = true;
+            % The first step is to divide the connectivity matrix with the
+            % resistances, so that the vector matrix operation of the
+            % matrix times the temperatures results in the heat flows. We
+            % call this the conductivity matrix, because basically every
+            % entry of the matrix is now a conductivity
+            %
+            % At first we have to get the current resistances of the
+            % branches.
+            afBranchResistances = zeros(this.iBranches, 1);
+            for iBranch = 1:this.iBranches
+                afResistances = zeros(1,this.aoBranches(iBranch).iConductors);
+                for iConductor = 1:this.aoBranches(iBranch).iConductors
+                    afResistances(iConductor) = this.aoBranches(iBranch).coConductors{iConductor}.update();
                 end
-                afResistances(iConductor) = this.oBranch.coConductors{iConductor}.update();
+                % It is always a sum because parallel heat transfer is
+                % modelled through multiple branches!
+                afBranchResistances(iBranch) = sum(afResistances);
             end
+            % Now we can simply use a vector matrix operation to get the
+            % current conductivity matrix
+            mfConductivityMatrix = this.mfConnectivityMatrix ./ afBranchResistances;
             
-            % check if both types are present in the branch at the same
-            % time, which is currently not possible
-            if bRadiative && bConductive
-                this.throw('branch', 'Basic thermal solver cannot calculate conductive/convective and radiative heat transfer at the same time, please use two different branches or use a different solver');
-            end
+            afTemperatures = [this.aoCapacities.fTemperature]';
+            % At the moment all temperatures are the basic temperatures, so
+            % now we have to include the radiative T^4:
+            afTemperatures(this.iFirstRadiativeCapacity:end) = afTemperatures(this.iFirstRadiativeCapacity:end).^4;
             
-            % for conductive/convective heat transfer we use delta T with
-            % T1 - T2, for radiative we use T1^4 - T2^4
-            if bConductive
-                fDeltaTemperature = this.oBranch.coExmes{1}.oCapacity.fTemperature - this.oBranch.coExmes{2}.oCapacity.fTemperature;
+            mfHeatFlows = mfConductivityMatrix * afTemperatures;
             
-            else
-                fDeltaTemperature = this.oBranch.coExmes{1}.oCapacity.fTemperature^4 - this.oBranch.coExmes{2}.oCapacity.fTemperature^4;
-            
-            end
-            
-            % See Wärmeübetragung Polifke equation 3.16, only valid if
-            % all resistances are in a row and not parallel, for
-            % parallel resistances use multiple branches
-            fTotalThermalResistance = sum(afResistances);
+            %% Now we set the heat flows to the branches:
+            for iBranch = 1:this.iBranches
+                oBranch = this.aoBranches(iBranch);
+                fHeatFlow = mfHeatFlows(iBranch);
+                % set heat flows to exmes
+                oBranch.coExmes{1}.setHeatFlow(fHeatFlow);
+                oBranch.coExmes{2}.setHeatFlow(fHeatFlow);
 
-            % calculate the heat flow
-            fHeatFlow = fDeltaTemperature / fTotalThermalResistance;
-            
-            % set heat flows
-            this.oBranch.coExmes{1}.setHeatFlow(fHeatFlow);
-            this.oBranch.coExmes{2}.setHeatFlow(fHeatFlow);
-            
-            % the temperatures between the conductors are not always
-            % required. If it is of interest to model various temperatures
-            % multiple thermal branches for each step of the heat transfer
-            % can be used e.g. to calculate the wall temperature in a heat
-            % exchanger
-            afTemperatures = []; 
-            update@solver.thermal.base.branch(this, fHeatFlow, afTemperatures);
-            
+                % TO DO: implement the temperatures between the conductors
+                % as an optional thing to calculate
+                afTemperatures = []; 
+                this.chSetBranchHeatFlows{iBranch}(fHeatFlow, afTemperatures);
+            end
             this.fLastUpdate = this.oTimer.fTime;
         end
         

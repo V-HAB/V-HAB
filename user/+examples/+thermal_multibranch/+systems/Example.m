@@ -15,7 +15,7 @@ classdef Example < vsys
     
     methods
         function this = Example(oParent, sName)
-            this@vsys(oParent, sName, 1);
+            this@vsys(oParent, sName, inf);
             
             eval(this.oRoot.oCfgParams.configCode(this));
             
@@ -42,8 +42,8 @@ classdef Example < vsys
             
             % Variable Inputs the user can change:
             this.fTotalCubeVolume    = 1;
-            this.iNodesPerDirection  = 3;
-            this.fHeatFlow           = 100;
+            this.iNodesPerDirection  = 9;
+            this.fHeatFlow           = 500;
             
             
             %% Remaining code
@@ -61,7 +61,7 @@ classdef Example < vsys
                 for iY = 1:this.iNodesPerDirection
                     for iZ = 1:this.iNodesPerDirection
                         
-                        oNode = this.toStores.Space.createPhase(  'solid',   ['Node_X', num2str(iX),'_Y', num2str(iY),'_Z', num2str(iZ)],   this.fTotalCubeVolume/iTotalNodes,    struct('Al', 1),          293,          1e5);
+                        oNode = this.toStores.Cube.createPhase(  'solid',   ['Node_X', num2str(iX),'_Y', num2str(iY),'_Z', num2str(iZ)],   this.fTotalCubeVolume/iTotalNodes,    struct('Al', 1),          293,          1e5);
             
                         this.coNodes{iX, iY, iZ} = oNode;
                     end
@@ -202,7 +202,7 @@ classdef Example < vsys
                 
                 oNode = this.coNodes{iCenterNodeIndex, iCenterNodeIndex, iCenterNodeIndex}.oCapacity;
                         
-                oHeatSource = thermal.heatsource(['Heater_Node_X', num2str(iX),'_Y', num2str(iY),'_Z', num2str(iZ)], 0);
+                oHeatSource = thermal.heatsource(['Heater_Node_X', num2str(iCenterNodeIndex),'_Y', num2str(iCenterNodeIndex),'_Z', num2str(iCenterNodeIndex)], 0);
                 oNode.addHeatSource(oHeatSource);
                 oHeatSource.setHeatFlow(this.fHeatFlow);
             end
