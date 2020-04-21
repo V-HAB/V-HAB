@@ -155,15 +155,9 @@ classdef branch < base.branch
             % calculations.
             if this.abIf(1), this.throw('setHeatFlow', 'Left side is interface, can''t set flowrate on this branch object'); end
             
-            
-            % Connected capacities have to do a temperature update before we
-            % set the new heat flow - so the thermal energy for the LAST
-            % time step, with the old flow, is actually moved from tank to
-            % tank.
-            if this.fHeatFlow >= 0; aiExmes = 1:2; else; aiExmes = 2:-1:1; end
-            for iE = aiExmes
-                this.coExmes{iE}.oCapacity.registerUpdateTemperature();
-            end
+            % The registerUpdateTemperature() of the connected capacities
+            % must be called before this function is called. Usually while
+            % registering the update for the solver
             
             % set the new heat flow
             this.fHeatFlow = fHeatFlow;

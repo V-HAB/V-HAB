@@ -42,12 +42,12 @@ classdef Example < vsys
             
             % Variable Inputs the user can change:
             this.fTotalCubeVolume    = 1;
-            this.iNodesPerDirection  = 9;
+            this.iNodesPerDirection  = 7;
             this.fHeatFlow           = 500;
-            
+            fInitialTemperature      = 200;
             
             %% Remaining code
-            matter.store(this, 'Cube', this.fTotalCubeVolume);
+            matter.store(this, 'Cube', this.fTotalCubeVolume + 1e-3);
             
             iTotalNodes = this.iNodesPerDirection^3;
             if this.iNodesPerDirection < 3
@@ -61,7 +61,7 @@ classdef Example < vsys
                 for iY = 1:this.iNodesPerDirection
                     for iZ = 1:this.iNodesPerDirection
                         
-                        oNode = this.toStores.Cube.createPhase(  'solid',   ['Node_X', num2str(iX),'_Y', num2str(iY),'_Z', num2str(iZ)],   this.fTotalCubeVolume/iTotalNodes,    struct('Al', 1),          293,          1e5);
+                        oNode = this.toStores.Cube.createPhase(  'solid',   ['Node_X', num2str(iX),'_Y', num2str(iY),'_Z', num2str(iZ)],   this.fTotalCubeVolume/iTotalNodes,    struct('Al', 1),          fInitialTemperature,          1e5);
             
                         this.coNodes{iX, iY, iZ} = oNode;
                     end

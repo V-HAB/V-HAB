@@ -16,9 +16,11 @@ classdef setup < simulation.infrastructure
         function this = setup(ptConfigParams, tSolverParams, fSimTime) % Constructor function
             
             
+            ttMonitorConfig = struct();
+            
             % Possible to change the constructor paths and params for the
             % monitors
-            ttMonitorConfig = struct('oTimeStepObserver', struct('sClass', 'simulation.monitors.timestepObserver', 'cParams', {{ 0 }}));
+            % ttMonitorConfig = struct('oTimeStepObserver', struct('sClass', 'simulation.monitors.timestepObserver', 'cParams', {{ 0 }}));
             
             %%%ttMonitorConfig.oConsoleOutput = struct('cParams', {{ 50 5 }});
             
@@ -37,7 +39,7 @@ classdef setup < simulation.infrastructure
             %% Simulation length
             % Stop when specific time in simulation is reached or after 
             % specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 3600 * 24; % In seconds
+            this.fSimTime = 900; % In seconds
             
             if nargin >= 3 && ~isempty(fSimTime)
                 this.fSimTime = fSimTime;
@@ -81,6 +83,28 @@ classdef setup < simulation.infrastructure
             
             iNodesPerDirection = this.oSimulationContainer.toChildren.Example.iNodesPerDirection;
             
+            csTemperatures = cell(iNodesPerDirection^3);
+            iNode = 1;
+            for iX = 1:iNodesPerDirection
+                for iY = 1:iNodesPerDirection
+                    for iZ = 1:iNodesPerDirection
+                        sNodeName = ['Node_X', num2str(iX),'_Y', num2str(iY),'_Z', num2str(iZ)];
+                        
+                        csTemperatures{iNode} = ['"Temperature ', sNodeName, '"'];
+                        
+                        iNode = iNode + 1;
+                    end
+                end
+            end
+            
+            tPlotOptions = struct('sTimeUnit','seconds');
+            coPlots{1,1} = oPlotter.definePlot(csTemperatures, 'Temperatures', tPlotOptions);
+            
+            oPlotter.defineFigure(coPlots, 'Cube Temperatures');
+            
+            oPlotter.plot();
+            
+            
             afTime = oLogger.afTime;
             afTime(isnan(afTime)) = [];
             iTicks = length(afTime);
@@ -110,31 +134,31 @@ classdef setup < simulation.infrastructure
             mfInterpolatedTemperature = interp3(X,Y,Z,mfFinalTemperatures,Xq,Yq,Zq);
             
             xslice = [1, round(iNodesPerDirection / 2, 0), iNodesPerDirection];   
-            yslice = [iNodesPerDirection];
+            yslice = iNodesPerDirection;
             zslice = round(iNodesPerDirection / 2, 0);
             figure
             slice(Xq,Yq,Zq,mfInterpolatedTemperature,xslice,yslice,zslice)
             
-            csTemperatures = cell(iNodesPerDirection^3);
-            iNode = 1;
-            for iX = 1:iNodesPerDirection
-                for iY = 1:iNodesPerDirection
-                    for iZ = 1:iNodesPerDirection
-                        sNodeName = ['Node_X', num2str(iX),'_Y', num2str(iY),'_Z', num2str(iZ)];
-                        
-                        csTemperatures{iNode} = ['"Temperature ', sNodeName, '"'];
-                        
-                        iNode = iNode + 1;
-                    end
-                end
+            afTimePoints = 0:60:afTime(end);
+            
+            figure
+            for iTime = 1:length(afTimePoints)
+                afTimeDiff = abs(afTime - afTimePoints(iTime));
+                iTick = find(afTimeDiff == min(afTimeDiff), 1);
+                
+                mfTemperatures = mfLoggedTemperatures(:, :, :, iTick);
+                
+                mfInterpolatedTemperature = interp3(X,Y,Z,mfTemperatures,Xq,Yq,Zq);
+
+                xslice = [1, round(iNodesPerDirection / 2, 0), iNodesPerDirection];   
+                yslice = iNodesPerDirection;
+                zslice = round(iNodesPerDirection / 2, 0);
+                slice(Xq,Yq,Zq,mfInterpolatedTemperature,xslice,yslice,zslice);
+                drawnow
+                pause(1);
+                
             end
             
-            tPlotOptions = struct('sTimeUnit','seconds');
-            coPlots{1,1} = oPlotter.definePlot(csTemperatures, 'Temperatures', tPlotOptions);
-            
-            oPlotter.defineFigure(coPlots, 'Cube Temperatures');
-            
-            oPlotter.plot();
         end
         
     end
