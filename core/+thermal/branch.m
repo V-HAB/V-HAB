@@ -8,6 +8,11 @@ classdef branch < base.branch
         % The thermal conductivity of the branch
         fConductivity; % [W/K] or [W/K^4] depending on the child class
         
+        % Boolean property to easier identify whether this branch solves
+        % radiative heat transfer
+        bRadiative = false;
+        bNoConductor = false;
+        
         % The currently transmitted heat flow through this branch
         fHeatFlow = 0;  % [W]
         
@@ -63,6 +68,19 @@ classdef branch < base.branch
             % object is only added in case it is provided as input
             if nargin > 5
                 this.oMatterObject = oMatterObject;
+            end
+            
+            try
+                this.bRadiative = this.coConductors{1}.bRadiative;
+            catch oErr
+                %nothing to do, since in that case no conductor exists at
+                %all, meaning there is no resistance and the case has to be
+                %handled specifically
+                if isempty(this.coConductors)
+                    this.bNoConductor = true;
+                else
+                    rethrow(oErr);
+                end
             end
             
             %% Adding the branch to our container

@@ -208,15 +208,6 @@ classdef branch < base & event.source
         
         bFinalLoop = false;
         
-        % A flag to decide if the solver is already outdated or not
-        bRegisteredOutdated = false;
-        
-        % In recursive calls within the post tick where the solver itself
-        % triggers outdated calls up to the point where it is set outdated
-        % again itself it is possible for the solver to get stuck with a
-        % true bRegisteredOutdated flag. To prevent this we also store the
-        % last time at which we registered an update
-        fLastSetOutdated = -1;
     end
     
     properties (SetAccess = private, GetAccess = protected) %, Transient = true)

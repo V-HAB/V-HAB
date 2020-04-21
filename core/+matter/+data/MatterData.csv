@@ -26,7 +26,7 @@ F;Fluorine;gas;0.018998403;0;0;54.15;85.05;1.58;824;;;;;;;
 Ne;Neon;gas;0.0201797;0;0;24.15;27.15;0.84;1030;;0.1;;;;;
 Na;Sodium;solid;0.02298977;0;0;370.95;1156.15;970;1230;71;0.68;;;;;
 Mg;Magnesium;solid;0.024305;0;0;921.95;1380.15;1740;1020;26;3.54;;;;;
-Al;Aluminium;solid;0.026981538;0;0;933.55;2740.15;2700;900;23.8;7.22;;;;;
+Al;Aluminium;solid;0.026981538;0;0;933.55;2740.15;2700;900;23.8;7.22;205;;;;
 Si;Silicon;solid;0.0280855;0;0;1683.15;2628.15;2330;700;7.6;9.88;;;;;
 P;Phosphorus;solid;0.030973761;0;0;317.25;553.15;1820;769;124;3.04;;;;;
 S;Sulfur;solid;0.032065;0;0;392.15;3104.15;2060;710;64.1;1.78;;;;;
@@ -229,5 +229,5 @@ Clminus;ChlorineIon;liquid;0.035453;0;-1;172.15;238.55;2.95;480;;;;;;;
 DietaryFiber;DietaryFiber;solid;2000;0;0;;;1000;4186;;;;;Molecular Weight according to: doi: 10.1021/jf801280f,  heat capacity and density value for H2O at 1 bar and 20°C;;For Energy Content: https://www.accessdata.fda.gov/scripts/InteractiveNutritionFactsLabel/factsheets/Total_Fat.pdf
 C3H7NO2;Alanine;liquid;;16736000;0;;;1000;4186;;;;;heat capacity and density value for H2O at 1 bar and 20°C;;For Energy Content: https://www.accessdata.fda.gov/scripts/InteractiveNutritionFactsLabel/factsheets/Protein.pdf
 C51H98O6;PalmitateTricylglyceride;liquid;;37656000;0;;;1000;4186;;;;;;;
-LiOHH2O;LithiumHydroxideHydrate;solid;0.04196;0;0;735;;1510;2271;;;;;;
-Li2CO3;LithiumCarbonate;solid;0.07398;0;0;996;1580;2110;1316.5720464991;;;;;;
+LiOHH2O;LithiumHydroxideHydrate;solid;0.04196;0;0;735;;1510;2271;;;;;;;
+Li2CO3;LithiumCarbonate;solid;0.07398;0;0;996;1580;2110;1316.572046;;;;;;;

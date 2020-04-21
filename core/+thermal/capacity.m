@@ -1,8 +1,12 @@
-classdef capacity < base & event.source
+classdef capacity < base & event.source & matlab.mixin.Heterogeneous
     %CAPACITY An object that holds thermal energy
     % created automatically with a phase and performs all thermal
     % calculations for the respective phase
         
+    % Objects of different classes cannot be put into the same
+    % array if they do not inherti from the matlab.mixin.Heterogenous class
+    % Therefore we use this reference here to be able to put capacities of
+    % different subtypes into an object array
     properties (Access = public)
         % If true, updateTemperature triggers all branches to re-calculate their
         % heat flows. Use when thermal capacity is small compared to heat
@@ -36,6 +40,9 @@ classdef capacity < base & event.source
         % The name of the capacity, which is identical to the name of the
         % phase
         sName;
+        
+        % Boolean to identify this as a boundary capacity
+        bBoundary = false;
         
         %% Associated objects
         % The phase which is the matter domain representation of this
@@ -673,7 +680,11 @@ classdef capacity < base & event.source
             % Function used to set the initial heat capacity after the
             % system has been sealed
             this.fSpecificHeatCapacity  = this.oMT.calculateSpecificHeatCapacity(this.oPhase);
-            this.fTotalHeatCapacity     = sum(this.oPhase.afMass) * this.fSpecificHeatCapacity;
+            if this.bBoundary
+                this.fTotalHeatCapacity	= inf;
+            else
+                this.fTotalHeatCapacity	= sum(this.oPhase.afMass) * this.fSpecificHeatCapacity;
+            end
         end
         
         function calculateTimeStep(this,~)
