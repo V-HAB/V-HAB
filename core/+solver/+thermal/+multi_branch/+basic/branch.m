@@ -98,8 +98,14 @@ classdef branch < base & event.source
         % of these capacities
         iFirstRadiativeCapacity;
         
+        % This property was implemented for performance improvements, to
+        % identify which capacities are represented twice in the network,
+        % to only trigger the temperature update for them once
+        abNonUniqueCapacity;
+        
         % number of total branches in the network
         iBranches;
+        iCapacities;
         
         % Last time the solver was updated
         fLastUpdate = -10;
@@ -208,9 +214,9 @@ classdef branch < base & event.source
             
             if ~base.oDebug.bOff, this.out(1, 1, 'reg-post-tick', 'Multi-Solver - register outdated? [%i]', { ~this.bRegisteredOutdated }); end
             
-            for iB = 1:this.iBranches
-                for iE = 1:2
-                    this.aoBranches(iB).coExmes{iE}.oCapacity.registerUpdateTemperature();
+            for iCapacity = 1:this.iCapacities
+                if ~this.abNonUniqueCapacity(iCapacity)
+                    this.aoCapacities(iCapacity).registerUpdateTemperature();
                 end
             end
             
@@ -262,6 +268,8 @@ classdef branch < base & event.source
             this.aoBranches = [aoConductiveBranches; aoRadiativeBranches];
             this.abRadiationBranches = [this.aoBranches.bRadiative]';
             
+            this.abNonUniqueCapacity = false(1,0);
+            
             this.iFirstRadiationBranch = find(this.abRadiationBranches, 1);
             
             for iBranch = 1:this.iBranches
@@ -277,6 +285,9 @@ classdef branch < base & event.source
                 if iBranch == this.iFirstRadiationBranch
                     this.iFirstRadiativeCapacity = length(this.aoCapacities) + 1;
                 end
+                
+                bNonUniqueLeftCapacity = false;
+                bNonUniqueRightCapacity = false;
                 
                 if iBranch < this.iFirstRadiationBranch
                     for iCapacity = 1:length(this.aoCapacities)
@@ -302,17 +313,28 @@ classdef branch < base & event.source
                                  iRightCapacityIndex = iCapacity;
                              end
                         end
+                        for iCapacity = 1:this.iFirstRadiativeCapacity
+                             if this.aoCapacities(iCapacity) == oLeftCapacity
+                                 bNonUniqueLeftCapacity = true;
+                             end
+                             
+                             if this.aoCapacities(iCapacity) == oRightCapacity
+                                 bNonUniqueRightCapacity = true;
+                             end
+                        end
                     end
                 end
                 % Objects of different classes cannot be put into the same
                 % array if they do not inherit from the
                 % matlab.mixin.Heterogenous class
                 if iLeftCapacityIndex == 0
-                    this.aoCapacities(end+1, 1)	= oLeftCapacity;
+                    this.aoCapacities(end+1, 1)         = oLeftCapacity;
+                    this.abNonUniqueCapacity(end+1, 1)  = bNonUniqueLeftCapacity;
                     iLeftCapacityIndex = length(this.aoCapacities);
                 end
                 if iRightCapacityIndex == 0
-                    this.aoCapacities(end+1, 1) 	= oRightCapacity;
+                    this.aoCapacities(end+1, 1)         = oRightCapacity;
+                    this.abNonUniqueCapacity(end+1, 1)  = bNonUniqueRightCapacity;
                     iRightCapacityIndex = length(this.aoCapacities);
                 end
                 
@@ -324,6 +346,8 @@ classdef branch < base & event.source
                 this.mfConnectivityMatrix(iBranch, iLeftCapacityIndex)   = 1;
                 this.mfConnectivityMatrix(iBranch, iRightCapacityIndex)  = -1;
             end
+            
+            this.iCapacities = length(this.aoCapacities);
             
             % Register this solver as the solver for all thermal branches
             % inside the network and save the setHeatFlow function of each
