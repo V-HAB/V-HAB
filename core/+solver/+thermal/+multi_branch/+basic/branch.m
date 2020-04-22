@@ -1,6 +1,6 @@
 classdef branch < base & event.source
 % A multi branch thermal solver which calculates the heat flow in a network
-% of thermal branches. It can solve all only branches which do not include
+% of thermal branches. It can solve only branches which do not include
 % mass flows, so add only non fluidic conductors to branches for this
 % solver! 
 % Note that it is not possibe to combine convective/conductive conductors
@@ -69,6 +69,12 @@ classdef branch < base & event.source
 % are also added again to aoCapacities and the property
 % iFirstRadiativeCapacity is defined to find out which temperatures have to
 % be ^4
+%
+%% Timestepping:
+% The basic thermal solver simply calculates the heat flows based on the
+% current conditions of the branches and capcities. Since the solver does
+% not know when the capacities require an update, it does not set a
+% timestep, but is instead updated whenever a connected capacity is updated
     
     properties (SetAccess = private, GetAccess = public)
        	% array containing the branches that are solved by this solver
@@ -79,8 +85,17 @@ classdef branch < base & event.source
         % function
         aoCapacities;
         
+        % Boolean vektor which identifies radiative heat transfer branches
+        % in the aoBranches property
         abRadiationBranches;
+        % Index of the first radiative heat transfer branch in aoBranches.
+        % So this.aoBranch(this.iFirstRadiationBranch:end) returns all
+        % radiative heat transfer branches
         iFirstRadiationBranch;
+        % Index of the first capacity connected to a raidative heat
+        % transfer branch in aoCapacities. So all
+        % this.aoCapacities(this.iFirstRadiativeCapacity:end) returns all
+        % of these capacities
         iFirstRadiativeCapacity;
         
         % number of total branches in the network
@@ -98,6 +113,7 @@ classdef branch < base & event.source
         % last time at which we registered an update
         fLastSetOutdated = -1;
         
+        % Reference to the timer object
         oTimer;
         
         %% Network variables
@@ -129,13 +145,9 @@ classdef branch < base & event.source
     
     properties (SetAccess = private, GetAccess = private)
         % cell containing the handles of the set flow rate functions of the
-        % individual branches in this network
+        % individual branches in this network. THis is used to set the
+        % calculated heat flows to the thermal branches of the network
         chSetBranchHeatFlows;
-    end
-    
-    properties (SetAccess = private, GetAccess = protected)
-        % Callback to set time step (default: inf) in [s]
-        setTimeStep;
     end
     
     properties (SetAccess = private, GetAccess = protected) %, Transient = true)
@@ -149,10 +161,10 @@ classdef branch < base & event.source
     
     methods
         function this = branch(aoBranches)
-            
+            % Please not that the aoBranches property is reordered in the 
+            % initializeNetwork function!
             this.aoBranches = aoBranches;
             this.iBranches = length(this.aoBranches);
-            this.chSetBranchHeatFlows = cell(1, this.iBranches);
             
             this.oTimer     = this.aoBranches(1).oTimer;
             
@@ -313,6 +325,10 @@ classdef branch < base & event.source
                 this.mfConnectivityMatrix(iBranch, iRightCapacityIndex)  = -1;
             end
             
+            % Register this solver as the solver for all thermal branches
+            % inside the network and save the setHeatFlow function of each
+            % branch in the chSetBranchHeatFlows property
+            this.chSetBranchHeatFlows = cell(1, this.iBranches);
             for iB = 1:this.iBranches 
                 this.chSetBranchHeatFlows{iB} = this.aoBranches(iB).registerHandler(this);
                 
@@ -361,18 +377,13 @@ classdef branch < base & event.source
                 oBranch.coExmes{1}.setHeatFlow(fHeatFlow);
                 oBranch.coExmes{2}.setHeatFlow(fHeatFlow);
 
-                % TO DO: implement the temperatures between the conductors
-                % as an optional thing to calculate
+                % The temperatures between the conductors are not solved
+                % here, but a solver could be derived which does that (will
+                % be quite slow for larger networks however)
                 afTemperatures = []; 
                 this.chSetBranchHeatFlows{iBranch}(fHeatFlow, afTemperatures);
             end
             this.fLastUpdate = this.oTimer.fTime;
-        end
-        
-        function calculateTimeStep(this)
-            %% time step limitation
-            
-            
         end
     end
 end

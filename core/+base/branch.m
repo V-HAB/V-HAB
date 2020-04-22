@@ -423,7 +423,7 @@ classdef (Abstract) branch < base & event.source
         end
     end
     
-    methods (Access = {?base.branch, ?solver.matter.base.branch, ?solver.thermal.base.branch, ?solver.matter_multibranch.iterative.branch, ?solver.thermal.multi_branch.iterative.branch})
+    methods (Access = {?base.branch, ?solver.matter.base.branch, ?solver.thermal.base.branch, ?solver.matter_multibranch.iterative.branch, ?solver.thermal.multi_branch.basic.branch})
         function setFlowRate = registerHandler(this, oHandler)
             %REGISTERHANDLER Sets the solver and returns handle to
             % setFlowRate() method

@@ -212,7 +212,7 @@ classdef Example < vsys
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
             
-            solver.thermal.multi_branch.iterative.branch(this.aoThermalBranches);
+            solver.thermal.multi_branch.basic.branch(this.aoThermalBranches);
         end
     end
     
