@@ -59,7 +59,21 @@ classdef solid < matter.phase
             %% get_fPressure
             % for solids we do not want to include the mass change between
             % updates as a pressure change
-            fPressure = this.fMassToPressure * this.fMass;
+            if this.iVolumeManipulators == 0
+                % In this case no volume manipulator is present at all, for
+                % this case we assume the initial pressure of the liquid to
+                % remain constant
+                fPressure = this.oMT.Standard.Pressure;
+                
+            else
+                if this.toManips.volume.bCompressible
+                    fMassSinceUpdate = this.fCurrentTotalMassInOut * (this.oStore.oTimer.fTime - this.fLastMassUpdate);
+
+                    fPressure = this.fMassToPressure * (this.fMass + fMassSinceUpdate);
+                else
+                    fPressure = this.toManips.volume.oCompressibleManip.oPhase.fPressure;
+                end
+            end
         end
     end
 end

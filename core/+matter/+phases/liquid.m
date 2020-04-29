@@ -5,9 +5,13 @@ classdef liquid < matter.phase
     properties (Constant)
         % State of matter in phase (e.g. gas, liquid, ?)
         sType = 'liquid';
-        
     end
+        
     properties (SetAccess = protected, GetAccess = public)
+        % The initial pressure from the phase definition is stored, for
+        % cases where no volume manips are used an no fast pressure
+        % calculation exists. For those cases the pressure is assumed to be
+        % constant
         fInitialPressure;
     end
     methods
@@ -67,7 +71,21 @@ classdef liquid < matter.phase
             % defines how to calculate the dependent fPressure property.
             % Can be overloaded by child classes which require a different
             % calculation (e.g. flow phases)
-            fPressure = this.fInitialPressure;
+            if this.iVolumeManipulators == 0
+                % In this case no volume manipulator is present at all, for
+                % this case we assume the initial pressure of the liquid to
+                % remain constant
+                fPressure = this.fInitialPressure;
+                
+            else
+                if this.toManips.volume.bCompressible
+                    fMassSinceUpdate = this.fCurrentTotalMassInOut * (this.oStore.oTimer.fTime - this.fLastMassUpdate);
+
+                    fPressure = this.fMassToPressure * (this.fMass + fMassSinceUpdate);
+                else
+                    fPressure = this.toManips.volume.oCompressibleManip.oPhase.fPressure;
+                end
+            end
         end
     end
 end

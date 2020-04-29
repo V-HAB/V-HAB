@@ -677,17 +677,17 @@ classdef setup < simulation.infrastructure
             hold off
             
             % Average Daily consumptions and productions
-            fAverageO2              = afConsumedO2Mass(end)                                                 / (oLogger.afTime(end) / (24*3600));
-            fAverageCO2             = afGeneratedCO2Mass(end)                                               / (oLogger.afTime(end) / (24*3600));
-            fAverageHumidity        = (afProducedRespirationWater(end) + afProducedPerspirationWater(end))  / (oLogger.afTime(end) / (24*3600));
-            fAveragePotableWater    = afConsumedDrinkingWater(end)                                          / (oLogger.afTime(end) / (24*3600));
-            fAverageMetabolicWater 	= afProducedMetabolicWater(end)                                         / (oLogger.afTime(end) / (24*3600));
-            fAverageFoodWater       = afIngestedWaterInFood(end)                                            / (oLogger.afTime(end) / (24*3600));
-            fAverageFood            = afFood(end)                                                           / (oLogger.afTime(end) / (24*3600));
-            fAverageUrine           = (afUrineWater(end))                                                   / (oLogger.afTime(end) / (24*3600));
-            fAverageUrineSolids    	= (afUrineSolids(end))                                                  / (oLogger.afTime(end) / (24*3600));
-            fAverageFeces           = (afFecesWater(end))                                                   / (oLogger.afTime(end) / (24*3600));
-            fAverageFecesSolid    	= (afFecesSolids(end))                                                  / (oLogger.afTime(end) / (24*3600));
+            fAverageO2              = abs(afConsumedO2Mass(end)                                                 / (oLogger.afTime(end) / (24*3600)));
+            fAverageCO2             = abs(afGeneratedCO2Mass(end)                                               / (oLogger.afTime(end) / (24*3600)));
+            fAverageHumidity        = abs((afProducedRespirationWater(end) + afProducedPerspirationWater(end))  / (oLogger.afTime(end) / (24*3600)));
+            fAveragePotableWater    = abs(afConsumedDrinkingWater(end)                                          / (oLogger.afTime(end) / (24*3600)));
+            fAverageMetabolicWater 	= abs(afProducedMetabolicWater(end)                                         / (oLogger.afTime(end) / (24*3600)));
+            fAverageFoodWater       = abs(afIngestedWaterInFood(end)                                            / (oLogger.afTime(end) / (24*3600)));
+            fAverageFood            = abs(afFood(end)                                                           / (oLogger.afTime(end) / (24*3600)));
+            fAverageUrine           = abs((afUrineWater(end))                                                   / (oLogger.afTime(end) / (24*3600)));
+            fAverageUrineSolids    	= abs((afUrineSolids(end))                                                  / (oLogger.afTime(end) / (24*3600)));
+            fAverageFeces           = abs((afFecesWater(end))                                                   / (oLogger.afTime(end) / (24*3600)));
+            fAverageFecesSolid    	= abs((afFecesSolids(end))                                                  / (oLogger.afTime(end) / (24*3600)));
             
             fDifferenceO2               = (1 - (fAverageO2              / 0.816))   * 100;
             fDifferenceCO2              = (1 - (fAverageCO2             / 1.04))    * 100;
