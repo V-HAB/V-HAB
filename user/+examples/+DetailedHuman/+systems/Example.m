@@ -101,23 +101,30 @@ classdef Example < vsys
             
             fAmbientTemperature = 295;
             
-            % uses the custom air helper to generate an air phase with a
-            % defined co2 level and relative humidity
-            fCO2Percent = 0.0062;
-            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.Cabin, 48, struct('CO2', fCO2Percent),  fAmbientTemperature, 0.4, 1e5);
-               
-            % Adding a phase to the store 'Cabin', 48 m^3 air
-            oCabinPhase = matter.phases.gas(this.toStores.Cabin, 'CabinAir', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
-            
-            oHeatSource = components.thermal.heatsources.ConstantTemperature('Cabin_Constant_Temperature');
-            oCabinPhase.oCapacity.addHeatSource(oHeatSource);
+            % Adding a phase to the store 'Cabin', 48 m^3 air#
+            oCabinPhase = this.toStores.Cabin.createPhase(  'gas', 'boundary',   'CabinAir',  48, struct('N2', 8e4, 'O2', 2e4, 'CO2', 500),          fAmbientTemperature,          0.5);
+%             oHeatSource = components.thermal.heatsources.ConstantTemperature('Cabin_Constant_Temperature');
+%             oCabinPhase.oCapacity.addHeatSource(oHeatSource);
             
             % Creates a store for the potable water reserve
             % Potable Water Store
-            matter.store(this, 'PotableWaterStorage', 10);
+            fWaterStorageVolume = 10;
+            matter.store(this, 'PotableWaterStorage', fWaterStorageVolume);
             
-            oPotableWaterPhase = matter.phases.liquid(this.toStores.PotableWaterStorage, 'PotableWater', struct('H2O', 1000), 295, 101325);
+            fDensityH2O = this.oMT.calculateDensity('liquid', struct('H2O', 1), fAmbientTemperature, 101325);
+            % fWaterMol  = fWaterMass / this.oMT.afMolarMass(this.oMT.tiN2I.H2O);
             
+            % Concentration of Sodium in ISS potable water
+            % From Appendix 1, "International Space Station Potable Water
+            % Characterization for 2013", John E. Straub II, Debrah K.
+            % Plumlee, and John R. Schultz, Paul D. Mudgett, 44th
+            % International Conference on Environmental Systems, 13-17 July
+            % 2014, Tucson, Arizona
+            fSodiumMass = 4e-6 * (0.9 * fWaterStorageVolume * 1000);
+            fSodiumMol = fSodiumMass / this.oMT.afMolarMass(this.oMT.tiN2I.Naplus);
+            fChlorideMass = fSodiumMol * this.oMT.afMolarMass(this.oMT.tiN2I.Clminus);
+            
+            oPotableWaterPhase = matter.phases.liquid(this.toStores.PotableWaterStorage, 'PotableWater', struct('H2O', fDensityH2O * 0.9 * fWaterStorageVolume, 'Naplus', fSodiumMass, 'Clminus', fChlorideMass), fAmbientTemperature, 101325);
             
             % Creates a store for the urine
             matter.store(this, 'UrineStorage', 10);

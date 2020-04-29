@@ -26,7 +26,7 @@ classdef setup < simulation.infrastructure
             %% Simulation length
             % Stop when specific time in simulation is reached or after
             % specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 3600 * 24 * 5; % In seconds
+            this.fSimTime = 3600 * 24 * 7; % In seconds
             this.iSimTicks = 1500;
             this.bUseTime = true;
         end
@@ -49,6 +49,24 @@ classdef setup < simulation.infrastructure
                 oLog.addValue(['Example.toBranches.', csBranches{iBranch}],             'fFlowRate',    'kg/s', [csBranches{iBranch}, ' Flowrate']);
             end
             
+            %% Parent System Logging
+            csFecesComponents = {'H2O', 'DietaryFiber', 'C6H12O6', 'C51H98O6', 'C3H7NO2', 'Naplus'};
+            for iComponent = 1:length(csFecesComponents)
+                oLog.addValue('Example.toStores.FecesStorage.toPhases.Feces',   ['this.afMass(this.oMT.tiN2I.Feces) .* this.arCompoundMass(this.oMT.tiN2I.Feces, this.oMT.tiN2I.', csFecesComponents{iComponent}, ')'],         'kg',   ['Feces ', csFecesComponents{iComponent},' Content']);
+            end
+            
+            csUrineComponents = {'H2O', 'Naplus', 'CH4N2O'};
+            for iComponent = 1:length(csUrineComponents)
+                oLog.addValue('Example.toStores.UrineStorage.toPhases.Urine',   ['this.afMass(this.oMT.tiN2I.Urine) .* this.arCompoundMass(this.oMT.tiN2I.Urine, this.oMT.tiN2I.', csUrineComponents{iComponent}, ')'],         'kg',   ['Urine ', csUrineComponents{iComponent},' Content']);
+            end
+            
+            oLog.addValue('Example:c:Human_1.toBranches.Potable_Water_In',          'fFlowRate',       'kg/s', 'Ingested Water Flow Rate');
+            oLog.addValue('Example:c:Human_1.toBranches.RespirationWaterOutput',    'fFlowRate',       'kg/s', 'Respiration Water Flow Rate');
+            oLog.addValue('Example:c:Human_1.toBranches.PerspirationWaterOutput',   'fFlowRate',       'kg/s', 'Perspiration Water Flow Rate');
+            oLog.addValue('Example:c:Human_1.toBranches.Urine_Out',                 'fFlowRate',       'kg/s', 'Urine Flow Rate');
+            oLog.addValue('Example:c:Human_1.toBranches.Food_In',                   'fFlowRate',       'kg/s', 'Food Flow Rate');
+            
+            
             %% Respiration Logging
             oLog.addValue('Example:c:Human_1:c:Respiration',    'fVolumetricFlow_BrainBlood',       'm^3/s', 'Volumetric Blood Flow Brain');
             oLog.addValue('Example:c:Human_1:c:Respiration',    'fVolumetricFlow_TissueBlood',      'm^3/s', 'Volumetric Blood Flow Tissue');
@@ -61,6 +79,10 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Example:c:Human_1:c:Respiration',    'tfPartialPressure.Arteries.O2',  	'Pa',   'Partial Pressure O2 Arteries');
             oLog.addValue('Example:c:Human_1:c:Respiration',    'tfPartialPressure.Arteries.CO2', 	'Pa',   'Partial Pressure CO2 Arteries');
             
+            oLog.addValue('Example:c:Human_1.toBranches.O2_from_Brain',     'fFlowRate',      'kg/s',     'Metabolic O2 from Brain');
+            oLog.addValue('Example:c:Human_1.toBranches.O2_from_Tissue',    'fFlowRate',      'kg/s',     'Metabolic O2 from Tissue');
+            oLog.addValue('Example:c:Human_1.toBranches.CO2_to_Brain',      'fFlowRate',      'kg/s',     'Metabolic CO2 to Brain');
+            oLog.addValue('Example:c:Human_1.toBranches.CO2_to_Tissue',     'fFlowRate',      'kg/s',     'Metabolic CO2 to Tissue');
             
             oLog.addValue('Example:c:Human_1:c:Respiration.toStores.Lung.toProcsP2P.Alveola_to_Air',    'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)',      'kg/s', 	'Exhaled CO2');
             oLog.addValue('Example:c:Human_1:c:Respiration.toStores.Lung.toProcsP2P.Air_to_Alveola',    'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.O2)',       'kg/s',     'Inhaled O2');
@@ -69,26 +91,31 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Example:c:Human_1:c:Respiration.toStores.Tissue.toProcsP2P.Blood_to_Tissue', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.O2)',       'kg/s',     'Tissue absorbed O2');
             oLog.addValue('Example:c:Human_1:c:Respiration.toStores.Tissue.toProcsP2P.Tissue_to_Blood', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)',      'kg/s',     'Tissue desorbed CO2');
             
-            oLog.addValue('Example:c:Human_1.toBranches.O2_from_Brain',     'fFlowRate',      'kg/s',     'Metabolic O2 from Brain');
-            oLog.addValue('Example:c:Human_1.toBranches.O2_from_Tissue',    'fFlowRate',      'kg/s',     'Metabolic O2 from Tissue');
-            oLog.addValue('Example:c:Human_1.toBranches.CO2_to_Brain',      'fFlowRate',      'kg/s',     'Metabolic CO2 to Brain');
-            oLog.addValue('Example:c:Human_1.toBranches.CO2_to_Tissue',     'fFlowRate',      'kg/s',     'Metabolic CO2 to Tissue');
+            oLog.addValue('Example:c:Human_1.toBranches.Air_In.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)',                  'kg/s',    'CO2 Inlet Flowrate');
+            oLog.addValue('Example:c:Human_1.toBranches.Air_Out.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)',                 'kg/s',    'CO2 Outlet Flowrate');
+            oLog.addValue('Example:c:Human_1.toBranches.Air_In.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.O2)',                   'kg/s',    'O2 Inlet Flowrate');
+            oLog.addValue('Example:c:Human_1.toBranches.Air_Out.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.O2)',                  'kg/s',    'O2 Outlet Flowrate');
+            
+            oLog.addVirtualValue('"CO2 Outlet Flowrate"    + "CO2 Inlet Flowrate"',   'kg/s', 'Effective CO2 Flow');
+            oLog.addVirtualValue( '"O2 Outlet Flowrate"    +  "O2 Inlet Flowrate"',   'kg/s', 'Effective O2 Flow');
             
             %% Metabolic Logging
             
-            oLog.addValue('Example:c:Human_1:c:Metabolic', 'fVO2',                      'L/min',    'VO2');
-            oLog.addValue('Example:c:Human_1:c:Metabolic', 'fVO2_rest',              	'L/min',    'VO2 Rest');
-            oLog.addValue('Example:c:Human_1:c:Metabolic', 'fVO2_max',              	'L/min',    'VO2 Max');
-            oLog.addValue('Example:c:Human_1:c:Metabolic', 'rActivityLevel',            '-',        'Activity Level');
-            oLog.addValue('Example:c:Human_1:c:Metabolic', 'fTotalMetabolicRate',   	'W',        'Current Metabolic Rate');
-            oLog.addValue('Example:c:Human_1:c:Metabolic', 'fMetabolicHeatFlow',        'W',        'Current Metabolic Heatflow');
-            oLog.addValue('Example:c:Human_1:c:Metabolic', 'rRespiratoryCoefficient',  	'-',        'Respiratory Coefficient');
+            oLog.addValue('Example:c:Human_1:c:Metabolic', 'fVO2',                              'L/min',    'VO2');
+            oLog.addValue('Example:c:Human_1:c:Metabolic', 'fVO2_rest',                         'L/min',    'VO2 Rest');
+            oLog.addValue('Example:c:Human_1:c:Metabolic', 'fVO2_max',                          'L/min',    'VO2 Max');
+            oLog.addValue('Example:c:Human_1:c:Metabolic', 'rActivityLevel',                    '-',        'Activity Level');
+            oLog.addValue('Example:c:Human_1:c:Metabolic', 'fTotalMetabolicRate',               'W',        'Current Metabolic Rate');
+            oLog.addValue('Example:c:Human_1:c:Metabolic', 'fMetabolicHeatFlow',                'W',        'Current Metabolic Heatflow');
+            oLog.addValue('Example:c:Human_1:c:Metabolic', 'rRespiratoryCoefficient',           '-',        'Respiratory Coefficient');
+            oLog.addValue('Example:c:Human_1:c:Metabolic', 'fRestingDailyEnergyExpenditure',  	'-',        'Resting Daily Energy Demand');
+            oLog.addValue('Example:c:Human_1:c:Metabolic', 'fAdditionalFoodEnergyDemand',       '-',        'Additional Energy Demand from Exercise');
             
-            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.Liver',            'this.afMass(this.oMT.tiN2I.C6H12O6)',  	'kg', 'Glucose in Liver');
-            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.AdiposeTissue',    'this.afMass(this.oMT.tiN2I.C51H98O6)',  	'kg', 'Fat Mass Adipose Tissue');
+            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.Liver',            'this.afMass(this.oMT.tiN2I.C6H12O6)',  	 'kg', 'Glucose in Liver');
+            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.AdiposeTissue',    'this.afMass(this.oMT.tiN2I.C51H98O6)',  	 'kg', 'Fat Mass Adipose Tissue');
             oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.AdiposeTissue',    'this.afMass(this.oMT.tiN2I.H2O)',          'kg', 'Water in Adipose Tissue');
-            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.MuscleTissue',     'this.afMass(this.oMT.tiN2I.C6H12O6)',  	'kg', 'Glucose in Muscle');
-            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.MuscleTissue',     'this.afMass(this.oMT.tiN2I.Human_Tissue)',	'kg', 'Muscle Mass');
+            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.MuscleTissue',     'this.afMass(this.oMT.tiN2I.C6H12O6)',  	 'kg', 'Glucose in Muscle');
+            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.MuscleTissue',     'this.afMass(this.oMT.tiN2I.Human_Tissue)', 'kg', 'Muscle Mass');
             oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.Metabolism',       'this.afMass(this.oMT.tiN2I.C3H7NO2)',      'kg', 'Protein Mass in Metabolism');
             oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.Metabolism',       'this.afMass(this.oMT.tiN2I.C51H98O6)',     'kg', 'Fat Mass in Metabolism');
             oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.Metabolism',       'this.afMass(this.oMT.tiN2I.C6H12O6)',      'kg', 'Glucose Mass in Metabolism');
@@ -326,6 +353,28 @@ classdef setup < simulation.infrastructure
             
             tPlotOptions.sTimeUnit  = 'hours';
             
+            %% General Plots
+            
+            coPlot = cell(2,2);
+            csFecesComponents = {'H2O', 'DietaryFiber', 'C6H12O6', 'C51H98O6', 'C3H7NO2', 'Naplus'};
+            csFecesMass = cell(1, length(csFecesComponents));
+            for iComponent = 1:length(csFecesComponents)
+                csFecesMass{iComponent} = ['"Feces ', csFecesComponents{iComponent},' Content"'];
+            end
+            
+            csUrineComponents = {'H2O', 'Naplus', 'CH4N2O'};
+            csUrineMass = cell(1, length(csUrineComponents));
+            for iComponent = 1:length(csUrineComponents)
+                csUrineMass{iComponent} = ['"Urine ', csUrineComponents{iComponent},' Content"'];
+            end
+            
+            coPlot{1,1} = oPlotter.definePlot(csFecesMass, 'Feces Composition', tPlotOptions);
+            coPlot{2,1} = oPlotter.definePlot(csUrineMass, 'Urine Composition', tPlotOptions);
+           
+            coPlot{1,2} = oPlotter.definePlot({'"Ingested Water Flow Rate"', '"Respiration Water Flow Rate"', '"Perspiration Water Flow Rate"', '"Urine Flow Rate"'}, 'Human Water Flows', tPlotOptions);
+            
+            oPlotter.defineFigure(coPlot,  'General Plots');
+            
             %% Respiration
             coPlot = cell(2,2);
             coPlot{1,1} = oPlotter.definePlot({'"Volumetric Blood Flow Brain"', '"Volumetric Blood Flow Tissue"', '"Volumetric Air Flow"'}, 'Respiration Volumetric Flows', tPlotOptions);
@@ -348,6 +397,8 @@ classdef setup < simulation.infrastructure
                 '"Metabolism CO2 Flow Rate"', '"Metabolism H2O Flow Rate"', '"Metabolism Urea Flow Rate"', '"Metabolism Muscle Flow Rate"'}, 'Manipulator Flowrates in Metabolism', tPlotOptions);
             
             coPlot{3,1} = oPlotter.definePlot({'"Glucose in Liver"', '"Glucose in Muscle"', }, 'Glucose Masses in Metabolic Layer', tPlotOptions);
+            
+            coPlot{3,2} = oPlotter.definePlot({'"Resting Daily Energy Demand"', '"Additional Energy Demand from Exercise"', }, 'Metabolic Energy Demands', tPlotOptions);
             
             coPlot{3,3} = oPlotter.definePlot({'"Glucose to Liver Flow Rate"', '"Glucose to Muscle Flow Rate"', '"Muscle from Metabolism Flow Rate"', '"Fat to Adipose Tissue Flow Rate"', '"H2O to Adipose Tissue Flow Rate"'}, 'P2P Flowrates in Metabolism', tPlotOptions);
             
@@ -406,7 +457,7 @@ classdef setup < simulation.infrastructure
             iMasses = length(csMasses);
             
             tfMetabolismFlows = struct();
-            for iMass = 1:(iMasses - 1)
+            for iMass = 1:(iMasses)
                 tfMetabolismFlows.(csMasses{iMass}) = cell(1, iPhases - 2);
                 for iPhase = 2:(iPhases - 1)
                     tfMetabolismFlows.(csMasses{iMass}){iPhase - 1} = ['"Digested ', csMasses{iMass}, ' from ', csPhases{iPhase}, '"'];
@@ -468,6 +519,215 @@ classdef setup < simulation.infrastructure
             oPlotter.defineFigure(coPlot,  'Digestion Readsorption and Secretion Flows');
             
             oPlotter.plot();
+            
+            oLogger = this.toMonitors.oLogger;
+            
+            iLogs = length(oLogger.afTime);
+            
+            afTimeSteps = (oLogger.afTime(2:end) - oLogger.afTime(1:end-1));
+
+            for iLog = 1:oLogger.iNumberOfLogItems
+                if strcmp(oLogger.tLogValues(iLog).sLabel, 'Ingested Water Flow Rate')
+                    iDrinkingWaterFlow = iLog;
+                end
+                
+                if strcmp(oLogger.tLogValues(iLog).sLabel, 'Respiration Water Flow Rate')
+                    iRespirationWaterFlow = iLog;
+                end
+                
+                if strcmp(oLogger.tLogValues(iLog).sLabel, 'Perspiration Water Flow Rate')
+                    iPerspirationWaterFlow = iLog;
+                end
+                
+                if strcmp(oLogger.tLogValues(iLog).sLabel, 'Metabolism H2O Flow Rate')
+                    iMetabolicWater = iLog;
+                end
+                
+                if strcmp(oLogger.tLogValues(iLog).sLabel, 'Stomach H2O Flow Rate')
+                    iWaterinFood = iLog;
+                end
+                
+                if strcmp(oLogger.tLogValues(iLog).sLabel, 'H2O from LargeIntestine')
+                    iFecesH2O = iLog;
+                end
+                
+                if strcmp(oLogger.tLogValues(iLog).sLabel, 'H2O Massflow to Bladder')
+                    iUrineH2O = iLog;
+                end
+                
+                if strcmp(oLogger.tLogValues(iLog).sLabel, 'Food Flow Rate')
+                    iFood = iLog;
+                end
+                
+                if strcmp(oLogger.tLogValues(iLog).sLabel, 'Protein from LargeIntestine')
+                    iProteinFeces = iLog;
+                end
+                
+                if strcmp(oLogger.tLogValues(iLog).sLabel, 'Fat from LargeIntestine')
+                    iFatFeces = iLog;
+                end
+                
+                if strcmp(oLogger.tLogValues(iLog).sLabel, 'Glucose from LargeIntestine')
+                    iGlucoseFeces = iLog;
+                end
+                
+                if strcmp(oLogger.tLogValues(iLog).sLabel, 'Fiber from LargeIntestine')
+                    iFiberFeces = iLog;
+                end
+                
+                if strcmp(oLogger.tLogValues(iLog).sLabel, 'Sodium from LargeIntestine')
+                    iSodiumFeces = iLog;
+                end
+                
+                if strcmp(oLogger.tLogValues(iLog).sLabel, 'Na+ Massflow to Bladder')
+                    iSodiumUrine = iLog;
+                end
+                
+                if strcmp(oLogger.tLogValues(iLog).sLabel, 'K+ Massflow to Bladder')
+                    iPotassiumUrine = iLog;
+                end
+                
+                if strcmp(oLogger.tLogValues(iLog).sLabel, 'Metabolism Urea Flow Rate')
+                    iUreaUrine = iLog;
+                end
+            end
+            
+            afConsumedDrinkingWater     = zeros(iLogs,1);
+            afProducedRespirationWater  = zeros(iLogs,1);
+            afProducedPerspirationWater = zeros(iLogs,1);
+            afProducedMetabolicWater    = zeros(iLogs,1);
+            afIngestedWaterInFood       = zeros(iLogs,1);
+            afFecesWater                = zeros(iLogs,1);
+            afUrineWater                = zeros(iLogs,1);
+            afFood                      = zeros(iLogs,1);
+            afFecesProtein            	= zeros(iLogs,1);
+            afFecesFat                	= zeros(iLogs,1);
+            afFecesGlucose            	= zeros(iLogs,1);
+            afFecesFiber            	= zeros(iLogs,1);
+            afFecesSodium             	= zeros(iLogs,1);
+            afUrineSodium             	= zeros(iLogs,1);
+            afUrinePotassium          	= zeros(iLogs,1);
+            afUrineUrea                 = zeros(iLogs,1);
+            
+            for iLog = 2:iLogs
+                afConsumedDrinkingWater(iLog)       = afConsumedDrinkingWater(iLog-1)       + afTimeSteps(iLog-1)' .* oLogger.mfLog(iLog,iDrinkingWaterFlow);
+                afProducedRespirationWater(iLog) 	= afProducedRespirationWater(iLog-1)    + afTimeSteps(iLog-1)' .* oLogger.mfLog(iLog,iRespirationWaterFlow);
+                afProducedPerspirationWater(iLog) 	= afProducedPerspirationWater(iLog-1)   + afTimeSteps(iLog-1)' .* oLogger.mfLog(iLog,iPerspirationWaterFlow);
+                afProducedMetabolicWater(iLog)      = afProducedMetabolicWater(iLog-1)      + afTimeSteps(iLog-1)' .* oLogger.mfLog(iLog,iMetabolicWater);
+                afIngestedWaterInFood(iLog)         = afIngestedWaterInFood(iLog-1)         + afTimeSteps(iLog-1)' .* oLogger.mfLog(iLog,iWaterinFood);
+                afFecesWater(iLog)                  = afFecesWater(iLog-1)                  + afTimeSteps(iLog-1)' .* oLogger.mfLog(iLog,iFecesH2O);
+                afUrineWater(iLog)                  = afUrineWater(iLog-1)                  + afTimeSteps(iLog-1)' .* oLogger.mfLog(iLog,iUrineH2O);
+                afFood(iLog)                        = afFood(iLog-1)                        + afTimeSteps(iLog-1)' .* oLogger.mfLog(iLog,iFood);
+                afFecesProtein(iLog)             	= afFecesProtein(iLog-1)              	+ afTimeSteps(iLog-1)' .* oLogger.mfLog(iLog,iProteinFeces);
+                afFecesFat(iLog)                    = afFecesFat(iLog-1)                    + afTimeSteps(iLog-1)' .* oLogger.mfLog(iLog,iFatFeces);
+                afFecesGlucose(iLog)             	= afFecesGlucose(iLog-1)              	+ afTimeSteps(iLog-1)' .* oLogger.mfLog(iLog,iGlucoseFeces);
+                afFecesFiber(iLog)                  = afFecesFiber(iLog-1)              	+ afTimeSteps(iLog-1)' .* oLogger.mfLog(iLog,iFiberFeces);
+                afFecesSodium(iLog)                 = afFecesSodium(iLog-1)              	+ afTimeSteps(iLog-1)' .* oLogger.mfLog(iLog,iSodiumFeces);
+                afUrineSodium(iLog)                 = afUrineSodium(iLog-1)              	+ afTimeSteps(iLog-1)' .* oLogger.mfLog(iLog,iSodiumUrine);
+                afUrinePotassium(iLog)          	= afUrinePotassium(iLog-1)              + afTimeSteps(iLog-1)' .* oLogger.mfLog(iLog,iPotassiumUrine);
+                afUrineUrea(iLog)                   = afUrineUrea(iLog-1)                   + afTimeSteps(iLog-1)' .* oLogger.mfLog(iLog,iUreaUrine);
+            end
+            
+            % We calculated the individual masses to be able to check
+            % those, but for now we just compare the total feces solid
+            % production
+            afFecesSolids = afFecesProtein + afFecesFat + afFecesGlucose + afFecesFiber + afFecesSodium;
+            afUrineSolids = afUrineSodium + afUrinePotassium + afUrineUrea;
+            
+            for iVirtualLog = 1:length(oLogger.tVirtualValues)
+                if strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel, 'Effective CO2 Flow')
+                    
+                    mfEffectiveCO2Flow = oLogger.tVirtualValues(iVirtualLog).calculationHandle(oLogger.mfLog);
+                    
+                elseif strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel, 'Effective O2 Flow')
+                    
+                    mfEffectiveO2Flow = oLogger.tVirtualValues(iVirtualLog).calculationHandle(oLogger.mfLog);
+                    
+                end
+                
+            end
+            
+            afGeneratedCO2Mass  = zeros(iLogs,1);
+            afConsumedO2Mass    = zeros(iLogs,1);
+            for iLog = 2:iLogs
+                afGeneratedCO2Mass(iLog)  = sum(afTimeSteps(1:iLog-1)' .* mfEffectiveCO2Flow(2:iLog));
+                afConsumedO2Mass(iLog)    = sum(afTimeSteps(1:iLog-1)' .* mfEffectiveO2Flow(2:iLog));
+            end
+            
+            figure()
+            plot(oLogger.afTime./3600, -1 .* afConsumedDrinkingWater,   	'-')
+            hold on
+            grid on
+            plot(oLogger.afTime./3600, -1 .* afProducedRespirationWater,   	'-')
+            plot(oLogger.afTime./3600, -1 .* afProducedPerspirationWater,  	'-')
+            plot(oLogger.afTime./3600,       afProducedMetabolicWater,     	'--')
+            plot(oLogger.afTime./3600, -1 .* afFecesWater,                  '--')
+            plot(oLogger.afTime./3600, -1 .* afFecesSolids,                 '--')
+            plot(oLogger.afTime./3600, -1 .* afUrineWater,                  ':')
+            plot(oLogger.afTime./3600, -1 .* afUrineSolids,                 ':')
+            plot(oLogger.afTime./3600, -1 .* afGeneratedCO2Mass,            ':')
+            plot(oLogger.afTime./3600,       afIngestedWaterInFood,     	'-.')
+            plot(oLogger.afTime./3600,       afFood,                        '-.')
+            plot(oLogger.afTime./3600,       afConsumedO2Mass,              '-.')
+           
+            legend( 'Drinking Water', 'Respiration Water', 'Perspiration Water', 'Metabolic Water', 'Feces Water', 'Feces Solids', ...
+                    'Urine Water', 'Urine Solids', 'Generated CO2', 'Ingested Water from Food', 'Consumed Food', 'Consumed O2');
+            xlabel('Time in [h]')
+            ylabel('Mass in [kg]')
+            hold off
+            
+            % Average Daily consumptions and productions
+            fAverageO2              = afConsumedO2Mass(end)                                                 / (oLogger.afTime(end) / (24*3600));
+            fAverageCO2             = afGeneratedCO2Mass(end)                                               / (oLogger.afTime(end) / (24*3600));
+            fAverageHumidity        = (afProducedRespirationWater(end) + afProducedPerspirationWater(end))  / (oLogger.afTime(end) / (24*3600));
+            fAveragePotableWater    = afConsumedDrinkingWater(end)                                          / (oLogger.afTime(end) / (24*3600));
+            fAverageMetabolicWater 	= afProducedMetabolicWater(end)                                         / (oLogger.afTime(end) / (24*3600));
+            fAverageFoodWater       = afIngestedWaterInFood(end)                                            / (oLogger.afTime(end) / (24*3600));
+            fAverageFood            = afFood(end)                                                           / (oLogger.afTime(end) / (24*3600));
+            fAverageUrine           = (afUrineWater(end))                                                   / (oLogger.afTime(end) / (24*3600));
+            fAverageUrineSolids    	= (afUrineSolids(end))                                                  / (oLogger.afTime(end) / (24*3600));
+            fAverageFeces           = (afFecesWater(end))                                                   / (oLogger.afTime(end) / (24*3600));
+            fAverageFecesSolid    	= (afFecesSolids(end))                                                  / (oLogger.afTime(end) / (24*3600));
+            
+            fDifferenceO2               = (1 - (fAverageO2              / 0.816))   * 100;
+            fDifferenceCO2              = (1 - (fAverageCO2             / 1.04))    * 100;
+            fDifferenceHumidity         = (1 - (fAverageHumidity        / 1.9))     * 100; 
+            fDifferencePotableWater     = (1 - (fAveragePotableWater    / 2.5))     * 100; 
+            fDifferenceMetabolicWater	= (1 - (fAverageMetabolicWater  / 0.345))   * 100; 
+            fDifferenceFoodWater        = (1 - (fAverageFoodWater       / 0.7))     * 100; 
+            fDifferenceFood             = (1 - (fAverageFood            / 1.5))     * 100; 
+            fDifferenceUrine            = (1 - (fAverageUrine           / 1.6))     * 100; 
+            fDifferenceUrineSolids    	= (1 - (fAverageUrineSolids     / 0.059))   * 100; 
+            fDifferenceFeces            = (1 - (fAverageFeces           / 0.1))     * 100; 
+            fDifferenceFecesSolid    	= (1 - (fAverageFecesSolid      / 0.032))   * 100; 
+            
+            disp(['Average daily O2 consumption:                ', num2str(fAverageO2), ' kg    BVAD value is 0.816 kg'])
+            disp(['Average daily Water consumption:             ', num2str(fAveragePotableWater), ' kg  BVAD value is 2.5 kg'])
+            disp(['Average daily Food Water consumption:        ', num2str(fAverageFoodWater), ' kg  BVAD value is 0.7 kg'])
+            disp(['Average daily Food consumption:              ', num2str(fAverageFood), ' kg  BVAD value is 1.5 kg'])
+            disp(['Average daily Metabolic Water production:    ', num2str(fAverageMetabolicWater), ' kg  BVAD value is 0.345 kg'])
+            disp(['Average daily CO2 production:                ', num2str(fAverageCO2), ' kg   BVAD value is 1.04 kg'])
+            disp(['Average daily Humidity production:           ', num2str(fAverageHumidity), ' kg  BVAD value is 1.9 kg'])
+            disp(['Average daily Urine Water production:        ', num2str(fAverageUrine), ' kg     BVAD value is 1.6 kg'])
+            disp(['Average daily Urine Solid production:        ', num2str(fAverageUrineSolids), ' kg     BVAD value is 0.059 kg'])
+            disp(['Average daily Feces Water production:        ', num2str(fAverageFeces), ' kg     BVAD value is 0.1 kg'])
+            disp(['Average daily Feces Solid production:        ', num2str(fAverageFecesSolid), ' kg     BVAD value is 0.032 kg'])
+            disp('')
+            disp(['Difference daily O2 consumption:                ', num2str(fDifferenceO2), ' %'])
+            disp(['Difference daily Water consumption:             ', num2str(fDifferencePotableWater), ' %'])
+            disp(['Difference daily Food Water consumption:        ', num2str(fDifferenceFoodWater), ' %'])
+            disp(['Difference daily Food consumption:              ', num2str(fDifferenceFood), ' %'])
+            disp(['Difference daily Metabolic Water production:    ', num2str(fDifferenceMetabolicWater), ' %'])
+            disp(['Difference daily CO2 production:                ', num2str(fDifferenceCO2), ' %'])
+            disp(['Difference daily Humidity production:           ', num2str(fDifferenceHumidity), ' %'])
+            disp(['Difference daily Urine Water production:        ', num2str(fDifferenceUrine), ' %'])
+            disp(['Difference daily Urine Solid production:        ', num2str(fDifferenceUrineSolids), ' %'])
+            disp(['Difference daily Feces Water production:        ', num2str(fDifferenceFeces), ' %'])
+            disp(['Difference daily Feces Solid production:        ', num2str(fDifferenceFecesSolid), ' %'])
+            disp('')
+            disp('All BVAD values refer to Table 3.26 in the NASA Baseline Values and Assumptions Document (BVAD) 2018')
+            
+            
         end
     end
 end
