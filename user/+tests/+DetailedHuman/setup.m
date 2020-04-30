@@ -4,9 +4,8 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams) % Constructor function
+        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig) % Constructor function
             
-            ttMonitorConfig = struct();
             this@simulation.infrastructure('Example_DetailedHumanModel', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             % Water content of Urine and Feces is based on BVAD, not all
@@ -24,7 +23,7 @@ classdef setup < simulation.infrastructure
             %% Simulation length
             % Stop when specific time in simulation is reached or after
             % specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 3600 * 24 * 7; % In seconds
+            this.fSimTime = 3600 * 24 * 2; % In seconds
             this.iSimTicks = 1500;
             this.bUseTime = true;
         end
