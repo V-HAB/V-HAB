@@ -134,6 +134,8 @@ classdef branch < solver.thermal.base.branch
                 % the different mass flows entering the flow phase
                 mfFlowRate              = zeros(1,oFlowCapacity.iProcsEXME);
                 mfSpecificHeatCapacity  = zeros(1,oFlowCapacity.iProcsEXME);
+                mfTemperature           = zeros(1,oFlowCapacity.iProcsEXME);
+                
                 for iExme = 1:oFlowCapacity.iProcsEXME
                     if isa(oFlowCapacity.aoExmes(iExme).oBranch.oHandler, 'solver.thermal.basic_fluidic.branch')
                         fFlowRate = oFlowCapacity.aoExmes(iExme).oBranch.coConductors{1}.oMassBranch.fFlowRate * oFlowCapacity.oPhase.toProcsEXME.(oFlowCapacity.aoExmes(iExme).sName).iSign;
@@ -141,6 +143,7 @@ classdef branch < solver.thermal.base.branch
                         if fFlowRate > 0
                             mfFlowRate(iExme) = fFlowRate;
                             mfSpecificHeatCapacity(iExme) = oFlowCapacity.oPhase.toProcsEXME.(oFlowCapacity.aoExmes(iExme).sName).oFlow.fSpecificHeatCapacity;
+                            mfTemperature(iExme) =  oFlowCapacity.oPhase.toProcsEXME.(oFlowCapacity.aoExmes(iExme).sName).oFlow.fTemperature;
                         end
                     end
                 end
@@ -148,6 +151,11 @@ classdef branch < solver.thermal.base.branch
                 % sum it up to get the total heat capacity flow of the flow
                 % phase
                 fOverallHeatCapacityFlow = sum(mfFlowRate .* mfSpecificHeatCapacity);
+                fFlowTemperature = sum(mfFlowRate .* mfSpecificHeatCapacity .* mfTemperature) ./ fOverallHeatCapacityFlow;
+                
+                if isnan(fFlowTemperature)
+                    fFlowTemperature = oNormalCapacity.fTemperature;
+                end
                 
                 % now we can calculate what the required heat flow is to
                 % enter the flow capacity so that it has the same
@@ -156,7 +164,7 @@ classdef branch < solver.thermal.base.branch
                 % impact of the temperatures of the flows entering the flow
                 % capacity because these are already considered as heat
                 % flows for the corresponding thermal exmes
-                fRequiredFlowHeatFlow = (oNormalCapacity.fTemperature - oFlowCapacity.fTemperature) * fOverallHeatCapacityFlow;
+                fRequiredFlowHeatFlow = (oNormalCapacity.fTemperature - fFlowTemperature) * fOverallHeatCapacityFlow;
                 
                 % if the flow phase is on the left side we subtract the
                 % current heat flow of the left side from the required heat
@@ -168,9 +176,9 @@ classdef branch < solver.thermal.base.branch
                 % the calculation is analogous but with a different sign
                 % and using the current right side heat flow
                 if bLeftFlow
-                    fHeatFlow = -(fRequiredFlowHeatFlow - fCurrentHeatFlowLeft);
+                    fHeatFlow = -(fRequiredFlowHeatFlow);
                 else
-                    fHeatFlow = fRequiredFlowHeatFlow - fCurrentHeatFlowRight;
+                    fHeatFlow = fRequiredFlowHeatFlow;
                 end
                 
             elseif bBoundary

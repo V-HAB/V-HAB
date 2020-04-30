@@ -69,7 +69,7 @@ for iBranch = 1:length(tVHAB_Objects.Branch)
         for iSubsystemType = 1:length(csSystems)
             for iSubsytem = 1:length(tVHAB_Objects.(csSystems{iSubsystemType}))
                 
-                tSubsystem = tVHAB_Objects.(csSystems{iSubsystemType}){iSystem};
+                tSubsystem = tVHAB_Objects.(csSystems{iSubsystemType}){iSubsytem};
                 
                 for iOutput = 1:length(tSubsystem.Output)
                     tOutput = tSubsystem.Output{iOutput};
@@ -221,7 +221,7 @@ for iBranch = 1:length(tVHAB_Objects.Branch)
             for iSubsystemType = 1:length(csSystems)
                 for iSubsytem = 1:length(tVHAB_Objects.(csSystems{iSubsystemType}))
                     
-                    tSubsystem = tVHAB_Objects.(csSystems{iSubsystemType}){iSystem};
+                    tSubsystem = tVHAB_Objects.(csSystems{iSubsystemType}){iSubsytem};
                     for iInput = 1:length(tSubsystem.Input)
                         tInput = tSubsystem.Input{iInput};
                         if strcmp(tInput.id, tBranch.TargetID)

@@ -150,19 +150,19 @@ for iSystem = 1:length(tVHAB_Objects.System)
 end
 
 for iSubsystemType = 1:length(csSystems)
-    for iSubsytem = 1:length(tVHAB_Objects.(csSystems{iSubsystemType}))
+    for iSubsystem = 1:length(tVHAB_Objects.(csSystems{iSubsystemType}))
         
-        tVHAB_Objects.(csSystems{iSubsystemType}){iSystem}.Input    = cell(0);
-        tVHAB_Objects.(csSystems{iSubsystemType}){iSystem}.Output   = cell(0);
+        tVHAB_Objects.(csSystems{iSubsystemType}){iSubsystem}.Input    = cell(0);
+        tVHAB_Objects.(csSystems{iSubsystemType}){iSubsystem}.Output   = cell(0);
         
         for iInput = 1:length(tVHAB_Objects.Input)
-            if strcmp(tVHAB_Objects.(csSystems{iSubsystemType}){iSystem}.id, tVHAB_Objects.Input{iInput}.ParentID)
-                tVHAB_Objects.(csSystems{iSubsystemType}){iSystem}.Input{end+1} = tVHAB_Objects.Input{iInput};
+            if strcmp(tVHAB_Objects.(csSystems{iSubsystemType}){iSubsystem}.id, tVHAB_Objects.Input{iInput}.ParentID)
+                tVHAB_Objects.(csSystems{iSubsystemType}){iSubsystem}.Input{end+1} = tVHAB_Objects.Input{iInput};
             end
         end
         for iOutput = 1:length(tVHAB_Objects.Output)
-            if strcmp(tVHAB_Objects.(csSystems{iSubsystemType}){iSystem}.id, tVHAB_Objects.Output{iOutput}.ParentID)
-                tVHAB_Objects.(csSystems{iSubsystemType}){iSystem}.Output{end+1} = tVHAB_Objects.Output{iOutput};
+            if strcmp(tVHAB_Objects.(csSystems{iSubsystemType}){iSubsystem}.id, tVHAB_Objects.Output{iOutput}.ParentID)
+                tVHAB_Objects.(csSystems{iSubsystemType}){iSubsystem}.Output{end+1} = tVHAB_Objects.Output{iOutput};
             end
         end
     end
@@ -180,13 +180,13 @@ for iSystem = 1:length(tVHAB_Objects.System)
     % loop through the possible library subsystems and check if they are
     % part of the system
     for iSubsystemType = 1:length(csSystems)
-        for iSubsytem = 1:length(tVHAB_Objects.(csSystems{iSubsystemType}))
+        for iSubsystem = 1:length(tVHAB_Objects.(csSystems{iSubsystemType}))
             
-            if strcmp(tVHAB_Objects.System{iSystem}.id, tVHAB_Objects.(csSystems{iSubsystemType}){iSystem}.ParentID)
+            if strcmp(tVHAB_Objects.System{iSystem}.id, tVHAB_Objects.(csSystems{iSubsystemType}){iSubsystem}.ParentID)
                 if ~isfield(tVHAB_Objects.System{iSystem}, csSystems{iSubsystemType})
                     tVHAB_Objects.System{iSystem}.(csSystems{iSubsystemType}) = cell(0);
                 end
-                tVHAB_Objects.System{iSystem}.(csSystems{iSubsystemType}){end+1} =  tVHAB_Objects.(csSystems{iSubsystemType}){iSystem};
+                tVHAB_Objects.System{iSystem}.(csSystems{iSubsystemType}){end+1} =  tVHAB_Objects.(csSystems{iSubsystemType}){iSubsystem};
             end
         end
     end

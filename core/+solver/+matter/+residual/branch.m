@@ -67,7 +67,7 @@ classdef branch < solver.matter.base.branch
                     elseif ~oExme.bFlowIsAProcP2P && isa(oBranch.oHandler, 'solver.matter.residual.branch')
                         
                         oHandler = oBranch.oHandler;
-                        oBranch.oTimer.bindPostTick(@oHandler.findAdjacentResidualSolvers, -3);
+                        oHandler.hBindPostTickFindAdajcentResiduals();
                     end
                 end
              end

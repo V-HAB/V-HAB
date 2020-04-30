@@ -11,8 +11,8 @@ function afPartsPerMillion = calculatePartsPerMillion(this, varargin)
 
 % Case one - just a phase or flow object provided
 if length(varargin) == 1
-    bIsaMatterPhase = isa(varargin{1}, 'matter.phase');
-    bIsaMatterFlow  = isa(varargin{1}, 'matter.flow');
+    bIsaMatterPhase = strcmp(varargin{1}.sObjectType, 'phase');
+    bIsaMatterFlow  = strcmp(varargin{1}.sObjectType, 'flow');
     
     if ~bIsaMatterPhase && ~bIsaMatterFlow
         this.throw('calculatePartialPressures', 'If only one param provided, has to be a matter.phase or matter.flow (derivative)');
@@ -26,6 +26,7 @@ if length(varargin) == 1
     elseif bIsaMatterFlow
         afMass = varargin{1}.arPartialMass;
     end
+    
     if bIsaMatterPhase
         fPressure = varargin{1}.fMass * varargin{1}.fMassToPressure;
     else

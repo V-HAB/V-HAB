@@ -25,18 +25,19 @@ classdef RFCS < vsys
                 this.rSolarpanelEfficiency  = rSolarpanelEfficiency;
             end
             
-            this.afPower = xlsread('user\+examples\+RFCS\+helper\HAPS_AvailableSolarPower.xlsx','B40:C327');
+            this.afPower = xlsread(strrep('user\+examples\+RFCS\+helper\HAPS_AvailableSolarPower.xlsx','\',filesep),'B40:C327');
             
             this.afPower(:,2) = this.afPower(:,2) .* this.rSolarpanelEfficiency .* this.fSolarPanelArea;
             
-            tOptionalInputsEly.fMembraneArea        = 1e-3;
-            tOptionalInputsEly.fMembraneThickness   = 50e-6;
-            tOptionalInputsEly.fMaxCurrentDensity   = 20000;
+            tInputsEly.iCells               = 30;
+            tInputsEly.fMembraneArea        = 1e-3;
+            tInputsEly.fMembraneThickness   = 50e-6;
+            tInputsEly.fMaxCurrentDensity   = 20000;
             
-            components.matter.Electrolyzer.Electrolyzer(this, 'Electrolyzer', 5*60, 30, tOptionalInputsEly);
+            components.matter.Electrolyzer.Electrolyzer(this, 'Electrolyzer', 5*60, tInputsEly);
             
-            
-            components.matter.FuelCell.FuelCell(this, 'FuelCell', 5*60, 30);
+            tInputsFC.iCells               = 30;
+            components.matter.FuelCell.FuelCell(this, 'FuelCell', 5*60, tInputsFC);
         end
         
         
@@ -202,9 +203,9 @@ classdef RFCS < vsys
             end
             
             % The target temperature for the electrolyzer and fuel cell is
-            % 65°C therefore, we regulate the coolant temperature to this
+            % 65degC therefore, we regulate the coolant temperature to this
             % value. Since both systems produce heat, we only set a flow
-            % through the radiator if the temperature is higher than 65°C
+            % through the radiator if the temperature is higher than 65degC
             fDeltaTemperature = this.toStores.CoolingSystem.toPhases.CoolingWater.fTemperature - 338.15;
             if fDeltaTemperature > 0
                 this.toBranches.Radiator_Cooling.oHandler.setFlowRate(0.2 * fDeltaTemperature);

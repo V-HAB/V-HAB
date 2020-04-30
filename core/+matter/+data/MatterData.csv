@@ -229,3 +229,5 @@ Clminus;ChlorineIon;liquid;0.035453;0;-1;172.15;238.55;2.95;480;;;;;;;
 DietaryFiber;DietaryFiber;solid;2000;0;0;;;1000;4186;;;;;Molecular Weight according to: doi: 10.1021/jf801280f,  heat capacity and density value for H2O at 1 bar and 20°C;;For Energy Content: https://www.accessdata.fda.gov/scripts/InteractiveNutritionFactsLabel/factsheets/Total_Fat.pdf
 C3H7NO2;Alanine;liquid;;16736000;0;;;1000;4186;;;;;heat capacity and density value for H2O at 1 bar and 20°C;;For Energy Content: https://www.accessdata.fda.gov/scripts/InteractiveNutritionFactsLabel/factsheets/Protein.pdf
 C51H98O6;PalmitateTricylglyceride;liquid;;37656000;0;;;1000;4186;;;;;;;
+LiOHH2O;LithiumHydroxideHydrate;solid;0.04196;0;0;735;;1510;2271;;;;;;
+Li2CO3;LithiumCarbonate;solid;0.07398;0;0;996;1580;2110;1316.5720464991;;;;;;

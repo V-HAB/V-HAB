@@ -8,6 +8,14 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % State of matter in phase (e.g. gas, liquid, solid), used for
         % example by the EXMEs to check compatibility.
         sType;
+        
+    end
+    
+    properties (Constant)
+        % In order to remove the need for numerous calls to isa(),
+        % especially in the matter table, this property can be used to see
+        % if an object is derived from this class. 
+        sObjectType = 'phase';
     end
 
     % These properties (including the mass vlaues) are not private because
@@ -283,6 +291,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         hBindPostTickUpdate
         % Handle to bind a post tick time step calculation of this phase
         hBindPostTickTimeStep
+        
+        afEmptyCompoundMassArray;
+        mfEmptyTotalFlows;
     end
     
     methods
@@ -324,11 +335,12 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             this.oTimer = this.oStore.oTimer;
             
             % Preset masses
-            this.afMass                 = zeros(1, this.oMT.iSubstances);
-            this.arPartialMass          = zeros(1, this.oMT.iSubstances);
-            this.arCompoundMass         = zeros(this.oMT.iSubstances, this.oMT.iSubstances);
-            this.arInFlowCompoundMass   = zeros(this.oMT.iSubstances, this.oMT.iSubstances);
-            this.fMinStep               = this.oTimer.fMinimumTimeStep;
+            this.afMass                   = zeros(1, this.oMT.iSubstances);
+            this.arPartialMass            = zeros(1, this.oMT.iSubstances);
+            this.arCompoundMass           = zeros(this.oMT.iSubstances, this.oMT.iSubstances);
+            this.arInFlowCompoundMass     = zeros(this.oMT.iSubstances, this.oMT.iSubstances);
+            this.afEmptyCompoundMassArray = zeros(this.oMT.iSubstances, this.oMT.iSubstances);
+            this.fMinStep                 = this.oTimer.fMinimumTimeStep;
             
             % Mass provided?
             if (nargin >= 3) && ~isempty(tfMass) && ~isempty(fieldnames(tfMass))
@@ -737,8 +749,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
 
             % Total flows - one row (see below) for each EXME, number of
             % columns is the number of substances (partial masses)
-            mfTotalFlows = zeros(this.iProcsEXME, this.oMT.iSubstances);
-            arCurrentInFlowCompoundMass = zeros(this.oMT.iSubstances,  this.oMT.iSubstances);
+            mfTotalFlows = this.mfEmptyTotalFlows;
+            arCurrentInFlowCompoundMass = this.afEmptyCompoundMassArray;
 
             % Each row: flow rate, temperature, heat capacity
             mfInflowDetails = zeros(this.iProcsEXME, 3);
@@ -748,7 +760,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
             % Just initialize to false to handle the logical check
             % correctly in case no exmes are defined at all
-            arExMECompoundMass = false;
+            arExMECompoundMass = false; %#ok<NASGU>
+            
+            bCompoundMassPresent = false;
             
             % Get flow rates and partials from EXMEs
             for iI = 1:this.iProcsEXME
@@ -778,12 +792,18 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                     % ratios of the phase. Outflowing exme must only be
                     % considered as a total mass change before calculating
                     % the new composition
-                    if any(any(arExMECompoundMass))
+                    if any(arExMECompoundMass, 'all')
                         % Note that here arCurrentInFlowCompoundMass
                         % actually contains mass flows, but because
                         % intialising it with zeros already requires quite
                         % a bit of time we use only one variable!
                         arCurrentInFlowCompoundMass = arCurrentInFlowCompoundMass + (mfTotalFlows(iI, :)' .* arExMECompoundMass);
+                        
+                        bCompoundMassPresent = true;
+                    else
+                        if ~bCompoundMassPresent
+                            bCompoundMassPresent = false;
+                        end
                     end
                 end
             end
@@ -798,7 +818,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
             % The compound mass flow ratio is stored per compound mass (in
             % the rows)
-            if any(any(arCurrentInFlowCompoundMass))
+            if bCompoundMassPresent
                 afCompoundMassFlow = sum(arCurrentInFlowCompoundMass,2);
                 arCurrentInFlowCompoundMass = arCurrentInFlowCompoundMass ./ afCompoundMassFlow;
                 arCurrentInFlowCompoundMass(afCompoundMassFlow == 0, :) = 0;
@@ -852,11 +872,14 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 end
             end
             
+            this.mfEmptyTotalFlows = zeros(this.iProcsEXME, this.oMT.iSubstances);
+            
             % Preset
             [ afChange, mfDetails ] = this.getTotalMassChange();
 
             this.afCurrentTotalInOuts = afChange;
             this.mfCurrentInflowDetails = mfDetails;
+            
             
         end
     end

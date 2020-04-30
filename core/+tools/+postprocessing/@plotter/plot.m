@@ -92,8 +92,8 @@ for iFigure = 1:length(this.coFigures)
     % If there is only one plot in the figure, we just create a small save
     % button in the bottom left corner.
     if iNumberOfPlots == 1
-        oButton = uicontrol(oFigure,'String','Save','FontSize',10,'Position',[ 0 0 50 30]);
-        oButton.Callback = @tools.postprocessing.plotter.helper.saveFigureAs;
+        oSaveButton = uicontrol(oFigure,'String','Save','FontSize',10,'Position',[ 0 0 50 30]);
+        oSaveButton.Callback = @tools.postprocessing.plotter.helper.saveFigureAs;
     else
         % There are at least two plots in this figure, so we'll create our
         % little grid of buttons.
@@ -105,8 +105,8 @@ for iFigure = 1:length(this.coFigures)
         
         % Since the user may want to save the entire figure to a file, we
         % create a save button above the panel.
-        oButton = uicontrol(oFigure,'String','Save Figure','FontSize',10,'Units','normalized','Position',[ 0 fPanelYSize + 0.03 fPanelXSize 0.03]);
-        oButton.Callback = @tools.postprocessing.plotter.helper.saveFigureAs;
+        oSaveButton = uicontrol(oFigure,'String','Save Figure','FontSize',10,'Units','normalized','Position',[ 0 fPanelYSize + 0.03 fPanelXSize 0.03]);
+        oSaveButton.Callback = @tools.postprocessing.plotter.helper.saveFigureAs;
         
         oButton = uicontrol(oFigure,'String','Toggle Legends','FontSize',10,'Units','normalized','Position',[ 0 fPanelYSize fPanelXSize 0.03]);
         oButton.Callback = @tools.postprocessing.plotter.helper.toggleLegends;
@@ -237,8 +237,8 @@ for iFigure = 1:length(this.coFigures)
                 [ mfData, afTime, tLogProps ] = oLogger.get(this.coFigures{iFigure}.coPlots{iRow, iColumn}.aiIndexes, tPlotOptions.sIntervalMode, tPlotOptions.fInterval);
                 
                 % Getting the Y label from the logger object
-                if isfield(tPlotOptions, 'yLabel')
-                    sLabelY = tPlotOptions.yLabel;
+                if isfield(tPlotOptions, 'YLabel')
+                    sLabelY = tPlotOptions.YLabel;
                 else
                     sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
                 end
@@ -583,8 +583,8 @@ for iFigure = 1:length(this.coFigures)
             title('Evolution of Simulation Time vs. Simulation Ticks');
             set(oTimePlotFigure, 'name', [ 'Time Plot for ' this.oSimulationInfrastructure.sName ' - (' this.oSimulationInfrastructure.sCreated ')' ]');
             
-            oButton = uicontrol(oTimePlotFigure,'String','Save','FontSize',10,'Position',[ 0 0 50 30]);
-            oButton.Callback = @tools.postprocessing.plotter.helper.saveFigureAs;
+            oSaveButton = uicontrol(oTimePlotFigure,'String','Save','FontSize',10,'Position',[ 0 0 50 30]);
+            oSaveButton.Callback = @tools.postprocessing.plotter.helper.saveFigureAs;
             
             % Since some later command may assume that the current figure
             % is still the main figure with all the plots, we set the
@@ -672,6 +672,10 @@ for iFigure = 1:length(this.coFigures)
     %
     % Hopefully no one will have more than thirty plots in a figure.
     
+    % Saving a handle to the save button callback to the figure properties
+    % so we can call it from the KeyPressFcn.
+    oFigure.UserData.hSaveButton = oSaveButton.Callback;
+    
     % Undocking subplots only makes sense if there are any subplots, so we
     % enclose all of this in an if-condition.
     
@@ -701,10 +705,10 @@ for iFigure = 1:length(this.coFigures)
         % Last step is the transposition.
         oFigure.UserData.miButtonIndexes = oFigure.UserData.miButtonIndexes';
         
-        % Now we need to assign the key press function to this figure.
-        oFigure.KeyPressFcn = @KeyPressFunction;
-        
     end
+    
+    % Now we need to assign the key press function to this figure.
+    oFigure.KeyPressFcn = @KeyPressFunction;
     
 end
 
@@ -726,8 +730,8 @@ function KeyPressFunction(oFigure, oKeyData)
         iKey = str2double(oKeyData.Key);
         
         % We only need to do anything here if the user pressed a modifier
-        % key combination and a number key. 
-        if ~isempty(oKeyData.Modifier) && iKey <= 9 && iKey >= 0
+        % key combination. 
+        if ~isempty(oKeyData.Modifier)
             
             % To account for the Mac using 'command' instead of 'control',
             % we create a string containing the platform-specific modifier.
@@ -780,6 +784,15 @@ function KeyPressFunction(oFigure, oKeyData)
                            strcmp(oKeyData.Modifier{2},'alt')
                             iOffset = 10;
                         end
+                    end
+                    
+                    % Catch the case where we're actually trying to save
+                    % the figure and not undock anything.
+                    if strcmp(oKeyData.Modifier{1},'shift') && ...
+                       strcmp(oKeyData.Modifier{2},sPlatformModifier) && ...
+                       strcmp(oKeyData.Key,'s')
+                        oFigure.UserData.hSaveButton(NaN, NaN);
+                        return;
                     end
                 case 3
                     if ismac()

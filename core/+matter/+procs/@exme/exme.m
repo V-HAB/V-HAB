@@ -157,19 +157,18 @@ classdef exme < base
             % exme flow properties. 
             %
             % Outputs:
-            % fFlowRate:    current mass flow rate in kg/s with respect to
-            %               the connected phase (negative values mean the
-            %               mass of this.oPhase is beeing reduced)
-            % arPartials:   A vector with the length (1,oMT.iSubstances)
-            %               with the partial mass ratio of each substance in the current
-            %               fFlowRate. The sum of this vector is 1 and
-            %               multipliying arPartials with fFlowRate yields
-            %               the partial mass flow rates for each substance
-            % afProperties: A vector with two entries, the flow temperature
-            %               and the flow specific heat capacity
-            % trCompoundMass: A strcut containing each compound mass as
-            %                 field and within each field the composition
-            %                 of this compound mass
+            % fFlowRate:      current mass flow rate in kg/s with respect to
+            %                 the connected phase (negative values mean the
+            %                 mass of this.oPhase is beeing reduced)
+            % arPartials:     A vector with the length (1,oMT.iSubstances)
+            %                 with the partial mass ratio of each substance in the current
+            %                 fFlowRate. The sum of this vector is 1 and
+            %                 multipliying arPartials with fFlowRate yields
+            %                 the partial mass flow rates for each substance
+            % afProperties:   A vector with two entries, the flow temperature
+            %                 and the flow specific heat capacity
+            % arCompoundMass: An array containing the compound masses of
+            %                 the flow or attached phase
             
             % The flow rate property of the flow is unsigned, so we have to
             % add it again by multiplying with the iSign property of this

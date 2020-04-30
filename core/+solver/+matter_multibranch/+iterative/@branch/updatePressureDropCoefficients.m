@@ -30,7 +30,7 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
         
         % Get the corresponding column from the matrix for this branch (we
         % already have the row)
-        iCol = this.piObjUuidsToColIndex(oBranch.sUUID);
+        iCol = this.tiObjUuidsToColIndex.(oBranch.sUUID);
         
         % Now we get the corresponding row of this branch in the
         % afBoundaryConditions and aafPhasePressuresAndFlowRates matrix
@@ -101,7 +101,7 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
                     fFlowRate = this.fInitializationFlowRate;
 
                     % Negative pressure difference? Negative guess!
-                    if oBranch.coExmes{1}.getExMeProperties() < oBranch.coExmes{2}.getExMeProperties()
+                    if oBranch.coExmes{1}.oPhase.fPressure < oBranch.coExmes{2}.oPhase.fPressure
                         fFlowRate = -1 * fFlowRate;
                     end
                 end

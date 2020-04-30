@@ -21,7 +21,7 @@ classdef flow < base
         afPartialPressure;  % [Pa]
         
         % Only recalculated when setData was executed and requested again!
-        % Density of the matter of the flow in kg/m³
+        % Density of the matter of the flow in kg/mï¿½
         fDensity;           % [kg/m^3]
         % Dynamic Viscosity of the matter of the flow in Pa/s
         fDynamicViscosity;  % [Pa/s]
@@ -64,6 +64,11 @@ classdef flow < base
         bInterface = false;
         
         tfPropertiesAtLastMassPropertySet;
+    
+        % In order to remove the need for numerous calls to isa(),
+        % especially in the matter table, this property can be used to see
+        % if an object is derived from this class. 
+        sObjectType = 'flow';
     end
     
     properties (SetAccess = private, GetAccess = private)
@@ -449,7 +454,7 @@ classdef flow < base
             % fTemperature in the flows. So get pressure/temperature of in
             % exme (if FR provided)
             if nargin >= 3 && ~isempty(oExme)
-                [ fExMePress, ~ ] = oExme.getExMeProperties();
+                fExMePress = oExme.oPhase.fPressure;
             else
                 fExMePress = 0;
             end

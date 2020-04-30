@@ -31,9 +31,7 @@ function updateNetwork(this, bForceP2Pcalc)
                     continue
                 end
                 
-                oCurrentBranch   = this.aoBranches(iB);
-                
-                % it must ensured that all branches upstream of the current
+                % It must ensured that all branches upstream of the current
                 % branch are already update and the phase partial masses
                 % are set correctly for this to work!
                 
@@ -42,8 +40,9 @@ function updateNetwork(this, bForceP2Pcalc)
                 % allowing cases where e.g. a flow is used with a manual
                 % branch as input, a P2P inside the flow node and a
                 % multisolver branch as output
-                coCurrentProcExme = oCurrentBranch.coExmes;
-                % if the flowrate is zero we update both phases, to be sure
+                coCurrentProcExme = this.aoBranches(iB).coExmes;
+                
+                % If the flowrate is zero we update both phases, to be sure
                 % to update all P2Ps
                 for iPhase = 1:length(coCurrentProcExme)
                     oPhase = coCurrentProcExme{iPhase}.oPhase;

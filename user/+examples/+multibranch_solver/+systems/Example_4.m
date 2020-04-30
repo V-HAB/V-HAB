@@ -47,8 +47,8 @@ classdef Example_4 < vsys
             
             % Resistors
             components.matter.pipe(this, 'R_1',  0.1, 0.001);
-            components.matter.pipe(this, 'R_2',  0.1, 0.001);
-            components.matter.pipe(this, 'R_3',  0.1, 0.001);
+            %components.matter.pipe(this, 'R_2',  0.1, 0.001);
+            %components.matter.pipe(this, 'R_3',  0.1, 0.001);
             components.matter.pipe(this, 'R_4',  0.1, 0.001);
             components.matter.pipe(this, 'R_5',  0.1, 0.001);
             
