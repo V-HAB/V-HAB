@@ -306,54 +306,76 @@ classdef branch < base & event.source
                     this.iFirstRadiativeCapacity = length(this.aoCapacities) + 1;
                 end
                 
+                % Getting a cell with all UUIDs of the capacities.
+                csUUIDs = {this.aoCapacities.sUUID};
                 
+                % If we are within the upper part of the connectivity
+                % matrix, we just need to find the indexes of the two
+                % capacities.
                 if iBranch < this.iFirstRadiationBranch
-                    for iCapacity = 1:length(this.aoCapacities)
-                         if this.aoCapacities(iCapacity) == oLeftCapacity
-                             iLeftCapacityIndex = iCapacity;
-                         end
-
-                         if this.aoCapacities(iCapacity) == oRightCapacity
-                             iRightCapacityIndex = iCapacity;
-                         end
+                    abLeftCapacity = strcmp(csUUIDs, oLeftCapacity.sUUID);
+                    
+                    if sum(abLeftCapacity)
+                        iLeftCapacityIndex = find(abLeftCapacity);
                     end
+                    
+                    abRightCapacity = strcmp(csUUIDs, oRightCapacity.sUUID);
+                    
+                    if sum(abRightCapacity)
+                        iRightCapacityIndex = find(abRightCapacity);
+                    end
+                    
                 else
-                    % In this case we have to readd the capacity, because
-                    % we require its temperature a second time, from now on
-                    % we only check the capacities 
+                    % In this case we are in the lower part of the
+                    % connectivity matrix, dealing with capacities that are
+                    % part of the radiation calculations. So here we try to
+                    % find the corresponding indexes only in the upper part
+                    % of the aoCapacities array, otherwise we might find it
+                    % more than once. 
+                    % The uniqueness check on the other hand is only
+                    % performed in the lower part. 
                     if length(this.aoCapacities) >= this.iFirstRadiativeCapacity
-                        for iCapacity = this.iFirstRadiativeCapacity:length(this.aoCapacities)
-                             if this.aoCapacities(iCapacity) == oLeftCapacity
-                                 iLeftCapacityIndex = iCapacity;
-                             end
-
-                             if this.aoCapacities(iCapacity) == oRightCapacity
-                                 iRightCapacityIndex = iCapacity;
-                             end
+                        
+                        abLeftCapacity = strcmp(csUUIDs(this.iFirstRadiativeCapacity:end), oLeftCapacity.sUUID);
+                        
+                        if sum(abLeftCapacity)
+                            iLeftCapacityIndex = find(abLeftCapacity);
                         end
-                        for iCapacity = 1:this.iFirstRadiativeCapacity
-                             if this.aoCapacities(iCapacity) == oLeftCapacity
-                                 bNonUniqueLeftCapacity = true;
-                             end
-                             
-                             if this.aoCapacities(iCapacity) == oRightCapacity
-                                 bNonUniqueRightCapacity = true;
-                             end
+                        
+                        abRightCapacity = strcmp(csUUIDs(this.iFirstRadiativeCapacity:end), oRightCapacity.sUUID);
+                        
+                        if sum(abRightCapacity)
+                            iRightCapacityIndex = find(abRightCapacity);
                         end
+                        
+                        abLeftCapacity = strcmp(csUUIDs(1:this.iFirstRadiativeCapacity-1), oLeftCapacity.sUUID);
+                        
+                        if sum(abLeftCapacity)
+                            bNonUniqueLeftCapacity = true;
+                        end
+                        
+                        abRightCapacity = strcmp(csUUIDs(1:this.iFirstRadiativeCapacity-1), oRightCapacity.sUUID);
+                        
+                        if sum(abRightCapacity)
+                            bNonUniqueRightCapacity = true;
+                        end
+                        
                     end
                 end
-                % Objects of different classes cannot be put into the same
-                % array if they do not inherit from the
-                % matlab.mixin.Heterogenous class
+                
+                % If one of the indexes was not found, i.e. is still zero,
+                % we add it to the aoCapacities array, mark it as unique
+                % and set the index to the end of the aoCapacities array.
                 if iLeftCapacityIndex == 0
-                    this.aoCapacities(end+1, 1)         = oLeftCapacity;
-                    this.abNonUniqueCapacity(end+1, 1)  = bNonUniqueLeftCapacity;
-                    iLeftCapacityIndex = length(this.aoCapacities);
+                    this.aoCapacities(end+1, 1)        = oLeftCapacity;
+                    this.abNonUniqueCapacity(end+1, 1) = bNonUniqueLeftCapacity;
+                    iLeftCapacityIndex                 = length(this.aoCapacities);
                 end
+                
                 if iRightCapacityIndex == 0
-                    this.aoCapacities(end+1, 1)         = oRightCapacity;
-                    this.abNonUniqueCapacity(end+1, 1)  = bNonUniqueRightCapacity;
-                    iRightCapacityIndex = length(this.aoCapacities);
+                    this.aoCapacities(end+1, 1)        = oRightCapacity;
+                    this.abNonUniqueCapacity(end+1, 1) = bNonUniqueRightCapacity;
+                    iRightCapacityIndex                = length(this.aoCapacities);
                 end
                 
                 % So here we perform the assignment of left and right side
@@ -361,7 +383,7 @@ classdef branch < base & event.source
                 % the beginning of this function. Since the
                 % resistance/conductivity changes in each tick, we cannot
                 % assign those yet
-                this.mfConnectivityMatrix(iBranch, iLeftCapacityIndex)   = 1;
+                this.mfConnectivityMatrix(iBranch, iLeftCapacityIndex)   =  1;
                 this.mfConnectivityMatrix(iBranch, iRightCapacityIndex)  = -1;
             end
             
