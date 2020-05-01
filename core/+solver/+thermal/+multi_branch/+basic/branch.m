@@ -4,9 +4,9 @@ classdef branch < base & event.source
 % mass flows, so add only non fluidic conductors to branches for this
 % solver! 
 % Note that it is not possibe to combine convective/conductive conductors
-% and radiative conductors in one solver, you have to seperate these heat
-% transfers so that the convective/conductive part and the radiative part
-% are solved seperatly
+% and radiative conductors in one solver branch, you have to separate these
+% heat transfers so that the convective/conductive part and the radiative
+% part are solved separatly
     
 %% Basic description of the basics for this solver
 % The thermal network consists of as many equations as there are branches.
@@ -16,12 +16,12 @@ classdef branch < base & event.source
 % temperature difference is between the temperatures^4 but that is handled
 % in the creation of the afTemperatures vector. So in the matrix, we
 % require 1 at the location of the corresponding capacity which is T1
-% (which is the left side of the thermal branch), and a -1 for each
-% capacity that represent T2 in the equation (the right side of the
+% (which is the left side of the thermal branch), and a -1 for the
+% capacity that represents T2 in the equation (the right side of the
 % branch).
 %
 % The heat flow can be calculated using: fHeatFlow = fDeltaTemperature /
-% fTotalThermalResistance Where fTotalThermalResistance is the total
+% fTotalThermalResistance, where fTotalThermalResistance is the total
 % thermal resistance from all conductors in the branch. Each of these
 % resistances must be updated beforehand and then summed up (within a
 % branch no parallel heat exchange is modelled, for that purpose multiple
@@ -32,10 +32,10 @@ classdef branch < base & event.source
 % fTotalThermalResistance
 %
 % The vector matrix system that we create only brings that into the
-% corresponding form. Let us assume we have 4 Capacity, which are connected
-% be 3 Branches in a 1D problem (capacity 1 is connected to capacity 2 and
-% so on). In that case the following vector matrix multiplication allows
-% you to calculate the delta temperatures
+% corresponding form. Let us assume we have 4 capacities, which are
+% connected by 3 Branches in a 1D problem (capacity 1 is connected to
+% capacity 2 and so on). In that case the following vector matrix
+% multiplication allows you to calculate the delta temperatures
 %
 %   System of Equations  | Temperatures |   	Delta T
 %   1	-1	  0     0           303               5
@@ -46,7 +46,7 @@ classdef branch < base & event.source
 % SoE   = [1 -1 0 0; 0 1 -1 0; 0 0 1 -1]
 % T     = [303; 298; 285; 276]
 %
-% However, we want not the delta between the temperatures but the branch
+% However, we don't want the delta between the temperatures but the branch
 % heat flows. For that purpose we transform the equation (T1 - T2)/ R into
 % T1/R - T2/R. If we assume a thermal resistance of 0.5 K/W for our example
 % for all conductors the system of equations becomes:
@@ -85,15 +85,17 @@ classdef branch < base & event.source
         % function
         aoCapacities;
         
-        % Boolean vektor which identifies radiative heat transfer branches
+        % Boolean vector which identifies radiative heat transfer branches
         % in the aoBranches property
         abRadiationBranches;
+        
         % Index of the first radiative heat transfer branch in aoBranches.
         % So this.aoBranch(this.iFirstRadiationBranch:end) returns all
         % radiative heat transfer branches
         iFirstRadiationBranch;
-        % Index of the first capacity connected to a raidative heat
-        % transfer branch in aoCapacities. So all
+        
+        % Index of the first capacity connected to a radiative heat
+        % transfer branch in aoCapacities. So
         % this.aoCapacities(this.iFirstRadiativeCapacity:end) returns all
         % of these capacities
         iFirstRadiativeCapacity;
@@ -103,12 +105,15 @@ classdef branch < base & event.source
         % to only trigger the temperature update for them once
         abNonUniqueCapacity;
         
-        % number of total branches in the network
+        % Number of branches in the network
         iBranches;
+        
+        % Number of capacities that are connected to the network
         iCapacities;
         
         % Last time the solver was updated
         fLastUpdate = -10;
+        
         % A flag to decide if the solver is already outdated or not
         bRegisteredOutdated = false;
         
@@ -129,7 +134,7 @@ classdef branch < base & event.source
         % branch there are two entries, a 1 (for the left capacity) and 
         % a -1 (for the right capacity). The matrix must be divided with
         % the current resistances before it can be used in heat flow
-        % calculations
+        % calculations.
         mfConnectivityMatrix;
         
         % As a performance enhancement, these booleans are set to true once
@@ -141,7 +146,7 @@ classdef branch < base & event.source
         bTriggerUpdateCallbackBound = false;
         bTriggerRegisterUpdateCallbackBound = false;
         
-        % Flag to decide if this solver needs to be recalculate for every
+        % Flag to decide if this solver needs to be recalculated for every
         % change in the heat flows of the attached capacities (e.g.
         % infinite conduction thermal solver). Flag is called residual
         % because the matter side residual solver was the first solver
@@ -167,7 +172,7 @@ classdef branch < base & event.source
     
     methods
         function this = branch(aoBranches)
-            % Please not that the aoBranches property is reordered in the 
+            % Please note that the aoBranches property is reordered in the 
             % initializeNetwork function!
             this.aoBranches = aoBranches;
             this.iBranches = length(this.aoBranches);
@@ -242,52 +247,65 @@ classdef branch < base & event.source
             % connectivity Matrix is defined here, allowing fast
             % calculation of the whole network in the update function
             
-            % Since it is possible to access property as follows:
+            % Since it is possible to access properties as follows:
             % afHeatFlows = [this.aoBranches.fHeatFlow]
             % We define an object array of the capacities for the normal
             % conductors and for the radiative conductors. From that we
             % also construct the overall object array of all capacities,
             % but keeping them seperate is easier initially
-            this.aoCapacities 	= thermal.capacity.empty();
+            this.aoCapacities = thermal.capacity.empty();
             
             % The matrix is not initialized with the correct size, because
             % we do not know yet how many capacities are actually present
             % in the network, but it is at least 1
             this.mfConnectivityMatrix = zeros(this.iBranches, 1);
             
-            % The first SoE is for all types of conductive heat transfer
-            % (conduction, convection etc) and the second type is for
-            % radiative heat transfer. Unfortunatly this would mean the
-            % index of the row for the matrix to no longer corresponds to
-            % the row in the aoBranches property. Therefore, we reorder the
-            % aoBranches property to move all radiative branches to the
-            % back of the array!
+            % The upper part of the connectivity matrix contains the SoE
+            % for conductive and convective heat transfer and the lower
+            % part contains the SoE for radiative heat transfer.
+            % Unfortunatly this would mean the index of the row for the
+            % matrix to no longer corresponds to the row in the aoBranches
+            % property. Therefore, we reorder the aoBranches property to
+            % move all radiative branches to the back of the array!
             this.abRadiationBranches = [this.aoBranches.bRadiative]';
             aoConductiveBranches = this.aoBranches(~this.abRadiationBranches);
             aoRadiativeBranches  = this.aoBranches(this.abRadiationBranches);
             this.aoBranches = [aoConductiveBranches; aoRadiativeBranches];
             this.abRadiationBranches = [this.aoBranches.bRadiative]';
             
+            % Since the lower part of the mfConnectivityMatrix may contain
+            % some of the same capacities as the upper part, we need to
+            % keep track of the capacities that are not unique to the
+            % radiation calculations.
             this.abNonUniqueCapacity = false(1,0);
             
+            % Getting the index of the first radiation branch
             this.iFirstRadiationBranch = find(this.abRadiationBranches, 1);
             
+            % Now we loop through all branches and populate the
+            % mfConnectivityMatrix accordingly.
             for iBranch = 1:this.iBranches
+                % Getting references to the two capacities of this branch
+                % to reduce the number of context changes.
                 oLeftCapacity  = this.aoBranches(iBranch).coExmes{1}.oCapacity;
                 oRightCapacity = this.aoBranches(iBranch).coExmes{2}.oCapacity;
                 
-                % for heterogenous object arrays it is not possible to use
-                % simple == comparisons therefore, we have to loop through
-                % the already defined capacities to find out if the
-                % capacities of this branch are already part of the network
+                % Initializing the index variables
                 iLeftCapacityIndex = 0;
                 iRightCapacityIndex = 0;
+                
+                % Initializing two booleans to capture if the capacities
+                % are unique within the network.
+                bNonUniqueLeftCapacity = false;
+                bNonUniqueRightCapacity = false;
+                
+                % If this is the first radiation branch, we store the
+                % current index of the aoCapacities array so we know which
+                % capacities belong to the radiation calculations.
                 if iBranch == this.iFirstRadiationBranch
                     this.iFirstRadiativeCapacity = length(this.aoCapacities) + 1;
                 end
                 
-                bNonUniqueLeftCapacity = false;
-                bNonUniqueRightCapacity = false;
                 
                 if iBranch < this.iFirstRadiationBranch
                     for iCapacity = 1:length(this.aoCapacities)
@@ -364,7 +382,7 @@ classdef branch < base & event.source
         function update(this)
             % update the thermal solver
             
-            % The first step is to divide the connectivity matrix with the
+            % The first step is to divide the connectivity matrix by the
             % resistances, so that the vector matrix operation of the
             % matrix times the temperatures results in the heat flows. We
             % call this the conductivity matrix, because basically every
@@ -382,21 +400,26 @@ classdef branch < base & event.source
                 % modelled through multiple branches!
                 afBranchResistances(iBranch) = sum(afResistances);
             end
+            
             % Now we can simply use a vector matrix operation to get the
             % current conductivity matrix
             mfConductivityMatrix = this.mfConnectivityMatrix ./ afBranchResistances;
             
+            % Getting the temperatures of all capacities.
             afTemperatures = [this.aoCapacities.fTemperature]';
-            % At the moment all temperatures are the basic temperatures, so
-            % now we have to include the radiative T^4:
+            
+            % Since the temperatures for the radiation calculation need to
+            % be raised to the power of 4, we do that to all temperatures
+            % in the lower part of the array. 
             afTemperatures(this.iFirstRadiativeCapacity:end) = afTemperatures(this.iFirstRadiativeCapacity:end).^4;
             
-            mfHeatFlows = mfConductivityMatrix * afTemperatures;
+            % Now we can finally calculate the heat flows. 
+            afHeatFlows = mfConductivityMatrix * afTemperatures;
             
             %% Now we set the heat flows to the branches:
             for iBranch = 1:this.iBranches
                 oBranch = this.aoBranches(iBranch);
-                fHeatFlow = mfHeatFlows(iBranch);
+                fHeatFlow = afHeatFlows(iBranch);
                 % set heat flows to exmes
                 oBranch.coExmes{1}.setHeatFlow(fHeatFlow);
                 oBranch.coExmes{2}.setHeatFlow(fHeatFlow);
