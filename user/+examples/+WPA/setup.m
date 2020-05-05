@@ -25,7 +25,7 @@ classdef setup < simulation.infrastructure
             %ttMonitorConfig = struct();
             ttMonitorConfig = struct('oLogger', struct('cParams', {{ true, 200000 }}));
             this@simulation.infrastructure('MFBED', ptConfigParams, tSolverParams, ttMonitorConfig);
-            muma.WPA.systems.MFBED(this.oSimulationContainer,'MFBED');
+            examples.WPA.systems.Example(this.oSimulationContainer,'Example');
             %% Simulation length
             
             this.fSimTime = 86400 * 12;  % 12; % In seconds

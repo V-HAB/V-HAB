@@ -229,5 +229,17 @@ Clminus;ChlorineIon;liquid;0.035453;0;-1;172.15;238.55;2.95;480;;;;;;;
 DietaryFiber;DietaryFiber;solid;2000;0;0;;;1000;4186;;;;;Molecular Weight according to: doi: 10.1021/jf801280f,  heat capacity and density value for H2O at 1 bar and 20°C;;For Energy Content: https://www.accessdata.fda.gov/scripts/InteractiveNutritionFactsLabel/factsheets/Total_Fat.pdf
 C3H7NO2;Alanine;liquid;;16736000;0;;;1000;4186;;;;;heat capacity and density value for H2O at 1 bar and 20°C;;For Energy Content: https://www.accessdata.fda.gov/scripts/InteractiveNutritionFactsLabel/factsheets/Protein.pdf
 C51H98O6;PalmitateTricylglyceride;liquid;;37656000;0;;;1000;4186;;;;;;;
-LiOHH2O;LithiumHydroxideHydrate;solid;0.04196;0;0;735;;1510;2271;;;;;;
-Li2CO3;LithiumCarbonate;solid;0.07398;0;0;996;1580;2110;1316.5720464991;;;;;;
+LiOHH2O;LithiumHydroxideHydrate;solid;0.04196;0;0;735;;1510;2271;;;;;;;
+Li2CO3;LithiumCarbonate;solid;0.07398;0;0;996;1580;2110;1316.572046;;;;;;;
+C4H7O2; Butyrate;liquid;0.087098;0;-1;283;610;1840;1320;;;;;;;
+CH3COO;Acetate;liquid;0.059044;0;-1;283;610;1840;1320;;;;;;;
+CMT;SodiumCoconutAcid-n-methyl-taurante;liquid;0.334;0;-1;283;610;1840;1320;;;;;;;
+C2H6O;Ethanol;liquid;0.04607;0;0;158.65;351.47;789.3;2500;;;;;;;
+C18H29NaO3S;SodiumDodecylBenzeneSulfonate;solid;0.34848;0;0;572;1010;1840;1320;;;;;;;
+C30H50;Squalene;liquid;0.410718;0;0;268;548;858;1320;;;;;;;
+C3H6O3;LacticAcid;liquid;0.09008;0;0;290;395;1210;1320;;;;;;;
+CH2O2;FormicAcid;liquid;0.04603;0;0;281.5;374;1220;1320;;;;;;;
+C3H8O2;Propylenglykol;liquid;0.07609;0;0;218;391;1040;1320;;;;;;;
+CH2O;Formaldehyd;gas;0.03003;0;0;156;254;820;1320;;;;;;;
+C2H6O2;Ethylenglycol;liquid;0.06207;0;0;257;470;1110;1320;;;;;;;
+C3H6O;Aceton;liquid;0.05808;0;-1;178;329;784;1320;;;;;;;
