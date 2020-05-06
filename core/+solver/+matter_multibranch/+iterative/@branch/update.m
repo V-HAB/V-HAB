@@ -505,6 +505,14 @@ function update(this)
     % would no longer be valid!
     this.updateNetwork(false);
     
+    % The network of branches can be fairly complex. Since it is difficult
+    % to capture all possibilities and edge cases in this generic code, it
+    % can occur that the same branches are placed on multiple update
+    % levels. In order to prevent them from actually being updated multiple
+    % times, we create this boolean array, initialize it with false values
+    % and set them to true once the branch has been updated. 
+    abAlreadyUpdated = false(this.iBranches,1);
+    
     % Ok now go through results - variable pressure phase pressures and
     % branch flow rates - and set! This must be done in the update order of
     % the branches to ensure that the variable pressure phase have already
@@ -512,16 +520,37 @@ function update(this)
     % arPartialMass values of the flow nodes are still 0
     for iBL = 1:this.iBranchUpdateLevels
         
+        % Getting the indexes of all branches on this update level.
         miCurrentBranches = find(this.mbBranchesPerUpdateLevel(iBL,:));
         
+        % Looping through all current branches
         for iK = 1:length(miCurrentBranches)
             
+            % Getting the index of the current branch
             iB = miCurrentBranches(iK);
             
+            % If we have already updated this branch, we skip to the next
+            % one. 
+            if abAlreadyUpdated(iB)
+                continue;
+            end
+            
+            % Initializing an array in which we capture the delta pressures
+            % produced by the F2F procs in this branch
             afDeltaPressures = zeros(1,this.aoBranches(iB).iFlowProcs);
+            
+            % Looping through all F2F procs and saving their delta
+            % pressures. We only do this for the non-active procs.
             for iF2F = 1:this.aoBranches(iB).iFlowProcs
                 if ~this.aoBranches(iB).aoFlowProcs(iF2F).bActive
                     afDeltaPressures(iF2F) = this.aoBranches(iB).aoFlowProcs(iF2F).fDeltaPressure;
+                    bActiveBranch = false;
+                else
+                    % Setting the bActiveBranch variable to true. In the
+                    % current version of this solver, only one F2F can be
+                    % in the branch if it is active. So we don't need to
+                    % look for other F2Fs here.
+                    bActiveBranch = true;
                 end
             end
             
@@ -536,10 +565,17 @@ function update(this)
                 % cases. E.g. desorbing CO2 into vacuum where the phase
                 % pressures are also very small. Therefore we limit the
                 % pressure drops from F2Fs in the branch to the total
-                % pressure difference in the branch
-                fPressureDifferenceBranch = sign(this.afFlowRates(iB)) * (this.aoBranches(iB).coExmes{1}.oPhase.fPressure - this.aoBranches(iB).coExmes{2}.oPhase.fPressure);
-                if sum(afDeltaPressures) > fPressureDifferenceBranch
-                    afDeltaPressures = afDeltaPressures .* (fPressureDifferenceBranch/sum(afDeltaPressures));
+                % pressure difference in the branch. Of course, we only do
+                % this if this is not an active branch. In that case we
+                % just set the delta pressures to the pressure after the
+                % active component.
+                if bActiveBranch
+                    afDeltaPressures = this.aoBranches(iB).aoFlowProcs(1).fDeltaPressure;
+                else
+                    fPressureDifferenceBranch = sign(this.afFlowRates(iB)) * (this.aoBranches(iB).coExmes{1}.oPhase.fPressure - this.aoBranches(iB).coExmes{2}.oPhase.fPressure);
+                    if sum(afDeltaPressures) > fPressureDifferenceBranch
+                        afDeltaPressures = afDeltaPressures .* (fPressureDifferenceBranch/sum(afDeltaPressures));
+                    end
                 end
                 
                 % If this branch is choked, we need to use different values
@@ -552,6 +588,9 @@ function update(this)
                 % Now we can call the setFlowRate callback.
                 this.chSetBranchFlowRate{iB}(this.afFlowRates(iB), afDeltaPressures);
             end
+            
+            % Marking this branch as updated so we don't do it again.
+            abAlreadyUpdated(iB) = true;
         end
     end
     
