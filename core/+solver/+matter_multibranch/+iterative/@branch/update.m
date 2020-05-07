@@ -281,7 +281,10 @@ function update(this)
             % case we only solve the flowrates, as the pressures cannot be
             % solved. Therefore, we set a flag to use the boundary
             % pressures for the phase pressures
+            warning('off','all');
             afResults = mfPhasePressuresAndFlowRates(iStartZeroSumEquations:end,:) \ afBoundaryConditions(iStartZeroSumEquations:end);
+            warning('on','all');
+            
             bSolveOnlyFlowrates = true;
             % TBD: decide if we need a better way to get the pressures in
             % this case. E.g. find out which boundary phase affects which
@@ -321,7 +324,7 @@ function update(this)
                     end
                 end
             elseif strcmp(oObj.sObjectType, 'phase')
-            	if bSolveOnlyFlowrates
+                if bSolveOnlyFlowrates
                     oObj.setPressure(fAverageBoundaryPressure);
                 else
                     if afResults(iColumn) < 0
@@ -331,7 +334,7 @@ function update(this)
                         % initialization is at low flow rates. We ignore this
                         % value here and hopefully the solver will calculate
                         % something better in the next iteration. Just in case,
-                        % we record the objects here to help with debugging. 
+                        % we record the objects here to help with debugging.
                         toPhasesWithNegativePressures.(oObj.sUUID) = oObj;
                     else
                         oObj.setPressure(afResults(iColumn));
