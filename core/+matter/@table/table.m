@@ -393,6 +393,16 @@ classdef table < base
             sCurrentElement = '';          %
             sAtomCount   = '';
             
+            % Remove ion denominators from the name of the molecule
+            iPlusStart = regexp(sMolecule, 'plus', 'once');
+            if ~isempty(iPlusStart)
+                sMolecule(iPlusStart:iPlusStart + 3) = [];
+            end
+            iMinusStart = regexp(sMolecule, 'minus', 'once');
+            if ~isempty(iMinusStart)
+                sMolecule(iMinusStart:iMinusStart + 4) = [];
+            end
+            
             % Going through the input string character by character
             for iI = 1:length(sMolecule)
                 % Setting a variable for the current letter for better

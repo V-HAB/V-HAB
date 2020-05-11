@@ -26,7 +26,12 @@ classdef setup < simulation.infrastructure
     methods
         function this = setup(ptConfigParams, tSolverParams)
             %ttMonitorConfig = struct();
+            
             ttMonitorConfig = struct('oLogger', struct('cParams', {{ true, 200000 }}));
+            
+            ttMonitorConfig.oTimeStepObserver.sClass = 'simulation.monitors.timestepObserver';
+            ttMonitorConfig.oTimeStepObserver.cParams = { 0 };
+            
             this@simulation.infrastructure('MFBED', ptConfigParams, tSolverParams, ttMonitorConfig);
             examples.WPA.systems.Example(this.oSimulationContainer,'Example');
             %% Simulation length
@@ -46,7 +51,6 @@ classdef setup < simulation.infrastructure
             oWPA = this.oSimulationContainer.toChildren.Example.toChildren.WPA;
             
             this.tiLogIndexes.WPA.Masses(1)                  = oLog.addValue('Example:c:WPA.toStores.WasteWater.toPhases.Water',	'fMass',      'kg',     'WPA Waste Water Mass');
-            this.tiLogIndexes.WPA.Masses(2)                  = oLog.addValue('Example:c:WPA.toStores.Delay_Tank.toPhases.Water',	'fMass',      'kg',     'WPA Delayed Water Mass');
              
             this.tiLogIndexes.WPA.Flowrates(1)               = oLog.addValue('Example:c:WPA.toBranches.Inlet',                      'fFlowRate',  'kg/s',   'WPA Inflow');
             this.tiLogIndexes.WPA.Flowrates(2)               = oLog.addValue('Example:c:WPA.toBranches.Outlet',                     'fFlowRate',  'kg/s',   'WPA Outflow');
