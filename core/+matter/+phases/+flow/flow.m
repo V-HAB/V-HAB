@@ -183,7 +183,7 @@ classdef (Abstract) flow < matter.phase
                 % absolute flow-rates for the different substances
                 % Also depends on normal inflow branches, so do not include
                 % with the fInwardsFlowRates check.
-                if ~isempty(this.toManips.substance) && ~isempty(this.toManips.substance.afPartialFlows)
+                if this.iSubstanceManipulators > 0 && ~isempty(this.toManips.substance.afPartialFlows)
                     % The sum() of the flow rates of a substance manip
                     % should always be zero. Therefore, split positive and
                     % negative rates and see as two flows.

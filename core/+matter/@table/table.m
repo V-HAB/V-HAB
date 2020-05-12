@@ -84,6 +84,12 @@ classdef table < base
         % can correctly calculate the nutritional content
         afNutritionalEnergy;
         
+        % An array containing the dissocication constants for the
+        % corresponding substances. For acids, it contains the acid
+        % dissociation constants, for bases it contains the base
+        % dissociation constant
+        afDissociationConstant;
+        
         % This struct maps all substance names according to an index, hence
         % the name N2I, for 'name to index'. The index corresponds to the
         % order in which the substances are stored in ttxMatter.
@@ -284,8 +290,9 @@ classdef table < base
                 end
                 
                 % And finally we create an entry in the molar mass array.
-                this.afMolarMass(iI) = fMolarMass;
-                this.aiCharge(iI)    = tSubstance.iCharge;
+                this.afMolarMass(iI)            = fMolarMass;
+                this.aiCharge(iI)               = tSubstance.iCharge;
+                this.afDissociationConstant(iI)	= tSubstance.fDissociationConstant;
                 
                 this.afNutritionalEnergy(iI) = tSubstance.fNutritionalEnergy;
             end
