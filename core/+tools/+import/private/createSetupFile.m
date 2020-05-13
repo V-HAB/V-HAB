@@ -30,12 +30,12 @@ fprintf(sSetupFileID, '\n');
 fprintf(sSetupFileID, [' this@simulation.infrastructure(''', sRootName,  ''', ptConfigParams, tSolverParams, ttMonitorConfig);\n']);
 
 fprintf(sSetupFileID, '         %s Defining Compound Masses for the Simulation\n', '%');
-fprintf(sSetupFileID, '         trBaseCompositionUrine.H2O      = 0.9644;');
-fprintf(sSetupFileID, '         trBaseCompositionUrine.C2H6O2N2 = 0.0356;');
-fprintf(sSetupFileID, '         this.oSimulationContainer.oMT.defineCompoundMass(this, ''Urine'', trBaseCompositionUrine);');
-fprintf(sSetupFileID, '         trBaseCompositionFeces.H2O          = 0.7576;');
-fprintf(sSetupFileID, '         trBaseCompositionFeces.C42H69O13N5  = 0.2424;');
-fprintf(sSetupFileID, '         this.oSimulationContainer.oMT.defineCompoundMass(this, ''Feces'', trBaseCompositionFeces);');
+fprintf(sSetupFileID, '         trBaseCompositionUrine.H2O      = 0.9644;\n');
+fprintf(sSetupFileID, '         trBaseCompositionUrine.C2H6O2N2 = 0.0356;\n');
+fprintf(sSetupFileID, '         this.oSimulationContainer.oMT.defineCompoundMass(this, ''Urine'', trBaseCompositionUrine);\n');
+fprintf(sSetupFileID, '         trBaseCompositionFeces.H2O          = 0.7576;\n');
+fprintf(sSetupFileID, '         trBaseCompositionFeces.C42H69O13N5  = 0.2424;\n');
+fprintf(sSetupFileID, '         this.oSimulationContainer.oMT.defineCompoundMass(this, ''Feces'', trBaseCompositionFeces);\n');
 
 fprintf(sSetupFileID, '         %s Creating the root object\n', '%');
 fprintf(sSetupFileID, ['        DrawIoImport.', sSystemLabel, '.systems.', sRootName, '(this.oSimulationContainer, ''',  sRootName,''');\n\n']);
