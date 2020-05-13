@@ -159,16 +159,16 @@ classdef branch < base.branch
             % must be called before this function is called. Usually while
             % registering the update for the solver
             
-            % set the new heat flow
+            % Set the new heat flow
             this.fHeatFlow = fHeatFlow;
             
-            % set new temperature vector
+            % Set new temperature vector
             this.afTemperatures = afTemperatures;
             
-            % now we are no longer outdated, but up-to-date
+            % Now we are no longer outdated, but up-to-date
             this.bOutdated = false;
             
-            % if any call is bound to the setHeatFlow trigger of the branch
+            % If any call is bound to the setHeatFlow trigger of the branch
             % we execute the trigger, otherwise it is skipped
             if this.bTriggersetHeatFlowCallbackBound
                 this.trigger('setHeatFlow');

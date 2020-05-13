@@ -205,7 +205,7 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
             [ ~, this.chUnbindFunctions{end+1} ] = this.oContainer.bind('ThermalSeal_post',@(~)this.setInitialHeatCapacity());
             
             
-            % Set name of capacity.
+            % Set name of capacity
             this.sName = oPhase.sName;
             
             % Initialize the heat source cell
@@ -218,11 +218,12 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
             % Register the first temperature update
             this.hBindPostTickTemperatureUpdate();
             
-            % Bind the .update method to the timer, with a time step of 0
-            % (i.e. smallest step), will be adapted after each .update
+            % Bind the .registerUpdateTemperature method to the timer, with
+            % a time step of 0 (i.e. smallest step), will be adapted after
+            % each .registerUpdateTemperature
             [this.setTimeStep, this.chUnbindFunctions{end+1}] = this.oTimer.bind(@(~) this.registerUpdateTemperature(), 0, struct(...
-                'sMethod', 'update', ...
-                'sDescription', 'The .update method of a phase', ...
+                'sMethod', 'registerUpdateTemperature', ...
+                'sDescription', 'The .registerUpdateTemperature method of a phase', ...
                 'oSrcObj', this ...
             ));
         end
@@ -254,9 +255,9 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
                     this.out(1, 1, 'name', '%s-%s-%s', { this.oContainer.sName, this.oPhase.oStore.sName, this.sName });
 
                     this.out(1, 2, 'last', 'fSpecificHeatCapacity:              %f [J/(kg*K)]', { this.fSpecificHeatCapacity });
-                    this.out(1, 2, 'last', 'fMass:                              %f [kg]', { sum(this.arPartialMassLastHeatCapacityUpdate) });
-                    this.out(1, 2, 'last', 'fPressureLastHeatCapacityUpdate:    %f [Pa]', { this.fPressureLastHeatCapacityUpdate });
-                    this.out(1, 2, 'last', 'fTemperatureLastHeatCapacityUpdate: %f [K]', { this.fTemperatureLastHeatCapacityUpdate });
+                    this.out(1, 2, 'last', 'fMass:                              %f [kg]',       { sum(this.arPartialMassLastHeatCapacityUpdate) });
+                    this.out(1, 2, 'last', 'fPressureLastHeatCapacityUpdate:    %f [Pa]',       { this.fPressureLastHeatCapacityUpdate });
+                    this.out(1, 2, 'last', 'fTemperatureLastHeatCapacityUpdate: %f [K]',        { this.fTemperatureLastHeatCapacityUpdate });
                 end
                 
                 % Actually updating the specific heat capacity
@@ -270,9 +271,9 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
                 
                 if ~base.oDebug.bOff
                     this.out(1, 2, 'curr', 'fSpecificHeatCapacity:              %f [J/(kg*K)]', { this.fSpecificHeatCapacity });
-                    this.out(1, 2, 'curr', 'fMass:                              %f [kg]', { sum(this.arPartialMassLastHeatCapacityUpdate) });
-                    this.out(1, 2, 'curr', 'fPressureLastHeatCapacityUpdate:    %f [Pa]', { this.fPressureLastHeatCapacityUpdate });
-                    this.out(1, 2, 'curr', 'fTemperatureLastHeatCapacityUpdate: %f [K]', { this.fTemperatureLastHeatCapacityUpdate });
+                    this.out(1, 2, 'curr', 'fMass:                              %f [kg]',       { sum(this.arPartialMassLastHeatCapacityUpdate) });
+                    this.out(1, 2, 'curr', 'fPressureLastHeatCapacityUpdate:    %f [Pa]',       { this.fPressureLastHeatCapacityUpdate });
+                    this.out(1, 2, 'curr', 'fTemperatureLastHeatCapacityUpdate: %f [K]',        { this.fTemperatureLastHeatCapacityUpdate });
                 end
             end
         end
@@ -862,8 +863,7 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
             % Loop through exmes / flows and set outdated, i.e. request
             % recalculation of flow rate.
             for iE = 1:this.iProcsEXME
-                oExme   = this.aoExmes(iE);
-                oBranch = oExme.oBranch;
+                oBranch = this.aoExmes(iE).oBranch;
                     
                 if bResidual && ~isempty(oBranch.oHandler) && ~oBranch.oHandler.bResidual
                     continue
