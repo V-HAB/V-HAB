@@ -612,10 +612,6 @@ classdef timer < base
                         while any(this.cabPostTickControl{iPostTickGroup, iPostTickLevel})
                             abExecutePostTicks = this.cabPostTickControl{iPostTickGroup, iPostTickLevel};
 
-                            % Now we store the cell array containing the
-                            % function handles for easier access
-                            chCurrentPostTicks = this.chPostTicks(iPostTickGroup, iPostTickLevel,:);
-
                             % And get the indices that should be executed
                             % in this tick
                             aiPostTicksToExecute = find(abExecutePostTicks);
@@ -625,7 +621,8 @@ classdef timer < base
                             for iIndex = 1:sum(abExecutePostTicks)
                                 iPostTick = aiPostTicksToExecute(iIndex);
         
-                                chCurrentPostTicks{iPostTick}();
+                                this.chPostTicks{iPostTickGroup, iPostTickLevel, iPostTick}();
+                                
                                 % The booelans are set to false after the
                                 % calculation to prevent the currently
                                 % executing post tick from binding an
@@ -663,13 +660,12 @@ classdef timer < base
                 while any(this.cabPostTickControl{iPostTickGroup, iPostTickLevel})
                     abExecutePostTicks = this.cabPostTickControl{iPostTickGroup, iPostTickLevel};
 
-                    chCurrentPostTicks = this.chPostTicks(iPostTickGroup, iPostTickLevel,:);
-
                     aiPostTicksToExecute = find(abExecutePostTicks);
                     for iIndex = 1:sum(abExecutePostTicks)
                         iPostTick = aiPostTicksToExecute(iIndex);
                         
-                        chCurrentPostTicks{iPostTick}();
+                        this.chPostTicks{iPostTickGroup, iPostTickLevel, iPostTick}();
+                    
                         % The booelans are set to false after the
                         % calculation to prevent the currently executing
                         % post tick from binding an update directly again
