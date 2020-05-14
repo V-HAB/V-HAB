@@ -5,7 +5,7 @@ classdef (Abstract) container < sys
     
     properties (SetAccess = protected, GetAccess = public)
         % An array containing all circuits of this electrical system
-        aoCircuits = electrical.circuit.empty();
+        aoCircuits;
         
         % A struct containing all circuits of this electrical system
         toCircuits = struct();
@@ -23,6 +23,8 @@ classdef (Abstract) container < sys
         function this = container(oParent, sName)
             % Calling the parent constructor
             this@sys(oParent, sName);
+            
+            this.aoCircuits = electrical.circuit.empty();
             
         end
     end

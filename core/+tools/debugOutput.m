@@ -1,7 +1,5 @@
-classdef debugOutput < event.source % base % & 
-    %DEBUGOUTPUT Summary of this class goes here
-    %   Detailed explanation goes here
-    
+classdef debugOutput < handle
+    %DEBUGOUTPUT Handels global debugging output using out()
     
     properties (GetAccess = public, Constant)
         MESSAGE = 1;
@@ -198,6 +196,7 @@ classdef debugOutput < event.source % base % &
             
             this.bCollect = bCollect;
         end
+        
     end
     
 end

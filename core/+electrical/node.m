@@ -12,7 +12,7 @@ classdef node < base
         fVoltage;
         
         % An array containing references to all terminals of this node
-        aoTerminals = electrical.terminal.empty();
+        aoTerminals;
         
         % A struct containing references to all terminals of this node
         toTerminals = struct();
@@ -42,6 +42,8 @@ classdef node < base
             
             % Adding this node to the ciruit.
             this.oCircuit.addNode(this);
+            
+            this.aoTerminals = electrical.terminal.empty();
             
         end
         

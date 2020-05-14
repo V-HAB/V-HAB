@@ -26,7 +26,7 @@ classdef circuit < base & event.source
         iStores;
         
         % An array of all node objects in this circuit
-        aoNodes = electrical.node.empty();
+        aoNodes;
         
         % A struct of all node objects in this circuit
         toNodes = struct();
@@ -41,7 +41,7 @@ classdef circuit < base & event.source
         toComponents = struct();
         
         % An array of all branches in this circuit
-        aoBranches = electrical.branch.empty();
+        aoBranches;
         
         % A struct of all branches in this circuit
         toBranches = struct();
@@ -70,6 +70,10 @@ classdef circuit < base & event.source
             
             % Adding ourselves to the parent object. 
             this.oParent.addCircuit(this);
+            
+            this.aoNodes = electrical.node.empty();
+            
+            this.aoBranches = electrical.branch.empty();
                         
         end
         
