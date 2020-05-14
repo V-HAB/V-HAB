@@ -1,5 +1,5 @@
 classdef setup < simulation.infrastructure
-    %SETUP This class is used to setup a simulation
+    %SETUP Test for logging with dumping, time step and mass balance observers
     %   There should always be a setup file present for each project. It is
     %   used for the following:
     %   - instantiate the root object
@@ -15,13 +15,27 @@ classdef setup < simulation.infrastructure
         % Constructor function
         function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig) 
             
-             % First we call the parent constructor and tell it the name of
+            % Passing parameters for dumping and pre-allocating to the
+            % logger.
+            ttMonitorConfig.oLogger = struct('cParams', {{ true, 100000 }});
+            
+            % Activating the time step observer monitor. Use this for
+            % debugging only since it slows down the simulation a bit.
+            ttMonitorConfig.oTimeStepObserver = struct('sClass', 'simulation.monitors.timestepObserver', 'cParams', {{ 0 }});
+            
+            ttMonitorConfig.oMassBalanceObserver.sClass = 'simulation.monitors.massbalanceObserver';
+            fAccuracy = 1e-8;
+            fMaxMassBalanceDifference = inf;
+            bSetBreakPoints = false;
+            ttMonitorConfig.oMassBalanceObserver.cParams = { fAccuracy, fMaxMassBalanceDifference, bSetBreakPoints };
+            
+            % First we call the parent constructor and tell it the name of
             % this simulation we are creating.
-            this@simulation.infrastructure('Test_Boundaries', ptConfigParams, tSolverParams, ttMonitorConfig);
+            this@simulation.infrastructure('Test_Monitors', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             % Creating the 'Example' system as a child of the root system
             % of this simulation. 
-            tests.boundaries.systems.Example(this.oSimulationContainer, 'Example');
+            tutorials.simple_flow.systems.Example(this.oSimulationContainer, 'Example');
             
             % Setting the simulation duration to one hour. Time is always
             % in units of seconds in V-HAB.

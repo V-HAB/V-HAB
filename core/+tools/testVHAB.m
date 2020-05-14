@@ -164,7 +164,7 @@ if (bChanged || bForceExecution)
         % Now we can get the number of workers
         iNumberOfWorkers = oPool.NumWorkers;
 
-    catch
+    catch %#ok<CTCH>
         % We can't do parallel execution, so we set this to false.
         bParallelExecution = false;
         
@@ -353,8 +353,7 @@ if (bChanged || bForceExecution)
                         % the following logic in a try catch block. 
                         try
                             tTests(iI) = fetchOutputs(aoResultObjects(iI));
-                            
-                        catch
+                        catch %#ok<CTCH>
                             tTests(iI).sStatus = 'Cancelled';
                         end
                         
@@ -489,7 +488,7 @@ if strcmp(sCompareToState, 'server')
         if strcmp(Msg.identifier, 'MATLAB:load:couldNotReadFile')
             % if the file does not exists we inform the user that something
             % went wrong
-            error('The file user\+tests\ServerTestStatus.mat does not exist. Please check if you accidentially deleted it and if so revert that change.')
+            error('TestVHAB:FileNotFound','The file user\+tests\ServerTestStatus.mat does not exist. Please check if you accidentially deleted it and if so revert that change.')
         else
             rethrow(Msg)
         end
@@ -602,7 +601,7 @@ disp(tools.secs2hms(toc(hTimer)));
         % closing of the waitbar. 
         try
             tools.multiWaitbar(tTests(xInput(1)).name, xInput(2));
-        catch
+        catch %#ok<CTCH>
             tools.multiWaitbar(tTests(xInput(1)).name, 'Close');
         end
     end
