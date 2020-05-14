@@ -697,6 +697,13 @@ classdef branch < base & event.source
                 iColIndex = iColIndex + 1;
                 oBranch = this.aoBranches(iBranch);
                 
+                % Check to see if an active processor is alone in the
+                % branch.
+                if oBranch.iFlowProcs > 1 && any([oBranch.aoFlowProcs.bActive])
+                    sProcName = oBranch.aoFlowProcs([oBranch.aoFlowProcs.bActive]).sName;
+                    error('MatterMultiBranch:ActiveComponentNotAlone', 'One of the components in branch ''%s'' is active. Active component: ''%s''. When using the multi-branch solver in the matter domain, active components must be the only f2f processors in the branch.', oBranch.sName, sProcName);
+                end
+                
                 this.tiObjUuidsToColIndex.(oBranch.sUUID) = iColIndex;
                 this.coColIndexToObj{iColIndex} = oBranch;
                 
