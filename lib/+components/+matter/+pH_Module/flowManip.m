@@ -232,6 +232,16 @@ classdef flowManip < matter.manips.substance.flow
                 
                 warning('ON', 'all')
                 
+                % Since the solution of the system of equation is numerical
+                % slight negative values might occur from numerical erros,
+                % these are rounded. Other errors result in a stop
+                abNegative = afConcentrations < 0;
+                if all(abs(afConcentrations(abNegative)) < 1e-10)
+                    afConcentrations(abNegative) = 0;
+                else
+                    error(['something in the pH calculation of phase ', this.oPhase.sName, ' in store ', this.oPhase.oStore.sName, ' went wrong'])
+                end
+                
                 afInitialConcentrations = ((afPartialInFlows ./ this.oMT.afMolarMass) ./ fVolumetricFlowRate);
 
                 afConcentrationDifference = afInitialConcentrations - afConcentrations';
