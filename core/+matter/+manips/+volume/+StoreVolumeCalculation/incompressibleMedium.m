@@ -8,19 +8,31 @@ classdef incompressibleMedium < matter.manips.volume.step
     % calculated through the matter table and therefore considers
     % compression!
     
+    properties (SetAccess = protected, GetAccess = public)
+        % We store the reference to the compressible manip, because for
+        % incompressible mediums, we use the pressure of that phase as
+        % pressure for the incompressible phases!
+        oCompressibleManip;
+    end
+    
     properties (Constant)
-        % Identifies this manipualtor as a stationary volume manipulator
+        % Identifies this manipulator as a stationary volume manipulator
         bCompressible = false;
     end
     
     methods
-        function this = incompressibleMedium(sName, oPhase)
+        function this = incompressibleMedium(sName, oPhase, oCompressibleManip)
             %% incompressibleMedium class constructor
+            % since the incompressible volume manipulator cannot be used by
+            % itself, it requires the handin of the corresponding
+            % compressible volume manipulator!
             this@matter.manips.volume.step(sName, oPhase);
             % bind the update function to the update of the connected
             % phase, as an update signifies a sufficiently large change in
             % mass of the incompressible phase to necessitate a volume
             % recalculation
+            
+            this.oCompressibleManip = oCompressibleManip;
         end
     end
     methods (Access = protected)

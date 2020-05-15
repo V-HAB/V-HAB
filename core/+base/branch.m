@@ -131,6 +131,11 @@ classdef (Abstract) branch < base & event.source
             % Setting the branch type
             this.sType = sType;
             
+            % If the user provided a custom name, we also set that
+            % property.
+            if nargin >= 4
+                this.sCustomName = sCustomName;
+            end
             %% Handle the left side of the branch
             sLeftSideName = this.handleSide('left', xLeft);
             
@@ -163,11 +168,6 @@ classdef (Abstract) branch < base & event.source
             % Setting the sName property
             this.sName = tools.normalizePath(sTempName);
             
-            % If the user provided a custom name, we also set that
-            % property.
-            if nargin >= 4
-                this.sCustomName = sCustomName;
-            end
         end
         
         
@@ -528,58 +528,7 @@ classdef (Abstract) branch < base & event.source
                 % or ending a branch here. 
                 
                 if bCreatePort
-                    % This side was provided as an object, so we need to
-                    % create a port there first.
-                    
-                    % To automatically generate the port name, we need to
-                    % get the struct with ports.
-                    if strcmp(this.sType, 'matter')
-                        toPorts = xInput.toProcsEXME;
-                    elseif strcmp(this.sType, 'thermal')
-                        try
-                            toPorts = xInput.oCapacity.toProcsEXME;
-                        catch 
-                            toPorts = xInput.toProcsEXME;
-                        end
-                    elseif strcmp(this.sType, 'electrical')
-                        toPorts = xInput.toTerminals;
-                    end
-                    
-                    % Now we can calculate the port number
-                    if isempty(toPorts)
-                        iNumber = 1;
-                    else
-                        iNumber = numel(fieldnames(toPorts)) + 1;
-                    end
-                    
-                    % And with the port number we can create a unique port
-                    % name. 
-                    sPortName = sprintf('Port_%i',iNumber);
-                    
-                    % Now we can actually create the port on the object and
-                    % give it its name. We also set the side name,
-                    % depending on the domain we are in. The side name is
-                    % of the format <ObjectName>__<PortName> and  the
-                    % object can either be a matter store, a thermal
-                    % capacity, an electrical component or an electrical
-                    % node.
-                    if strcmp(this.sType, 'matter')
-                        oExMe = matter.procs.exmes.(xInput.sType)(xInput, sPortName);
-                        sSideName = [xInput.oStore.sName, '__', sPortName];
-                    elseif strcmp(this.sType, 'thermal')
-                        try
-                            oExMe = thermal.procs.exme(xInput.oCapacity, sPortName);
-                            sSideName = [xInput.oStore.sName, '__', sPortName];
-                        catch
-                            oExMe = thermal.procs.exme(xInput, sPortName);
-                            sSideName = [xInput.oPhase.oStore.sName, '__', sPortName];
-                        end
-                    elseif strcmp(this.sType, 'electrical')
-                        oExMe = electrical.terminal(xInput, sPortName);
-                        sSideName = [xInput.sName, '__', sPortName];
-                    end
-                    
-                    
+                    [oExMe, sSideName] = this.createPorts(xInput);
                 else
                     % xInput is a string containing the name of an object
                     % and a port.
@@ -684,7 +633,62 @@ classdef (Abstract) branch < base & event.source
                 
             end
         end
-        
+        function [oExMe, sSideName] = createPorts(this, xInput)
+            % This function is used to automatically generated the ExMe
+            % ports required for the branch in case only phases where
+            % handed to the branch definition
+            
+            % To automatically generate the port name, we need to
+            % get the struct with ports.
+            if strcmp(this.sType, 'matter')
+                toPorts = xInput.toProcsEXME;
+            elseif strcmp(this.sType, 'thermal')
+                try
+                    toPorts = xInput.oCapacity.toProcsEXME;
+                catch %#ok<CTCH>
+                    toPorts = xInput.toProcsEXME;
+                end
+            elseif strcmp(this.sType, 'electrical')
+                toPorts = xInput.toTerminals;
+            end
+
+            % Now we can calculate the port number
+            if isempty(toPorts)
+                iNumber = 1;
+            else
+                iNumber = numel(fieldnames(toPorts)) + 1;
+            end
+
+            % And with the port number we can create a unique port
+            % name. 
+            sPortName = sprintf('Port_%i',iNumber);
+
+            if ~isempty(this.sCustomName)
+                sPortName = [sPortName, '_', this.sCustomName];
+            end
+            % Now we can actually create the port on the object and
+            % give it its name. We also set the side name,
+            % depending on the domain we are in. The side name is
+            % of the format <ObjectName>__<PortName> and  the
+            % object can either be a matter store, a thermal
+            % capacity, an electrical component or an electrical
+            % node.
+            if strcmp(this.sType, 'matter')
+                oExMe = matter.procs.exmes.(xInput.sType)(xInput, sPortName);
+                sSideName = [xInput.oStore.sName, '__', sPortName];
+            elseif strcmp(this.sType, 'thermal')
+                try
+                    oExMe = thermal.procs.exme(xInput.oCapacity, sPortName);
+                    sSideName = [xInput.oStore.sName, '__', sPortName];
+                catch %#ok<CTCH>
+                    oExMe = thermal.procs.exme(xInput, sPortName);
+                    sSideName = [xInput.oPhase.oStore.sName, '__', sPortName];
+                end
+            elseif strcmp(this.sType, 'electrical')
+                oExMe = electrical.terminal(xInput, sPortName);
+                sSideName = [xInput.sName, '__', sPortName];
+            end
+        end
         function [ oRightPhase, aoFlows, coProcs ] = getBranchData(this)
             % if coBranch{2} set, pass through. add own callbacks to cell,
             % leave phase untouched

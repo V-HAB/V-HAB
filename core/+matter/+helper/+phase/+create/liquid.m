@@ -14,15 +14,27 @@ if nargin < 4, fPressure    = 28300; end
 mrMassRatios = zeros(1, oStore.oMT.iSubstances);
 csSubstances = fieldnames(trMassRatios);
 
+arCompoundMass = zeros(oStore.oMT.iSubstances, oStore.oMT.iSubstances);
 % from the struct we create the mass ratio vector
 for iSubstance = 1:length(csSubstances)
-    mrMassRatios(oStore.oMT.tiN2I.(csSubstances{iSubstance})) = trMassRatios.(csSubstances{iSubstance});
+    iMatterIndexSubstance = oStore.oMT.tiN2I.(csSubstances{iSubstance});
+    mrMassRatios(iMatterIndexSubstance) = trMassRatios.(csSubstances{iSubstance});
+    
+    if oStore.oMT.abCompound(iMatterIndexSubstance)
+        trBaseComposition = oStore.oMT.ttxMatter.(csSubstances{iSubstance}).trBaseComposition;
+        csEntries = fieldnames(trBaseComposition);
+        for iEntry = 1:length(csEntries)
+            arCompoundMass(iMatterIndexSubstance, oStore.oMT.tiN2I.(csEntries{iEntry})) = trBaseComposition.(csEntries{iEntry});
+        end
+    end
 end
+
+mrResolvedMassRatios = oStore.oMT.resolveCompoundMass(mrMassRatios, arCompoundMass);
 
 % Now we calculate the overall density using the mass ratio struct as input
 % for the calculate function
 afPressures = ones(1, oStore.oMT.iSubstances) .* fPressure;
-fDensity = oStore.oMT.calculateDensity('liquid', mrMassRatios, fTemperature, afPressures);
+fDensity = oStore.oMT.calculateDensity('liquid', mrResolvedMassRatios, fTemperature, afPressures);
 
 % Using this density we can calculate the overall mass that should be in
 % the phase

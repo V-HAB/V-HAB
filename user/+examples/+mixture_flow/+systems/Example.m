@@ -40,7 +40,6 @@ classdef Example < vsys
                                                 'Water_Phase', ...        Phase name
                                                 'liquid',...
                                                 struct('H2O', fDensityH2O * 0.1), ...   Phase contents
-                                                0.1,...
                                                 293.15, ...                Phase temperature
                                                 101325);                 % Phase pressure
             
@@ -51,7 +50,6 @@ classdef Example < vsys
                                                 'Water_Phase', ...         Phase name
                                                 'liquid',...
                                                 struct('H2O', fDensityH2O * 0.1), ...      Phase contents
-                                                0.1,...
                                                 293.15, ...                Phase temperature
                                                 101325);                 % Phase pressure
             
@@ -94,7 +92,7 @@ classdef Example < vsys
             coFlowNodeWater = cell(this.iCells,1);
             for iCell = 1:this.iCells
                 coFlowNodeAir{iCell}    = this.toStores.FlowPath.createPhase('gas', 'flow', ['AirCell_', num2str(iCell)], 0.5 * fFlowVolume / this.iCells, struct('N2', 8e4, 'O2', 2e4, 'CO2', 500), 293.15, 0.5);
-                coFlowNodeWater{iCell}  = matter.phases.flow.mixture(this.toStores.FlowPath, ['WaterCell_', num2str(iCell)], 'liquid', struct('H2O', 1e-9), 0.5 * fFlowVolume / this.iCells, 293.15);
+                coFlowNodeWater{iCell}  = this.toStores.FlowPath.createPhase('mixture', 'flow', ['WaterCell_', num2str(iCell)], 'liquid', 0.5 * fFlowVolume / this.iCells, struct('H2O', 1), 293.15, 1e5);
                 
                 matter.procs.exmes.gas(coFlowNodeAir{iCell},       ['P2P_Air', num2str(iCell)]);
                 matter.procs.exmes.mixture(coFlowNodeWater{iCell}, ['P2P_Water', num2str(iCell)]);

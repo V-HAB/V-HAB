@@ -27,6 +27,8 @@ classdef Adsorber < matter.procs.p2ps.flow
                 this.setMatterProperties(fAdsorptionFlow, arPartialsAdsorption);
             end
         end
+    end
+    methods (Access = protected)
         function update(~)   
         end
     end

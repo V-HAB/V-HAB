@@ -373,9 +373,13 @@ classdef store < base
             % and incompressible volume manipulators to other phases.
             for iPhase = 1:length(this.aoPhases)
                 if strcmp(this.aoPhases(iPhase).sType, 'gas') || (strcmp(this.aoPhases(iPhase).sType, 'mixture') && strcmp(this.aoPhases(iPhase).sPhaseType, 'gas'))
-                    matter.manips.volume.StoreVolumeCalculation.compressibleMedium([this.aoPhases(iPhase).sName, '_CompressibleManip'], this.aoPhases(iPhase));
-                else
-                    matter.manips.volume.StoreVolumeCalculation.incompressibleMedium([this.aoPhases(iPhase).sName, '_IncompressibleManip'], this.aoPhases(iPhase));
+                    oCompressibleManip = matter.manips.volume.StoreVolumeCalculation.compressibleMedium([this.aoPhases(iPhase).sName, '_CompressibleManip'], this.aoPhases(iPhase));
+                end
+            end
+            
+            for iPhase = 1:length(this.aoPhases)
+                if ~(strcmp(this.aoPhases(iPhase).sType, 'gas') || (strcmp(this.aoPhases(iPhase).sType, 'mixture') && strcmp(this.aoPhases(iPhase).sPhaseType, 'gas')))
+                    matter.manips.volume.StoreVolumeCalculation.incompressibleMedium([this.aoPhases(iPhase).sName, '_IncompressibleManip'], this.aoPhases(iPhase), oCompressibleManip);
                 end
             end
         end
