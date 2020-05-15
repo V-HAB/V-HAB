@@ -343,7 +343,7 @@ classdef timer < base
             this.abDependent = this.afTimeSteps == -1;
         end
         
-        function hSetPostTick = registerPostTick(this, hCallBackFunctionHandle, sPostTickGroup, sPostTickLevel)
+        function [hSetPostTick, hUnbindPostTick] = registerPostTick(this, hCallBackFunctionHandle, sPostTickGroup, sPostTickLevel)
             %REGISTERPOSTTICK Registers a post tick function handle
             % This function must be used to initialy register all post tick
             % updates at the timer. This enables the usage of a (mostly)
@@ -395,6 +395,8 @@ classdef timer < base
             % registered we return a function handle which already contains
             % the necessary input variables for this specific post tick
             hSetPostTick = @() this.bindPostTick(iPostTickGroup, iPostTickLevel, iPostTickNumber);
+            
+            hUnbindPostTick = @() this.unbindPostTick(iPostTickGroup, iPostTickLevel, iPostTickNumber);
         end
         
         function bindPostTick(this, iPostTickGroup, iPostTickLevel, iPostTickNumber)
@@ -434,11 +436,25 @@ classdef timer < base
             % callbacks
             
             this.cCallBacks(iCB)  = [];
-            this.afTimeStep(iCB)  = [];
+            this.afTimeSteps(iCB)  = [];
             this.abDependent(iCB) = [];
             this.afLastExec(iCB)  = [];
             this.ctPayload(iCB)   = [];
 
+        end
+        function unbindPostTick(this, iPostTickGroup, iPostTickLevel, iPostTickNumber)
+            % Since it would be to complicated for the post tick logic to
+            % adjust all numbers if something unbinds, the index remains
+            % registered.
+
+            % We set the control for this post tick to false, therefore it
+            % should not be called at all
+            this.cabPostTickControl{iPostTickGroup, iPostTickLevel}(iPostTickNumber) = false;
+            % For the function, we do not do anything, it still has the
+            % function handle it was previously assigned. Therefore, if the
+            % post tick is ever set, and the function handle became invalid
+            % (e.g. deleted object), an error will be thrown
+            % this.chPostTicks{iPostTickGroup, iPostTickLevel, iPostTickNumber} = hCallBackFunctionHandle;
         end
     end
     

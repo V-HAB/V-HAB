@@ -58,6 +58,9 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
         % with their names as the corresponding field names
         toHeatSources;
         
+        % Number of heat sources of this capacity
+        iHeatSources = 0;
+        
         % object arry containing the different (thermal) exmes of this
         % capacity. Not that each matter exme is mirrored by a thermal exme
         % because mass transfer generally also transfers thermal energy
@@ -152,6 +155,10 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
         % the correct post tick levels are used
         hBindPostTickTimeStep
         
+        % In case the capacity is detled, we have to call all unbind
+        % functions
+        chUnbindFunctions;
+        
         % function registered at the timer to allow the setting of a
         % specific time step for this capacity, which is then enforced by
         % the timer object
@@ -193,7 +200,10 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
                 this.fTotalHeatCapacity     = sum(this.oPhase.afMass) * this.fSpecificHeatCapacity;
             end
             
-            this.oContainer.bind('ThermalSeal_post',@(~)this.setInitialHeatCapacity());
+            this.chUnbindFunctions = cell.empty;
+            
+            [ ~, this.chUnbindFunctions{end+1} ] = this.oContainer.bind('ThermalSeal_post',@(~)this.setInitialHeatCapacity());
+            
             
             % Set name of capacity.
             this.sName = oPhase.sName;
@@ -202,15 +212,15 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
             this.coHeatSource = cell.empty();
             
             %% Register post tick callbacks for massupdate and update        
-            this.hBindPostTickTemperatureUpdate = this.oTimer.registerPostTick(@this.updateTemperature, 'thermal', 'capacity_temperatureupdate');
-            this.hBindPostTickTimeStep          = this.oTimer.registerPostTick(@this.calculateTimeStep, 'post_physics', 'timestep');
+            [this.hBindPostTickTemperatureUpdate, this.chUnbindFunctions{end+1}] = this.oTimer.registerPostTick(@this.updateTemperature, 'thermal', 'capacity_temperatureupdate');
+            [this.hBindPostTickTimeStep,          this.chUnbindFunctions{end+1}] = this.oTimer.registerPostTick(@this.calculateTimeStep, 'post_physics', 'timestep');
             
             % Register the first temperature update
             this.hBindPostTickTemperatureUpdate();
             
             % Bind the .update method to the timer, with a time step of 0
             % (i.e. smallest step), will be adapted after each .update
-            this.setTimeStep = this.oTimer.bind(@(~) this.registerUpdateTemperature(), 0, struct(...
+            [this.setTimeStep, this.chUnbindFunctions{end+1}] = this.oTimer.bind(@(~) this.registerUpdateTemperature(), 0, struct(...
                 'sMethod', 'update', ...
                 'sDescription', 'The .update method of a phase', ...
                 'oSrcObj', this ...
@@ -285,8 +295,9 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
             % are moved between container no temperature change occurs. And
             % this is basically what happens here as the difference in
             % temperature is already handled in the thermal branch
-            
-            this.fTotalHeatCapacity = fTotalHeatCapacity;
+            if ~this.bBoundary
+                this.fTotalHeatCapacity = fTotalHeatCapacity;
+            end
             
             this.fLastTotalHeatCapacityUpdate = this.oTimer.fTime;
         end
@@ -389,6 +400,8 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
             else
                 this.coHeatSource{end+1} = oHeatSource;
             end
+            
+            this.iHeatSources = length(this.coHeatSource);
         end
         
         function setOutdatedTS(this)

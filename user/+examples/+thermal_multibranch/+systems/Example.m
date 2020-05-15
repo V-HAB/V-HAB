@@ -11,6 +11,8 @@ classdef Example < vsys
         fHeatFlow           = 100;
             
         coNodes;
+        
+        bAdvancedThermalSolver = true;
     end
     
     methods
@@ -28,8 +30,10 @@ classdef Example < vsys
             % Create Environment Capacity
             matter.store(this, 'Space', Inf);
             
-            this.toStores.Space.createPhase(  'gas', 'boundary',   'Vacuum',   1e6,    struct('N2', 2),          3,          0);
-            
+            oSpace = this.toStores.Space.createPhase(  'gas', 'boundary',   'Vacuum',   1e6,    struct('N2', 2),          3,          0);
+            if this.bAdvancedThermalSolver
+                oSpace.replaceCapacity(thermal.capacities.network(oSpace, oSpace.fTemperature, true));
+            end
             % For the Multibranch solver, we initialize a 1 m^3 Cube of
             % Aluminium, which has a discretizable number of thermal nodes
             % as phases (which are also capacities), and automatically
@@ -62,7 +66,9 @@ classdef Example < vsys
                     for iZ = 1:this.iNodesPerDirection
                         
                         oNode = this.toStores.Cube.createPhase(  'solid',   ['Node_X', num2str(iX),'_Y', num2str(iY),'_Z', num2str(iZ)],   this.fTotalCubeVolume/iTotalNodes,    struct('Al', 1),          fInitialTemperature,          1e5);
-            
+                        if this.bAdvancedThermalSolver
+                            oNode.replaceCapacity(thermal.capacities.network(oNode, oNode.fTemperature));
+                        end
                         this.coNodes{iX, iY, iZ} = oNode;
                     end
                 end
@@ -211,8 +217,11 @@ classdef Example < vsys
         
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
-            
-            solver.thermal.multi_branch.basic.branch(this.aoThermalBranches);
+            if this.bAdvancedThermalSolver
+                solver.thermal.multi_branch.advanced.branch(this.aoThermalBranches, 20);
+            else
+                solver.thermal.multi_branch.basic.branch(this.aoThermalBranches);
+            end
         end
     end
     

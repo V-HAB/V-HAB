@@ -76,7 +76,7 @@ classdef branch < base & event.source
 % not know when the capacities require an update, it does not set a
 % timestep, but is instead updated whenever a connected capacity is updated
     
-    properties (SetAccess = private, GetAccess = public)
+    properties (SetAccess = protected, GetAccess = public)
        	% array containing the branches that are solved by this solver
         aoBranches;
         
@@ -161,38 +161,45 @@ classdef branch < base & event.source
         chSetBranchHeatFlows;
     end
     
-    properties (SetAccess = private, GetAccess = protected) %, Transient = true)
+    properties (SetAccess = protected, GetAccess = protected) %, Transient = true)
         %TODO These properties should be transient. That requires a static
         % method (loadobj) to be implemented in this class, so when the
         % simulation is re-loaded from a .mat file, the properties are
         % reset to their proper values.
         hBindPostTickUpdate;
-        hBindPostTickTimeStepCalculation;
     end
     
     methods
-        function this = branch(aoBranches)
+        function this = branch(aoBranches, bChildCall)
             % Please note that the aoBranches property is reordered in the 
             % initializeNetwork function!
+            % The bChildCall parameter is only necessary for other thermal
+            % multi branches to deactivate the initial update call
+            if nargin < 2
+                bChildCall = false;
+            end
+            
             this.aoBranches = aoBranches;
             this.iBranches = length(this.aoBranches);
             
             this.oTimer     = this.aoBranches(1).oTimer;
             
-            % Now we register the solver at the timer, specifying the post
-            % tick level in which the solver should be executed. For more
-            % information on the execution view the timer documentation.
-            % Registering the solver with the timer provides a function as
-            % output that can be used to bind the post tick update in a
-            % tick resulting in the post tick calculation to be executed
-            this.hBindPostTickUpdate = this.oTimer.registerPostTick(@this.update, 'thermal' , 'solver');
-            
             % we only have to do this once, but initially we have to create
             % the thermal network we want to solve here
             this.initializeNetwork();
             
-            % and update the solver to initialize everything
-            this.update();
+            if ~bChildCall
+                % Now we register the solver at the timer, specifying the post
+                % tick level in which the solver should be executed. For more
+                % information on the execution view the timer documentation.
+                % Registering the solver with the timer provides a function as
+                % output that can be used to bind the post tick update in a
+                % tick resulting in the post tick calculation to be executed
+                this.hBindPostTickUpdate = this.oTimer.registerPostTick(@this.update, 'thermal' , 'solver');
+
+                % and update the solver to initialize everything
+                this.update();
+            end
         end
         
         function [ this, unbindCallback ] = bind(this, sType, callBack)
@@ -360,6 +367,12 @@ classdef branch < base & event.source
                             bNonUniqueRightCapacity = true;
                         end
                         
+                        % Since the above operation only looks for capacity
+                        % indices in the radiation part of the matrix, we
+                        % have to shift the indices to transform them to
+                        % indices for the whole matrix!
+                        iLeftCapacityIndex  = (this.iFirstRadiativeCapacity-1) + iLeftCapacityIndex;
+                        iRightCapacityIndex = (this.iFirstRadiativeCapacity-1) + iRightCapacityIndex;
                     end
                 end
                 
@@ -368,14 +381,14 @@ classdef branch < base & event.source
                 % and set the index to the end of the aoCapacities array.
                 if iLeftCapacityIndex == 0
                     this.aoCapacities(end+1, 1)        = oLeftCapacity;
-                    this.abNonUniqueCapacity(end+1, 1) = bNonUniqueLeftCapacity;
                     iLeftCapacityIndex                 = length(this.aoCapacities);
+                    this.abNonUniqueCapacity(iLeftCapacityIndex, 1) = bNonUniqueLeftCapacity;
                 end
                 
                 if iRightCapacityIndex == 0
                     this.aoCapacities(end+1, 1)        = oRightCapacity;
-                    this.abNonUniqueCapacity(end+1, 1) = bNonUniqueRightCapacity;
                     iRightCapacityIndex                = length(this.aoCapacities);
+                    this.abNonUniqueCapacity(iRightCapacityIndex, 1) = bNonUniqueRightCapacity;
                 end
                 
                 % So here we perform the assignment of left and right side
@@ -453,6 +466,11 @@ classdef branch < base & event.source
                 this.chSetBranchHeatFlows{iBranch}(fHeatFlow, afTemperatures);
             end
             this.fLastUpdate = this.oTimer.fTime;
+            this.bRegisteredOutdated = false;
+            
+            if this.bTriggerUpdateCallbackBound
+                this.trigger('update');
+            end
         end
     end
 end

@@ -298,7 +298,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
     
     methods
 
-        function this = phase(oStore, sName, tfMass, fTemperature, sCaller)
+        function this = phase(oStore, sName, tfMass, fTemperature, sCapacity)
             %% Phase Class Constructor
             % Constructor for the |matter.phase| class. Input parameters
             % can be provided to define the contained masses and
@@ -316,7 +316,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             %                   Keys refer to the name of the according substance
             %   fTemperature  - temperature of the initial mass, has to be given
             %                   if  tfMass is provided
-            %   sCaller       - only internally used to decide which
+            %   sCapacity     - only internally used to decide which
             %                   capactiy should be added to the phase
 
             % Parent has to be or derive from matter.store
@@ -418,7 +418,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
             % add a thermal capacity to this phase to handle thermal
             % calculations 
-            if nargin > 4 && strcmp(sCaller, 'boundary')
+            if nargin > 4 && strcmp(sCapacity, 'boundary')
                 this.oCapacity = thermal.capacities.boundary(this, fTemperature);
             else
                 this.oCapacity = thermal.capacity(this, fTemperature);
@@ -439,6 +439,22 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             this.hBindPostTickMassUpdate  = this.oTimer.registerPostTick(@this.massupdate,        'matter',        'phase_massupdate');
             this.hBindPostTickUpdate      = this.oTimer.registerPostTick(@this.update,            'matter',        'phase_update');
             this.hBindPostTickTimeStep    = this.oTimer.registerPostTick(@this.calculateTimeStep, 'post_physics' , 'timestep');
+        end
+        function replaceCapacity(this, oCapacity)
+            % This function can be used to replace the current capacity
+            % with a different one. This can be used to e.g. implement
+            % network capacities.
+            oCurrentCapacity = this.oCapacity;
+            for iUnbind = 1:length(oCurrentCapacity.chUnbindFunctions)
+                oCurrentCapacity.chUnbindFunctions{iUnbind}();
+            end
+            
+            this.oCapacity = oCapacity;
+            
+            delete(oCurrentCapacity);
+            
+            % Now update the matter properties
+            this.oCapacity.updateSpecificHeatCapacity();
         end
 
         function this = registerMassupdate(this, ~)
