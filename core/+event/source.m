@@ -51,7 +51,8 @@ classdef source < handle
             this.bHasCallbacks = true;
             
             % Returning the unbind callback
-            hUnbindCallback = @() this.unbind(sName, length(this.tcEventCallbacks.(sName)));
+            iCallBack = length(this.tcEventCallbacks.(sName));
+            hUnbindCallback = @() this.unbind(sName, iCallBack);
             
         end
         

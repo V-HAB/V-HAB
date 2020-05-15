@@ -8,7 +8,7 @@ classdef branch < base & event.source
     % to solve. There is no limit to the number of branches that it can
     % solve.
     %
-    %% Regaring the implementation some rules must be observed!:
+    %% Regarding the implementation some rules must be observed!:
     %
     % - it is not possible to have a gas flow node as the connection
     %   between two different multi branch solvers!

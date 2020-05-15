@@ -41,11 +41,6 @@ classdef Example_2 < vsys
         function createMatterStructure(this)
             createMatterStructure@vsys(this);
             
-            % Atmos - Capacity
-            matter.store(this, 'Atmos', 100);
-            this.toStores.Atmos.createPhase('air', 'hell', 100, 300);
-            
-            
             % Creating a store, volume 1 m^3
             matter.store(this, 'Tank_1', 1);
             
