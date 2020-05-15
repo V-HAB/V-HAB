@@ -59,7 +59,7 @@ classdef Example < vsys
             matter.procs.exmes.gas(this.toStores.Filter.aoPhases(1), 'Out');
             matter.procs.exmes.gas(this.toStores.Filter.aoPhases(1), 'Filtered');
             
-            this.toStores.Filter.createPhase('air', 'adsorbed', 0);
+            %this.toStores.Filter.createPhase('air', 'adsorbed', 0);
             
             
             
