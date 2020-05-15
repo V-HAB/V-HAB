@@ -284,7 +284,7 @@ classdef branch < base & event.source
             % some of the same capacities as the upper part, we need to
             % keep track of the capacities that are not unique to the
             % radiation calculations.
-            this.abNonUniqueCapacity = false(1,0);
+            this.abNonUniqueCapacity = logical.empty();
             
             % Getting the index of the first radiation branch
             this.iFirstRadiationBranch = find(this.abRadiationBranches, 1);
@@ -341,54 +341,64 @@ classdef branch < base & event.source
                     % more than once. 
                     % The uniqueness check on the other hand is only
                     % performed in the lower part. 
-                    if length(this.aoCapacities) >= this.iFirstRadiativeCapacity
                         
-                        abLeftCapacity = strcmp(csUUIDs(this.iFirstRadiativeCapacity:end), oLeftCapacity.sUUID);
-                        
-                        if sum(abLeftCapacity)
-                            iLeftCapacityIndex = find(abLeftCapacity);
-                        end
-                        
-                        abRightCapacity = strcmp(csUUIDs(this.iFirstRadiativeCapacity:end), oRightCapacity.sUUID);
-                        
-                        if sum(abRightCapacity)
-                            iRightCapacityIndex = find(abRightCapacity);
-                        end
-                        
-                        abLeftCapacity = strcmp(csUUIDs(1:this.iFirstRadiativeCapacity-1), oLeftCapacity.sUUID);
-                        
-                        if sum(abLeftCapacity)
-                            bNonUniqueLeftCapacity = true;
-                        end
-                        
-                        abRightCapacity = strcmp(csUUIDs(1:this.iFirstRadiativeCapacity-1), oRightCapacity.sUUID);
-                        
-                        if sum(abRightCapacity)
-                            bNonUniqueRightCapacity = true;
-                        end
-                        
-                        % Since the above operation only looks for capacity
-                        % indices in the radiation part of the matrix, we
-                        % have to shift the indices to transform them to
-                        % indices for the whole matrix!
-                        iLeftCapacityIndex  = (this.iFirstRadiativeCapacity-1) + iLeftCapacityIndex;
-                        iRightCapacityIndex = (this.iFirstRadiativeCapacity-1) + iRightCapacityIndex;
+                    % Is the left capacity already present in the lower
+                    % part of the aoCapacities array?
+                    abLeftCapacity = strcmp(csUUIDs(this.iFirstRadiativeCapacity:end), oLeftCapacity.sUUID);
+                    
+                    if sum(abLeftCapacity)
+                        % We found it, so we get the index in the overall
+                        % capacities array by adding the index of the first
+                        % radiative capacity. Minus one because the first
+                        % index in the logical sub-array we got here
+                        % corresponds to the first radiative capacity.
+                        iLeftCapacityIndex = find(abLeftCapacity) + this.iFirstRadiativeCapacity - 1;
                     end
+                    
+                    % Is the right capacity already present in the lower
+                    % part of the aoCapacities array?
+                    abRightCapacity = strcmp(csUUIDs(this.iFirstRadiativeCapacity:end), oRightCapacity.sUUID);
+                    
+                    if sum(abRightCapacity)
+                        % We found it, so we get the index in the overall
+                        % capacities array by adding the index of the first
+                        % radiative capacity. Minus one because the first
+                        % index in the logical sub-array we got here
+                        % corresponds to the first radiative capacity.
+                        iRightCapacityIndex = find(abRightCapacity) + this.iFirstRadiativeCapacity - 1;
+                    end
+                    
+                    % Is the left capacity alredy present in the upper
+                    % part of the aoCapacities array?
+                    abLeftCapacity = strcmp(csUUIDs(1:this.iFirstRadiativeCapacity-1), oLeftCapacity.sUUID);
+                    
+                    if sum(abLeftCapacity)
+                        bNonUniqueLeftCapacity = true;
+                    end
+                    
+                    % Is the right capacity alredy present in the upper
+                    % part of the aoCapacities array?
+                    abRightCapacity = strcmp(csUUIDs(1:this.iFirstRadiativeCapacity-1), oRightCapacity.sUUID);
+                    
+                    if sum(abRightCapacity)
+                        bNonUniqueRightCapacity = true;
+                    end
+                    
                 end
                 
-                % If one of the indexes was not found, i.e. is still zero,
-                % we add it to the aoCapacities array, mark it as unique
-                % and set the index to the end of the aoCapacities array.
+                % If one of the capacities was not found, we add it to the
+                % aoCapacities array, mark it as unique and set the index
+                % to the end of the aoCapacities array.
                 if iLeftCapacityIndex == 0
                     this.aoCapacities(end+1, 1)        = oLeftCapacity;
+                    this.abNonUniqueCapacity(end+1, 1) = bNonUniqueLeftCapacity;
                     iLeftCapacityIndex                 = length(this.aoCapacities);
-                    this.abNonUniqueCapacity(iLeftCapacityIndex, 1) = bNonUniqueLeftCapacity;
                 end
                 
                 if iRightCapacityIndex == 0
                     this.aoCapacities(end+1, 1)        = oRightCapacity;
+                    this.abNonUniqueCapacity(end+1, 1) = bNonUniqueRightCapacity;
                     iRightCapacityIndex                = length(this.aoCapacities);
-                    this.abNonUniqueCapacity(iRightCapacityIndex, 1) = bNonUniqueRightCapacity;
                 end
                 
                 % So here we perform the assignment of left and right side
