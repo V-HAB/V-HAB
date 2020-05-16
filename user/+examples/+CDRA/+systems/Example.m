@@ -195,7 +195,7 @@ classdef Example < vsys
             %the model for the crew does not have a mass balance since
             %there is no food taken into account. Also a lot of the actual
             %processes are severly simplified.
-            %all values taken from NASA/TP-2015–218570 "Life Support 
+            %all values taken from NASA/TP-2015-218570 "Life Support 
             %Baseline Values and Assumptions Document"
             
             %these are multiple states for the human metabolic rate taken
@@ -323,6 +323,9 @@ classdef Example < vsys
             % Cabin setpoint according to ICES 2000-01-2345 was 65 degree
             % fahrenheit
             this.toChildren.CCAA.setTemperature(18.33);
+            
+            tTimeStepProperties.rMaxChange = 0.5;
+            this.toStores.CondensateStore.toPhases.Condensate_Phase.setTimeStepProperties(tTimeStepProperties);
             
             %% Assign thermal solvers
             this.setThermalSolvers();
