@@ -715,7 +715,16 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
             if this.bBoundary
                 fNewStep = this.fMaxStep;
             else
-                fExmeHeatFlow = sum([this.aoExmes.iSign] .* [this.aoExmes.fHeatFlow]);
+                try
+                    fExmeHeatFlow = sum([this.aoExmes.iSign] .* [this.aoExmes.fHeatFlow]);
+                catch oError
+                    if ~isempty(this.aoExmes)
+                        rethrow(oError)
+                    else
+                        fExmeHeatFlow = 0;
+                    end
+                end
+
                 
                 % For constant temperature heat sources, we have to
                 % recalculate the heat source now with this trigger, to
