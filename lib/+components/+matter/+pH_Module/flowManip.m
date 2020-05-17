@@ -109,6 +109,9 @@ classdef flowManip < matter.manips.substance.flow
         function calculateConversionRate(this, afInFlowRates, aarInPartials)
             %getting inflowrates
             afPartialInFlows = sum((afInFlowRates .* aarInPartials),1);
+            % Since we also consider P2P flowrates for these in flows, we
+            % have to check to not use negative total flowrates here:
+            afPartialInFlows(afPartialInFlows < 0) = 0;
             
             if any(afPartialInFlows(this.abDissociation))
                 % Volumetric flowrate in l/s!
@@ -188,7 +191,7 @@ classdef flowManip < matter.manips.substance.flow
                     end
                 end
 
-                while (abs(fError) > fMaxError) && fIntervallSize > fMaxError  && iCounter < 1000
+                while ((abs(fError) > fMaxError) && fIntervallSize > fMaxError || afConcentrations(this.oMT.tiN2I.Hplus) < 0)  && iCounter < 1000 
 
                     iCounter = iCounter + 1;
 

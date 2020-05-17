@@ -80,7 +80,7 @@ function update(this)
         % matrices
         if bForceP2PUpdate
             % Regenerates matrices, gets coeffs from flow procs
-            [ mfFullPhasePressuresAndFlowRates, afFullBoundaryConditions ] = this.generateMatrices(bForceP2PUpdate);
+            [ mfFullPhasePressuresAndFlowRates, afFullBoundaryConditions ] = this.generateMatrices(bForceP2PUpdate, this.bFinalLoop);
             mfPhasePressuresAndFlowRates = mfFullPhasePressuresAndFlowRates;
             afBoundaryConditions = afFullBoundaryConditions;
             
@@ -527,7 +527,7 @@ function update(this)
     % we have to update this now. However, the P2Ps are not allowed to
     % update because otherwise the conservation of mass over the flow nodes
     % would no longer be valid!
-    this.updateNetwork(false);
+    this.updateNetwork(false, false);
     
     % The network of branches can be fairly complex. Since it is difficult
     % to capture all possibilities and edge cases in this generic code, it

@@ -1,4 +1,4 @@
-function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatrices(this, bForceP2Pcalc)
+function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatrices(this, bForceP2Pcalc, bManipUpdate)
     %GENERATEMATRICES Generates matrices for system of equations
     % This function builds the Matrix described in the beginning and the
     % boundary condition vector. It is not updated all the time as this
@@ -12,6 +12,9 @@ function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatri
     
     if nargin < 2
         bForceP2Pcalc = false;
+    end
+    if nargin < 3
+        bManipUpdate = false;
     end
     
     this.afPressureDropCoeffsSum = nan(1, this.iBranches);
@@ -30,7 +33,7 @@ function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatri
     % DP = C * FR, or P_Left - P_Right = C * FR
     
     if bForceP2Pcalc
-        this.updateNetwork(bForceP2Pcalc);
+        this.updateNetwork(bForceP2Pcalc, bManipUpdate);
     end
     
     for iB = 1:this.iBranches

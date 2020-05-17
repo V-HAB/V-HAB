@@ -87,7 +87,7 @@ classdef setup < simulation.infrastructure
                     
                     % In order to get the ions which are of interest, we
                     % check for which seperation factors are defined:
-                    afSeperationFactors = oResin.toStores.Resin.toProcsP2P.(oResin.toStores.Resin.csProcsP2P{1}).afSeperationFactors;
+                    afSeperationFactors = oResin.toStores.Resin.toProcsP2P.Ion_P2P1.afSeperationFactors;
                     
                     csIons = oMT.csI2N(afSeperationFactors ~= 0);
                     iIons = length(csIons);
