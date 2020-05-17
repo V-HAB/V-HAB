@@ -13,7 +13,7 @@ classdef container < sys
         toStores = struct();
         
         % An array of all branch objects
-        aoBranches = matter.branch.empty();
+        aoBranches;
         
         % A struct with all processors in the container 
         % These are also stored in the branch they belong to, but might be
@@ -77,6 +77,8 @@ classdef container < sys
             if ~isa(this.oRoot.oMT, 'matter.table'), this.throw('container', 'Provided object ~isa matter.table'); end
             
             this.oMT    = this.oRoot.oMT;
+            
+            this.aoBranches = matter.branch.empty();
         end
     end
     

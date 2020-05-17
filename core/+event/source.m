@@ -51,7 +51,8 @@ classdef source < handle
             this.bHasCallbacks = true;
             
             % Returning the unbind callback
-            hUnbindCallback = @() this.unbind(sName, length(this.tcEventCallbacks.(sName)));
+            iCallBack = length(this.tcEventCallbacks.(sName));
+            hUnbindCallback = @() this.unbind(sName, iCallBack);
             
         end
         
@@ -89,6 +90,16 @@ classdef source < handle
                 return
             end            
             
+            % It may be that this object has callbacks, but not necessarily
+            % for the exact trigger being executed here. So we check if
+            % there is even a field with the trigger name and only then do
+            % we get the cell with callbacks. 
+            try
+                cCallbackCell = this.tcEventCallbacks.(sName);
+            catch %#ok<CTCH>
+                return
+            end
+            
             % If no data struct is given, we set the local variable to
             % empty. 
             if nargin < 3, tData = []; end
@@ -102,23 +113,11 @@ classdef source < handle
             % Setting the data payload
             tEvent.tData = tData;
             
-            % It may be that this object has callbacks, but not necessarily
-            % for the exact trigger being executed here. So we check if
-            % there is even a field with the trigger name and only then do
-            % we get the cell with callbacks. 
-            try
-                cCallbackCell = this.tcEventCallbacks.(sName);
-            catch
-                return
-            end
-            
             % Last thing to do here is to loop through all of the callbacks
             % and actually execute them. 
             for iC = 1:length(cCallbackCell)
                 cCallbackCell{iC}(tEvent);
-                
             end
-            
         end
     end
 end

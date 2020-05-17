@@ -126,10 +126,10 @@ classdef vhab
             % about the window classes, that they can't be deleted. These
             % warnings are supressed by turning off all warnings before
             % clearing. They are turned back on afterwards.
-            warning('off','all');
+            %warning('off','all');
             evalin('base','clear all');
             evalin('base','clear classes');
-            warning('on','all');
+            %warning('on','all');
             
             % Ouput to the console using the previously set timer. 
             disp(['Classes cleared in ', num2str(toc(hTimer)), ' seconds!'])

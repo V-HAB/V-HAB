@@ -53,9 +53,9 @@ function undockSubPlot( ~, ~, oSubPlot, oLegend )
     oButton = uicontrol(hFigure,'String','Save','FontSize',10,'Position',[ 0 0 50 30]);
     oButton.Callback = @tools.postprocessing.plotter.helper.saveFigureAs;
     
-    % Saving a handle to the save button callback to the figure properties
+    % Saving a handle to the save button to the figure properties
     % so we can call it from the KeyPressFcn.
-    hFigure.UserData.hSaveButton = oButton.Callback;
+    hFigure.UserData.oSaveButton = oButton;
     
     % Now we need to assign the key press function to this figure.
     hFigure.KeyPressFcn = @KeyPressFunction;
@@ -132,14 +132,14 @@ function KeyPressFunction(oFigure, oKeyData)
             % This if-condition catches the case where the user hit only
             % the 'command' or 'control' key and nothing else.
             if isempty(oKeyData.Character) && strcmp(oKeyData.Key, '0') && iNumberOfModifiers == 1
-                error('Just pressed the command or control key.');
+                error('Plotter:WillNotDisplay','Just pressed the command or control key.');
             end
             
             % 'Command' and 'control' are the main modifiers, so this
             % if-condition catches the case where only 'shift' or 'alt' is
             % pressed.
             if ~any(strcmp(oKeyData.Modifier, sPlatformModifier))
-                error('Command or control not pressed.');
+                error('Plotter:WillNotDisplay','Command or control not pressed.');
             end
             
             % We're looking only for a two modifier press, so we don't have
@@ -151,11 +151,11 @@ function KeyPressFunction(oFigure, oKeyData)
                    strcmp(oKeyData.Modifier{2},sPlatformModifier) && ...
                    strcmp(oKeyData.Key,'s')
                     % Executing the button callback.
-                    oFigure.UserData.hSaveButton(NaN, NaN);
+                    oFigure.UserData.oSaveButton.Callback(oFigure.UserData.oSaveButton, NaN);
                 end
             end
         end
-    catch
+    catch %#ok<CTCH>
         % We want this to fail silently if there are inadvertent button
         % presses, so we don't put anything in here.
     end

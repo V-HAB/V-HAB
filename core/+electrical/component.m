@@ -21,7 +21,7 @@ classdef (Abstract) component < base
         
         % An array containing references to all flows associated with this
         % component
-        aoFlows = electrical.flow.empty();
+        aoFlows;
         
         % Reference to the timer object
         oTimer;
@@ -43,6 +43,8 @@ classdef (Abstract) component < base
             
             % Adding ourselves to the parent circuit
             this.oCircuit.addComponent(this);
+            
+            this.aoFlows = electrical.flow.empty();
         end
         
         function this = addFlow(this, oFlow, sPort)

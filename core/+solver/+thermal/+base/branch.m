@@ -158,7 +158,15 @@ classdef branch < base & event.source
             if this.bTriggerRegisterUpdateCallbackBound
                 this.trigger('register_update');
             end
-
+            
+            % Connected capacities have to do a temperature update before we
+            % set the new heat flow - so the thermal energy for the LAST
+            % time step, with the old flow, is actually moved from tank to
+            % tank.
+            for iE = 1:2
+                this.oBranch.coExmes{iE}.oCapacity.registerUpdateTemperature();
+            end
+            
             if ~base.oDebug.bOff, this.out(1, 1, 'registerUpdate', 'Registering .update method on post tick for thermal solver for branch %s', { this.oBranch.sName }); end
             
             this.bRegisteredOutdated = true;

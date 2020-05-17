@@ -19,7 +19,7 @@ classdef branch < base.branch
         coTerminals = { []; [] };
         
         % Flows belonging to this branch
-        aoFlows = electrical.flow.empty();
+        aoFlows;
         
         % Array with f2f processors in between the flows
         aoComponents = [];

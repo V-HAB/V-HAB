@@ -5,10 +5,10 @@ classdef branch < base.branch
     properties (SetAccess = protected, GetAccess = public)
         
         % Flows belonging to this branch
-        aoFlows = matter.flow.empty();
+        aoFlows;
         
         % Array with f2f processors in between the flows
-        aoFlowProcs = matter.procs.f2f.empty();
+        aoFlowProcs;
         
         % Amount of flows / procs
         iFlows = 0;
@@ -168,13 +168,21 @@ classdef branch < base.branch
                 
                 % Create flow
                 oFlow = matter.flow(this);
-                this.aoFlows(end + 1) = oFlow;
+                if isempty(this.aoFlows)
+                    this.aoFlows = oFlow;
+                else
+                    this.aoFlows(end + 1) = oFlow;
+                end
                 
                 % Connect the new flow - 'right' of proc to 'in' of flow
                 % Because of the possibility that the proc is not connected
                 % to an in flow (interface branch - in flow not yet known),
                 % we explicitly provide the port to connect the flow to.
-                this.aoFlowProcs(end + 1) = this.oContainer.toProcsF2F.(sProc).addFlow(oFlow, 2);
+                if isempty(this.aoFlowProcs)
+                    this.aoFlowProcs = this.oContainer.toProcsF2F.(sProc).addFlow(oFlow, 2);
+                else
+                    this.aoFlowProcs(end + 1) = this.oContainer.toProcsF2F.(sProc).addFlow(oFlow, 2);
+                end
             end
         end
         

@@ -423,7 +423,7 @@ classdef (Abstract) branch < base & event.source
         end
     end
     
-    methods (Access = {?base.branch, ?solver.matter.base.branch, ?solver.thermal.base.branch, ?solver.matter_multibranch.iterative.branch})
+    methods (Access = {?base.branch, ?solver.matter.base.branch, ?solver.thermal.base.branch, ?solver.matter_multibranch.iterative.branch, ?solver.thermal.multi_branch.basic.branch})
         function setFlowRate = registerHandler(this, oHandler)
             %REGISTERHANDLER Sets the solver and returns handle to
             % setFlowRate() method
@@ -643,7 +643,11 @@ classdef (Abstract) branch < base & event.source
             if strcmp(this.sType, 'matter')
                 toPorts = xInput.toProcsEXME;
             elseif strcmp(this.sType, 'thermal')
-                toPorts = xInput.oCapacity.toProcsEXME;
+                try
+                    toPorts = xInput.oCapacity.toProcsEXME;
+                catch %#ok<CTCH>
+                    toPorts = xInput.toProcsEXME;
+                end
             elseif strcmp(this.sType, 'electrical')
                 toPorts = xInput.toTerminals;
             end
@@ -673,8 +677,13 @@ classdef (Abstract) branch < base & event.source
                 oExMe = matter.procs.exmes.(xInput.sType)(xInput, sPortName);
                 sSideName = [xInput.oStore.sName, '__', sPortName];
             elseif strcmp(this.sType, 'thermal')
-                oExMe = thermal.procs.exme(xInput.oCapacity, sPortName);
-                sSideName = [xInput.oStore.sName, '__', sPortName];
+                try
+                    oExMe = thermal.procs.exme(xInput.oCapacity, sPortName);
+                    sSideName = [xInput.oStore.sName, '__', sPortName];
+                catch %#ok<CTCH>
+                    oExMe = thermal.procs.exme(xInput, sPortName);
+                    sSideName = [xInput.oPhase.oStore.sName, '__', sPortName];
+                end
             elseif strcmp(this.sType, 'electrical')
                 oExMe = electrical.terminal(xInput, sPortName);
                 sSideName = [xInput.sName, '__', sPortName];

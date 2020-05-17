@@ -15,12 +15,7 @@ classdef setup < simulation.infrastructure
         % Constructor function
         function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig) 
             
-            ttMonitorConfig.oMassBalanceObserver.sClass = 'simulation.monitors.massbalanceObserver';
-            fAccuracy = 1e-8;
-            fMaxMassBalanceDifference = inf;
-            bSetBreakPoints = false;
-            ttMonitorConfig.oMassBalanceObserver.cParams = { fAccuracy, fMaxMassBalanceDifference, bSetBreakPoints };
-            % First we call the parent constructor and tell it the name of
+             % First we call the parent constructor and tell it the name of
             % this simulation we are creating.
             this@simulation.infrastructure('Test_Boundaries', ptConfigParams, tSolverParams, ttMonitorConfig);
             

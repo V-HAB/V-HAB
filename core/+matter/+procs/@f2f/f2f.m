@@ -10,7 +10,7 @@ classdef f2f < base & matlab.mixin.Heterogeneous
     properties (SetAccess = private, GetAccess = public)
         % Connected matter flows first entry aoFlows(1) is considered the
         % left flow while aoFlows(2) is considered the right flow
-        aoFlows = matter.flow.empty();
+        aoFlows;
         
         % Matter table
         oMT;
@@ -45,7 +45,7 @@ classdef f2f < base & matlab.mixin.Heterogeneous
         fHeatFlow = 0;
         
         % Decide if this processor is an active processor which generates a
-        % pressure difference (e.g. a fan).´In this case this property is
+        % pressure difference (e.g. a fan).ï¿½In this case this property is
         % set to true. Or if it is a passive component which only reacts to
         % the mass flow passing through (e.g. a pipe). In this case the
         % property is false
@@ -89,6 +89,8 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             this.oTimer = this.oContainer.oTimer;
             
             this.abSetFlows = [false, false];
+            
+            this.aoFlows = matter.flow.empty();
         end
         
         function seal(this, oBranch)

@@ -23,7 +23,7 @@ classdef setup < simulation.infrastructure
             %% Simulation length
             % Stop when specific time in simulation is reached or after
             % specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 3600 * 24 * 2; % In seconds
+            this.fSimTime = 3600 * 24; % In seconds
             this.iSimTicks = 1500;
             this.bUseTime = true;
         end

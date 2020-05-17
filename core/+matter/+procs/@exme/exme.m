@@ -19,7 +19,7 @@ classdef exme < base
         sName;
         
         % Connected matter flow
-        oFlow = matter.flow.empty();
+        oFlow;
         
         % Boolean flag to check if the ExMe has a flow or if it is
         % unconnected
