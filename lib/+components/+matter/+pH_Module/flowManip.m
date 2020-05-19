@@ -123,7 +123,7 @@ classdef flowManip < matter.manips.substance.flow
 
                 % Charge sum of ions for which the concentration is not
                 % solved by the system of equations
-                fInitialChargeSum = sum(this.oMT.aiCharge(~this.abRelevantSubstances) * afInitialConcentrations(~this.abRelevantSubstances)');
+                fInitialChargeSum = this.oMT.aiCharge(~this.abRelevantSubstances) * afInitialConcentrations(~this.abRelevantSubstances)';
                 fInitialMassSum = sum(afPartialInFlows) / fVolumetricFlowRate;
                 
                 afCurrentConcentration  = afInitialConcentrations;
@@ -142,7 +142,7 @@ classdef flowManip < matter.manips.substance.flow
                 % concentration
                 fCurrentPH = -log10(afInitialConcentrations(this.oMT.tiN2I.Hplus));
 
-                mfInitializationIntervall = [1e-20, 1e-14, 1e-13, 1e-12, 1e-11, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-3, 1e-2, 1e-1, 1];
+                mfInitializationIntervall = [1e-20, 1e-14, 1e-13, 1e-12, 1e-11, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-3, 1e-2, 1e-1, 100];
                 fMaxError = 1e-18;
 
                 mfInitializatonError = zeros(1, length(mfInitializationIntervall));
@@ -190,14 +190,25 @@ classdef flowManip < matter.manips.substance.flow
                         break
                     end
                 end
-
+                
+                fNewBoundary = mfIntervall(2);
                 while ((abs(fError) > fMaxError) && fIntervallSize > fMaxError || afConcentrations(this.oMT.tiN2I.Hplus) < 0)  && iCounter < 1000 
 
                     iCounter = iCounter + 1;
 
                     fIntervallSize = mfIntervall(2) - mfIntervall(1);
 
+                    fOldBoundary = fNewBoundary;
                     fNewBoundary = sum(mfIntervall) / 2;
+                    % The algorithm can become stuck in a negativ value for
+                    % H+ in case of small values. Then the old boundary and
+                    % new boundary are identical. In that case we set the
+                    % boundary to the value where positive H+
+                    % concentrations were calculated to allow the loop to
+                    % finish
+                    if fOldBoundary == fNewBoundary
+                        fNewBoundary = mfIntervall(2);
+                    end
 
                     if fCurrentPH > 7
                         afCurrentConcentration(this.oMT.tiN2I.Hplus) = 10^-(-log10(fDissociationConstantWater) - -log10(fNewBoundary));
@@ -247,7 +258,10 @@ classdef flowManip < matter.manips.substance.flow
                 
                 afInitialConcentrations = ((afPartialInFlows ./ this.oMT.afMolarMass) ./ fVolumetricFlowRate);
 
-                afConcentrationDifference = afInitialConcentrations - afConcentrations';
+                afConcentrationDifference = afConcentrations' - afInitialConcentrations;
+                
+                % Set very small concentration changes to 0
+                afConcentrationDifference(abs(afConcentrationDifference) < 1e-16) = 0;
                 
                 this.afConversionRates = afConcentrationDifference .* fVolumetricFlowRate .* this.oMT.afMolarMass;
                 
