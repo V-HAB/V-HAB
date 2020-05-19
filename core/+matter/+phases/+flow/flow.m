@@ -179,24 +179,6 @@ classdef (Abstract) flow < matter.phase
                     mrInPartials(iF, :) = mrInPartials(iF, :) .* afInFlowrates(iF);
                 end
                 
-                % Include possible manipulator, which uses an array of
-                % absolute flow-rates for the different substances
-                % Also depends on normal inflow branches, so do not include
-                % with the fInwardsFlowRates check.
-                if this.iSubstanceManipulators > 0 && ~isempty(this.toManips.substance.afPartialFlows)
-                    % The sum() of the flow rates of a substance manip
-                    % should always be zero. Therefore, split positive and
-                    % negative rates and see as two flows.
-                    afManipPartialsIn  = this.toManips.substance.afPartialFlows;
-                    afManipPartialsOut = this.toManips.substance.afPartialFlows;
-                    
-                    afManipPartialsIn (afManipPartialsIn  < 0) = 0;
-                    afManipPartialsOut(afManipPartialsOut > 0) = 0;
-                    
-                    mrInPartials(end + 1, :) = afManipPartialsIn;
-                    mrInPartials(end + 1, :) = afManipPartialsOut;
-                end
-                
                 afPartialInFlows = sum(mrInPartials, 1); %note we did multiply mrInPartials with flow rates above, so actually total partial flows!
                 
                 if bCompoundMassesPresent
@@ -210,6 +192,18 @@ classdef (Abstract) flow < matter.phase
                 afPartialInFlows = sum(afPartialInFlows, 1);
             end
             
+            % Include possible manipulator, which uses an array of
+            % absolute flow-rates for the different substances
+            % Also depends on normal inflow branches, so do not include
+            % with the fInwardsFlowRates check.
+            if this.iSubstanceManipulators > 0 && ~isempty(this.toManips.substance.afPartialFlows)
+                % The sum() of the flow rates of a substance manip
+                % should always be zero. Therefore, split positive and
+                % negative rates and see as two flows.
+                afPartialInFlows = afPartialInFlows + this.toManips.substance.afPartialFlows;
+                afPartialInFlows(afPartialInFlows < 0) = 0;
+            end
+                
             if any(afPartialInFlows < 0)
                 afPartialInFlows(afPartialInFlows < 0) = 0;
                 if ~base.oDebug.bOff
