@@ -67,7 +67,7 @@ classdef CDRA < vsys
         % constructor for more information on what field can be set!
         tInitializationOverwrite;
         
-        
+        fCurrentPowerConsumption = 0;
     end
     
     properties (SetAccess = protected, GetAccess = public)
@@ -1015,7 +1015,15 @@ classdef CDRA < vsys
             else
                 this.fCDRA_InactiveTime = this.fCDRA_InactiveTime + (this.oTimer.fTime - this.fLastExecutionTime);
             end
-            
+            fTotalHeatFlow = 0;
+            for iCell = 1:this.tGeometry.Zeolite5A.iCellNumber
+                oCapacity = this.toStores.(['Zeolite5A_', num2str(iBed)]).toPhases.(['Absorber_', num2str(iCell)]).oCapacity;
+                fTotalHeatFlow = fTotalHeatFlow + oCapacity.toHeatSources.(['AbsorberHeater_', num2str(iCell)]).fHeatFlow;
+            end
+            % The CDRA datime power consumption I received from ESA state
+            % 1070 W, since the heater consume at most 960 W we assume here
+            % that ~ 200 W of other power demand is necessary for CDRA
+            this.fCurrentPowerConsumption = fTotalHeatFlow + 200;
             this.fLastExecutionTime = this.oTimer.fTime;
         end
 	end

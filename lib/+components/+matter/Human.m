@@ -422,11 +422,11 @@ classdef Human < vsys
             end
             
             % In the stomach the food conversion can result in generated
-            % mass errors, but since only occurs three times a day setting
-            % the allowed value of this to 0 for the stomach does not slow
+            % mass errors, but since only occurs three times a day reducing
+            % the allowed value of this for the stomach does not slow
             % down the simulation significantly, but reduces the mass
             % errors a lot.
-            tTimeStepProperties.fMassErrorLimit = 0;
+            tTimeStepProperties.fMassErrorLimit = 1e-15;
             this.toStores.Human.toPhases.Stomach.setTimeStepProperties(tTimeStepProperties);
                 
             this.setThermalSolvers();
