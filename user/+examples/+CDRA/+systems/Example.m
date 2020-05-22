@@ -162,14 +162,6 @@ classdef Example < vsys
             matter.procs.exmes.gas( oConnectionPhase, 'Port_1');
             matter.procs.exmes.gas( oConnectionPhase, 'Port_2');
             
-            % Adding heat sources to keep the cabin and coolant water at a
-            % constant temperature
-            oHeatSource = thermal.heatsource('Heater', 940); %according to ICES 2000-01-2345 940 of sensible load)
-            oCabinPhase.oCapacity.addHeatSource(oHeatSource);
-            
-            oHeatSource = components.thermal.heatsources.ConstantTemperature('Coolant_Constant_Temperature');
-            oCoolantPhase.oCapacity.addHeatSource(oHeatSource);
-            
             matter.branch(this, 'CCAAinput', {}, 'Cabin.Port_ToCCAA');
             matter.branch(this, 'CCAA_CHX_Output', {}, 'Cabin.Port_FromCCAA_CHX');
             matter.branch(this, 'CCAA_TCCV_Output', {}, 'Cabin.Port_FromCCAA_TCCV');
@@ -317,6 +309,21 @@ classdef Example < vsys
                 'HumanWater.HumidityOut', 'CabinAir.HumidityIn', this);
             
         end
+        
+        function createThermalStructure(this)
+            createThermalStructure@vsys(this);
+            
+            % Adding heat sources to keep the cabin and coolant water at a
+            % constant temperature
+            oHeatSource = thermal.heatsource('Heater', 940); %according to ICES 2000-01-2345 940 of sensible load)
+            this.toStores.Cabin.toPhases.CabinAir.oCapacity.addHeatSource(oHeatSource);
+            
+            oHeatSource = components.thermal.heatsources.ConstantTemperature('Coolant_Constant_Temperature');
+            this.toStores.CoolantStore.toPhases.Coolant_Phase.oCapacity.addHeatSource(oHeatSource);
+            
+            
+        end
+        
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
             

@@ -92,14 +92,6 @@ classdef Example < vsys
             
             matter.procs.exmes.liquid(oCondensatePhase, 'Port_1');
             
-            % Adding heat sources to keep the cabin and coolant water at a
-            % constant temperature
-            oHeatSource = components.thermal.heatsources.ConstantTemperature('Cabin_Constant_Temperature');
-            oCabinPhase.oCapacity.addHeatSource(oHeatSource);
-            
-            oHeatSource = components.thermal.heatsources.ConstantTemperature('Coolant_Constant_Temperature');
-            oCoolantPhase.oCapacity.addHeatSource(oHeatSource);
-            
             matter.branch(this, 'CCAAinput', {}, 'Cabin.Port_1');
             matter.branch(this, 'CCAA_CHX_Output', {}, 'Cabin.Port_2');
             matter.branch(this, 'CCAA_TCCV_Output', {}, 'Cabin.Port_3');
@@ -112,6 +104,18 @@ classdef Example < vsys
             % are defined
             this.toChildren.CCAA.setIfFlows('CCAAinput', 'CCAA_CHX_Output', 'CCAA_TCCV_Output', 'CCAA_CondensateOutput', 'CCAA_CoolantInput', 'CCAA_CoolantOutput');
             
+        end
+        
+        function createThermalStructure(this)
+            createThermalStructure@vsys(this);
+            
+            % Adding heat sources to keep the cabin and coolant water at a
+            % constant temperature
+            oHeatSource = components.thermal.heatsources.ConstantTemperature('Cabin_Constant_Temperature');
+            this.toStores.Cabin.toPhases.CabinAir.oCapacity.addHeatSource(oHeatSource);
+            
+            oHeatSource = components.thermal.heatsources.ConstantTemperature('Coolant_Constant_Temperature');
+            this.toStores.CoolantStore.toPhases.Coolant_Phase.oCapacity.addHeatSource(oHeatSource);
         end
         function createSolverStructure(this)
             createSolverStructure@vsys(this);

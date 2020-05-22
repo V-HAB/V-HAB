@@ -32,7 +32,7 @@ classdef Example < vsys
             
             oSpace = this.toStores.Space.createPhase(  'gas', 'boundary',   'Vacuum',   1e6,    struct('N2', 2),          3,          0);
             if this.bAdvancedThermalSolver
-                oSpace.replaceCapacity(thermal.capacities.network(oSpace, oSpace.fTemperature, true));
+                oSpace.makeThermalNetworkNode();
             end
             % For the Multibranch solver, we initialize a 1 m^3 Cube of
             % Aluminium, which has a discretizable number of thermal nodes
@@ -67,7 +67,7 @@ classdef Example < vsys
                         
                         oNode = this.toStores.Cube.createPhase(  'solid',   ['Node_X', num2str(iX),'_Y', num2str(iY),'_Z', num2str(iZ)],   this.fTotalCubeVolume/iTotalNodes,    struct('Al', 1),          fInitialTemperature,          1e5);
                         if this.bAdvancedThermalSolver
-                            oNode.replaceCapacity(thermal.capacities.network(oNode, oNode.fTemperature));
+                            oNode.makeThermalNetworkNode();
                         end
                         this.coNodes{iX, iY, iZ} = oNode;
                     end
