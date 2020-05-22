@@ -75,6 +75,7 @@ classdef setup < simulation.infrastructure
             % Logging for the Multifiltration and Ion Exchange beds:
             csBeds = oWPA.csChildren;
             
+            abAllContaminants = false(1, this.oSimulationContainer.oMT.iSubstances);
             for iBed = 1:length(csBeds)
                 oBed = this.oSimulationContainer.toChildren.Example.toChildren.WPA.toChildren.(csBeds{iBed});
                 % String path to the bed for logging purposes
@@ -90,6 +91,7 @@ classdef setup < simulation.infrastructure
                     afSeperationFactors = oResin.toStores.Resin.toProcsP2P.Ion_P2P1.afSeperationFactors;
                     
                     csIons = oMT.csI2N(afSeperationFactors ~= 0);
+                    abAllContaminants(afSeperationFactors ~= 0) = true;
                     iIons = length(csIons);
                     
                     % Now we get the cells and loop over the existing
@@ -99,19 +101,28 @@ classdef setup < simulation.infrastructure
                         for iIon = 1:iIons
                             % Log the P2P flowrate for each relevant Ion
                             % for this cell
-                            this.tiLogIndexes.(oBed.sName).(oResin.sName).tfP2P_Flowrates(iCell).mfIon(iIon) = oLog.addValue([sBedPath, sResinPath, '.toProcsP2P.Ion_P2P', num2str(iCell)],	['this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.', csIons{iIon},')'],      'kg/s',     [oBed.sName, ' ', oResin.sName, ' Cell ', num2str(iCell), ' ', csIons{iIon},' adsorption rate']);
+                            sAdsorptionLogValue = [oBed.sName, ' ', oResin.sName, ' Cell ', num2str(iCell), ' ', csIons{iIon},' adsorption P2P rate'];
+                            sDesorptionLogValue = [oBed.sName, ' ', oResin.sName, ' Cell ', num2str(iCell), ' ', csIons{iIon},' desorption P2P rate'];
+                            oLog.addValue([sBedPath, sResinPath, '.toProcsP2P.Ion_P2P', num2str(iCell)],            ['this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.', csIons{iIon},')'],      'kg/s',     sAdsorptionLogValue);
+                            oLog.addValue([sBedPath, sResinPath, '.toProcsP2P.Ion_Desorption_P2P', num2str(iCell)],	['this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.', csIons{iIon},')'],      'kg/s',     sDesorptionLogValue);
                             
+                            this.tiLogIndexes.(oBed.sName).(oResin.sName).tfP2P_Flowrates(iCell).mfIon(iIon) = oLog.addVirtualValue(['"',sAdsorptionLogValue,'" + "',sDesorptionLogValue,'"'] , 'kg/s', [oBed.sName, ' ', oResin.sName, ' Cell ', num2str(iCell), ' ', csIons{iIon},' adsorption rate']);
                             % Log the Ion Mass in the resion for each cell
                             % and each ion
                             this.tiLogIndexes.(oBed.sName).(oResin.sName).tfResinMasses(iCell).mfIon(iIon) = oLog.addValue([sBedPath, sResinPath, '.toPhases.Resin_', num2str(iCell)],      ['this.afMass(this.oMT.tiN2I.', csIons{iIon},')'],                            	'kg',       [oBed.sName, ' ', oResin.sName, ' Cell ', num2str(iCell), ' ', csIons{iIon},' Mass']);
                         end
                     end
+                    if iBed < 3
+                        abAllContaminants(oMT.tiN2I.C30H50) = true;
+                        this.tiLogIndexes.(oBed.sName).tfOrganicsP2P_Flowrates = oLog.addValue([sBedPath, '.toStores.OrganicRemoval.toProcsP2P.BigOrganics_P2P'],      'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C30H50)',   	'kg/s',       [oBed.sName, ' Organic Removal Flow']);
+                    end
                 end
                 
-                % Add logging for big organics removal once that P2P is
-                % fixed
-%                 oBed.toStores.OrganicRemoval.toProcsP2P.BigOrganics_P2P
-%                 oBed.toStores.OrganicRemoval.toPhases.BigOrganics
+                miContaminants = find(abAllContaminants);
+                for iContaminant = 1:sum(abAllContaminants)
+                    sContaminant = oMT.csI2N{miContaminants(iContaminant)};
+                    this.tiLogIndexes.WPA.ContaminantToCheckFlows(iContaminant)               = oLog.addValue('Example:c:WPA.toBranches.IonBed_to_Check.aoFlows(1)', ['this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.', sContaminant,')'],  'kg/s',   [sContaminant, ' flow to Check']);
+                end
             end
             
         end
@@ -127,11 +138,34 @@ classdef setup < simulation.infrastructure
             end
             
             oPlotter = plot@simulation.infrastructure(this);
-            tPlotOptions.sTimeUnit = 'd';
+            tPlotOptions.sTimeUnit = 'hours';
             
-            cxPlotValues1 = this.tiLogIndexes.WPA.EffectiveFlows;
+            coPlots{1,1} = oPlotter.definePlot(this.tiLogIndexes.WPA.Masses,                    'WPA Water Mass',           tPlotOptions);
+            coPlots{1,2} = oPlotter.definePlot(this.tiLogIndexes.WPA.Flowrates,                 'WPA Flowrates',            tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot(this.tiLogIndexes.WPA.EffectiveFlows,            'WPA Gas Flows',            tPlotOptions);
+            coPlots{2,2} = oPlotter.definePlot(this.tiLogIndexes.WPA.ContaminantToCheckFlows,   'WPA Contaminant Flows',    tPlotOptions);
             
-            coPlots{1,1} = oPlotter.definePlot(cxPlotValues1, 'Bullshit', tPlotOptions);
+            % {'"WPA O2 Output"', '"WPA N2 Output"', '"WPA CO2 Output"', '"WPA H2O Output"'}
+            oPlotter.defineFigure(coPlots,  'WPA Parameters');
+            
+            tPlotOptions.bLegend = false;
+            oWPA = this.oSimulationContainer.toChildren.Example.toChildren.WPA;
+            csBeds = oWPA.csChildren;
+            for iBed = 1:length(csBeds)
+                oBed = this.oSimulationContainer.toChildren.Example.toChildren.WPA.toChildren.(csBeds{iBed});
+                coPlots = cell(oBed.iChildren,5); 
+                for iResin = 1:oBed.iChildren
+                    oResin = oBed.toChildren.(oBed.csChildren{iResin});
+                    iCells = oResin.iCells;
+                    for iCell = 1:iCells
+                        coPlots{iResin,iCell} = oPlotter.definePlot(this.tiLogIndexes.(csBeds{iBed}).(oResin.sName).tfP2P_Flowrates(iCell).mfIon,	['Resin ',num2str(iResin),' Cell ',num2str(iCell),' Adsorption Flows'],   tPlotOptions);
+                    end
+                end
+                oPlotter.defineFigure(coPlots,  [csBeds{iBed}, ' Adsorption Flows']);
+            end
+            
+            oPlotter.plot();
+            
         end
     end
 end

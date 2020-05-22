@@ -34,6 +34,8 @@ classdef flowManip < matter.manips.substance.flow
         mfOHMatrix;
         mfMolarSumMatrix;
         afBaseLeftSideVector;
+        
+        arLastIonPartials;
     end
     
     
@@ -105,6 +107,8 @@ classdef flowManip < matter.manips.substance.flow
             this.iInitialReactants  = length(this.aiInitialReactants);
             
             this.createLinearSystem();
+            
+            this.arLastIonPartials = zeros(1, sum(this.oMT.aiCharge ~= 0));
         end
         function calculateConversionRate(this, afInFlowRates, aarInPartials)
             %getting inflowrates
@@ -114,6 +118,16 @@ classdef flowManip < matter.manips.substance.flow
             afPartialInFlows(afPartialInFlows < 0) = 0;
             
             if any(afPartialInFlows(this.abDissociation))
+                afIonFlows = afPartialInFlows(this.oMT.aiCharge ~= 0);
+                arIonPartials = afIonFlows ./ sum(afIonFlows);
+                
+                if all(abs(this.arLastIonPartials - arIonPartials) < 0.05)
+                    afResultingFlows = afPartialInFlows + this.afPartialFlows;
+                    if ~any(afResultingFlows < 0)
+                        return
+                    end
+                end
+                this.arLastIonPartials = arIonPartials;
                 % Volumetric flowrate in l/s!
                 fVolumetricFlowRate = (sum(afPartialInFlows) / this.oPhase.fDensity) * 1000;
 
@@ -125,7 +139,7 @@ classdef flowManip < matter.manips.substance.flow
                 % solved by the system of equations
                 fInitialChargeSum = this.oMT.aiCharge(~this.abRelevantSubstances) * afInitialConcentrations(~this.abRelevantSubstances)';
                 fInitialMassSum = sum(afPartialInFlows) / fVolumetricFlowRate;
-                
+
                 afCurrentConcentration  = afInitialConcentrations;
                 afConcentrations        = afInitialConcentrations';
                 % Now we calculate the correct equilibrium solution that
@@ -155,9 +169,9 @@ classdef flowManip < matter.manips.substance.flow
                     else
                         afCurrentConcentration(this.oMT.tiN2I.Hplus) = mfInitializationIntervall(iBoundary);
                     end 
-                    
+
                     afCurrentConcentration(this.oMT.tiN2I.OH) = 55.6 * fDissociationConstantWater / afCurrentConcentration(this.oMT.tiN2I.Hplus);
-                    
+
                     afLeftSide = this.afBaseLeftSideVector + this.mfMolarSumMatrix * afInitialConcentrations';
                     afLeftSide(this.oMT.tiN2I.OH) = fInitialMassSum; % [kg/l]
                     afLeftSide(this.oMT.tiN2I.Hplus) = fInitialChargeSum; 
@@ -170,13 +184,13 @@ classdef flowManip < matter.manips.substance.flow
                     % You can select a reduced linear system:
                     % A = mfLinearSystem(this.abRelevantSubstances, this.abRelevantSubstances);
                     % b = afLeftSide (this.abRelevantSubstances);
-                    
+
                     afConcentrations(this.abRelevantSubstances) = mfLinearSystem(this.abRelevantSubstances, this.abRelevantSubstances) \ afLeftSide(this.abRelevantSubstances);
                     mfInitializatonError(iBoundary) = afConcentrations(this.oMT.tiN2I.Hplus) - afCurrentConcentration(this.oMT.tiN2I.Hplus);
                 end
 %                     A = mfLinearSystem([1:10, this.oMT.tiN2I.H2O, this.oMT.tiN2I.OH, this.oMT.tiN2I.Hplus], [1:10, this.oMT.tiN2I.H2O, this.oMT.tiN2I.OH, this.oMT.tiN2I.Hplus]);
 %                     B = afLeftSide([1:10, this.oMT.tiN2I.H2O, this.oMT.tiN2I.OH, this.oMT.tiN2I.Hplus]);
-                    
+
                 for iError = 1:length(mfInitializatonError)-1
                     if sign(mfInitializatonError(iError)) ~= sign(mfInitializatonError(iError+1))
 
@@ -190,7 +204,7 @@ classdef flowManip < matter.manips.substance.flow
                         break
                     end
                 end
-                
+
                 fNewBoundary = mfIntervall(2);
                 while ((abs(fError) > fMaxError) && fIntervallSize > fMaxError || afConcentrations(this.oMT.tiN2I.Hplus) < 0)  && iCounter < 1000 
 
@@ -215,9 +229,9 @@ classdef flowManip < matter.manips.substance.flow
                     else
                         afCurrentConcentration(this.oMT.tiN2I.Hplus) = fNewBoundary;
                     end
-                    
+
                     afCurrentConcentration(this.oMT.tiN2I.OH) = 55.6 * fDissociationConstantWater / afCurrentConcentration(this.oMT.tiN2I.Hplus);
-                    
+
                     afLeftSide = this.afBaseLeftSideVector + this.mfMolarSumMatrix * afInitialConcentrations';
                     afLeftSide(this.oMT.tiN2I.OH) = fInitialMassSum; % [kg/l]
                     afLeftSide(this.oMT.tiN2I.Hplus) = fInitialChargeSum; 
@@ -226,10 +240,10 @@ classdef flowManip < matter.manips.substance.flow
                                      this.mfHydrogenMatrix .* afCurrentConcentration(this.oMT.tiN2I.Hplus) +...
                                      this.mfOHMatrix .* afCurrentConcentration(this.oMT.tiN2I.OH) +...
                                      this.mfMolarSumMatrix;
-                                 
+
                     afConcentrations(this.abRelevantSubstances) = mfLinearSystem(this.abRelevantSubstances, this.abRelevantSubstances) \ afLeftSide(this.abRelevantSubstances);
                     fError = afConcentrations(this.oMT.tiN2I.Hplus) - afCurrentConcentration(this.oMT.tiN2I.Hplus);
-                    
+
                     if fIntervallSize < 1e-6
                         afCurrentConcentration(this.oMT.tiN2I.H2O)   = afConcentrations(this.oMT.tiN2I.H2O);
                     end
@@ -243,9 +257,9 @@ classdef flowManip < matter.manips.substance.flow
                         mfIntervall(2)  = fNewBoundary;
                     end
                 end
-                
+
                 warning('ON', 'all')
-                
+
                 % Since the solution of the system of equation is numerical
                 % slight negative values might occur from numerical erros,
                 % these are rounded. Other errors result in a stop
@@ -255,16 +269,16 @@ classdef flowManip < matter.manips.substance.flow
                 else
                     error(['something in the pH calculation of phase ', this.oPhase.sName, ' in store ', this.oPhase.oStore.sName, ' went wrong'])
                 end
-                
+
                 afInitialConcentrations = ((afPartialInFlows ./ this.oMT.afMolarMass) ./ fVolumetricFlowRate);
 
                 afConcentrationDifference = afConcentrations' - afInitialConcentrations;
-                
+
                 % Set very small concentration changes to 0
                 afConcentrationDifference(abs(afConcentrationDifference) < 1e-16) = 0;
-                
+
                 this.afConversionRates = afConcentrationDifference .* fVolumetricFlowRate .* this.oMT.afMolarMass;
-                
+
                 this.fpH = -log10(afConcentrations(this.oMT.tiN2I.Hplus));
             else
                 this.afConversionRates = zeros(1, this.oMT.iSubstances); %[kg/s]

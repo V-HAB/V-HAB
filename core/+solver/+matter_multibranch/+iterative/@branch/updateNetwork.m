@@ -65,6 +65,9 @@ function updateNetwork(this, bForceP2Pcalc, bManipUpdate)
                         if bManipUpdate
                             if oPhase.iSubstanceManipulators > 0
                                 oPhase.toManips.substance.calculateConversionRate(afInFlowRates, aarInPartials);
+                                % If we have a manip, we have to update the
+                                % partial masses again
+                                oPhase.updatePartials(afInFlowRates .* aarInPartials);
                             end
                         end
                         
