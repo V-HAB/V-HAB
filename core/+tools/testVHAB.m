@@ -1,4 +1,4 @@
-function testVHAB(sCompareToState, bForceExecution, bDebugModeOn)
+function testVHAB(sCompareToState, fSimTime, bForceExecution, bDebugModeOn)
 %TESTVHAB Runs all tests and saves the figures to a folder
 %   This function is a debugging helper. It will run all tests inside
 %   the user/+tests folder and save the resulting figures to
@@ -45,10 +45,14 @@ else
 end
 
 if nargin < 2
-    bForceExecution = false;
+    fSimTime = [];
 end
 
 if nargin < 3
+    bForceExecution = false;
+end
+
+if nargin < 4
     bDebugModeOn = false;
 end
 
@@ -283,7 +287,7 @@ if (bChanged || bForceExecution)
                 % parfeval() returns a parallel.FevalFuture object from
                 % which the results of the parallel worker can be obtained.
                 % These results are the return values of runTest().
-                aoResultObjects(iTest) = parfeval(oPool, @runTest, 1, tTests(iTest), ptParams, sTestDirectory, sFolderPath, true, bDebugModeOn);
+                aoResultObjects(iTest) = parfeval(oPool, @runTest, 1, tTests(iTest), ptParams, sTestDirectory, sFolderPath, fSimTime, true, bDebugModeOn);
                 
                 % Now that the FevalFuture object hast been added to the
                 % aoResultObjects array, we can update the callback of the
@@ -880,7 +884,7 @@ for iI = 1:length(tInfo)
 end
 end
 
-function tTest = runTest(tTest, ptParams, sTestDirectory, sFolderPath, bParallelExecution, bDebugModeOn)
+function tTest = runTest(tTest, ptParams, sTestDirectory, sFolderPath, fSimTime, bParallelExecution, bDebugModeOn)
 % This function creates one V-HAB simulation, runs it and returns an
 % updated tTest struct. It can be used for both parallel and serial
 % execution of tests, the key here is the value of the bParallelExecution
@@ -898,7 +902,7 @@ if exist(fullfile(sTestDirectory, tTest.name, 'setup.m'), 'file')
     % errors inside the simulation itself
     try
         % Creating the simulation object.
-        oLastSimObj = vhab.sim(sExecString, ptParams, [], []);
+        oLastSimObj = vhab.sim(sExecString, ptParams, [], [], fSimTime);
         
         % In case the user wants to run the simulations with the debug mode
         % activated, we toggle that switch now.

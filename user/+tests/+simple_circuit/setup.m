@@ -15,7 +15,7 @@ classdef setup < simulation.infrastructure
     
     methods
         % Constructor function
-        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig)
+        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig, fSimTime)
             
             % First we call the parent constructor and tell it the name of
             % this simulation we are creating.
@@ -29,9 +29,12 @@ classdef setup < simulation.infrastructure
             %% Simulation length
             % Stop when specific time in simulation is reached or after 
             % specific amount of ticks (bUseTime true/false).
+            if nargin < 4 || isempty(fSimTime)
+                this.fSimTime = 100;
+            else 
+                this.fSimTime = fSimTime;
+            end
             this.fSimTime = 100 * 1; % In seconds
-            this.iSimTicks = 1500;
-            this.bUseTime = true;
         end
         
         % Logging function

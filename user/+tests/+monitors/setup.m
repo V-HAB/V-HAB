@@ -13,7 +13,7 @@ classdef setup < simulation.infrastructure
     
     methods
         % Constructor function
-        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig) 
+        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig, fSimTime) 
             
             % Passing parameters for dumping and pre-allocating to the
             % logger.
@@ -39,7 +39,11 @@ classdef setup < simulation.infrastructure
             
             % Setting the simulation duration to one hour. Time is always
             % in units of seconds in V-HAB.
-            this.fSimTime = 3600;
+            if nargin < 4 || isempty(fSimTime)
+                this.fSimTime = 3600;
+            else 
+                this.fSimTime = fSimTime;
+            end
             
         end
         

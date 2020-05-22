@@ -12,7 +12,7 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig) % Constructor function
+        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig, fSimTime) % Constructor function
             
             
             %%%% Tuning of the solving process %%%%
@@ -80,6 +80,11 @@ classdef setup < simulation.infrastructure
             % Creating the root object
             oExample = tutorials.subsystems.systems.Example(this.oSimulationContainer, 'Example');
             
+            if nargin < 4 || isempty(fSimTime)
+                this.fSimTime = 3600;
+            else 
+                this.fSimTime = fSimTime;
+            end
             
         end
         

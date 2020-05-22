@@ -12,7 +12,7 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig) % Constructor function
+        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig, fSimTime) % Constructor function
             
             % First we call the parent constructor and tell it the name of
             % this simulation we are creating.
@@ -25,7 +25,12 @@ classdef setup < simulation.infrastructure
             %% Simulation length
             % Stop when specific time in simulation is reached or after 
             % specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 3600; % In seconds
+            if nargin < 4 || isempty(fSimTime)
+                this.fSimTime = 3600; % In seconds
+            else 
+                this.fSimTime = fSimTime;
+            end
+            
             this.bUseTime = true;
         end
         
@@ -69,7 +74,7 @@ classdef setup < simulation.infrastructure
  
             
             this.tiLogIndexes.iIndex_1 = oLog.addVirtualValue('fr_co2 * 1000', 'g/s', 'CO_2 Flowrate', 'co2_fr_grams');
-            this.tiLogIndexes.iIndex_2 = oLog.addVirtualValue('flow_temp_left - 273.15', '°C', 'Temperature Left in Celsius');
+            this.tiLogIndexes.iIndex_2 = oLog.addVirtualValue('flow_temp_left - 273.15', 'degC', 'Temperature Left in Celsius');
             this.tiLogIndexes.iIndex_3 = oLog.addVirtualValue('mod(flow_temp_right .^ 2, 10) ./ "Partial Mass CO_2 Tank 2"', '-', 'Nonsense');
             
         end

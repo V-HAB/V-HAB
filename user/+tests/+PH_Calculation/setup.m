@@ -13,7 +13,7 @@ classdef setup < simulation.infrastructure
     
     methods
         % Constructor function
-        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig) % Constructor function
+        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig, fSimTime) % Constructor function
             % First we call the parent constructor and tell it the name of
             % this simulation we are creating.
             if nargin < 3
@@ -27,8 +27,11 @@ classdef setup < simulation.infrastructure
             
             % Setting the simulation duration to one hour. Time is always
             % in units of seconds in V-HAB.
-            this.fSimTime = 10*3600;
-            
+            if nargin < 4 || isempty(fSimTime)
+                this.fSimTime = 10*3600;
+            else 
+                this.fSimTime = fSimTime;
+            end
         end
         
         % Logging function
@@ -68,7 +71,7 @@ classdef setup < simulation.infrastructure
             
              %% Get Test Data:
              % Data is from "Allgemeine und Anorganische Chemie", 3rd
-             % Edition, Michael Binnewies, Maik Finze, Manfred Jäckel, Peer
+             % Edition, Michael Binnewies, Maik Finze, Manfred Jï¿½ckel, Peer
              % Schmidt, Helge Willner, Geoff Rayner-Canham page 262
             iFileID = fopen(strrep('+examples/+PH_Calculation/Titration_Curve.csv','/',filesep), 'r');
             

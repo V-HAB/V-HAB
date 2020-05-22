@@ -15,7 +15,9 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig) % Constructor function
+        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig, fSimTime) % Constructor function
+            
+            ttMonitorConfig.oTimeStepObserver = struct('sClass', 'simulation.monitors.timestepObserver', 'cParams', {{ 0 }});
             
             this@simulation.infrastructure('Test_CDRA', ptConfigParams, tSolverParams, ttMonitorConfig);
             
@@ -25,8 +27,11 @@ classdef setup < simulation.infrastructure
             %% Simulation length
             % Stop when specific time in simulation is reached or after 
             % specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 20000; % In seconds
-            this.bUseTime = true;
+            if nargin < 4 || isempty(fSimTime)
+                this.fSimTime = 20000;
+            else 
+                this.fSimTime = fSimTime;
+            end
         end
         
         function configureMonitors(this)

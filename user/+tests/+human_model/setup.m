@@ -4,7 +4,7 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig) % Constructor function
+        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig, fSimTime) % Constructor function
             
             if nargin < 3
                 ttMonitorConfig = struct();
@@ -24,9 +24,11 @@ classdef setup < simulation.infrastructure
             %% Simulation length
             % Stop when specific time in simulation is reached or after 
             % specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 3600 * 24 * 2; % In seconds
-            this.iSimTicks = 1500;
-            this.bUseTime = true;
+            if nargin < 4 || isempty(fSimTime)
+                this.fSimTime = 3600 * 24;
+            else 
+                this.fSimTime = fSimTime;
+            end
         end
         
         

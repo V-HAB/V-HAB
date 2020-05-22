@@ -12,7 +12,7 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig) % Constructor function
+        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig, fSimTime) % Constructor function
             % Possible to change the constructor paths and params for the
             % monitors
             
@@ -27,8 +27,11 @@ classdef setup < simulation.infrastructure
             %% Simulation length
             % Stop when specific time in simulation is reached or after 
             % specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 3000; % In seconds
-            this.bUseTime = true;
+            if nargin < 4 || isempty(fSimTime)
+                this.fSimTime = 3000;
+            else 
+                this.fSimTime = fSimTime;
+            end
         end
         function configureMonitors(this)
             

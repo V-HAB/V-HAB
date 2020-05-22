@@ -1,4 +1,3 @@
-
 classdef setup < simulation.infrastructure
     
     properties
@@ -7,7 +6,7 @@ classdef setup < simulation.infrastructure
     
     methods
         
-        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig)
+        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig, fSimTime)
             
             if nargin < 3
                 ttMonitorConfig = struct();
@@ -17,8 +16,11 @@ classdef setup < simulation.infrastructure
             examples.RFCS.system.RFCS(this.oSimulationContainer,'RFCS');
             
             %simulation length
-            this.fSimTime = 1 * 24 * 3600;
-            this.bUseTime = true;
+            if nargin < 4 || isempty(fSimTime)
+                this.fSimTime = 3600 * 24;
+            else 
+                this.fSimTime = fSimTime;
+            end
         end
         
         function configureMonitors(this)

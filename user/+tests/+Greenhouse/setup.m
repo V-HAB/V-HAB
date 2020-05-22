@@ -7,7 +7,7 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig)
+        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig, fSimTime)
             
             % call superconstructor (with possible altered monitor configs)
             this@simulation.infrastructure('Test_Greenhouse', ptConfigParams, tSolverParams, ttMonitorConfig);
@@ -16,14 +16,11 @@ classdef setup < simulation.infrastructure
             examples.Greenhouse.systems.Greenhouse(this.oSimulationContainer, 'Greenhouse');
             
             % set simulation time
-            this.fSimTime  = 10e6;      % [s]
-            
-            % if true, use fSimTime for simulation duration, if false use
-            % iSimTicks below
-            this.bUseTime  = true;      
-            
-            % set amount of simulation ticks
-            this.iSimTicks = 400;       % [ticks]
+            if nargin < 4 || isempty(fSimTime)
+                this.fSimTime = 10e6; % [s]
+            else 
+                this.fSimTime = fSimTime;
+            end
         end
         
         function configureMonitors(this)
