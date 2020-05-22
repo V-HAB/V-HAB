@@ -167,8 +167,13 @@ classdef gas < matter.phases.boundary.boundary
             % We also need to reset some thermal values (e.g. total heat
             % capacity), which is done by calling the
             % setBoundaryTemperature() method. This method includes the
-            % required calculations. 
-            this.oCapacity.setBoundaryTemperature(this.fTemperature);
+            % required calculations. If this is called during the
+            % construction in the matter domain, the capacity is not yet
+            % set. So we enclose it in a try-catch-block.
+            try
+                this.oCapacity.setBoundaryTemperature(this.fTemperature);
+            catch  %#ok<CTCH>
+            end
             
             this.setBranchesOutdated();
         end

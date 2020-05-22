@@ -303,6 +303,7 @@ classdef infrastructure < base & event.source
                 % Thermal Domain
                 if ismethod(oChild,'createThermalStructure')
                     oChild.createThermalStructure();
+                    oChild.createAdvectiveThermalBranches(oChild.aoBranches);
                     oChild.sealThermalStructure();
                 end
                 

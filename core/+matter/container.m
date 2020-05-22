@@ -317,6 +317,7 @@ classdef container < sys
                 
             end
         end
+        
         function setMaxIdealGasLawPressure(this, fMaxIdealGasLawPressure)
             % This function can be used when defining a V-HAB simulation to
             % change the maximum pressure up to which the ideal gas law is
@@ -372,9 +373,6 @@ classdef container < sys
                 % ... trigger event if anyone wants to know
                 this.trigger('branch.connected', iLocalBranch);
             end
-            
-            % every matter interface has a respective thermal interface
-            this.connectThermalIF(sLocalInterface, sParentInterface);
         end
         
         function updateBranchNames(this, oBranch, sOldName)

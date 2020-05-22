@@ -34,9 +34,6 @@ classdef container < sys
         % Total number of capacities inside this thermal container
         iCapacities = 0;
         
-        % Reference to the corresponding matter container
-        oMatterContainer;
-        
         % Sealed?
         bThermalSealed = false;
     end
@@ -70,6 +67,14 @@ classdef container < sys
                 
                 this.toChildren.(sChild).createThermalStructure();
             end
+            
+            % Creating the thermal capacities associated with matter stores
+            % and the thermal branches associated with p2p processors. The
+            % thermal branches associated with matter branches will be
+            % created seprarately in this.createAdvectiveThermalBranches(),
+            % which is called in simulation.infrastructure.initialize().
+            this.createMatterCounterParts();
+            
         end
         
         function this = addProcConductor(this, oConductor)
@@ -115,7 +120,7 @@ classdef container < sys
             
             % add the branch to the array containing all thermal branches
             % as new field
-            this.aoThermalBranches(end + 1, 1)     = oThermalBranch;
+            this.aoThermalBranches(end + 1, 1) = oThermalBranch;
             
             % Check if the branch has a custom name, and if it does add it
             % to the struct containing all thermal branches using the
@@ -257,6 +262,257 @@ classdef container < sys
                            this.sName, this.aoThermalBranches(iBranch).sName, this.sName);
                 end
                 
+            end
+        end
+        
+        function createMatterCounterParts(this)
+            %CREATEMATTERCOUNTERPARTS Creates capacities and thermal branches
+            % This method loops through all matter stores and their phases
+            % and creates a thermal capacity. And while we're here, we also
+            % create thermal branches for the advective heat transfer
+            % through p2p processors.
+            
+            %CHECK: Should flow phase automatically be a network capacity?
+            %Would need to also automatically connect that to the
+            %multi-branch solver in setThermalSolvers().
+            %-> No, because the multi-branch solver only supports phases
+            %where the mass doesn't change. (Status on: 18.05.2020)
+            
+            % Getting all of the store names in this container
+            csMatterStores = fieldnames(this.toStores);
+            
+            % Loop through all stores
+            for sStore = csMatterStores'
+                %% Create a capacity for each phase
+                % Loop through all phases of the current store
+                for iPhase = 1:this.toStores.(sStore{1}).iPhases
+                    
+                    % Get a reference to the current phase
+                    oPhase = this.toStores.(sStore{1}).aoPhases(iPhase);
+                    
+                    % We need to create a specific type of capacity
+                    % depending on what kind of phase it will be associated
+                    % with. It can be either a "normal" phase, a boundary
+                    % phase, a phase whose capacity shall be part of a
+                    % thermal network or a network boundary. The following
+                    % if-elseif-else block checks for these conditions and
+                    % calls the appropriate constructor.
+                    if isa(oPhase, 'matter.phases.boundary.boundary') && oPhase.bThermalNetworkNode
+                        thermal.capacities.network(oPhase, oPhase.fTemperature, true);
+                    elseif isa(oPhase, 'matter.phases.boundary.boundary')
+                        thermal.capacities.boundary(oPhase, oPhase.fTemperature);
+                    elseif oPhase.bThermalNetworkNode
+                        thermal.capacities.network(oPhase, oPhase.fTemperature, false);
+                    else
+                        thermal.capacity(oPhase, oPhase.fTemperature);
+                    end
+                    
+                    % Now update the matter properties
+                    oPhase.oCapacity.updateSpecificHeatCapacity();
+                end
+                
+                %% Create a branch for each P2P
+                
+                % Getting the names of all p2p processors in this store
+                csProcs = fieldnames(this.toStores.(sStore{1}).toProcsP2P);
+                
+                for sProcessor = csProcs'
+                    
+                    oProcessor = this.toStores.(sStore{1}).toProcsP2P.(sProcessor{1});
+                    
+                    % Create the respective thermal interfaces for the thermal
+                    % branch
+                    % Split to store name / ExMe name
+                    oExMeIn = oProcessor.coExmes{1};
+                    thermal.procs.exme(oExMeIn.oPhase.oCapacity, oProcessor.coExmes{1}.sName);
+                    
+                    oExMeOut = oProcessor.coExmes{2};
+                    thermal.procs.exme(oExMeOut.oPhase.oCapacity, oProcessor.coExmes{2}.sName);
+                    
+                    % Now we automatically create a fluidic processor for the
+                    % thermal heat transfer bound to the matter transferred by the
+                    % P2P
+                    try
+                        thermal.procs.conductors.fluidic(oProcessor.oStore.oContainer, oProcessor.sName, oProcessor);
+                        sCustomName = oProcessor.sName;
+                        % The operation can fail because the P2Ps are local within a
+                        % store and therefore can share common names acros multiple
+                        % stores (e.g. you can have 5 Stores, each containing a P2P
+                        % called "Absorber"). However, as F2Fs the thermal conductors
+                        % are added to the parent system, and therefore must be unique
+                        % for each system. Therefore we count a number up until we find
+                        % a name that is not yet taken for the fluidic processor
+                    catch oError
+                        if contains(oError.message, 'already exists.')
+                            bError = true;
+                            iCounter = 2;
+                            while bError == true
+                                % now we just try the name until we find one that
+                                % is not yet taken, increasing the counter each
+                                % time the creation of the proc failed
+                                try
+                                    thermal.procs.conductors.fluidic(oProcessor.oStore.oContainer, [oProcessor.sName, '_', num2str(iCounter)], oProcessor);
+                                    bError = false;
+                                catch oError
+                                    if contains(oError.message, 'already exists.')
+                                        iCounter = iCounter + 1;
+                                    else
+                                        % If it is another error than what we area looking for,
+                                        % we do throw the error
+                                        this.throw('P2P-thermal', oError.message)
+                                    end
+                                end
+                                
+                                % If we reach 1000 Iterations, throw an error as we
+                                % are not likely to find a valid name anymore
+                                if iCounter >= 1000
+                                    this.throw('P2P-thermal',[ 'could not find a valid name for the thermal fluidic conductor of P2P ', oProcessor.sName])
+                                end
+                            end
+                            sCustomName = [oProcessor.sName, '_', num2str(iCounter)];
+                        else
+                            % If it is another error than what we area looking for,
+                            % we do throw the error
+                            this.throw('P2P', oError.message)
+                        end
+                    end
+                    
+                    % Now we generically create the corresponding thermal branch
+                    % using the previously created fluidic conductor
+                    sLeftPort  = [oProcessor.oStore.sName, '.', oExMeIn.sName];
+                    sRightPort = [oProcessor.oStore.sName, '.', oExMeOut.sName];
+                    thermal.branch(oProcessor.oStore.oContainer, sLeftPort, {sCustomName}, sRightPort, sCustomName, oProcessor);
+                end
+            end
+            
+        end
+        
+        function createAdvectiveThermalBranches(this, aoBranches, bNoRecursion)
+            %CREATEADVECTIVETHERMALBRANCHES Creates a thermal branch for each matter branch
+            
+            if nargin < 3
+                bNoRecursion = false;
+            end
+            
+            % First we loop through all children of this object and call
+            % the method there as well. If there are P2P branches in a
+            % system, we will pass on the aoP2PBranch array instead, and in
+            % that case we don't want the recursion to the child objects to
+            % happen. 
+            if ~bNoRecursion
+                csChildren = fieldnames(this.toChildren);
+                for sChild = csChildren'
+                    oChild = this.toChildren.(sChild{1});
+                    oChild.createAdvectiveThermalBranches(oChild.aoBranches);
+                end
+            end
+            
+            % To model the mass-bound heat (advective) transfer we need a
+            % thermal branch in parallel to each matter branch. So here we
+            % loop through all matter branches in this container and create
+            % some thermal branches.
+            for iBranch = 1:length(aoBranches)
+                oBranch = aoBranches(iBranch);
+                
+                % If there is one or more processor, we loop through them
+                % and create corresponding fluidic conductors. 
+                if oBranch.iFlowProcs >= 1
+                    % Getting the names of all f2f-processors in the current
+                    % branch
+                    csProcs = {oBranch.aoFlowProcs.sName};
+                    for iProc = 1:length(csProcs)
+                        thermal.procs.conductors.fluidic(this, csProcs{iProc}, oBranch);
+                    end
+                else
+                    % Branches without a f2f can exist (e.g. manual branches)
+                    % however for the thermal branch we always require at least
+                    % one conductor
+                    
+                    % Initializing/clearing the csProcs cell
+                    csProcs = cell.empty();
+                    
+                    % Constructing the name of the thermal conductor by adding
+                    % the string '_Conductor' to either the custom name or
+                    % regular name of this branch.
+                    if ~isempty(oBranch.sCustomName)
+                        csProcs{1} = [oBranch.sCustomName, '_Conductor'];
+                    else
+                        csProcs{1} = [oBranch.sName, '_Conductor'];
+                    end
+                    
+                    % Since this name will be used as a struct field name, we
+                    % need to make sure it doesn't exceed the maximum field
+                    % name length of 63 characters.
+                    if length(csProcs{1}) > 63
+                        % Generating some messages for the debugger
+                        if ~base.oDebug.bOff
+                            this.out(3,1,'thermal.branch','Truncating automatically generated thermal conductor name.');
+                            this.out(3,2,'thermal.branch','Old name: %s', csProcs{1});
+                        end
+                        
+                        % Truncating the name
+                        csProcs{1} = csProcs{1}(1:63);
+                        
+                        % More debugging output
+                        if ~base.oDebug.bOff
+                            this.out(3,2,'thermal.branch','New name: %s', csProcs{1});
+                        end
+                    end
+                    
+                    % Now we can actually create the conductor.
+                    thermal.procs.conductors.fluidic(this, csProcs{1}, oBranch);
+                end
+                
+                % Getting the left and right capacities
+                oLeftCapacity  = oBranch.coExmes{1}.oPhase.oCapacity;
+                oRightCapacity = oBranch.coExmes{2}.oPhase.oCapacity;
+                
+                % Before the creation of this method, the thermal branches
+                % associated with matter branches were created directly in
+                % matter.branch. In order to better separate the matter and
+                % thermal domains in V-HAB this method was created that is
+                % called after the matter domain has been sealed. This has
+                % the drawback, that when the matter branch is created, the
+                % thermal capacities associated with the matter phases have
+                % not yet been created, so no thermal exme can be created
+                % either. 
+                % As a result, the thermal exmes are created automatically
+                % here by passing the capacity objects to the
+                % thermal.branch constructor. However, some existing code
+                % relies on the fact, that the thermal and matter exmes hav
+                % the same name. In order to retain the names of the exmes,
+                % the commented code below this text block was created. For
+                % most cases it works, but it fails when interface branches
+                % are involved that connect stores with the same name on
+                % different system levels. This is a very complex edge case
+                % to catch, so it was decided to create new exmes
+                % automatically by passing the capacity objects. The matter
+                % exmes corresponding to the thermal exmes can be obtained
+                % via the oMatterObject property of the thermal branch. The
+                % commented code below is left in just to show how this
+                % problem was attempted to be circumvented. 
+                
+%                 sLeftStoreName = oBranch.coExmes{1}.oPhase.oStore.sName;
+%                 sLeftExMeName  = oBranch.coExmes{1}.sName;
+%                 sLeftSide      = [sLeftStoreName, '.', sLeftExMeName];
+%                 
+%                 thermal.procs.exme(oLeftCapacity, sLeftExMeName);
+%                 
+%                 sRightStoreName = oBranch.coExmes{2}.oPhase.oStore.sName;
+%                 sRightExMeName  = oBranch.coExmes{2}.sName;
+%                 sRightSide      = [sRightStoreName, '.', sRightExMeName];
+%                 
+%                 thermal.procs.exme(oRightCapacity, sRightExMeName);
+%                 
+%                 oThermalBranch = thermal.branch(this, sLeftSide, csProcs, sRightSide, oBranch.sCustomName, oBranch);
+                
+                % Now we have everything we need, so we can call the thermal
+                % branch constructor.
+                oThermalBranch = thermal.branch(this, oLeftCapacity, csProcs, oRightCapacity, oBranch.sCustomName, oBranch);
+                
+                % Giving the matter branch associated with this thermal branch
+                % a reference. 
+                oBranch.setThermalBranch(oThermalBranch);
             end
         end
     end

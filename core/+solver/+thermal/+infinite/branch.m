@@ -138,12 +138,33 @@ classdef branch < solver.thermal.base.branch
                 
                 for iExme = 1:oFlowCapacity.iProcsEXME
                     if isa(oFlowCapacity.aoExmes(iExme).oBranch.oHandler, 'solver.thermal.basic_fluidic.branch')
-                        fFlowRate = oFlowCapacity.aoExmes(iExme).oBranch.coConductors{1}.oMassBranch.fFlowRate * oFlowCapacity.oPhase.toProcsEXME.(oFlowCapacity.aoExmes(iExme).sName).iSign;
+                        iExMeSign = oFlowCapacity.aoExmes(iExme).iSign;
+                        fFlowRate = oFlowCapacity.aoExmes(iExme).oBranch.oMatterObject.fFlowRate * iExMeSign;
                         
                         if fFlowRate > 0
                             mfFlowRate(iExme) = fFlowRate;
-                            mfSpecificHeatCapacity(iExme) = oFlowCapacity.oPhase.toProcsEXME.(oFlowCapacity.aoExmes(iExme).sName).oFlow.fSpecificHeatCapacity;
-                            mfTemperature(iExme) =  oFlowCapacity.oPhase.toProcsEXME.(oFlowCapacity.aoExmes(iExme).sName).oFlow.fTemperature;
+                            oMatterObject = oFlowCapacity.aoExmes(iExme).oBranch.oMatterObject;
+                            try
+                                iBranchSign = sign(oMatterObject.fFlowRate);
+                                if iBranchSign * iExMeSign < 0
+                                    mfSpecificHeatCapacity(iExme) = oMatterObject.aoFlows(1).fSpecificHeatCapacity;
+                                    mfTemperature(iExme)          = oMatterObject.aoFlows(1).fTemperature;
+                                else
+                                    mfSpecificHeatCapacity(iExme) = oMatterObject.aoFlows(end).fSpecificHeatCapacity;
+                                    mfTemperature(iExme)          = oMatterObject.aoFlows(end).fTemperature;
+                                end
+                            catch oFirstError
+                                try
+                                    mfSpecificHeatCapacity(iExme) = oMatterObject.fSpecificHeatCapacity;
+                                    mfTemperature(iExme)          = oMatterObject.fTemperature;
+                                catch oSecondError
+                                    if strcmp(oFirstError.identifier, 'MATLAB:noSuchMethodOrField')
+                                        rethrow(oSecondError);
+                                    else
+                                        rethrow(oFirstError);
+                                    end
+                                end
+                            end
                         end
                     end
                 end

@@ -536,10 +536,41 @@ classdef (Abstract) branch < base & event.source
                     % Split to object name / port name
                     [ sObject, sExMe ] = strtok(xInput, '.');
                     
+                    bMatterBranchIsInterface = false;
+                    
                     % Check if object exists
-                    if strcmp(this.sType, 'matter') || strcmp(this.sType, 'thermal')
+                    if strcmp(this.sType, 'matter')
                         if ~isfield(this.oContainer.toStores, sObject)
                             this.throw('branch', 'Can''t find provided store %s on parent system', sObject);
+                        end
+                    elseif strcmp(this.sType, 'thermal')
+                        if ~isfield(this.oContainer.toStores, sObject)
+                            % Since some of the thermal branches are
+                            % created automatically to model the advective
+                            % heat transfer associated with a matter
+                            % branch, we have to do some more checking
+                            % here. If the matter branch is an interface
+                            % branch, the store object may not be in the
+                            % same system as this branch. So we have to
+                            % traverse up the parent object tree until we
+                            % find it. 
+                            oParent = this.oContainer.oParent;
+                            while ~isa(oParent, 'simulation.container')
+                                if ~isfield(oParent.toStores, sObject)
+                                    oParent = oParent.oParent;
+                                else
+                                    oStore = oParent.toStores.(sObject);
+                                    bMatterBranchIsInterface = true;
+                                    break;
+                                end
+                            end
+                            
+                            if ~bMatterBranchIsInterface
+                                % We did not find the store, not even in
+                                % all systems above the current one, so we
+                                % throw an error.
+                                this.throw('branch', 'Can''t find provided store %s on parent system', sObject);
+                            end
                         end
                     elseif strcmp(this.sType, 'electrical')
                         if ~isfield(this.oContainer.toStores, sObject) && ~isfield(this.oContainer.toNodes, sObject)
@@ -551,21 +582,23 @@ classdef (Abstract) branch < base & event.source
                     if strcmp(this.sType, 'matter')
                         oExMe = this.oContainer.toStores.(sObject).getExMe(sExMe(2:end));
                         
-                        % Since we will be creating a thermal branch to run
-                        % in parallel with this matter branch, we need to
-                        % create a thermal ExMe that corresponds to this
-                        % matter ExMe.
-                        thermal.procs.exme(oExMe.oPhase.oCapacity, sExMe(2:end));
-                        
                     elseif strcmp(this.sType, 'thermal')
-                        oExMe = this.oContainer.toStores.(sObject).getThermalExMe(sExMe(2:end));
+                        % If this is a thermal branch associated with a
+                        % matter branch and that matter branch is an
+                        % interface, we will have defined the oStore
+                        % variable earlier. 
+                        if bMatterBranchIsInterface
+                            oExMe = oStore.getThermalExMe(sExMe(2:end));
+                        else
+                            oExMe = this.oContainer.toStores.(sObject).getThermalExMe(sExMe(2:end));
+                        end
                     elseif strcmp(this.sType, 'electrical')
                         % The object we are looking at can either be an an
                         % electrial store or an electrical node. To
                         % successfully get the port, we have to try both.
                         try
                             oExMe = this.oContainer.toNodes.(sObject).getTerminal(sExMe(2:end));
-                        catch
+                        catch %#ok<CTCH>
                             oExMe = this.oContainer.toStores.(sObject).getTerminal(sExMe(2:end));
                         end
                         
@@ -618,6 +651,7 @@ classdef (Abstract) branch < base & event.source
                         oExMe.addFlow(oFlow);
                     end
                 end
+                
                 % Add port to the coExmes property
                 this.coExmes{iSideIndex} = oExMe;
                 
@@ -633,30 +667,47 @@ classdef (Abstract) branch < base & event.source
                 
             end
         end
+        
         function [oExMe, sSideName] = createPorts(this, xInput)
             % This function is used to automatically generated the ExMe
             % ports required for the branch in case only phases where
             % handed to the branch definition
             
-            % To automatically generate the port name, we need to
-            % get the struct with ports.
+            % To automatically generate a unique port name, we need to
+            % figure out, how many exmes there are in the xInput object
+            % already.
             if strcmp(this.sType, 'matter')
-                toPorts = xInput.toProcsEXME;
+                % For matter phases, we get the csExMeNames cell from its
+                % store.
+                csPorts = xInput.oStore.csExMeNames;
+                
+                % Now we can calculate the port number
+                if isempty(csPorts)
+                    iNumber = 1;
+                else
+                    iNumber = length(csPorts) + 1;
+                end
+                
             elseif strcmp(this.sType, 'thermal')
-                try
-                    toPorts = xInput.oCapacity.toProcsEXME;
-                catch %#ok<CTCH>
-                    toPorts = xInput.toProcsEXME;
+                % For thermal capacities we get the toProcsEXME struct.
+                toPorts = xInput.toProcsEXME;
+                
+                % Now we can calculate the port number
+                if isempty(toPorts)
+                    iNumber = 1;
+                else
+                    iNumber = numel(fieldnames(toPorts)) + 1;
                 end
             elseif strcmp(this.sType, 'electrical')
+                % For electrical nodes we get the toTerminals struct.
                 toPorts = xInput.toTerminals;
-            end
-
-            % Now we can calculate the port number
-            if isempty(toPorts)
-                iNumber = 1;
-            else
-                iNumber = numel(fieldnames(toPorts)) + 1;
+                
+                % Now we can calculate the port number
+                if isempty(toPorts)
+                    iNumber = 1;
+                else
+                    iNumber = numel(fieldnames(toPorts)) + 1;
+                end
             end
 
             % And with the port number we can create a unique port
@@ -666,6 +717,7 @@ classdef (Abstract) branch < base & event.source
             if ~isempty(this.sCustomName)
                 sPortName = [sPortName, '_', this.sCustomName];
             end
+            
             % Now we can actually create the port on the object and
             % give it its name. We also set the side name,
             % depending on the domain we are in. The side name is
@@ -677,18 +729,14 @@ classdef (Abstract) branch < base & event.source
                 oExMe = matter.procs.exmes.(xInput.sType)(xInput, sPortName);
                 sSideName = [xInput.oStore.sName, '__', sPortName];
             elseif strcmp(this.sType, 'thermal')
-                try
-                    oExMe = thermal.procs.exme(xInput.oCapacity, sPortName);
-                    sSideName = [xInput.oStore.sName, '__', sPortName];
-                catch %#ok<CTCH>
-                    oExMe = thermal.procs.exme(xInput, sPortName);
-                    sSideName = [xInput.oPhase.oStore.sName, '__', sPortName];
-                end
+                oExMe = thermal.procs.exme(xInput, sPortName);
+                sSideName = [xInput.oPhase.oStore.sName, '__', sPortName];
             elseif strcmp(this.sType, 'electrical')
                 oExMe = electrical.terminal(xInput, sPortName);
                 sSideName = [xInput.sName, '__', sPortName];
             end
         end
+        
         function [ oRightPhase, aoFlows, coProcs ] = getBranchData(this)
             % if coBranch{2} set, pass through. add own callbacks to cell,
             % leave phase untouched
