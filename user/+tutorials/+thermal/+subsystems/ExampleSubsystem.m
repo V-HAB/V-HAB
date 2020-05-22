@@ -84,8 +84,8 @@ classdef ExampleSubsystem < vsys
             
             solver.matter.residual.branch(this.aoBranches(2));
             %, this.toBranches.(this.aoThermalBranches(1).sName
-            solver.thermal.basic_fluidic.branch(this.aoThermalBranches(1));
-            solver.thermal.basic_fluidic.branch(this.aoThermalBranches(2));
+            solver.thermal.basic_fluidic.branch(this.toThermalBranches.Inlet);
+            solver.thermal.basic_fluidic.branch(this.toThermalBranches.Outlet);
             
             solver.thermal.basic.branch(this.toThermalBranches.Pipe_Material_Conductor_In);
             solver.thermal.basic.branch(this.toThermalBranches.Pipe_Material_Conductor_Out);
