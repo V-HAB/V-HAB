@@ -445,7 +445,9 @@ classdef Human < vsys
             this.connectIF('Food_In',           varargin{4});
             this.connectIF('Feces_Out',         varargin{5});
             this.connectIF('Urine_Out',         varargin{6});
-            
+        end
+        
+        function createHumanHeatSource(this)
             %% Add a way for the human to release heat into the cabin
             this.oHeatSource = thermal.heatsource([this.sName, '_Heater'], 0);
             this.toBranches.Air_In.coExmes{2}.oPhase.oCapacity.addHeatSource(this.oHeatSource);

@@ -7,6 +7,8 @@ classdef branch < matter.branch
             % Calling the parent constructor
             this@matter.branch(oContainer, xLeft, csProcs, xRight, sCustomName);
             
+            oContainer.addP2PBranch(this);
+            
         end
         
         function createProcs(~, csProcs)

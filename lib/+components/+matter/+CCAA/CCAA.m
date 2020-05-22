@@ -250,6 +250,14 @@ classdef CCAA < vsys
             end
             
         end
+        
+        function sealThermalStructure(this)
+            if ~isempty(this.sCDRA)
+                this.oParent.toChildren.(this.sCDRA).setReferencePhase(this.oAtmosphere);
+            end
+            
+            sealThermalStructure@thermal.container(this);
+        end
              
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
@@ -336,29 +344,18 @@ classdef CCAA < vsys
         
             %% Function to connect the system and subsystem level branches with each other
         function setIfFlows(this, sInterface1, sInterface2, sInterface3, sInterface4, sInterface5, sInterface6, sInterface7)
-            if nargin == 7
-                % Case of a standalone CCAA (no CDRA connected)
-                this.connectIF('CCAA_In' , sInterface1);
-                this.connectIF('CCAA_CHX_Air_Out' , sInterface2);
-                this.connectIF('CCAA_TCCV_Air_Out' , sInterface3);
-                this.connectIF('CCAA_CHX_Condensate_Out' , sInterface4);
-                this.connectIF('CCAA_CoolantIn' , sInterface5);
-                this.connectIF('CCAA_CoolantOut' , sInterface6);
-                
-                this.oAtmosphere = this.toBranches.CCAA_In_FromCabin.coExmes{2}.oPhase;
-            elseif nargin == 8
+            this.connectIF('CCAA_In' , sInterface1);
+            this.connectIF('CCAA_CHX_Air_Out' , sInterface2);
+            this.connectIF('CCAA_TCCV_Air_Out' , sInterface3);
+            this.connectIF('CCAA_CHX_Condensate_Out' , sInterface4);
+            this.connectIF('CCAA_CoolantIn' , sInterface5);
+            this.connectIF('CCAA_CoolantOut' , sInterface6);
+            this.oAtmosphere = this.toBranches.CCAA_In_FromCabin.coExmes{2}.oPhase;
+            
+            if nargin == 8
                 % Case of a CDRA connected to the CCAA
-                this.connectIF('CCAA_In' , sInterface1);
-                this.connectIF('CCAA_CHX_Air_Out' , sInterface2);
-                this.connectIF('CCAA_TCCV_Air_Out' , sInterface3);
-                this.connectIF('CCAA_CHX_Condensate_Out' , sInterface4);
-                this.connectIF('CCAA_CoolantIn' , sInterface5);
-                this.connectIF('CCAA_CoolantOut' , sInterface6);
                 this.connectIF('CCAA_CHX_to_CDRA_Out' , sInterface7);
-                
-                this.oAtmosphere = this.toBranches.CCAA_In_FromCabin.coExmes{2}.oPhase;
-                this.oParent.toChildren.(this.sCDRA).setReferencePhase(this.oAtmosphere);
-            else
+            elseif nargin < 7 || nargin > 8
                 error('CCAA Subsystem was given the wrong number of interfaces')
             end
             

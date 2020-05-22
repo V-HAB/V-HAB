@@ -20,6 +20,8 @@ classdef Human < vsys
         
         fNominalAcitivityLevel = 0.05;
         
+        aoP2PBranches;
+        toP2PBranches;
         
         bUpdateRegistered = false;
         hBindPostTickUpdate;
@@ -40,6 +42,8 @@ classdef Human < vsys
             components.matter.DetailedHuman.Layers.Respiration(this,    'Respiration');
             components.matter.DetailedHuman.Layers.Thermal(this,        'Thermal');
             components.matter.DetailedHuman.Layers.WaterBalance(this,   'WaterBalance');
+            
+            this.aoP2PBranches = components.matter.DetailedHuman.components.P2P_Branch.branch.empty();
             
             
             this.hBindPostTickUpdate  = this.oTimer.registerPostTick(@this.update,   'matter',        'post_phase_update');
@@ -133,7 +137,10 @@ classdef Human < vsys
             createThermalStructure@vsys(this);
             
             % create a thermal branch for the sensible heat output:
-            thermal.branch(this, this.toChildren.Thermal.toStores.Thermal.toPhases.Tissue, {}, 'SensibleHeatOutput', 'SensibleHeatOutput');
+            thermal.branch(this, this.toChildren.Thermal.toStores.Thermal.toPhases.Tissue.oCapacity, {}, 'SensibleHeatOutput', 'SensibleHeatOutput');
+            
+            this.createAdvectiveThermalBranches(this.aoP2PBranches, true);
+            
         end
         
         function createSolverStructure(this)
@@ -223,6 +230,16 @@ classdef Human < vsys
         function bindUpdate(this, ~)
             if ~this.bUpdateRegistered
                 this.hBindPostTickUpdate()
+            end
+        end
+        
+        function addP2PBranch(this, oBranch)
+            this.aoP2PBranches(end+1,1) = oBranch;
+            
+            if isfield(this.toP2PBranches, oBranch.sCustomName)
+                this.throw('Human:addP2PBranch','A P2P Branch with the name ''%s'' already exists in the Human model.',oBranch.sCustomName);
+            else
+                this.toP2PBranches.(oBranch.sCustomName) = oBranch;
             end
         end
     end

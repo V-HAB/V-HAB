@@ -862,7 +862,7 @@ classdef CDRA < vsys
                         % instances (the temperature of the absorber is
                         % then simply set to the same temperature as the
                         % flow)
-                        oAbsorberPhase      = this.toStores.(sName).toPhases.(['Absorber_',num2str(iCell)]);
+                        oAbsorberPhase = this.toStores.(sName).toPhases.(['Absorber_',num2str(iCell)]);
                         
                         sPort1 = ['ConductionCabin_', num2str(iCell)];
                         thermal.procs.exme(oAbsorberPhase.oCapacity, sPort1);
