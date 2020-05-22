@@ -41,7 +41,7 @@ classdef table < base
         % Struct containing standard values for use in any place where an
         % actual value is not given or needed.
         Standard = struct( ...
-            'Temperature', 288.15, ...    % K  (25 deg C)
+            'Temperature', 288.15, ...    % K  (15 deg C)
             'Pressure',    101325  ...    % Pa (sea-level pressure)
             );
     end
