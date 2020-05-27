@@ -153,15 +153,18 @@ classdef setup < simulation.infrastructure
             csBeds = oWPA.csChildren;
             for iBed = 1:length(csBeds)
                 oBed = this.oSimulationContainer.toChildren.Example.toChildren.WPA.toChildren.(csBeds{iBed});
-                coPlots = cell(oBed.iChildren,5); 
+                coPlotsFlows  = cell(oBed.iChildren,5);
+                coPlotsMasses = cell(oBed.iChildren,5); 
                 for iResin = 1:oBed.iChildren
                     oResin = oBed.toChildren.(oBed.csChildren{iResin});
                     iCells = oResin.iCells;
                     for iCell = 1:iCells
-                        coPlots{iResin,iCell} = oPlotter.definePlot(this.tiLogIndexes.(csBeds{iBed}).(oResin.sName).tfP2P_Flowrates(iCell).mfIon,	['Resin ',num2str(iResin),' Cell ',num2str(iCell),' Adsorption Flows'],   tPlotOptions);
+                        coPlotsFlows{iResin,iCell}  = oPlotter.definePlot(this.tiLogIndexes.(csBeds{iBed}).(oResin.sName).tfP2P_Flowrates(iCell).mfIon,	['Resin ',num2str(iResin),' Cell ',num2str(iCell),' Adsorption Flows'],   tPlotOptions);
+                        coPlotsMasses{iResin,iCell} = oPlotter.definePlot(this.tiLogIndexes.(csBeds{iBed}).(oResin.sName).tfResinMasses(iCell).mfIon,	['Resin ',num2str(iResin),' Cell ',num2str(iCell),' adsorbed Mass'],   tPlotOptions);
                     end
                 end
-                oPlotter.defineFigure(coPlots,  [csBeds{iBed}, ' Adsorption Flows']);
+                oPlotter.defineFigure(coPlotsFlows,  [csBeds{iBed}, ' Adsorption Flows']);
+                oPlotter.defineFigure(coPlotsMasses,  [csBeds{iBed}, ' Adsorbed Masses']);
             end
             
             oPlotter.plot();

@@ -116,8 +116,9 @@ classdef flowManip < matter.manips.substance.flow
             % Since we also consider P2P flowrates for these in flows, we
             % have to check to not use negative total flowrates here:
             afPartialInFlows(afPartialInFlows < 0) = 0;
+            fFlowRate = sum(afPartialInFlows);
             
-            if any(afPartialInFlows(this.abDissociation))
+            if any(afPartialInFlows(this.abDissociation)) && fFlowRate > 10^-12
                 afIonFlows = afPartialInFlows(this.oMT.aiCharge ~= 0);
                 arIonPartials = afIonFlows ./ sum(afIonFlows);
                 
@@ -138,7 +139,7 @@ classdef flowManip < matter.manips.substance.flow
                 % Charge sum of ions for which the concentration is not
                 % solved by the system of equations
                 fInitialChargeSum = this.oMT.aiCharge(~this.abRelevantSubstances) * afInitialConcentrations(~this.abRelevantSubstances)';
-                fInitialMassSum = sum(afPartialInFlows) / fVolumetricFlowRate;
+                fInitialMassSum = sum(afPartialInFlows(this.abRelevantSubstances)) / fVolumetricFlowRate; % [kg/L]
 
                 afCurrentConcentration  = afInitialConcentrations;
                 afConcentrations        = afInitialConcentrations';
@@ -223,6 +224,19 @@ classdef flowManip < matter.manips.substance.flow
                     if fOldBoundary == fNewBoundary
                         fNewBoundary = mfIntervall(2);
                     end
+                    % In some cases the correct value can move outside of
+                    % the current intervall because the concentration of
+                    % water also changes. To catch these cases we check if
+                    % the error of the right side intervall is still
+                    % positive every 100 iterations and if not reset the
+                    % right side boundary. Therefore we set the value here
+                    % to the right side boundary and then check after the
+                    % calculation if the error is still positive. If that
+                    % is not the case, we reset it to the initially
+                    % calculated boundary.
+                    if mod(iCounter,100) == 0
+                        fNewBoundary = mfIntervall(2);
+                    end
 
                     if fCurrentPH > 7
                         afCurrentConcentration(this.oMT.tiN2I.Hplus) = 10^-(-log10(fDissociationConstantWater) - -log10(fNewBoundary));
@@ -230,7 +244,7 @@ classdef flowManip < matter.manips.substance.flow
                         afCurrentConcentration(this.oMT.tiN2I.Hplus) = fNewBoundary;
                     end
 
-                    afCurrentConcentration(this.oMT.tiN2I.OH) = 55.6 * fDissociationConstantWater / afCurrentConcentration(this.oMT.tiN2I.Hplus);
+                    afCurrentConcentration(this.oMT.tiN2I.OH) = afCurrentConcentration(this.oMT.tiN2I.H2O) * fDissociationConstantWater / afCurrentConcentration(this.oMT.tiN2I.Hplus);
 
                     afLeftSide = this.afBaseLeftSideVector + this.mfMolarSumMatrix * afInitialConcentrations';
                     afLeftSide(this.oMT.tiN2I.OH) = fInitialMassSum; % [kg/l]
@@ -256,13 +270,20 @@ classdef flowManip < matter.manips.substance.flow
                         mfError(2) = fError;
                         mfIntervall(2)  = fNewBoundary;
                     end
+
+                    % Reset boundary in case both boundaries have a
+                    % negative error
+                    if mod(iCounter,100) == 0 && fError < 0
+                        mfIntervall(2) = mfInitializationIntervall(iError+1);
+                    end
                 end
 
                 warning('ON', 'all')
 
                 % Since the solution of the system of equation is numerical
                 % slight negative values might occur from numerical erros,
-                % these are rounded. Other errors result in a stop
+                % these are rounded. Other errors result in an error as
+                % then something unexpected occured
                 abNegative = afConcentrations < 0;
                 if all(abs(afConcentrations(abNegative)) < 1e-10)
                     afConcentrations(abNegative) = 0;
