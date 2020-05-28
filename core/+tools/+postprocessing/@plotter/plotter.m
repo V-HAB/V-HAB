@@ -103,11 +103,7 @@ classdef plotter < base
             % items in cxPlotValues into indexes. 
             % If the user defined any filters to be applied to the plot
             % values, they will also be applied within the find() method.
-            if isnumeric(cxPlotValues)
-                aiIndexes = cxPlotValues;
-            else
-                aiIndexes = oLogger.find(cxPlotValues, tFilter);
-            end
+            aiIndexes = oLogger.find(cxPlotValues, tFilter);
             
             % A plot can only have two y axes, one on the left and one on
             % the right. If cxPlotValues contains values in one or two

@@ -1,23 +1,6 @@
 classdef setup < simulation.infrastructure
     %plotting data of components and showing water balance operations
     
-    % General information:
-    % - Why do you have multiple MixedBed, MFBEDsolve files etc.? Especially
-    %   since they seem to be not identical
-    % - Use spaces, Tabs, etc to structure the code
-    % - For more complex calculations include reference to either a source
-    %   (if taken directly from the source) or to your thesis with the
-    %   respective equation number
-    % - Please maintain the V-HAB convenction for variable prefixes
-    % - Check whether data types are necessary. E.g. a cell is not
-    %   necessary to store integer values only. A cell requires more
-    %   computation resource than an integer array. Also a strcmp command
-    %   takes loner than a boolean query
-    % - The description of your classes should contain the whole name of
-    %   the component (e.g. MLS stands for Mostly Liquid Seperator ...) and
-    %   a short information for the user what this component does and how
-    %   the user can use it. If there is one general source state it (which
-    %   you usually did but not always)
     properties
         % Property where indices of logs can be stored
         tiLogIndexes = struct();
@@ -50,12 +33,12 @@ classdef setup < simulation.infrastructure
             % Logging for the WPA:
             oWPA = this.oSimulationContainer.toChildren.Example.toChildren.WPA;
             
-            this.tiLogIndexes.WPA.Masses(1)                  = oLog.addValue('Example:c:WPA.toStores.WasteWater.toPhases.Water',	'fMass',      'kg',     'WPA Waste Water Mass');
+            this.tiLogIndexes.WPA.Masses{1}                  = oLog.addValue('Example:c:WPA.toStores.WasteWater.toPhases.Water',	'fMass',      'kg',     'WPA Waste Water Mass');
              
-            this.tiLogIndexes.WPA.Flowrates(1)               = oLog.addValue('Example:c:WPA.toBranches.Inlet',                      'fFlowRate',  'kg/s',   'WPA Inflow');
-            this.tiLogIndexes.WPA.Flowrates(2)               = oLog.addValue('Example:c:WPA.toBranches.Outlet',                     'fFlowRate',  'kg/s',   'WPA Outflow');
-            this.tiLogIndexes.WPA.Flowrates(3)               = oLog.addValue('Example:c:WPA.toBranches.WasteWater_to_MLS1',      	'fFlowRate',  'kg/s',   'WPA Waste Water to Liquid Seperator');
-            this.tiLogIndexes.WPA.Flowrates(4)               = oLog.addValue('Example:c:WPA.toBranches.Check_to_WasteWater',      	'fFlowRate',  'kg/s',   'WPA Reflow of Waste Water');
+            this.tiLogIndexes.WPA.Flowrates{1}               = oLog.addValue('Example:c:WPA.toBranches.Inlet',                      'fFlowRate',  'kg/s',   'WPA Inflow');
+            this.tiLogIndexes.WPA.Flowrates{2}               = oLog.addValue('Example:c:WPA.toBranches.Outlet',                     'fFlowRate',  'kg/s',   'WPA Outflow');
+            this.tiLogIndexes.WPA.Flowrates{3}               = oLog.addValue('Example:c:WPA.toBranches.WasteWater_to_MLS1',      	'fFlowRate',  'kg/s',   'WPA Waste Water to Liquid Seperator');
+            this.tiLogIndexes.WPA.Flowrates{4}               = oLog.addValue('Example:c:WPA.toBranches.Check_to_WasteWater',      	'fFlowRate',  'kg/s',   'WPA Reflow of Waste Water');
             
             this.tiLogIndexes.WPA.Airflows.Inflows.O2        = oLog.addValue('Example:c:WPA.toBranches.AirInlet.aoFlows(1)',        'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.O2)',  'kg/s',   'WPA Inflow O2');
             this.tiLogIndexes.WPA.Airflows.Inflows.N2        = oLog.addValue('Example:c:WPA.toBranches.AirInlet.aoFlows(1)',        'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.N2)',  'kg/s',   'WPA Inflow N2');
@@ -67,11 +50,13 @@ classdef setup < simulation.infrastructure
             this.tiLogIndexes.WPA.Airflows.Outflows.CO2      = oLog.addValue('Example:c:WPA.toBranches.AirOutlet.aoFlows(1)',       'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s',   'WPA Outflow CO2');
             this.tiLogIndexes.WPA.Airflows.Outflows.H2O      = oLog.addValue('Example:c:WPA.toBranches.AirOutlet.aoFlows(1)',       'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)', 'kg/s',   'WPA Outflow H2O');
             
-            this.tiLogIndexes.WPA.EffectiveFlows(1)          = oLog.addVirtualValue('"WPA Outflow O2"  + "WPA Inflow O2"'  , 'kg/s', 'WPA O2 Output');
-            this.tiLogIndexes.WPA.EffectiveFlows(2)          = oLog.addVirtualValue('"WPA Outflow N2"  + "WPA Inflow N2"'  , 'kg/s', 'WPA N2 Output');
-            this.tiLogIndexes.WPA.EffectiveFlows(3)          = oLog.addVirtualValue('"WPA Outflow CO2" + "WPA Inflow CO2"' , 'kg/s', 'WPA CO2 Output');
-            this.tiLogIndexes.WPA.EffectiveFlows(4)          = oLog.addVirtualValue('"WPA Outflow H2O" + "WPA Inflow H2O"' , 'kg/s', 'WPA H2O Output');
+            this.tiLogIndexes.WPA.EffectiveFlows{1}          = oLog.addVirtualValue('"WPA Outflow O2"  + "WPA Inflow O2"'  , 'kg/s', 'WPA O2 Output');
+            this.tiLogIndexes.WPA.EffectiveFlows{2}          = oLog.addVirtualValue('"WPA Outflow N2"  + "WPA Inflow N2"'  , 'kg/s', 'WPA N2 Output');
+            this.tiLogIndexes.WPA.EffectiveFlows{3}          = oLog.addVirtualValue('"WPA Outflow CO2" + "WPA Inflow CO2"' , 'kg/s', 'WPA CO2 Output');
+            this.tiLogIndexes.WPA.EffectiveFlows{4}          = oLog.addVirtualValue('"WPA Outflow H2O" + "WPA Inflow H2O"' , 'kg/s', 'WPA H2O Output');
             
+            this.tiLogIndexes.WPA.Outflows.PPM              = oLog.addValue('Example:c:WPA.toBranches.Outlet.aoFlowProcs(1)',       'this.fPPM',   'ppm',    'WPA Outflow PPM');
+            this.tiLogIndexes.WPA.Outflows.TOC              = oLog.addValue('Example:c:WPA.toBranches.Outlet.aoFlowProcs(1)',       'this.fTOC',   '-',      'WPA Outflow TOC');
             % Logging for the Multifiltration and Ion Exchange beds:
             csBeds = oWPA.csChildren;
             
@@ -106,10 +91,10 @@ classdef setup < simulation.infrastructure
                             oLog.addValue([sBedPath, sResinPath, '.toProcsP2P.Ion_P2P', num2str(iCell)],            ['this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.', csIons{iIon},')'],      'kg/s',     sAdsorptionLogValue);
                             oLog.addValue([sBedPath, sResinPath, '.toProcsP2P.Ion_Desorption_P2P', num2str(iCell)],	['this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.', csIons{iIon},')'],      'kg/s',     sDesorptionLogValue);
                             
-                            this.tiLogIndexes.(oBed.sName).(oResin.sName).tfP2P_Flowrates(iCell).mfIon(iIon) = oLog.addVirtualValue(['"',sAdsorptionLogValue,'" + "',sDesorptionLogValue,'"'] , 'kg/s', [oBed.sName, ' ', oResin.sName, ' Cell ', num2str(iCell), ' ', csIons{iIon},' adsorption rate']);
+                            this.tiLogIndexes.(oBed.sName).(oResin.sName).tfP2P_Flowrates(iCell).mfIon{iIon} = oLog.addVirtualValue(['"',sAdsorptionLogValue,'" + "',sDesorptionLogValue,'"'] , 'kg/s', [oBed.sName, ' ', oResin.sName, ' Cell ', num2str(iCell), ' ', csIons{iIon},' adsorption rate']);
                             % Log the Ion Mass in the resion for each cell
                             % and each ion
-                            this.tiLogIndexes.(oBed.sName).(oResin.sName).tfResinMasses(iCell).mfIon(iIon) = oLog.addValue([sBedPath, sResinPath, '.toPhases.Resin_', num2str(iCell)],      ['this.afMass(this.oMT.tiN2I.', csIons{iIon},')'],                            	'kg',       [oBed.sName, ' ', oResin.sName, ' Cell ', num2str(iCell), ' ', csIons{iIon},' Mass']);
+                            this.tiLogIndexes.(oBed.sName).(oResin.sName).tfResinMasses(iCell).mfIon{iIon} = oLog.addValue([sBedPath, sResinPath, '.toPhases.Resin_', num2str(iCell)],      ['this.afMass(this.oMT.tiN2I.', csIons{iIon},')'],                            	'kg',       [oBed.sName, ' ', oResin.sName, ' Cell ', num2str(iCell), ' ', csIons{iIon},' Mass']);
                         end
                     end
                     if iBed < 3
@@ -121,7 +106,7 @@ classdef setup < simulation.infrastructure
                 miContaminants = find(abAllContaminants);
                 for iContaminant = 1:sum(abAllContaminants)
                     sContaminant = oMT.csI2N{miContaminants(iContaminant)};
-                    this.tiLogIndexes.WPA.ContaminantToCheckFlows(iContaminant)               = oLog.addValue('Example:c:WPA.toBranches.IonBed_to_Check.aoFlows(1)', ['this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.', sContaminant,')'],  'kg/s',   [sContaminant, ' flow to Check']);
+                    this.tiLogIndexes.WPA.ContaminantToCheckFlows{iContaminant}               = oLog.addValue('Example:c:WPA.toBranches.IonBed_to_Check.aoFlows(1)', ['this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.', sContaminant,')'],  'kg/s',   [sContaminant, ' flow to Check']);
                 end
             end
             
@@ -144,6 +129,7 @@ classdef setup < simulation.infrastructure
             coPlots{1,2} = oPlotter.definePlot(this.tiLogIndexes.WPA.Flowrates,                 'WPA Flowrates',            tPlotOptions);
             coPlots{2,1} = oPlotter.definePlot(this.tiLogIndexes.WPA.EffectiveFlows,            'WPA Gas Flows',            tPlotOptions);
             coPlots{2,2} = oPlotter.definePlot(this.tiLogIndexes.WPA.ContaminantToCheckFlows,   'WPA Contaminant Flows',    tPlotOptions);
+            coPlots{1,3} = oPlotter.definePlot({this.tiLogIndexes.WPA.Outflows.PPM, this.tiLogIndexes.WPA.Outflows.TOC},   'WPA Contaminant Flows',    tPlotOptions);
             
             % {'"WPA O2 Output"', '"WPA N2 Output"', '"WPA CO2 Output"', '"WPA H2O Output"'}
             oPlotter.defineFigure(coPlots,  'WPA Parameters');
