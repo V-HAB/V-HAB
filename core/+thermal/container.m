@@ -75,6 +75,8 @@ classdef container < sys
             % which is called in simulation.infrastructure.initialize().
             this.createMatterCounterParts();
             
+            this.trigger('createdThermalStructure');
+            
         end
         
         function this = addProcConductor(this, oConductor)
