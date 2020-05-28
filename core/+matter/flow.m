@@ -166,10 +166,9 @@ classdef flow < base
                 % This is likely to be overwritten by the assigned solver
                 % in the first, initializion step (time < 0)
                 if oPhase.fMass ~= 0
-                    this.arPartialMass = oPhase.arPartialMass;
-                    this.fMolarMass    = oPhase.fMolarMass;
-                    this.arCompoundMass        = oPhase.arCompoundMass;
-                    this.fSpecificHeatCapacity = oPhase.oCapacity.fSpecificHeatCapacity;
+                    this.arPartialMass  = oPhase.arPartialMass;
+                    this.fMolarMass     = oPhase.fMolarMass;
+                    this.arCompoundMass = oPhase.arCompoundMass;
                     
                     this.afPartialPressure = this.oMT.calculatePartialPressures(this);
                 end

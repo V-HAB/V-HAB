@@ -39,7 +39,7 @@ classdef setup < simulation.infrastructure
             %% Simulation length
             % Stop when specific time in simulation is reached or after 
             % specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 900; % In seconds
+            this.fSimTime = 1800; % In seconds
             
             if nargin >= 3 && ~isempty(fSimTime)
                 this.fSimTime = fSimTime;
@@ -139,9 +139,12 @@ classdef setup < simulation.infrastructure
             figure
             slice(Xq,Yq,Zq,mfInterpolatedTemperature,xslice,yslice,zslice)
             
-            afTimePoints = 0:60:afTime(end);
+            afTimePoints = 0:10:afTime(end);
             
             figure
+            uicontrol('style','text','string','Current time:','Position',[ 20 20 65 20]);
+            oClock = uicontrol('Style', 'edit', 'Position', [ 90 20 60 20], 'String', '0');
+            
             for iTime = 1:length(afTimePoints)
                 afTimeDiff = abs(afTime - afTimePoints(iTime));
                 iTick = find(afTimeDiff == min(afTimeDiff), 1);
@@ -154,8 +157,11 @@ classdef setup < simulation.infrastructure
                 yslice = iNodesPerDirection;
                 zslice = round(iNodesPerDirection / 2, 0);
                 slice(Xq,Yq,Zq,mfInterpolatedTemperature,xslice,yslice,zslice);
+                
+                set(oClock, 'String', sprintf('%i',afTimePoints(iTime)));
+                
                 drawnow
-                pause(1);
+                pause(0.5);
                 
             end
             

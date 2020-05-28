@@ -86,56 +86,6 @@ classdef branch < base.branch
             % Counting the number of flows and processors in this branch
             this.iFlows     = length(this.aoFlows);
             this.iFlowProcs = length(this.aoFlowProcs);
-            
-            %% Construct asscociated thermal branch
-            % To model the mass-bound heat (advective) transfer we need a
-            % thermal branch in parallel to the matter branch. The required
-            % thermal exmes on the capacities have already been created in
-            % conductor for every f2f processor in this branch. 
-            if length(csProcs) >= 1
-                for iProc = 1:length(csProcs)
-                    thermal.procs.conductors.fluidic(this.oContainer, csProcs{iProc}, this);
-                end
-            else
-                % Branches without a f2f can exist (e.g. manual branches)
-                % however for the thermal branch we always require at least
-                % one conductor
-                
-                % Constructing the name of the thermal conductor by adding
-                % the string '_Conductor' to either the custom name or
-                % regular name of this branch. 
-                if ~isempty(this.sCustomName)
-                    csProcs{1} = [this.sCustomName, '_Conductor'];
-                else
-                    csProcs{1} = [this.sName, '_Conductor'];
-                end
-                
-                % Since this name will be used as a struct field name, we
-                % need to make sure it doesn't exceed the maximum field
-                % name length of 63 characters. 
-                if length(csProcs{1}) > 63
-                    % Generating some messages for the debugger
-                    if ~base.oDebug.bOff
-                        this.out(3,1,'matter.branch','Truncating automatically generated thermal conductor name.');
-                        this.out(3,2,'matter.branch','Old name: %s', csProcs(1));
-                    end
-                    
-                    % Truncating the name
-                    csProcs{1} = csProcs{1}(1:63);
-                    
-                    % More debugging output
-                    if ~base.oDebug.bOff
-                        this.out(3,2,'matter.branch','New name: %s', csProcs(1));
-                    end
-                    
-                end
-                
-                thermal.procs.conductors.fluidic(this.oContainer, csProcs{1}, this);
-            end
-            
-            % Now we have everything we need, so we can call the thermal
-            % branch constructor. 
-            this.oThermalBranch = thermal.branch(this.oContainer, xLeft, csProcs, xRight, this.sCustomName, this);
         end
         
         function createProcs(this, csProcs)
@@ -282,6 +232,10 @@ classdef branch < base.branch
             if strcmp(sType, 'setFlowRate')
                 this.bTriggerSetFlowRateCallbackBound = true;
             end
+        end
+        
+        function setThermalBranch(this, oThermalBranch)
+            this.oThermalBranch = oThermalBranch;
         end
     end
     methods (Access = {?solver.matter.base.branch, ?base.branch})

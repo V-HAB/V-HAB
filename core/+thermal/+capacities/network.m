@@ -62,20 +62,25 @@ classdef network < thermal.capacity
             
             % This function can also be called by a connected heat sources
             % therefore, we update the fHeatSourceHeatFlow property:
-            if this.iHeatSources ~= 0
-                this.fHeatSourceHeatFlow = sum(cellfun(@(cCell) cCell.fHeatFlow, this.coHeatSource));
+            this.fHeatSourceHeatFlow = 0;
+            for iI = 1:this.iHeatSources
+                this.fHeatSourceHeatFlow = this.coHeatSource{iI}.fHeatFlow;
             end
+            
             if this.fTimeStep ~= inf
                 this.setTimeStep(inf,true);
             end
+            
             this.oHandler.hBindPostTickUpdate();
         end
     end
+    
     methods (Access = protected)
         function calculateTimeStep(~)
             
         end
     end
+    
     methods (Access = {?solver.thermal.multi_branch.advanced.branch})
         function setHandler(this, oHandler, iIndex)
             % THis function is called by the thermal multi branch solver to

@@ -100,7 +100,9 @@ classdef infrastructure < base & event.source
             ... % Allows to e.g. pause the simulation
             'oExecutionControl', struct('sClass', 'simulation.monitors.executionControl'), ...
             ... % Logs mass loss/gain, TODO warn if too much mass loss / gain
-            'oMatterObserver', struct('sClass', 'simulation.monitors.matterObserver') ...
+            'oMatterObserver', struct('sClass', 'simulation.monitors.matterObserver'), ...
+            ... % Currently only displays the number of branches and capacities after init
+            'oThermalObserver', struct('sClass', 'simulation.monitors.thermalObserver')...
         );
         
         % A struct that contains the different monitor objects.
@@ -301,6 +303,7 @@ classdef infrastructure < base & event.source
                 % Thermal Domain
                 if ismethod(oChild,'createThermalStructure')
                     oChild.createThermalStructure();
+                    oChild.createAdvectiveThermalBranches(oChild.aoBranches);
                     oChild.sealThermalStructure();
                 end
                 

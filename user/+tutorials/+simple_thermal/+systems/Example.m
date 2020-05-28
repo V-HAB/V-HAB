@@ -57,12 +57,12 @@ classdef Example < vsys
             % resistance is 1 K/W.
             thermal.procs.conductors.conductive(this, 'Thermal_Connection', 1);
             
-            % Getting a reference to both phases
-            oPhaseCold = this.toStores.Tank_1.toPhases.Cold;
-            oPhaseHot  = this.toStores.Tank_2.toPhases.Hot;
+            % Getting a reference to both capacities
+            oCapacityCold = this.toStores.Tank_1.toPhases.Cold.oCapacity;
+            oCapacityHot  = this.toStores.Tank_2.toPhases.Hot.oCapacity;
             
             % Addding a thermal branch between the two phases.
-            thermal.branch(this, oPhaseCold, {'Thermal_Connection'}, oPhaseHot);
+            thermal.branch(this, oCapacityCold, {'Thermal_Connection'}, oCapacityHot);
         end
         
         

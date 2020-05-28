@@ -128,6 +128,13 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % mixture subclass
         bMixture = false;
         
+        % If the thermal capacity associated with this matter phase is to
+        % be a node in a thermal network that is solved by the thermal
+        % multi-branch solver, this boolean needs to be set to true in the
+        % createMatterStructure() method of the system. This is done via
+        % the makeThermalNetworkNode() method of this class. 
+        bThermalNetworkNode = false;
+        
         % Last time the phase mass was updated. Is NOT an actual update!
         % Only the mass is changed not all other properties, e.g. Pressure
         % and Temperature remain the same.
@@ -298,7 +305,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
     
     methods
 
-        function this = phase(oStore, sName, tfMass, fTemperature, sCapacity)
+        function this = phase(oStore, sName, tfMass, fTemperature)
             %% Phase Class Constructor
             % Constructor for the |matter.phase| class. Input parameters
             % can be provided to define the contained masses and
@@ -407,6 +414,14 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % Partials also to zeros
                 this.arPartialMass = this.afMass;
             end
+            
+            % If the temperature was provided, we set it, otherwise use the
+            % standard temperature from the matter table.
+            if nargin > 3 && isnumeric(fTemperature) && fTemperature > 0
+                this.setTemperature(fTemperature)
+            else
+                this.setTemperature(this.oMT.Standard.Temperature);
+            end
 
             this.fMolarMass = this.oMT.calculateMolarMass(this.afMass);
             
@@ -416,16 +431,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
 
             this.fMassToPressure = this.fPressure / this.fMass;
             
-            % add a thermal capacity to this phase to handle thermal
-            % calculations 
-            if nargin > 4 && strcmp(sCapacity, 'boundary')
-                this.oCapacity = thermal.capacities.boundary(this, fTemperature);
-            else
-                this.oCapacity = thermal.capacity(this, fTemperature);
-            end
-            % Now update the matter properties
-            this.oCapacity.updateSpecificHeatCapacity();
-               
             % Preset the cached masses (see calculateTimeStep)
             this.fMassLastUpdate  = 0;
             this.afMassLastUpdate = zeros(1, this.oMT.iSubstances);
@@ -440,23 +445,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             this.hBindPostTickUpdate      = this.oTimer.registerPostTick(@this.update,            'matter',        'phase_update');
             this.hBindPostTickTimeStep    = this.oTimer.registerPostTick(@this.calculateTimeStep, 'post_physics' , 'timestep');
         end
-        function replaceCapacity(this, oCapacity)
-            % This function can be used to replace the current capacity
-            % with a different one. This can be used to e.g. implement
-            % network capacities.
-            oCurrentCapacity = this.oCapacity;
-            for iUnbind = 1:length(oCurrentCapacity.chUnbindFunctions)
-                oCurrentCapacity.chUnbindFunctions{iUnbind}();
-            end
-            
-            this.oCapacity = oCapacity;
-            
-            delete(oCurrentCapacity);
-            
-            % Now update the matter properties
-            this.oCapacity.updateSpecificHeatCapacity();
-        end
-
+        
         function this = registerMassupdate(this, ~)
             %% registerMassupdate
             % To simplify debugging registering a massupdate must be done
@@ -747,6 +736,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             end
 
             this.toProcsEXME.(oProcEXME.sName) = oProcEXME;
+            
+            this.oStore.addExMeName(oProcEXME.sName);
         end
 
         function [ afTotalInOuts, mfInflowDetails , arCurrentInFlowCompoundMass] = getTotalMassChange(this)
@@ -897,6 +888,18 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             this.mfCurrentInflowDetails = mfDetails;
             
             
+        end
+        
+        function setCapacity(this, oCapacity)
+            this.oCapacity = oCapacity;
+        end
+        
+        function makeThermalNetworkNode(this)
+            if ~this.oStore.bSealed
+                this.bThermalNetworkNode = true;
+            else
+                this.throw('Phase %s is already sealed and cannot be made a thermal network node here. Call makeThermalNetworkNode() within createMatterStructure() of your system to prevent this error.', this.sName);
+            end
         end
     end
 
@@ -1288,7 +1291,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             this.hBindPostTickTimeStep();
         end
         
-        % since the fPressure property is accessed by get.fPressure this
+        % Since the fPressure property is accessed by get.fPressure this
         % function should be protected as it should not be used directly.
         % It cannot be private because that prevent the function from
         % beeing overwritten by child classes
@@ -1302,6 +1305,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             fPressure = this.fMassToPressure * (this.fMass + fMassSinceUpdate);
         end
     end
+    
     methods (Access = private)
         % Only the phase itself should have access to this function. Access
         % by other functions is handled through specific bind/unbind
@@ -1359,6 +1363,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             this.toProcsEXME.(oExMe.sName) = oExMe;
             this.coProcsEXME{end + 1} = oExMe;
             this.iProcsEXME = this.iProcsEXME + 1;
+            this.oStore.addExMeName(oExMe.sName);
             
             this.setOutdatedTS();
         end

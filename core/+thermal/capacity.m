@@ -182,6 +182,9 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
             % Adding this capacity to the container
             this.oContainer.addCapacity(this);
             
+            % Adding this capacity to its phase
+            this.oPhase.setCapacity(this);
+            
             % Sets the temperature of this capacity and the asscociated
             % phase
             this.setTemperature(fTemperature);
@@ -192,7 +195,7 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
             try
                 this.fSpecificHeatCapacity  = this.oMT.calculateSpecificHeatCapacity(this.oPhase);
                 this.fTotalHeatCapacity     = sum(this.oPhase.afMass) * this.fSpecificHeatCapacity;
-            catch
+            catch %#ok<CTCH>
                 % Just use dummy values in case the previous try did not
                 % work, the really correct ones will be calculated before
                 % the sim starts in the init_post triggered function
@@ -314,13 +317,34 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
                 % the specific heat capacity calculation
                 mfFlowRate              = zeros(1,this.iProcsEXME);
                 mfSpecificHeatCapacity  = zeros(1,this.iProcsEXME);
+                
                 for iExme = 1:this.iProcsEXME
                     if isa(this.aoExmes(iExme).oBranch.oHandler, 'solver.thermal.basic_fluidic.branch')
-                        fFlowRate = this.aoExmes(iExme).oBranch.coConductors{1}.oMassBranch.fFlowRate * this.oPhase.toProcsEXME.(this.aoExmes(iExme).sName).iSign;
+                        
+                        iExMeSign = this.aoExmes(iExme).iSign;
+                        fFlowRate = this.aoExmes(iExme).oBranch.oMatterObject.fFlowRate * iExMeSign;
                         
                         if fFlowRate > 0
                             mfFlowRate(iExme) = fFlowRate;
-                            mfSpecificHeatCapacity(iExme) = this.oPhase.toProcsEXME.(this.aoExmes(iExme).sName).oFlow.fSpecificHeatCapacity;
+                            oMatterObject = this.aoExmes(iExme).oBranch.oMatterObject;
+                            try
+                                iBranchSign = sign(oMatterObject.fFlowRate);
+                                if iBranchSign * iExMeSign < 0
+                                    mfSpecificHeatCapacity(iExme) = oMatterObject.aoFlows(1).fSpecificHeatCapacity;
+                                else
+                                    mfSpecificHeatCapacity(iExme) = oMatterObject.aoFlows(end).fSpecificHeatCapacity;
+                                end
+                            catch oFirstError
+                                try
+                                    mfSpecificHeatCapacity(iExme) = oMatterObject.fSpecificHeatCapacity;
+                                catch oSecondError
+                                    if strcmp(oFirstError.identifier, 'MATLAB:noSuchMethodOrField')
+                                        rethrow(oSecondError);
+                                    else
+                                        rethrow(oFirstError);
+                                    end
+                                end
+                            end
                         end
                     end
                 end

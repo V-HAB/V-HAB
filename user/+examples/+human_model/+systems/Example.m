@@ -115,9 +115,6 @@ classdef Example < vsys
             % Adding a phase to the store 'Cabin', 48 m^3 air
             oCabinPhase = matter.phases.gas(this.toStores.Cabin, 'CabinAir', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             
-            oHeatSource = components.thermal.heatsources.ConstantTemperature('Cabin_Constant_Temperature');
-            oCabinPhase.oCapacity.addHeatSource(oHeatSource);
-            
             % Creates a store for the potable water reserve
             % Potable Water Store
             matter.store(this, 'PotableWaterStorage', 10);
@@ -167,6 +164,18 @@ classdef Example < vsys
                                 ['Solid_Food_',     num2str(iHuman)],...
                                 ['Feces',           num2str(iHuman)],...
                                 ['Urine',           num2str(iHuman)]);
+            end
+            
+        end
+        
+        function createThermalStructure(this)
+            createThermalStructure@vsys(this);
+            
+            oHeatSource = components.thermal.heatsources.ConstantTemperature('Cabin_Constant_Temperature');
+            this.toStores.Cabin.toPhases.CabinAir.oCapacity.addHeatSource(oHeatSource);
+            
+            for iHuman = 1:this.iNumberOfCrewMembers
+                this.toChildren.(['Human_', num2str(iHuman)]).createHumanHeatSource();
             end
             
         end

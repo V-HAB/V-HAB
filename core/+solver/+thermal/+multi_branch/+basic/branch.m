@@ -152,6 +152,11 @@ classdef branch < base & event.source
         % because the matter side residual solver was the first solver
         % which required this
         bResidual = false;
+        
+        % Handle to bind an update to the corresponding post tick. Simply
+        % use XXX.hBindPostTickUpdate() to register an update. Solvers
+        % should ONLY be updated in the post tick!
+        hBindPostTickUpdate;
     end
     
     properties (SetAccess = private, GetAccess = private)
@@ -159,14 +164,6 @@ classdef branch < base & event.source
         % individual branches in this network. THis is used to set the
         % calculated heat flows to the thermal branches of the network
         chSetBranchHeatFlows;
-    end
-    
-    properties (SetAccess = protected, GetAccess = protected) %, Transient = true)
-        %TODO These properties should be transient. That requires a static
-        % method (loadobj) to be implemented in this class, so when the
-        % simulation is re-loaded from a .mat file, the properties are
-        % reset to their proper values.
-        hBindPostTickUpdate;
     end
     
     methods

@@ -63,6 +63,12 @@ classdef exme < base
             % oPhase:   the phase the exme is attached to
             % sName:    the name of the processor
             
+            % First we check to see if there is already an ExMe with this
+            % name in the store. If so, we throw an error. 
+            if any(strcmp(sName, oPhase.oStore.csExMeNames))
+                this.throw('exme:constructor','There is already an ExMe named ''%s'' in store ''%s''. Please make all ExMe Names in this store unique.', sName, oPhase.oStore.sName);
+            end
+            
             this.sName  = sName;
             this.oMT    = oPhase.oMT;
             this.oTimer = oPhase.oTimer;
@@ -209,8 +215,21 @@ classdef exme < base
                     % have to use the matter properties of the connected
                     % phase.
                     arPartials   = this.oPhase.arPartialMass;
-                    afProperties = [ this.oPhase.fTemperature this.oPhase.oCapacity.fSpecificHeatCapacity ];
                     arCompoundMass = this.oPhase.arCompoundMass;
+                    
+                    % If this is called from the seal() method of the
+                    % store, the phase's capacity has not yet been set. So
+                    % we catch that error here and calculated the phase's
+                    % specific heat capacity directly. 
+                    try
+                        afProperties = [ this.oPhase.fTemperature this.oPhase.oCapacity.fSpecificHeatCapacity ];
+                    catch oError
+                        if isempty(this.oPhase.oCapacity)
+                            afProperties = [ this.oPhase.fTemperature this.oMT.calculateSpecificHeatCapacity(this.oPhase)];
+                        else
+                            rethrow(oError);
+                        end
+                    end
                 end
             end
         end

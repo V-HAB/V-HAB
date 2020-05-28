@@ -1,7 +1,8 @@
 classdef branch < base.branch
-    % Thermal base branch class definition. Here all basic properties and
-    % methodes that all thermal branches require are defined. Domain
-    % independent definitions are inherited from the base branch.
+    %BRANCH Thermal branch 
+    % Here all basic properties and methods that all thermal branches
+    % require are defined. Domain independent definitions are inherited
+    % from the base branch.
     
     properties (SetAccess = protected)
         
@@ -61,6 +62,15 @@ classdef branch < base.branch
             if nargin < 5
                 sCustomName = [];
             end
+            
+            if isobject(xLeft) && ~isa(xLeft, 'thermal.capacity')
+                error('Capacity:Constructor', 'The object you are using to create a thermal branch, ''%s'', is not a thermal capacity.', xLeft.sName);
+            end
+            
+            if isobject(xRight) && ~isa(xRight, 'thermal.capacity')
+                error('Capacity:Constructor', 'The object you are using to create a thermal branch, ''%s'', is not a thermal capacity.', xRight.sName);
+            end
+            
             this@base.branch(oContainer, xLeft, csProcs, xRight, sCustomName, 'thermal');
             
             % Since there are thermal branches which do not have a matter
