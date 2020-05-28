@@ -886,8 +886,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
 
             this.afCurrentTotalInOuts = afChange;
             this.mfCurrentInflowDetails = mfDetails;
-            
-            
         end
         
         function setCapacity(this, oCapacity)
@@ -973,14 +971,14 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             if ~base.oDebug.bOff, this.out(1, 2, 'total-fr', 'Total flow rate in %s-%s: %.20f', { this.oStore.sName, this.sName, sum(afTotalInOuts) }); end
             
             % Check manipulator
-            bCompoundManipulatur = false;
+            bCompoundManipulator = false;
             if ~isempty(this.toManips.substance) && ~isempty(this.toManips.substance.afPartialFlows)
                 % Add the changes from the manipulator to the total inouts
                 afTotalInOuts = afTotalInOuts + this.toManips.substance.afPartialFlows;
                 
                 % Check if the manipulator creates a compound mass:
                 if any(this.toManips.substance.afPartialFlows(this.oMT.abCompound))
-                    bCompoundManipulatur = true;
+                    bCompoundManipulator = true;
                 end
                 
                 if ~base.oDebug.bOff, this.out(tools.debugOutput.MESSAGE, 1, 'manip-substance', 'Has substance manipulator'); end % directly follows message above, so don't output name
@@ -993,7 +991,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             afTotalInOuts = afTotalInOuts * fLastStep;
             
             % check if a compound mass update is required:
-            if any(any(this.arInFlowCompoundMass)) || bCompoundManipulatur
+            if any(any(this.arInFlowCompoundMass)) || bCompoundManipulator
                 % Update the compound mass. We do this before we update the
                 % total mass because we must use the total mass of the phase
                 % from before, minus all the outflows but not yet plus the
@@ -1017,13 +1015,13 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % the same composition as the matter in the phase) we add the
                 % inflowing mass with the corresponding compound composition to
                 % get the current masses for each compound
-                if bCompoundManipulatur
-                    mfNewCompoundMasses =   afCurrentMass' .* this.arCompoundMass +...    % current compound mass composition after outflows
-                                            afTotalIns' .* this.arInFlowCompoundMass +... % plus the total added compound masses from exmes
-                                            fLastStep .* this.toManips.substance.afPartialFlows' .* this.toManips.substance.aarFlowsToCompound; % plus the total added compound masses from manips
+                if bCompoundManipulator
+                    mfNewCompoundMasses = afCurrentMass' .* this.arCompoundMass +...    % current compound mass composition after outflows
+                                          afTotalIns'    .* this.arInFlowCompoundMass +... % plus the total added compound masses from exmes
+                                          fLastStep      .* this.toManips.substance.afPartialFlows' .* this.toManips.substance.aarFlowsToCompound; % plus the total added compound masses from manips
                 else
                     mfNewCompoundMasses = afCurrentMass' .* this.arCompoundMass +...    % current compound mass composition after outflows
-                                          afTotalIns' .* this.arInFlowCompoundMass; % plus the total added compound masses from exmes
+                                          afTotalIns'    .* this.arInFlowCompoundMass; % plus the total added compound masses from exmes
                 end
                 afNewCompoundMasses = sum(mfNewCompoundMasses, 2);
 

@@ -498,7 +498,7 @@ classdef timer < base
             % Advance the timer one (global) time step
                         
             % Check if the minimum time step is sufficiently large to
-            % ensure a continoues time progress, if not increase it. This
+            % ensure a continuous time progress, if not increase it. This
             % is necessary for example for long simulations, where
             % otherwise the minimum time step can become smaller than
             % floating point precision compared to the total sim time.
