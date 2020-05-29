@@ -116,9 +116,8 @@ classdef flowManip < matter.manips.substance.flow
             % Since we also consider P2P flowrates for these in flows, we
             % have to check to not use negative total flowrates here:
             afPartialInFlows(afPartialInFlows < 0) = 0;
-            fFlowRate = sum(afPartialInFlows);
             
-            if any(afPartialInFlows(this.abDissociation)) && fFlowRate > 10^-12
+            if any(afPartialInFlows(this.abDissociation)) && afPartialInFlows(this.oMT.tiN2I.H2O) > 10^-12
                 afIonFlows = afPartialInFlows(this.oMT.aiCharge ~= 0);
                 arIonPartials = afIonFlows ./ sum(afIonFlows);
                 
