@@ -31,7 +31,7 @@
 %correct results but calculation is basically possible
 
 
-function [fOutlet_Temp_1, fOutlet_Temp_2] = temperature_1_n_sat(mArea, mU, fHeat_Capacity_Flow_1, fHeat_Capacity_Flow_2, fEntry_Temp_1, fEntry_Temp_2, ~)
+function [fOutlet_Temp_1, fOutlet_Temp_2] = temperature_1_n_sat(mArea, mU, fHeat_Capacity_Flow_1, fHeat_Capacity_Flow_2, fEntry_Temp_1, fEntry_Temp_2, fConfig)
 
 %[6] stands for the source "Analytisches Verfahren zur Berechnung 
 %Mehrgängiger Rohrbündelwärmeübertrager" Roetzel Wilfried

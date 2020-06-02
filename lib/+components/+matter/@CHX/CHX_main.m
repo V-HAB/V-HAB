@@ -115,19 +115,19 @@ if strcmpi(sHX_type, 'counter annular passage')
     %uses the function for convection in an annular passage to calculate
     %the outer convection coeffcient (for further information view function
     %help)
-    falpha_o = functions.calculateHeatTransferCoefficient.convectionAnnularPassage (fD_i, fD_o, fLength,...
+    falpha_o = convection_annular_passage (fD_i, fD_o, fLength,...
                fFlowSpeed_Fluid2, fDyn_Visc_Fluid2, fDensity_Fluid2,...
                fThermal_Cond_Fluid2, fC_p_Fluid2, 0);
     
     %uses the function for convection in a pipe to calculate the inner
     %convection coeffcient (for further information view function help)
-    falpha_pipe = functions.calculateHeatTransferCoefficient.convectionPipe ((2*fR_i), fLength, fFlowSpeed_Fluid1,...
+    falpha_pipe = convection_pipe ((2*fR_i), fLength, fFlowSpeed_Fluid1,...
                   fDyn_Visc_Fluid1, fDensity_Fluid1,...
                   fThermal_Cond_Fluid1, fC_p_Fluid1, 1);  
     
     %uses the function for thermal resisitvity to calculate the resistance 
     %from heat conduction (for further information view function help)
-    fR_lambda = functions.calculateHeatTransferCoefficient.conductionResistance(fThermal_Cond_Solid, 0, fR_i,...
+    fR_lambda = thermal_resistivity(fThermal_Cond_Solid, 0, fR_i,...
                 (fD_i/2), fLength);
    
     %calculates the thermal resistance from convection in the annular gap
@@ -272,9 +272,9 @@ if strcmpi(sHX_type, 'counter annular passage')
     oHX.fTotalHeatFlow = fHeatFlow;
     
     %calculation of pressure loss for both fluids:
-    fDelta_P_1 = functions.calculateDeltaPressure.Pipe((2*fR_i), fLength, fFlowSpeed_Fluid1,...
+    fDelta_P_1 = pressure_loss_pipe((2*fR_i), fLength, fFlowSpeed_Fluid1,...
                     fDyn_Visc_Fluid1, fDensity_Fluid1, 0);
-    fDelta_P_2 = functions.calculateDeltaPressure.Pipe((fD_o - fD_i), fLength,...
+    fDelta_P_2 = pressure_loss_pipe((fD_o - fD_i), fLength,...
                     fFlowSpeed_Fluid2, fDyn_Visc_Fluid2,...
                     fDensity_Fluid2, 2, fD_o);
 
@@ -317,20 +317,20 @@ elseif strcmpi(sHX_type, 'counter plate')
     %uses the function for convection along a plate to calculate
     %the convection coeffcient for fluid 1 (for further information view 
     %function help)
-    falpha_1 = functions.calculateHeatTransferCoefficient.convectionPlate (fLength, fFlowSpeed_Fluid1,...
+    falpha_1 = convection_plate (fLength, fFlowSpeed_Fluid1,...
                 fDyn_Visc_Fluid1, fDensity_Fluid1, fThermal_Cond_Fluid1,...
                 fC_p_Fluid1);
 
     %uses the function for convection along a plate to calculate
     %the convection coeffcient for fluid 2 (for further information view 
     %function help)
-    falpha_2 = functions.calculateHeatTransferCoefficient.convectionPlate (fLength, fFlowSpeed_Fluid2,...
+    falpha_2 = convection_plate (fLength, fFlowSpeed_Fluid2,...
                     fDyn_Visc_Fluid2, fDensity_Fluid2,...
                     fThermal_Cond_Fluid2, fC_p_Fluid2);
     
     %uses the function for thermal resisitvity to calculate the resistance 
     %from heat conduction (for further information view function help)    
-    fR_lambda = functions.calculateHeatTransferCoefficient.conductionResistance(fThermal_Cond_Solid, 2, fArea,...
+    fR_lambda = thermal_resistivity(fThermal_Cond_Solid, 2, fArea,...
                     fThickness); 
     
     %calculates the thermal resistance from convection on both sides of the
@@ -479,10 +479,10 @@ elseif strcmpi(sHX_type, 'counter plate')
     
     
     %calculation of pressure loss for both fluids:
-    fDelta_P_1 = functions.calculateDeltaPressure.Pipe(((4*fBroadness*fHeight_1)/...
+    fDelta_P_1 = pressure_loss_pipe(((4*fBroadness*fHeight_1)/...
                   (2*fBroadness+2*fHeight_1)) , fLength,...
                   fFlowSpeed_Fluid1, fDyn_Visc_Fluid1, fDensity_Fluid1, 0);
-    fDelta_P_2 = functions.calculateDeltaPressure.Pipe(((4*fBroadness*fHeight_1)/...
+    fDelta_P_2 = pressure_loss_pipe(((4*fBroadness*fHeight_1)/...
                   (2*fBroadness+2*fHeight_2)) , fLength,...
                   fFlowSpeed_Fluid2, fDyn_Visc_Fluid2, fDensity_Fluid2, 1);
               
@@ -790,19 +790,19 @@ elseif strcmpi(sHX_type, 'ISS CHX')
     %uses the function for convection in an annular passage to calculate
     %the outer convection coeffcient (for further information view function
     %help)
-    falpha_o = functions.calculateHeatTransferCoefficient.convectionAnnularPassage (fD_i, fD_o, fLength,...
+    falpha_o = convection_annular_passage (fD_i, fD_o, fLength,...
                fFlowSpeed_Fluid2, fDyn_Visc_Fluid2, fDensity_Fluid2,...
                fThermal_Cond_Fluid2, fC_p_Fluid2, 0);
     
     %uses the function for convection in a pipe to calculate the inner
     %convection coeffcient (for further information view function help)
-    falpha_pipe = functions.calculateHeatTransferCoefficient.convectionPipe ((2*fR_i), fLength, fFlowSpeed_Fluid1,...
+    falpha_pipe = convection_pipe ((2*fR_i), fLength, fFlowSpeed_Fluid1,...
                   fDyn_Visc_Fluid1, fDensity_Fluid1,...
                   fThermal_Cond_Fluid1, fC_p_Fluid1, 1);  
     
     %uses the function for thermal resisitvity to calculate the resistance 
     %from heat conduction (for further information view function help)
-    fR_lambda = functions.calculateHeatTransferCoefficient.conductionResistance(fThermal_Cond_Solid, 0, fR_i,...
+    fR_lambda = thermal_resistivity(fThermal_Cond_Solid, 0, fR_i,...
                 (fD_i/2), fLength);
    
     %calculates the thermal resistance from convection in the annular gap
@@ -823,7 +823,7 @@ elseif strcmpi(sHX_type, 'ISS CHX')
         
         fFlowSpeed_Fluid2_Nominal = (600*0.000125997881)/(((pi*(fD_o/2)^2)-(pi*(fD_i/2)^2))*...
                         fDensity_Fluid2(1));   
-        falpha_o_Nominal = functions.calculateHeatTransferCoefficient.convectionAnnularPassage (fD_i, fD_o, fLength,...
+        falpha_o_Nominal = convection_annular_passage (fD_i, fD_o, fLength,...
                fFlowSpeed_Fluid2_Nominal, fDyn_Visc_Fluid2, fDensity_Fluid2,...
                fThermal_Cond_Fluid2, fC_p_Fluid2, 0);
         fR_alpha_o_Nominal = 1/(fArea * falpha_o_Nominal);
@@ -1020,19 +1020,19 @@ elseif strcmpi(sHX_type, 'counter pipe bundle')
     fOuter_Hydraulic_Diameter = 4*(fShell_Area - fOuter_Bundle_Area)/...
                 (pi*fD_Shell + fN_Pipes*pi*fD_o);
     
-    falpha_o = functions.calculateHeatTransferCoefficient.convectionPipe(fOuter_Hydraulic_Diameter, fLength,...
+    falpha_o = convection_pipe(fOuter_Hydraulic_Diameter, fLength,...
                 fFlowSpeed_Fluid2, fDyn_Visc_Fluid2, fDensity_Fluid2,...
                 fThermal_Cond_Fluid2, fC_p_Fluid2, 0);
     
     %uses the function for convection in a pipe to calculate the inner
     %convection coeffcient (for further information view function help)
-    falpha_pipe = functions.calculateHeatTransferCoefficient.convectionPipe (fD_i, fLength, fFlowSpeed_Fluid1,...
+    falpha_pipe = convection_pipe (fD_i, fLength, fFlowSpeed_Fluid1,...
                     fDyn_Visc_Fluid1, fDensity_Fluid1,...
                     fThermal_Cond_Fluid1, fC_p_Fluid1, 0);
 
     %uses the function for thermal resisitvity to calculate the resistance 
     %from heat conduction (for further information view function help)
-    fR_lambda = functions.calculateHeatTransferCoefficient.conductionResistance(fThermal_Cond_Solid, 0, (fD_i/2),...
+    fR_lambda = thermal_resistivity(fThermal_Cond_Solid, 0, (fD_i/2),...
                     (fD_o/2), fLength);
 
     %calculates the thermal resistance from convection outside the pipes
@@ -1067,16 +1067,16 @@ elseif strcmpi(sHX_type, 'counter pipe bundle')
     end
 
     %calculation of pressure loss for both fluids:
-    fDelta_P_1_OverPipe = functions.calculateDeltaPressure.Pipe(fD_i , fLength,...
+    fDelta_P_1_OverPipe = pressure_loss_pipe(fD_i , fLength,...
                             fFlowSpeed_Fluid1, fDyn_Visc_Fluid1,...
                             fDensity_Fluid1, 0);
-    fDelta_P_1_InOut = functions.calculateDeltaPressure.PipeBundleInletOutlet(fD_i, fs_1, fs_2,...
+    fDelta_P_1_InOut = pressure_loss_InOut_bundle(fD_i, fs_1, fs_2,...
                             fFlowSpeed_Fluid1, fDyn_Visc_Fluid1,...
                             fDensity_Fluid1);
     
     fDelta_P_1 = fDelta_P_1_OverPipe + fDelta_P_1_InOut;
     
-    fDelta_P_2 = functions.calculateDeltaPressure.Pipe(fOuter_Hydraulic_Diameter, fLength,...
+    fDelta_P_2 = pressure_loss_pipe(fOuter_Hydraulic_Diameter, fLength,...
                   fFlowSpeed_Fluid2, fDyn_Visc_Fluid2, fDensity_Fluid2, 0);
 
 %%
@@ -1130,19 +1130,19 @@ elseif strcmpi(sHX_type, 'parallel annular passage')
     %heat exchanger into several smaller one is just a way to get to the
     %internal temperatures and does not ifluence the convection
     %coefficients
-    falpha_o = functions.calculateHeatTransferCoefficient.convectionAnnularPassage (fD_i, fD_o, fLength,...
+    falpha_o = convection_annular_passage (fD_i, fD_o, fLength,...
                 fFlowSpeed_Fluid2, fDyn_Visc_Fluid2, fDensity_Fluid2,...
                 fThermal_Cond_Fluid2, fC_p_Fluid2, 0);
  
     %uses the function for convection in a pipe to calculate the inner
     %convection coeffcient (for further information view function help)
-    falpha_pipe = functions.calculateHeatTransferCoefficient.convectionPipe (2*fR_i, fLength, fFlowSpeed_Fluid1,...
+    falpha_pipe = convection_pipe (2*fR_i, fLength, fFlowSpeed_Fluid1,...
                     fDyn_Visc_Fluid1, fDensity_Fluid1,...
                     fThermal_Cond_Fluid1, fC_p_Fluid1, 1);
 
     %uses the function for thermal resisitvity to calculate the resistance 
     %from heat conduction (for further information view function help)
-    fR_lambda = functions.calculateHeatTransferCoefficient.conductionResistance(fThermal_Cond_Solid, 0, fR_i,...
+    fR_lambda = thermal_resistivity(fThermal_Cond_Solid, 0, fR_i,...
                     (fD_i/2), fLength);
 
     %These values are again for the incrementel heat exchangers since the
@@ -1292,10 +1292,10 @@ elseif strcmpi(sHX_type, 'parallel annular passage')
     oHX.sCondensateMassFlow = sCondensateFlowRate;
     
     %calculation of pressure loss for both fluids:
-    fDelta_P_1 = functions.calculateDeltaPressure.Pipe((2*fR_i), fLength,...
+    fDelta_P_1 = pressure_loss_pipe((2*fR_i), fLength,...
                     fFlowSpeed_Fluid1, fDyn_Visc_Fluid1,...
                     fDensity_Fluid1, 0);
-    fDelta_P_2 = functions.calculateDeltaPressure.Pipe((fD_o - fD_i), fLength,...
+    fDelta_P_2 = pressure_loss_pipe((fD_o - fD_i), fLength,...
                     fFlowSpeed_Fluid2, fDyn_Visc_Fluid2,...
                     fDensity_Fluid2, 2, fD_o);
   
@@ -1348,16 +1348,16 @@ elseif strcmpi(sHX_type, 'parallel plate')
     
     %uses the function for convection along a plate to calculate the 
     %convection coeffcients (for further information view function help)
-    falpha_o = functions.calculateHeatTransferCoefficient.convectionPlate (fLength, fFlowSpeed_Fluid1,...
+    falpha_o = convection_plate (fLength, fFlowSpeed_Fluid1,...
                 fDyn_Visc_Fluid1, fDensity_Fluid1, fThermal_Cond_Fluid1,...
                 fC_p_Fluid1);
-    falpha_i = functions.calculateHeatTransferCoefficient.convectionPlate (fLength, fFlowSpeed_Fluid2,...
+    falpha_i = convection_plate (fLength, fFlowSpeed_Fluid2,...
                     fDyn_Visc_Fluid2, fDensity_Fluid2,...
                     fThermal_Cond_Fluid2, fC_p_Fluid2);
   
     %uses the function for thermal resisitvity to calculate the resistance 
     %from heat conduction (for further information view function help)    
-    fR_lambda = functions.calculateHeatTransferCoefficient.conductionResistance(fThermal_Cond_Solid, 2, fIncrementalArea,...
+    fR_lambda = thermal_resistivity(fThermal_Cond_Solid, 2, fIncrementalArea,...
                     fThickness);
    
     %calculates the thermal resistance from convection on both sides of the
@@ -1506,10 +1506,10 @@ elseif strcmpi(sHX_type, 'parallel plate')
     
     
         %calculation of pressure loss for both fluids:
-        fDelta_P_1 = functions.calculateDeltaPressure.Pipe(((4*fBroadness*fHeight_1)/...
+        fDelta_P_1 = pressure_loss_pipe(((4*fBroadness*fHeight_1)/...
                       (2*fBroadness+2*fHeight_1)), fLength,...
                       fFlowSpeed_Fluid1, fDyn_Visc_Fluid1, fDensity_Fluid1, 0);
-        fDelta_P_2 = functions.calculateDeltaPressure.Pipe(((4*fBroadness*fHeight_1)/...
+        fDelta_P_2 = pressure_loss_pipe(((4*fBroadness*fHeight_1)/...
                       (2*fBroadness+2*fHeight_2)) , fLength,...
                       fFlowSpeed_Fluid2, fDyn_Visc_Fluid2, fDensity_Fluid2, 1);
     end
@@ -1577,19 +1577,19 @@ elseif strcmpi(sHX_type, 'parallel pipe bundle')
     fOuter_Hydraulic_Diameter = 4*(fShell_Area - fOuter_Bundle_Area)/...
                 (pi*fD_Shell + fN_Pipes*pi*fD_o);
     
-    falpha_o = functions.calculateHeatTransferCoefficient.convectionPipe(fOuter_Hydraulic_Diameter, fLength,...
+    falpha_o = convection_pipe(fOuter_Hydraulic_Diameter, fLength,...
                 fFlowSpeed_Fluid2, fDyn_Visc_Fluid2, fDensity_Fluid2,...
                 fThermal_Cond_Fluid2, fC_p_Fluid2, 0);
     
     %uses the function for convection in a pipe to calculate the inner
     %convection coeffcient (for further information view function help)
-    falpha_pipe = functions.calculateHeatTransferCoefficient.convectionPipe (fD_i, fLength, fFlowSpeed_Fluid1,...
+    falpha_pipe = convection_pipe (fD_i, fLength, fFlowSpeed_Fluid1,...
                     fDyn_Visc_Fluid1, fDensity_Fluid1,...
                     fThermal_Cond_Fluid1, fC_p_Fluid1, 0);
   
     %uses the function for thermal resisitvity to calculate the resistance 
     %from heat conduction (for further information view function help)
-    fR_lambda = functions.calculateHeatTransferCoefficient.conductionResistance(fThermal_Cond_Solid, 0, (fD_i/2),...
+    fR_lambda = thermal_resistivity(fThermal_Cond_Solid, 0, (fD_i/2),...
                     (fD_o/2), fIncrementalLength);
    
     %calculates the thermal resistance from convection outside the pipes
@@ -1739,15 +1739,15 @@ elseif strcmpi(sHX_type, 'parallel pipe bundle')
     
     
     %calculation of pressure loss for both fluids:
-    fDelta_P_1_OverPipe = functions.calculateDeltaPressure.Pipe(fD_i , fLength,...
+    fDelta_P_1_OverPipe = pressure_loss_pipe(fD_i , fLength,...
                             fFlowSpeed_Fluid1, fDyn_Visc_Fluid1,...
                             fDensity_Fluid1, 0);
-    fDelta_P_1_InOut = functions.calculateDeltaPressure.PipeBundleInletOutlet(fD_i, fs_1, fs_2,...
+    fDelta_P_1_InOut = pressure_loss_InOut_bundle(fD_i, fs_1, fs_2,...
                      fFlowSpeed_Fluid1, fDyn_Visc_Fluid1, fDensity_Fluid1);
     
     fDelta_P_1 = fDelta_P_1_OverPipe + fDelta_P_1_InOut;
     
-    fDelta_P_2 = functions.calculateDeltaPressure.Pipe(fOuter_Hydraulic_Diameter, fLength,...
+    fDelta_P_2 = pressure_loss_pipe(fOuter_Hydraulic_Diameter, fLength,...
                   fFlowSpeed_Fluid2, fDyn_Visc_Fluid2, fDensity_Fluid2, 0);
 
 %%    
@@ -1795,10 +1795,10 @@ elseif strcmpi(sHX_type, 'cross')
         fIncrementalArea = (fN_PipesPerRow*pi*fD_i*fIncrementalLength);
         
         %calculation of pressure loss for both fluids:
-        fDelta_P_1_OverPipe = functions.calculateDeltaPressure.Pipe(fD_i , fLength,...
+        fDelta_P_1_OverPipe = pressure_loss_pipe(fD_i , fLength,...
                                 fFlowSpeed_Fluid1, fDyn_Visc_Fluid1,...
                                 fDensity_Fluid1, 0);
-        fDelta_P_1_InOut = functions.calculateDeltaPressure.PipeBundleInletOutlet(fD_i, fs_1, fs_2,...
+        fDelta_P_1_InOut = pressure_loss_InOut_bundle(fD_i, fs_1, fs_2,...
                                 fFlowSpeed_Fluid1, fDyn_Visc_Fluid1,...
                                 fDensity_Fluid1);
     
@@ -1808,11 +1808,11 @@ elseif strcmpi(sHX_type, 'cross')
         %between aligend and shiffted configuration and not also between
         %partially shiffted
         if fConfig == 0
-            fDelta_P_2 = functions.calculateDeltaPressure.PipeBundle(fD_o, fs_1, fs_2,...
+            fDelta_P_2 = pressure_loss_pipe_bundle(fD_o, fs_1, fs_2,...
                            fN_Rows, fFlowSpeed_Fluid2, fDyn_Visc_Fluid2,...
                            fDensity_Fluid2, 0); 
         elseif fConfig == 1 || fConfig == 2
-            fDelta_P_2 = functions.calculateDeltaPressure.PipeBundle(fD_o, fs_1, fs_2,...
+            fDelta_P_2 = pressure_loss_pipe_bundle(fD_o, fs_1, fs_2,...
                            fN_Rows, fFlowSpeed_Fluid2, fDyn_Visc_Fluid2,...
                            fDensity_Fluid2, 1);
         else
@@ -1851,25 +1851,25 @@ elseif strcmpi(sHX_type, 'cross')
         
         %uses the function for convection along a plate to calculate the 
         %convection coeffcients(for further information view function help)
-        falpha_o = functions.calculateHeatTransferCoefficient.convectionPlate(fLength, fFlowSpeed_Fluid1,...
+        falpha_pipe = convection_plate(fLength, fFlowSpeed_Fluid1,...
                         fDyn_Visc_Fluid1, fDensity_Fluid1,...
                         fThermal_Cond_Fluid1, fC_p_Fluid1);
-        falpha_pipe = functions.calculateHeatTransferCoefficient.convectionPlate(fLength, fFlowSpeed_Fluid2,...
+        falpha_o = convection_plate(fLength, fFlowSpeed_Fluid2,...
                         fDyn_Visc_Fluid2, fDensity_Fluid2,...
                         fThermal_Cond_Fluid2, fC_p_Fluid2);
  
         %uses the function for thermal resisitvity to calculate the 
         %resistance from heat conduction (for further information view
         %function help)    
-        fR_lambda_Incremental = functions.calculateHeatTransferCoefficient.conductionResistance(fThermal_Cond_Solid, 2, fIncrementalArea,...
+        fR_lambda_Incremental = thermal_resistivity(fThermal_Cond_Solid, 2, fIncrementalArea,...
                         fThickness, fIncrementalLength);
 
         %calculation of pressure loss for both fluids:
-        fDelta_P_1 = functions.calculateDeltaPressure.Pipe(((4*fBroadness*fHeight_1)/...
+        fDelta_P_1 = pressure_loss_pipe(((4*fBroadness*fHeight_1)/...
                         (2*fBroadness+2*fHeight_1)) , fLength,...
                         fFlowSpeed_Fluid1, fDyn_Visc_Fluid1,...
                         fDensity_Fluid1, 0);
-        fDelta_P_2 = functions.calculateDeltaPressure.Pipe(((4*fBroadness*fHeight_1)/...
+        fDelta_P_2 = pressure_loss_pipe(((4*fBroadness*fHeight_1)/...
                         (2*fBroadness+2*fHeight_2)) , fLength,...
                         fFlowSpeed_Fluid2, fDyn_Visc_Fluid2,...
                         fDensity_Fluid2, 1);
@@ -1879,19 +1879,19 @@ elseif strcmpi(sHX_type, 'cross')
         %uses the function for convection at one row of pipes to calculate
         %the outer convection coeffcient (for further information view
         %function help)
-        falpha_o = functions.calculateHeatTransferCoefficient.convectionOnePipeRow(fD_o,fs_1, fFlowSpeed_Fluid2,...
+        falpha_o = convection_one_pipe_row(fD_o,fs_1, fFlowSpeed_Fluid2,...
             fDyn_Visc_Fluid2, fDensity_Fluid2, fThermal_Cond_Fluid2,...
             fC_p_Fluid2);
         
         %uses the function for convection in a pipe to calculate the inner
         %convection coeffcient (for further information view function help)
-        falpha_pipe = functions.calculateHeatTransferCoefficient.convectionPipe (fD_i, fLength, fFlowSpeed_Fluid1,...
+        falpha_pipe = convection_pipe (fD_i, fLength, fFlowSpeed_Fluid1,...
                         fDyn_Visc_Fluid1, fDensity_Fluid1,...
                         fThermal_Cond_Fluid1, fC_p_Fluid1, 0);
     
         %uses the function for thermal resisitvity to calculate the resis-
         %tance from conduction (for further information view function help)
-        fR_lambda_Incremental = functions.calculateHeatTransferCoefficient.conductionResistance(fThermal_Cond_Solid,0, (fD_i/2),...
+        fR_lambda_Incremental = thermal_resistivity(fThermal_Cond_Solid,0, (fD_i/2),...
             (fD_o/2), fIncrementalLength);
    
     %for fN_Rows > 1 multiple pipe rows
@@ -1902,13 +1902,13 @@ elseif strcmpi(sHX_type, 'cross')
         
         %partially shiffted configuration
         if fConfig == 2
-            falpha_o = functions.calculateHeatTransferCoefficient.convectionMultiplePipeRow (fD_o, fs_1, fs_2,...
+            falpha_o = convection_multiple_pipe_row (fD_o, fs_1, fs_2,...
                         fFlowSpeed_Fluid2, fDyn_Visc_Fluid2,...
                         fDensity_Fluid2, fThermal_Cond_Fluid2,...
                         fC_p_Fluid2, fConfig, fs_3);
         %aligend or shiffted configuration
         elseif fConfig == 1 || fConfig == 0
-            falpha_o = functions.calculateHeatTransferCoefficient.convectionMultiplePipeRow (fD_o, fs_1, fs_2,...
+            falpha_o = convection_multiple_pipe_row (fD_o, fs_1, fs_2,...
                         fFlowSpeed_Fluid2, fDyn_Visc_Fluid2,...
                         fDensity_Fluid2, fThermal_Cond_Fluid2,...
                         fC_p_Fluid2, fConfig);
@@ -1918,13 +1918,13 @@ elseif strcmpi(sHX_type, 'cross')
         
         %uses the function for convection in a pipe to calculate the inner
         %convection coeffcient (for further information view function help)
-        falpha_pipe = functions.calculateHeatTransferCoefficient.convectionPipe (fD_i, fLength, fFlowSpeed_Fluid1,...
+        falpha_pipe = convection_pipe (fD_i, fLength, fFlowSpeed_Fluid1,...
                         fDyn_Visc_Fluid1, fDensity_Fluid1,...
                         fThermal_Cond_Fluid1, fC_p_Fluid1, 0);
    
         %uses the function for thermal resisitvity to calculate the resis-
         %tance from conduction (for further information view function help)
-    	fR_lambda_Incremental = functions.calculateHeatTransferCoefficient.conductionResistance(fThermal_Cond_Solid,0, (fD_i/2),... 
+    	fR_lambda_Incremental = thermal_resistivity(fThermal_Cond_Solid,0, (fD_i/2),... 
                         (fD_o/2), fIncrementalLength);                    
                     
    
@@ -2002,18 +2002,64 @@ elseif strcmpi(sHX_type, 'cross')
         end
         
         % preallocation of variables
-        mOutlet_Temp_1 = zeros(iIncrements, fN_Row_Increments);
-        mOutlet_Temp_2 = zeros(iIncrements, fN_Row_Increments);
-        mCondensateHeatFlow = zeros(iIncrements, fN_Row_Increments);
+        mOutlet_Temp_1 = nan(iIncrements, fN_Row_Increments);
+        mOutlet_Temp_2 = nan(iIncrements, fN_Row_Increments);
+        mCondensateHeatFlow = nan(iIncrements, fN_Row_Increments);
         mCondensateFlowRate = zeros(iIncrements, fN_Row_Increments);
         
         acCondensateNames = cell(iIncrements, fN_Row_Increments);
         sCondensateFlowRate = struct();
         
+        tInput.DebugMode = false;						% Toggle Debug Mode if needed (more console output)
+		
+        tInput.CHX_Type = 'VerticalTube';
+        % CHX.CHX_Type = 'HorizontalTube';
+
+        % Toggle calculation mode, whether gasflow influence on Heatflux should be considered
+        tInput.GasFlow = true;
+
+        tInput.massFlowRate_Gas = fMassFlow1/iIncrements;	% Mass flow rate of Watervapor-Air-Mix [kg/s]
+        
+        tInput.massFlowRate_Coolant = fMassFlow2/iIncrements;	% Mass flow rate of coolant [kg/s]
+
+        tInput.Vapor	 = 'H2O';					% Vapor
+        tInput.Inertgas = 'Air';					% Inertgas
+
+        % CHX.Vapor = 'Isopropanol';				% Vapor
+        % CHX.Inertgas = 'N2';						% Intertgas
+
+        tInput.Coolant = 'H2O';						% Coolant
+        
+        fBroadnessCell = fBroadness/iIncrements;
+
+        tInput.d = 4*(fHeight_1 * fBroadnessCell)/(2 * fHeight_1 + 2 * fBroadnessCell);     % Hydraulic diameter [m]
+        
+
+        % tubeLength = 1;							% Pipe length [m]
+        % cellnumber = 20;							% Number of cells for calculation
+
+        % CHX.dx = tubeLength / cellnumber;			% Calculation of dx
+
+        tInput.dx = fLength/iIncrements;        % finite Zelllaenge [m]  ########### Overwrite ###########
+        tInput.dy = fBroadness/iIncrements;		% Umfang / Breite fuer Berechnung von dA mithilfe von dx [m]
+        tInput.dA = fIncrementalArea;			% finite Zellflaeche [m^2]
+        tInput.alpha_coolant = falpha_o;
+        tInput.alpha_gas = falpha_pipe;
+        tInput.oFlowCoolant = oFlow_2;
+        tInput.fThermal_Cond_Solid = fThermal_Cond_Solid;
+        tInput.fThickness = fThickness;
+
+        tInput.charactLength = tInput.d;					% Characteristic Length for Reynolds Number [m]
+        
+        tInput.pressure_Gas = Fluid_1.oFlow.fPressure;					% Pressure Gas [Pa]
+        fInitialWaterFlow = Fluid_1.oFlow.arPartialMass(oHX.oMT.tiN2I.H2O) * tInput.massFlowRate_Gas;
+
+        %% New Calculation with discretization
         for l = 1:iIncrements
             for k = 1:fN_Row_Increments
+                fprintf('l = %i, k = %i\n', l, k);
                 if fN_Rows >= 1
-                    %%
+                    %% This is still old for a pipe bundle cross flow CHX
                     %uses the function for crossflow heat exchangers for one to multiple
                     %pipe rows to calculate the new outlet temperature of the heat 
                     %exchanger (with regard to condensation from the later sections)
@@ -2083,125 +2129,74 @@ elseif strcmpi(sHX_type, 'cross')
                         fTWall2 = (fTWall21+fTWall22)/2;
                     end
                 else
-                    %%
+                    %% Actual new calculation
                     %uses the function for crossflow heat exchangers for a plate
                     %heat exchanger and the to calculate the new outlet temperature of the heat 
                     %exchanger (with regard to condensation from the later sections). 
+                    
+                    
                     if k == 1 && l == 1
-                        [mOutlet_Temp_1(l,k), mOutlet_Temp_2(l,k)] = temperature_crossflow...
-                        (fN_Rows ,fIncrementalArea, fIncrementalU, fHeat_Capacity_Flow_1_Incremental, ...
-                         fHeat_Capacity_Flow_2_Incremental, fEntry_Temp1, fEntry_Temp2);
-
-                        mHeatFlow(l,k) = fHeat_Capacity_Flow_1_Incremental*(mOutlet_Temp_1(l,k)-fEntry_Temp1);
                         
-                        fTWall11=((-mHeatFlow(l,k))*(fR_alpha_i_Incremental))+(fEntry_Temp1+mOutlet_Temp_1(l,k))/2;
-                        fTWall21=((-mHeatFlow(l,k))*(fR_alpha_i_Incremental+fR_lambda_Incremental))+(fEntry_Temp1+mOutlet_Temp_1(l,k))/2;
+                        tInput.massFlowRate_Film = 0;					% Fluid film of previous cell, that is entering current cell [kg/s]
+                        tInput.temp_Gas            = fEntry_Temp1;			% Temp of incoming gasflow [K]
+                        tInput.temp_Coolant        = fEntry_Temp2;			% Temp of cooling fluid [K]
+                        tInput.moleFrac_Vapor = (fInitialWaterFlow/ oHX.oMT.afMolarMass(oHX.oMT.tiN2I.H2O)) / (tInput.massFlowRate_Gas / Fluid_1.oFlow.fMolarMass);
                         
-                        fTWall12 = ((mHeatFlow(l,k))*(fR_alpha_o_Incremental+fR_lambda_Incremental))+(fEntry_Temp2+mOutlet_Temp_2(l,k))/2;
-                        fTWall22 = ((mHeatFlow(l,k))*(fR_alpha_o_Incremental))+(fEntry_Temp2+mOutlet_Temp_2(l,k))/2;
+                        tInput.arPartialMassesGas = oFlow_1.arPartialMass;
                         
-                        fTWall1 = (fTWall11+fTWall12)/2;
-                        fTWall2 = (fTWall21+fTWall22)/2;
+                        tInput = RecalculateMatterProperties(oHX.oMT, tInput);
+                        
                     elseif k == 1 && l ~= 1
-                        [mOutlet_Temp_1(l,k), mOutlet_Temp_2(l,k)] = temperature_crossflow...
-                        (fN_Rows ,fIncrementalArea, fIncrementalU, fHeat_Capacity_Flow_1_Incremental, ...
-                         fHeat_Capacity_Flow_2_Incremental, mOutlet_Temp_1(l-1,k), fEntry_Temp2);
-
-                         mHeatFlow(l,k) = fHeat_Capacity_Flow_1_Incremental*(mOutlet_Temp_1(l,k)-mOutlet_Temp_1(l-1,k));
                         
-                        fTWall11=((-mHeatFlow(l,k))*(fR_alpha_i_Incremental))+(mOutlet_Temp_1(l-1,k)+mOutlet_Temp_1(l,k))/2;
-                        fTWall21=((-mHeatFlow(l,k))*(fR_alpha_i_Incremental+fR_lambda_Incremental))+(mOutlet_Temp_1(l-1,k)+mOutlet_Temp_1(l,k))/2;
+                        fCurrentWaterFlow = fInitialWaterFlow - sum(mCondensateFlowRate(1:l,k));
+                        tInput.massFlowRate_Film = fInitialWaterFlow - fCurrentWaterFlow;					% Fluid film of previous cell, that is entering current cell [kg/s]
+                        tInput.temp_Gas            = mOutlet_Temp_1(l-1,k);			% Temp of incoming gasflow [K]
+                        tInput.temp_Coolant        = fEntry_Temp2;			% Temp of cooling fluid [K]
+                        tInput.moleFrac_Vapor = (fCurrentWaterFlow/ oHX.oMT.afMolarMass(oHX.oMT.tiN2I.H2O)) / (tInput.massFlowRate_Gas / Fluid_1.oFlow.fMolarMass);
                         
-                        fTWall12 = ((mHeatFlow(l,k))*(fR_alpha_o_Incremental+fR_lambda_Incremental))+(fEntry_Temp2+mOutlet_Temp_2(l,k))/2;
-                        fTWall22 = ((mHeatFlow(l,k))*(fR_alpha_o_Incremental))+(fEntry_Temp2+mOutlet_Temp_2(l,k))/2;
+                        tInput.arPartialMassesGas = oFlow_1.arPartialMass;
+                        tInput.arPartialMassesGas(oHX.oMT.tiN2I.H2O) = (fCurrentWaterFlow/fInitialWaterFlow) * tInput.arPartialMassesGas(oHX.oMT.tiN2I.H2O);
                         
-                        fTWall1 = (fTWall11+fTWall12)/2;
-                        fTWall2 = (fTWall21+fTWall22)/2;
                     elseif k ~= 1 && l == 1
-                        [mOutlet_Temp_1(l,k), mOutlet_Temp_2(l,k)] = temperature_crossflow...
-                        (fN_Rows ,fIncrementalArea, fIncrementalU, fHeat_Capacity_Flow_1_Incremental, ...
-                         fHeat_Capacity_Flow_2_Incremental, fEntry_Temp1, mOutlet_Temp_2(l,k-1));
-
-                        mHeatFlow(l,k) = fHeat_Capacity_Flow_1_Incremental*(mOutlet_Temp_1(l,k)-fEntry_Temp1);
                         
-                        fTWall11=((-mHeatFlow(l,k))*(fR_alpha_i_Incremental))+(fEntry_Temp1+mOutlet_Temp_1(l,k))/2;
-                        fTWall21=((-mHeatFlow(l,k))*(fR_alpha_i_Incremental+fR_lambda_Incremental))+(fEntry_Temp1+mOutlet_Temp_1(l,k))/2;
+                        tInput.massFlowRate_Film = 0;					% Fluid film of previous cell, that is entering current cell [kg/s]
+                        tInput.temp_Gas            = fEntry_Temp1;			% Temp of incoming gasflow [K]
+                        tInput.temp_Coolant        = mOutlet_Temp_2(l,k-1);			% Temp of cooling fluid [K]
+                        tInput.moleFrac_Vapor = (fInitialWaterFlow/ oHX.oMT.afMolarMass(oHX.oMT.tiN2I.H2O)) / (tInput.massFlowRate_Gas / Fluid_1.oFlow.fMolarMass);
+                        tInput.arPartialMassesGas = oFlow_1.arPartialMass;
                         
-                        fTWall12 = ((mHeatFlow(l,k))*(fR_alpha_o_Incremental+fR_lambda_Incremental))+(mOutlet_Temp_2(l,k-1)+mOutlet_Temp_2(l,k))/2;
-                        fTWall22 = ((mHeatFlow(l,k))*(fR_alpha_o_Incremental))+(mOutlet_Temp_2(l,k-1)+mOutlet_Temp_2(l,k))/2;
-                        
-                        fTWall1 = (fTWall11+fTWall12)/2;
-                        fTWall2 = (fTWall21+fTWall22)/2;
                     else
-                        [mOutlet_Temp_1(l,k), mOutlet_Temp_2(l,k)] = temperature_crossflow...
-                        (fN_Rows ,fIncrementalArea, fIncrementalU, fHeat_Capacity_Flow_1_Incremental, ...
-                         fHeat_Capacity_Flow_2_Incremental, mOutlet_Temp_1(l-1,k), mOutlet_Temp_2(l,k-1));
-
-                        mHeatFlow(l,k) = fHeat_Capacity_Flow_1_Incremental*(mOutlet_Temp_1(l,k)-mOutlet_Temp_1(l-1,k));
                         
-                        fTWall11=((-mHeatFlow(l,k))*(fR_alpha_i_Incremental))+(mOutlet_Temp_1(l-1,k)+mOutlet_Temp_1(l,k))/2;
-                        fTWall21=((-mHeatFlow(l,k))*(fR_alpha_i_Incremental+fR_lambda_Incremental))+(mOutlet_Temp_1(l-1,k)+mOutlet_Temp_1(l,k))/2;
+                        fCurrentWaterFlow = fInitialWaterFlow - sum(mCondensateFlowRate(1:l,k));
+                        tInput.massFlowRate_Film = fInitialWaterFlow - fCurrentWaterFlow;					% Fluid film of previous cell, that is entering current cell [kg/s]
+                        tInput.temp_Gas            = mOutlet_Temp_1(l-1,k);			% Temp of incoming gasflow [K]
+                        tInput.temp_Coolant        = mOutlet_Temp_2(l,k-1);			% Temp of cooling fluid [K]
+                        tInput.moleFrac_Vapor = (fCurrentWaterFlow/ oHX.oMT.afMolarMass(oHX.oMT.tiN2I.H2O)) / (tInput.massFlowRate_Gas / Fluid_1.oFlow.fMolarMass); % mol/s mol/s
                         
-                        fTWall12 = ((mHeatFlow(l,k))*(fR_alpha_o_Incremental+fR_lambda_Incremental))+(mOutlet_Temp_2(l,k-1)+mOutlet_Temp_2(l,k))/2;
-                        fTWall22 = ((mHeatFlow(l,k))*(fR_alpha_o_Incremental))+(mOutlet_Temp_2(l,k-1)+mOutlet_Temp_2(l,k))/2;
+                        tInput.arPartialMassesGas = oFlow_1.arPartialMass;
+						% TO DO: write better calculation where
+						% sum(this.arPartialMassesGas) == 1
+                        tInput.arPartialMassesGas(oHX.oMT.tiN2I.H2O) = (fCurrentWaterFlow/fInitialWaterFlow) * tInput.arPartialMassesGas(oHX.oMT.tiN2I.H2O);
                         
-                        fTWall1 = (fTWall11+fTWall12)/2;
-                        fTWall2 = (fTWall21+fTWall22)/2;
                     end
+                    
+                    [tOutputs] = q_dot_x(oHX, tInput);
+                    
+                    mOutlet_Temp_1(l,k)         = tOutputs.fTemperatureGasOutlet;
+                    mOutlet_Temp_2(l,k)         = tOutputs.fTemperatureCoolantOutlet;
+                    
+                    mHeatFlow(l,k)              = tOutputs.fTotalHeatFlow;
+                    mGasHeatFlow(l,k)           = tOutputs.fGasHeatFlow;
+                    mCondensateHeatFlow(l,k)    = tOutputs.fHeatFlowCondensate;
+                    mCondensateFlowRate(l,k)    = tOutputs.fCondensateMassFlow;
+                    
                 end
 
-                %%
-                %now the condensation is taken into account and the mass
-                %flow for the different condensates is calculated and saved
-                %into a struct with the substance that condenses as field
-                %name and the mass flow that condenses as field value in
-                %kg/s. The temperature is also recalculated here and gets
-                %overwritten if it changes from condensation
-
-                if fEntry_Temp1 > fEntry_Temp2
-                    %uses the function in the private folder to
-                    %calculate the new outlet temp and the condensate
-                    %mass flow for this cell
-                    % TO DO: Fix for things other than water
-                    afCondenseableFlowRate = zeros(1,oHX.oMT.iSubstances);
-                    afCondenseableFlowRate(oHX.oMT.tiN2I.H2O) = mfPartialHumidityFlowRate(k) - sum(mCondensateFlowRate(:,k));
-                    % For this case mfPartialHumidityFlowRate is along k
-                    if l == 1
-                        [sCondensateFlowRateCell, mOutlet_Temp_1(l,k), acCondensateNames{l,k}, mCondensateHeatFlow(l,k)] = condensation ...
-                            (oHX, afCondenseableFlowRate, fHeat_Capacity_Flow_1_Incremental, abs(mHeatFlow(l,k)), fTWall1, mOutlet_Temp_1(l,k),fEntry_Temp1, oFlow_1, fN_Row_Increments);
-                    else
-                        [sCondensateFlowRateCell, mOutlet_Temp_1(l,k), acCondensateNames{l,k}, mCondensateHeatFlow(l,k)] = condensation ...
-                            (oHX, afCondenseableFlowRate, fHeat_Capacity_Flow_1_Incremental, abs(mHeatFlow(l,k)), fTWall1, mOutlet_Temp_1(l,k),mOutlet_Temp_1(l-1,k), oFlow_1, fN_Row_Increments);
-                    end
-                else
-                    %uses the function in the private folder to
-                    %calculate the new outlet temp and the condensate
-                    %mass flow for this cell
-                    % TO DO: Fix for things other than water
-                    afCondenseableFlowRate = zeros(1,oHX.oMT.iSubstances);
-                    afCondenseableFlowRate(oHX.oMT.tiN2I.H2O) = mfPartialHumidityFlowRate(k) - sum(mCondensateFlowRate(:,k));
-                    if k == 1
-                        [sCondensateFlowRateCell, mOutlet_Temp_2(l,k), acCondensateNames{l,k}, mCondensateHeatFlow(l,k)] = condensation ...
-                            (oHX, afCondenseableFlowRate, fHeat_Capacity_Flow_2_Incremental, abs(mHeatFlow(l,k)), fTWall2, mOutlet_Temp_2(l,k),fEntry_Temp2, oFlow_2, iIncrements);
-                    else
-                        [sCondensateFlowRateCell, mOutlet_Temp_2(l,k), acCondensateNames{l,k}, mCondensateHeatFlow(l,k)] = condensation ...
-                            (oHX, afCondenseableFlowRate, fHeat_Capacity_Flow_2_Incremental, abs(mHeatFlow(l,k)), fTWall2, mOutlet_Temp_2(l,k),mOutlet_Temp_2(l,k-1), oFlow_2, iIncrements);
-                    end
-                end
-                acCondensateNamesCell = acCondensateNames{l,k};
-                for n = 1:length(acCondensateNamesCell)
-                    if isfield(sCondensateFlowRate, acCondensateNames{n})
-                        sCondensateFlowRate.(acCondensateNamesCell{n}) = sCondensateFlowRate.(acCondensateNamesCell{n})+sCondensateFlowRateCell.(acCondensateNamesCell{n});
-                    else
-                        sCondensateFlowRate.(acCondensateNamesCell{n}) = sCondensateFlowRateCell.(acCondensateNamesCell{n});
-                    end
-                end
-                % Fix for stuff other than water
-                if isfield(sCondensateFlowRateCell, 'H2O')
-                    mCondensateFlowRate(l,k) = sCondensateFlowRateCell.H2O;
-                end
             end
-        end
+		end
+		%% put keyboard or breakpoint here if you want internal values of the CHX
+        %  mesh(mOutlet_Temp_1); hold on; mesh(mOutlet_Temp_2);
+%         keyboard()
         %calculates the outlet temperatures by averaging the results
         fOutlet_Temp_1 = sum(mOutlet_Temp_1(end,:))/fN_Row_Increments;
         fOutlet_Temp_2 = sum(mOutlet_Temp_2(:,end))/iIncrements;
@@ -2210,6 +2205,8 @@ elseif strcmpi(sHX_type, 'cross')
     %double sum because it is a matrix
     oHX.fTotalCondensateHeatFlow = sum(sum(mCondensateHeatFlow));
     oHX.fTotalHeatFlow = sum(sum(mHeatFlow));
+    
+    sCondensateFlowRate.H2O = sum(sum(mCondensateFlowRate));
     
     %TO DO: Delete for final implementation, or fix to a state where it
     %makes sense no matter what system is used (esp for last two cases)
@@ -2224,6 +2221,694 @@ elseif strcmpi(sHX_type, 'cross')
     end
     %writes the values for condensation into the oHX object
     %for further use
+    oHX.sCondensateMassFlow = sCondensateFlowRate;
+%     toc
+%     keyboard()
+%%
+elseif strcmpi(sHX_type,'plate fin')
+    % plate fin holds modified code of the 'cross' section that adds
+    % layers, baffles and fins to the calculations    
+    
+    %allocates the entry for the number of pipe rows to decide how the 
+    %programm should proceed    
+    fN_Rows = mHX(1);
+    %if the number of rows is larger than 0 it means that pipes were used
+    %and the entries from mHX can be allocated as follows
+    if fN_Rows > 0
+        fN_Pipes    = mHX(2);
+        fD_i        = mHX(3);
+        fD_o        = mHX(4);
+        fLength     = mHX(5);
+        fs_1        = mHX(6); 
+        fs_2        = mHX(7);
+        fConfig     = mHX(8);
+        if length(mHX) == 9
+            fs_3    = mHX(9); 
+        end
+        %calculates the further needed variables for the heat exchanger
+        %from the given values
+        
+        %flow speed for the fluids calculated from the massflow
+        %with massflow = volumeflow*rho = fw*fA*frho        
+        fFlowSpeed_Fluid1 = fMassFlow1/(fN_Pipes*pi*(fD_i/2)^2 *...
+                            fDensity_Fluid1(1));
+        fFlowSpeed_Fluid2 = fMassFlow2/(((fs_1 - fD_i)* fLength *...
+                            (fN_Pipes/fN_Rows)) * fDensity_Fluid2(1));
+        %heat capacity flow according to [1] page 173 equation (8.1)
+        fHeat_Capacity_Flow_1 = abs(fMassFlow1) * fC_p_Fluid1(1);
+        fHeat_Capacity_Flow_2 = abs(fMassFlow2) * fC_p_Fluid2(1);
+        
+        fN_PipesPerRow = fN_Pipes/fN_Rows;
+        if mod(fN_PipesPerRow,1) ~= 0
+            error('the number of pipes must be dividable with the number of rows')
+        end
+        
+        fIncrementalLength = fLength/iIncrements;
+        %calculates the area of the heat exchanger
+        %fArea = (fN_Pipes*pi*fD_i*fLength);  
+        
+        %Area for one pipe row
+        fIncrementalArea = (fN_PipesPerRow*pi*fD_i*fIncrementalLength);
+        
+        %calculation of pressure loss for both fluids:
+        fDelta_P_1_OverPipe = pressure_loss_pipe(fD_i , fLength,...
+                                fFlowSpeed_Fluid1, fDyn_Visc_Fluid1,...
+                                fDensity_Fluid1, 0);
+        fDelta_P_1_InOut = pressure_loss_InOut_bundle(fD_i, fs_1, fs_2,...
+                                fFlowSpeed_Fluid1, fDyn_Visc_Fluid1,...
+                                fDensity_Fluid1);
+    
+        fDelta_P_1 = fDelta_P_1_OverPipe + fDelta_P_1_InOut;
+        
+        %for the pressure loss in the pipe bundle it is only differenitated
+        %between aligend and shiffted configuration and not also between
+        %partially shiffted
+        if fConfig == 0
+            fDelta_P_2 = pressure_loss_pipe_bundle(fD_o, fs_1, fs_2,...
+                           fN_Rows, fFlowSpeed_Fluid2, fDyn_Visc_Fluid2,...
+                           fDensity_Fluid2, 0); 
+        elseif fConfig == 1 || fConfig == 2
+            fDelta_P_2 = pressure_loss_pipe_bundle(fD_o, fs_1, fs_2,...
+                           fN_Rows, fFlowSpeed_Fluid2, fDyn_Visc_Fluid2,...
+                           fDensity_Fluid2, 1);
+        else
+            error('wrong input for fConfig')
+        end
+    end
+  
+    %for fN_Rows = 0 no pipes were used => plate heat exchanger
+    if fN_Rows == 0
+        
+        %allocates the entries in the mHX vector from the user entry to the
+        %respective variables if a plate heat exchanger is used
+        fBroadness  = mHX(2);
+        fHeight_1   = mHX(3);
+        fHeight_2   = mHX(4);
+        fLength     = mHX(5);
+        fThickness  = mHX(6);
+        iLayers         = mHX(7);
+        iBaffles        = mHX(8);
+        fFinBroadness_1 = mHX(9);
+        fFinBroadness_2 = mHX(10);
+        tInput.fFinThickness   = mHX(11);
+    
+        %calculates the further needed variables for the heat exchanger 
+        %from the given values
+        
+        %flow speed for the fluids calculated from the massflow
+        %with massflow = volumeflow*rho = fw*fA*frho        
+        fFlowSpeed_Fluid1 = fMassFlow1/(fHeight_1 * fBroadness *...
+                            fDensity_Fluid1(1));
+        fFlowSpeed_Fluid2 = fMassFlow2/(fHeight_2 * fBroadness *...
+                            fDensity_Fluid2(1));
+        %heat capacity flow according to [1] page 173 equation (8.1)
+        fHeat_Capacity_Flow_1 = abs(fMassFlow1) * fC_p_Fluid1(1);
+        fHeat_Capacity_Flow_2 = abs(fMassFlow2) * fC_p_Fluid2(1);
+        
+        % Capacity Flow for the Mix zone. Flow for one complete layer
+        fHeat_Capacity_Flow_Layers_1 = fHeat_Capacity_Flow_1/iLayers;
+        fHeat_Capacity_Flow_Layers_2 = fHeat_Capacity_Flow_2/iLayers;
+        %calculates the area of the heat exchanger
+        %fArea = fBroadness*fLength;
+        
+        fIncrementalLength = fLength/iIncrements;
+        fIncrementalBroadness = fBroadness/iIncrements;
+        fIncrementalArea = (fBroadness/iIncrements)*fIncrementalLength;
+        
+        %uses the function for convection along a plate to calculate the 
+        %convection coeffcients(for further information view function help)
+        falpha_pipe = convection_plate(fLength, fFlowSpeed_Fluid1,...
+                        fDyn_Visc_Fluid1, fDensity_Fluid1,...
+                        fThermal_Cond_Fluid1, fC_p_Fluid1);
+        falpha_o = convection_plate(fLength, fFlowSpeed_Fluid2,...
+                        fDyn_Visc_Fluid2, fDensity_Fluid2,...
+                        fThermal_Cond_Fluid2, fC_p_Fluid2);
+                    
+        %uses the function for thermal resisitvity to calculate the 
+        %resistance from heat conduction (for further information view
+        %function help)    
+        fR_lambda_Incremental = thermal_resistivity(fThermal_Cond_Solid, 2, fIncrementalArea,...
+                        fThickness, fIncrementalLength);
+
+        %calculation of pressure loss for both fluids:
+        fDelta_P_1 = pressure_loss_pipe(((4*fBroadness*fHeight_1)/...
+                        (2*fBroadness+2*fHeight_1)) , fLength,...
+                        fFlowSpeed_Fluid1, fDyn_Visc_Fluid1,...
+                        fDensity_Fluid1, 0);
+        fDelta_P_2 = pressure_loss_pipe(((4*fBroadness*fHeight_1)/...
+                        (2*fBroadness+2*fHeight_2)) , fLength,...
+                        fFlowSpeed_Fluid2, fDyn_Visc_Fluid2,...
+                        fDensity_Fluid2, 1);
+        
+    %for fN_Rows = 1 a single pipe row was used 
+    elseif fN_Rows == 1
+        %uses the function for convection at one row of pipes to calculate
+        %the outer convection coeffcient (for further information view
+        %function help)
+        falpha_o = convection_one_pipe_row(fD_o,fs_1, fFlowSpeed_Fluid2,...
+            fDyn_Visc_Fluid2, fDensity_Fluid2, fThermal_Cond_Fluid2,...
+            fC_p_Fluid2);
+        
+        %uses the function for convection in a pipe to calculate the inner
+        %convection coeffcient (for further information view function help)
+        falpha_pipe = convection_pipe (fD_i, fLength, fFlowSpeed_Fluid1,...
+                        fDyn_Visc_Fluid1, fDensity_Fluid1,...
+                        fThermal_Cond_Fluid1, fC_p_Fluid1, 0);
+    
+        %uses the function for thermal resisitvity to calculate the resis-
+        %tance from conduction (for further information view function help)
+        fR_lambda_Incremental = thermal_resistivity(fThermal_Cond_Solid,0, (fD_i/2),...
+            (fD_o/2), fIncrementalLength);
+   
+    %for fN_Rows > 1 multiple pipe rows
+    elseif fN_Rows > 1
+        %uses the function for convection at multiple pipe rows to
+        %calculate the outer convection coeffcient (for further 
+        %information view function help)
+        
+        %partially shiffted configuration
+        if fConfig == 2
+            falpha_o = convection_multiple_pipe_row (fD_o, fs_1, fs_2,...
+                        fFlowSpeed_Fluid2, fDyn_Visc_Fluid2,...
+                        fDensity_Fluid2, fThermal_Cond_Fluid2,...
+                        fC_p_Fluid2, fConfig, fs_3);
+        %aligend or shiffted configuration
+        elseif fConfig == 1 || fConfig == 0
+            falpha_o = convection_multiple_pipe_row (fD_o, fs_1, fs_2,...
+                        fFlowSpeed_Fluid2, fDyn_Visc_Fluid2,...
+                        fDensity_Fluid2, fThermal_Cond_Fluid2,...
+                        fC_p_Fluid2, fConfig);
+        else
+            error('wrong input for fConfig')
+        end
+        
+        %uses the function for convection in a pipe to calculate the inner
+        %convection coeffcient (for further information view function help)
+        falpha_pipe = convection_pipe (fD_i, fLength, fFlowSpeed_Fluid1,...
+                        fDyn_Visc_Fluid1, fDensity_Fluid1,...
+                        fThermal_Cond_Fluid1, fC_p_Fluid1, 0);
+   
+        %uses the function for thermal resisitvity to calculate the resis-
+        %tance from conduction (for further information view function help)
+    	fR_lambda_Incremental = thermal_resistivity(fThermal_Cond_Solid,0, (fD_i/2),... 
+                        (fD_o/2), fIncrementalLength);                    
+                    
+   
+    else 
+        error('no negative input for the number of pipe rows allowed')
+    end
+
+    %calculates the thermal resistance from convection in the pipes
+    fR_alpha_i_Incremental = 1/(fIncrementalArea * falpha_pipe);
+    
+    %calculates the thermal resistance from convection outside the pipes
+    fR_alpha_o_Incremental = 1/(fIncrementalArea * falpha_o);
+    
+    %calculates the heat exchange coefficient
+    fIncrementalU = 1/(fIncrementalArea * (fR_alpha_o_Incremental + fR_alpha_i_Incremental + fR_lambda_Incremental));
+    
+    try
+        oFlow_1 = oHX.oF2F_1.getInFlow(); 
+    catch
+        oFlow_1 = oHX.oF2F_1.aoFlows(1);
+    end
+    try
+        oFlow_2 = oHX.oF2F_2.getInFlow(); 
+    catch
+        oFlow_2 = oHX.oF2F_2.aoFlows(1);
+    end
+    %% New Code for Condensating Heat Exchanger
+    %
+    %In order to calculate the condensation in the heat exchanger it is
+    %necessary to get the temperature in the heat exchanger at different
+    %locations. This is achieved by splitting the heat exchanger into
+    %several smaller heat exchangers and calculating their respective
+    %outlet temperatures.
+    
+
+    mCondensateHeatFlow = zeros(iIncrements, fN_Rows, iBaffles+1, iLayers);
+    mHeatFlow = zeros(iIncrements, fN_Rows, iBaffles+1, iLayers);
+    %If heat exchange coefficient U is zero there can be no heat transfer
+    %between the two fluids
+    if fIncrementalU == 0
+        fOutlet_Temp_1 = fEntry_Temp1;
+        fOutlet_Temp_2 = fEntry_Temp2;
+        sCondensateFlowRate = struct();
+    else
+        %have to split the heat exchanger for multiple pipe rows into
+        %several HX with one pipe row. And also the pipes have to be
+        %splitted into increments in their length.
+        
+        %splits the heat capacity flows into increments depending on the
+        %configuration
+        if fN_Rows >= 1
+            fHeat_Capacity_Flow_1_Incremental = fHeat_Capacity_Flow_1/fN_Rows;
+            fHeat_Capacity_Flow_2_Incremental = fHeat_Capacity_Flow_2/iIncrements;
+            fN_Row_Increments = fN_Rows;
+            
+        else
+            %even if there are no pipe rows as in the plate heat exchanger
+            %it is still necessary to have at least one increment (if you
+            %can call it that) in the row direction or the for loop would
+            %crash because it would for from 1:0
+            fN_Row_Increments = iIncrements;
+            
+            fHeat_Capacity_Flow_1_Incremental = fHeat_Capacity_Flow_1/(fN_Row_Increments*iLayers);
+            fHeat_Capacity_Flow_2_Incremental = fHeat_Capacity_Flow_2/(iIncrements*iLayers);
+            
+        end
+        
+        % Calculates the total flowrate of water in the CHX hot flow:
+        % TO DO: Fix for substances other than water
+        if fEntry_Temp1 >= fEntry_Temp2
+            fTotalHumidityFlowRate = fMassFlow1 * oFlow_1.arPartialMass(oHX.oMT.tiN2I.H2O);
+            mfPartialHumidityFlowRate = ones(1,fN_Row_Increments) * fTotalHumidityFlowRate/fN_Row_Increments;
+        else
+            fTotalHumidityFlowRate = fMassFlow2 * oFlow_2.arPartialMass(oHX.oMT.tiN2I.H2O);
+            mfPartialHumidityFlowRate = ones(iIncrements,1) * fTotalHumidityFlowRate/iIncrements;
+        end
+        
+        % preallocation of variables
+        % matrices increased to four dimensions.
+        mOutlet_Temp_1      = nan(iIncrements, fN_Row_Increments,iBaffles+1,iLayers);
+        mOutlet_Temp_2      = nan(iIncrements, fN_Row_Increments,iBaffles+1,iLayers);
+        mCondensateHeatFlow = nan(iIncrements, fN_Row_Increments,iBaffles+1,iLayers);
+        mCondensateFlowRate = zeros(iIncrements, fN_Row_Increments,iBaffles+1,iLayers);
+        mHeatFlow           = NaN(iIncrements, fN_Row_Increments, iBaffles+1, iLayers);
+        mThermalResistance  = NaN(iIncrements, fN_Row_Increments, iBaffles+1, iLayers);
+        
+        acCondensateNames = cell(iIncrements, fN_Row_Increments);
+        sCondensateFlowRate = struct();
+        
+        tInput.DebugMode = false;						% Toggle Debug Mode if needed (more console output)
+		
+        tInput.CHX_Type = 'VerticalTube';
+        % CHX.CHX_Type = 'HorizontalTube';
+
+        % Toggle calculation mode, whether gasflow influence on Heatflux should be considered
+        tInput.GasFlow = true;
+
+        tInput.massFlowRate_Gas = fMassFlow1/(iIncrements*iLayers);	% Mass flow rate of Watervapor-Air-Mix [kg/s]
+        
+        tInput.massFlowRate_Coolant = fMassFlow2/(iIncrements*iLayers);	% Mass flow rate of coolant [kg/s]
+
+        tInput.Vapor	 = 'H2O';					% Vapor
+        tInput.Inertgas = 'Air';					% Inertgas
+
+        % CHX.Vapor = 'Isopropanol';				% Vapor
+        % CHX.Inertgas = 'N2';						% Intertgas
+
+        tInput.Coolant = 'H2O';						% Coolant
+        
+        fBroadnessCell = fBroadness/iIncrements;
+
+        tInput.d = 4*(fHeight_1 * fBroadnessCell)/(2 * fHeight_1 + 2 * fBroadnessCell);     % Hydraulic diameter [m]
+        
+
+        % tubeLength = 1;							% Pipe length [m]
+        % cellnumber = 20;							% Number of cells for calculation
+
+        % CHX.dx = tubeLength / cellnumber;			% Calculation of dx
+
+        tInput.dx = fLength/iIncrements;        % finite Zelllaenge [m]  ########### Overwrite ###########
+        tInput.dy = fBroadness/iIncrements;		% Umfang / Breite fuer Berechnung von dA mithilfe von dx [m]
+        tInput.dA = fIncrementalArea;			% finite Zellflaeche [m^2]
+        tInput.alpha_coolant = falpha_o;
+        tInput.alpha_gas = falpha_pipe;
+        tInput.oFlowCoolant = oFlow_2; 
+        tInput.fThermal_Cond_Solid = fThermal_Cond_Solid;
+        tInput.fThickness = fThickness;
+
+        tInput.charactLength = tInput.d;					% Characteristic Length for Reynolds Number [m]
+        
+        tInput.pressure_Gas = Fluid_1.oFlow.fPressure;					% Pressure Gas [Pa]
+        fInitialWaterFlow = Fluid_1.oFlow.arPartialMass(oHX.oMT.tiN2I.H2O) * tInput.massFlowRate_Gas;
+        fInitialWaterFlowGlobal = fInitialWaterFlow;
+        
+        % Area for mix zone
+        % iBaffles + 1 = number of divided parts. *2 because two parts form
+        % the length of the mix zone. 10% of the HX length are mix zone
+        % (assumption for now. Will be recalculated when baffle length is
+        % use)
+        fMixArea = (fBroadness/(iBaffles+1))*2*fLength*0.1; %TODO: add baffle length ...*(fLength-fBaffleLenght)
+        
+        % Global entry temperature. needs a save variable because
+        % fEntry_Temp1/2 are changed insinde the baffles loop
+        fEntry_Global1 = fEntry_Temp1;
+        fEntry_Global2 = fEntry_Temp2;
+      
+        % l: in air direction
+        % k: in coolant direction
+
+        % new input parameter for the FinConfig function. 
+        tFinInput.fFinBroadness_1       = fFinBroadness_1;        % broadness of the channel that is created between fins
+        tFinInput.fFinBroadness_2       = fFinBroadness_2;        
+        tFinInput.fIncrementalLenght    = fIncrementalLength;     
+        tFinInput.fIncrementalBroadness = fIncrementalBroadness;
+        
+        % initialization of variables for the FinConfig calculation.
+        % Detailes explanaition of the calculation in the MA2018-10 by
+        % Fabian Lübbert Appendix B
+        tFinOutput.fOverhangAir        = 0;                      
+        tFinOutput.fOverhangCoolant    = 0;
+        tFinOutput.fFinOverhangAir     = 0;
+        tFinOutput.fFinOverhangCoolant = 0;
+        tFinOutput.iCellCounterAir     = 1;
+        tFinOutput.iCellCounterCoolant = 1;
+        tFinOutput.iFinCounterAir      = 1;
+        tFinOutput.iFinCounterCoolant  = 1;
+
+        mMoleFracVapor = nan(iIncrements, fN_Row_Increments);
+        
+        %% New Calculation with discretization
+        % added two more loops for the layer and baffles calculations
+        for j = 1:iLayers
+            for h = 1:(iBaffles+1)
+                for l = 1:iIncrements
+                    for k = 1:fN_Row_Increments
+%                         fprintf('l = %i, k = %i j = %i h = %i\n', l, k, j, h);
+                        % checks if the fin for the actual cell is high or
+                        % low (high means additional resistance)
+
+                        tFinOutput = FinConfig(l, k, tFinOutput, tFinInput);
+                                                 
+                        iFinResistance = tFinOutput.iFinStateCoolant + tFinOutput.iFinStateAir*2;
+   
+                           %iFinResistance = 0; %Debug value
+                          % FinFactor adapt the Fin value if the cell is
+                          % split between two fins
+                          if iFinResistance == 0
+                              tInput.iFinCoolant = 0;
+                              tInput.iFinAir     = 0;
+                          elseif iFinResistance == 1
+                              tInput.iFinCoolant = 1*tFinOutput.fFinFactorCoolant;
+                              tInput.iFinAir     = 0;
+                          elseif iFinResistance == 2
+                              tInput.iFinCoolant = 0;
+                              tInput.iFinAir     = 1*tFinOutput.fFinFactorAir;
+                          else
+                              tInput.iFinCoolant = 1*tFinOutput.fFinFactorCoolant;
+                              tInput.iFinAir     = 1*tFinOutput.fFinFactorAir;
+                          end
+
+                        if fN_Rows >= 1
+                            %% This is still old for a pipe bundle cross flow CHX
+                            error('Correct Calculation not yet implemented')
+                        else
+                            %% Actual new calculation
+                            %uses the function for crossflow heat exchangers for a plate
+                            %heat exchanger and the to calculate the new outlet temperature of the heat
+                            %exchanger (with regard to condensation from the later sections).
+                            
+                            
+                            if k == 1 && l == 1
+                                
+                                tInput.massFlowRate_Film = 0;					% Fluid film of previous cell, that is entering current cell [kg/s]
+                                tInput.temp_Gas            = fEntry_Temp1;			% Temp of incoming gasflow [K]
+                                tInput.temp_Coolant        = fEntry_Temp2;			% Temp of cooling fluid [K]
+                                tInput.moleFrac_Vapor = (fInitialWaterFlow/ oHX.oMT.afMolarMass(oHX.oMT.tiN2I.H2O)) / (tInput.massFlowRate_Gas / Fluid_1.oFlow.fMolarMass);
+                                
+                                % Debug option
+%                                 mMoleFracVapor(l,k) = tInput.moleFrac_Vapor;
+                                
+                                tInput.arPartialMassesGas = oFlow_1.arPartialMass;
+                                
+                                tInput = RecalculateMatterProperties(oHX.oMT, tInput);
+                                 
+                                % calcualtions are done twice for the upper
+                                % and lower side of the layer. Two separate
+                                % values are calculated and are summed up
+                                % in the end
+                                
+                                %calculations for the upper side of the
+                                %channel
+                                [tOutputs] = q_dot_x(oHX, tInput);
+                                fHeatFlowUp = tOutputs.fTotalHeatFlow;
+                                fCondensatFlowRateUp = tOutputs.fCondensateMassFlow  ;
+                                fHeatFlowCondensateUp = tOutputs.fHeatFlowCondensate;
+                                fHeatFlowGasUp = tOutputs.fGasHeatFlow;
+                                                               
+                                % adjust fin factor for downside as the fin
+                                % configuration is different for the upper
+                                % and lower side
+                                [fFinFlipAir, fFinFlipCoolant] = FinFlip(tInput,tFinOutput);
+                                tInput.iFinAir = fFinFlipAir;
+                                tInput.iFinCoolant = fFinFlipCoolant;
+                                
+                                % calculations for the lower side of the
+                                % channel 
+                                [tOutputs] = q_dot_x(oHX, tInput);
+                                fHeatFlowDown = tOutputs.fTotalHeatFlow;
+                                fCondensatFlowRateDown = tOutputs.fCondensateMassFlow  ;
+                                fHeatFlowCondensateDown = tOutputs.fHeatFlowCondensate;
+                                fHeatFlowGasDown = tOutputs.fGasHeatFlow;
+                                
+                                % summation of the separate values
+                                mHeatFlow(l,k,h,j) = fHeatFlowUp+fHeatFlowDown;
+                                fHeatFlowGas = fHeatFlowGasUp+fHeatFlowGasDown;
+                                
+                                mCondensateFlowRate(l,k,h,j) = fCondensatFlowRateUp+fCondensatFlowRateDown;
+                                mCondensateHeatFlow(l,k,h,j) = fHeatFlowCondensateUp + fHeatFlowCondensateDown;
+                                
+                                % new calculation of the outlet
+                                % temperatures with the adjusted heat flows
+                                mOutlet_Temp_1(l,k,h,j) = fEntry_Temp1 - (fHeatFlowGas / (tInput.heatCapacity_spec_Gas * tOutputs.fMassFlowRate_Gas));
+                                mOutlet_Temp_2(l,k,h,j) = fEntry_Temp2 + ((fHeatFlowUp) / (tInput.massFlowRate_Coolant * tInput.heatCapacity_spec_Gas));
+
+                            elseif k == 1 && l ~= 1
+                                
+                                fCurrentWaterFlow = fInitialWaterFlow - sum(mCondensateFlowRate(1:l,k,h,j)); 
+                                tInput.massFlowRate_Film = fInitialWaterFlow - fCurrentWaterFlow;					% Fluid film of previous cell, that is entering current cell [kg/s]
+                                tInput.temp_Gas            = mOutlet_Temp_1(l-1,k,h,j);			% Temp of incoming gasflow [K]
+                                tInput.temp_Coolant        = fEntry_Temp2;			% Temp of cooling fluid [K]
+                                tInput.moleFrac_Vapor = (fCurrentWaterFlow/ oHX.oMT.afMolarMass(oHX.oMT.tiN2I.H2O)) / (tInput.massFlowRate_Gas / Fluid_1.oFlow.fMolarMass);
+                                
+                                % Debug option
+                                mMoleFracVapor(l,k) = tInput.moleFrac_Vapor;
+                                
+                                tInput.arPartialMassesGas = oFlow_1.arPartialMass;
+                                tInput.arPartialMassesGas(oHX.oMT.tiN2I.H2O) = (fCurrentWaterFlow/fInitialWaterFlow) * tInput.arPartialMassesGas(oHX.oMT.tiN2I.H2O);
+                                
+                                [tOutputs] = q_dot_x(oHX, tInput);
+                                fHeatFlowUp = tOutputs.fTotalHeatFlow;
+                                fCondensatFlowRateUp = tOutputs.fCondensateMassFlow  ;
+                                fHeatFlowCondensateUp = tOutputs.fHeatFlowCondensate;
+                                fHeatFlowGasUp = tOutputs.fGasHeatFlow;
+                                
+                                % adjust fin factor for downside
+                                [fFinFlipAir, fFinFlipCoolant] = FinFlip(tInput,tFinOutput);
+                                tInput.iFinAir = fFinFlipAir;
+                                tInput.iFinCoolant = fFinFlipCoolant;
+                                
+                                [tOutputs] = q_dot_x(oHX, tInput);
+                                fHeatFlowDown = tOutputs.fTotalHeatFlow;
+                                fCondensatFlowRateDown = tOutputs.fCondensateMassFlow  ;
+                                fHeatFlowCondensateDown = tOutputs.fHeatFlowCondensate;
+                                fHeatFlowGasDown = tOutputs.fGasHeatFlow;
+                                                                
+                                mHeatFlow(l,k,h,j) = fHeatFlowUp+fHeatFlowDown;
+                                fHeatFlowGas = fHeatFlowGasUp+fHeatFlowGasDown;
+                                
+                                mCondensateFlowRate(l,k,h,j) = fCondensatFlowRateUp+fCondensatFlowRateDown;
+                                mCondensateHeatFlow(l,k,h,j) = fHeatFlowCondensateUp + fHeatFlowCondensateDown;
+                                
+                                mOutlet_Temp_1(l,k,h,j) = mOutlet_Temp_1(l-1,k,h,j) - (fHeatFlowGas / (tInput.heatCapacity_spec_Gas * tOutputs.fMassFlowRate_Gas));
+                                mOutlet_Temp_2(l,k,h,j) = fEntry_Temp2 + ((fHeatFlowUp) / (tInput.massFlowRate_Coolant * tInput.heatCapacity_spec_Gas));
+                                
+                            elseif k ~= 1 && l == 1
+                                
+                                tInput.massFlowRate_Film = 0;					% Fluid film of previous cell, that is entering current cell [kg/s]
+                                tInput.temp_Gas            = fEntry_Temp1;			% Temp of incoming gasflow [K]
+                                
+                                if j == 1
+                                    fInlet_Temp_Coolant_up          = mOutlet_Temp_2(l,k-1,h,j);
+                                    fInlet_Temp_Coolant_down        = mOutlet_Temp_2(l,k-1,h,j);
+                                else
+                                    fInlet_Temp_Coolant_up        = mOutlet_Temp_2(l,k-1,h,j);			% Temp of cooling fluid [K]
+                                    fInlet_Temp_Coolant_down      = mOutlet_Temp_2(l,k-1,h,j-1);
+                                end
+                                tInput.moleFrac_Vapor = (fInitialWaterFlow/ oHX.oMT.afMolarMass(oHX.oMT.tiN2I.H2O)) / (tInput.massFlowRate_Gas / Fluid_1.oFlow.fMolarMass);
+                                tInput.arPartialMassesGas = oFlow_1.arPartialMass;                          
+                                
+                                % Debug option
+                                mMoleFracVapor(l,k) = tInput.moleFrac_Vapor;
+                                
+                                tInput.temp_Coolant = fInlet_Temp_Coolant_up;
+                                [tOutputs] = q_dot_x(oHX, tInput);
+                                fHeatFlowUp = tOutputs.fTotalHeatFlow;
+                                fCondensatFlowRateUp = tOutputs.fCondensateMassFlow  ;
+                                fHeatFlowCondensateUp = tOutputs.fHeatFlowCondensate;
+                                fHeatFlowGasUp = tOutputs.fGasHeatFlow;
+                                
+                                % adjust fin factor for downside
+                                [fFinFlipAir, fFinFlipCoolant] = FinFlip(tInput,tFinOutput);
+                                tInput.iFinAir = fFinFlipAir;
+                                tInput.iFinCoolant = fFinFlipCoolant;
+                                
+                                tInput.temp_Coolant = fInlet_Temp_Coolant_down;
+                                [tOutputs] = q_dot_x(oHX, tInput);
+                                fHeatFlowDown = tOutputs.fTotalHeatFlow;
+                                fCondensatFlowRateDown = tOutputs.fCondensateMassFlow  ;
+                                fHeatFlowCondensateDown = tOutputs.fHeatFlowCondensate;
+                                fHeatFlowGasDown = tOutputs.fGasHeatFlow;
+                                
+                                mHeatFlow(l,k,h,j) = fHeatFlowUp+fHeatFlowDown;
+                                fHeatFlowGas = fHeatFlowGasUp+fHeatFlowGasDown;
+                                
+                                mCondensateFlowRate(l,k,h,j) = fCondensatFlowRateUp+fCondensatFlowRateDown;
+                                mCondensateHeatFlow(l,k,h,j) = fHeatFlowCondensateUp + fHeatFlowCondensateDown;
+
+                                mOutlet_Temp_1(l,k,h,j) = fEntry_Temp1 - (fHeatFlowGas / (tInput.heatCapacity_spec_Gas * tOutputs.fMassFlowRate_Gas));
+                                mOutlet_Temp_2(l,k,h,j) = mOutlet_Temp_2(l,k-1,h,j) + (fHeatFlowUp / (tInput.massFlowRate_Coolant * tInput.heatCapacity_spec_Gas));
+                                
+                                % new calulation of the water temperatues
+                                % in the lower layer
+                                if j > 1
+                                    mOutlet_Temp_2(l,k,h,j-1) = mOutlet_Temp_2(l,k-1,h,j-1) + (fHeatFlowDown / (tInput.massFlowRate_Coolant * tInput.heatCapacity_spec_Gas));
+                                end
+                                
+                            else
+                                
+                                fCurrentWaterFlow = fInitialWaterFlow - sum(mCondensateFlowRate(1:l,k,h,j));
+                                tInput.massFlowRate_Film = fInitialWaterFlow - fCurrentWaterFlow;					% Fluid film of previous cell, that is entering current cell [kg/s]
+                                tInput.temp_Gas            = mOutlet_Temp_1(l-1,k,h,j);			% Temp of incoming gasflow [K]
+                                if j == 1
+                                    fInlet_Temp_Coolant_up     = mOutlet_Temp_2(l,k-1,h,j);			% Temp of cooling fluid [K]
+                                    fInlet_Temp_Coolant_down   = mOutlet_Temp_2(l,k-1,h,j);
+                                else
+                                    fInlet_Temp_Coolant_up     = mOutlet_Temp_2(l,k-1,h,j);
+                                    fInlet_Temp_Coolant_down   = mOutlet_Temp_2(l,k-1,h,j-1);
+                                end
+                                tInput.moleFrac_Vapor = (fCurrentWaterFlow/ oHX.oMT.afMolarMass(oHX.oMT.tiN2I.H2O)) / (tInput.massFlowRate_Gas / Fluid_1.oFlow.fMolarMass); % mol/s mol/s
+                                
+                                % Debug option
+                                mMoleFracVapor(l,k) = tInput.moleFrac_Vapor;
+                                
+                                tInput.arPartialMassesGas = oFlow_1.arPartialMass;
+                                % TO DO: write better calculation where
+                                % sum(this.arPartialMassesGas) == 1
+                                tInput.arPartialMassesGas(oHX.oMT.tiN2I.H2O) = (fCurrentWaterFlow/fInitialWaterFlow) * tInput.arPartialMassesGas(oHX.oMT.tiN2I.H2O);
+                                
+                                tInput.temp_Coolant = fInlet_Temp_Coolant_up;
+                                
+                                [tOutputs] = q_dot_x(oHX, tInput);
+                                fHeatFlowUp = tOutputs.fTotalHeatFlow;
+                                fCondensatFlowRateUp = tOutputs.fCondensateMassFlow  ;
+                                fHeatFlowCondensateUp = tOutputs.fHeatFlowCondensate;
+                                fHeatFlowGasUp = tOutputs.fGasHeatFlow;
+                                
+                                % adjust fin factor for downside
+                                [fFinFlipAir, fFinFlipCoolant] = FinFlip(tInput,tFinOutput);
+                                tInput.iFinAir = fFinFlipAir;
+                                tInput.iFinCoolant = fFinFlipCoolant;
+                                
+                                tInput.temp_Coolant = fInlet_Temp_Coolant_down;
+                                [tOutputs] = q_dot_x(oHX, tInput);
+                                fHeatFlowDown = tOutputs.fTotalHeatFlow;
+                                fCondensatFlowRateDown = tOutputs.fCondensateMassFlow  ;
+                                fHeatFlowCondensateDown = tOutputs.fHeatFlowCondensate;
+                                fHeatFlowGasDown = tOutputs.fGasHeatFlow;
+                                
+                                mHeatFlow(l,k,h,j) = fHeatFlowUp+fHeatFlowDown;
+                                fHeatFlowGas = fHeatFlowGasUp+fHeatFlowGasDown;
+                                
+                                mCondensateFlowRate(l,k,h,j) = fCondensatFlowRateUp+fCondensatFlowRateDown;
+                                mCondensateHeatFlow(l,k,h,j) = fHeatFlowCondensateUp + fHeatFlowCondensateDown;
+
+                                mOutlet_Temp_1(l,k,h,j) = mOutlet_Temp_1(l-1,k,h,j) - (fHeatFlowGas / (tInput.heatCapacity_spec_Gas * tOutputs.fMassFlowRate_Gas));
+                                mOutlet_Temp_2(l,k,h,j) = mOutlet_Temp_2(l,k-1,h,j) + (fHeatFlowUp / (tInput.massFlowRate_Coolant * tInput.heatCapacity_spec_Coolant));
+                                
+                                if j > 1
+                                    mOutlet_Temp_2(l,k,h,j-1) = mOutlet_Temp_2(l,k-1,h,j-1) + (fHeatFlowDown / (tInput.massFlowRate_Coolant * tInput.heatCapacity_spec_Gas));
+                                end
+                                
+                            end
+                            
+                            % Debug option
+%                             if mCondensateFlowRate(l,k,h,j) < 0
+%                                 keyboard();
+%                             end
+                            
+                        end
+                        
+                    end
+                    % reset FinConfig values
+                    tFinOutput.iFinCounterCoolant  = 1;
+                    tFinOutput.fOverhangCoolant    = 0;
+                end
+                tFinOutput.iFinCounterAir = 1;
+                tFinOutput.fOverhangAir   = 0;
+                
+
+                % temperateus calcualtion for the mix zone. First step is
+                % to average the outlet temperatues of the channels in the
+                % cross flow section
+                fMix_Temp_1 = sum(mOutlet_Temp_1(end,:,h,j))/size(mOutlet_Temp_1,2);
+                fMix_Temp_2 = sum(mOutlet_Temp_2(:,end,h,j))/size(mOutlet_Temp_2,2);
+                
+                % if there is a mix zone left in the loop (number of mix
+                % zones = number of baffles) calculate a new temperature
+                % with the built-in function 'temperature_counterflow'
+                if h <= iBaffles
+                    [fMixOutlet_Temp_1, fMixOutlet_Temp_2] = temperature_counterflow(fMixArea,...
+                          fIncrementalU, fHeat_Capacity_Flow_Layers_1, fHeat_Capacity_Flow_Layers_2, fMix_Temp_1, fMix_Temp_2);
+                      
+                    % outlet temperature of the mix area is set as the new
+                    % inlet for the temperature for the next loop
+                    fEntry_Temp1 = fMixOutlet_Temp_1;
+                    fEntry_Temp2 = fMixOutlet_Temp_2;
+                end
+                
+                % recalculation of the initial waterflow as the sluber bars
+                % remove the condensate in the mix zone
+                fInitialWaterFlow = fInitialWaterFlow - (sum(sum(mCondensateFlowRate(:,:,h,j)))/(iIncrements));
+                if fInitialWaterFlow < 0
+                    fInitialWaterFlow = 0;
+                end
+              
+            end
+            
+            % reset inlet variables of the loop for the next layer
+            fInitialWaterFlow = fInitialWaterFlowGlobal;
+            fEntry_Temp1 = fEntry_Global1;
+            fEntry_Temp2 = fEntry_Global2;
+            
+        end
+		%% put keyboard or breakpoint here if you want internal values of the CHX
+        %  mesh(mOutlet_Temp_1); hold on; mesh(mOutlet_Temp_2);
+        %keyboard()
+        %calculates the outlet temperatures by averaging the results
+        fOutlet_Temp_1 = sum(sum(mOutlet_Temp_1(end,:,iBaffles+1,:)))/(fN_Row_Increments*iLayers);
+        fOutlet_Temp_2 = sum(sum(mOutlet_Temp_2(:,end,iBaffles+1,:)))/(iIncrements*iLayers);
+    end
+    
+
+
+
+
+    oHX.fTotalCondensateHeatFlow = sum(sum(sum(sum(mCondensateHeatFlow))));
+    oHX.fTotalHeatFlow = sum(sum(sum(sum(mHeatFlow))));
+    
+    sCondensateFlowRate.H2O = sum(sum(sum(sum(mCondensateFlowRate))));
+    
+    fprintf('CondensateFlowRate = %f\n', sCondensateFlowRate.H2O);
+    
+    %TO DO: Delete for final implementation, or fix to a state where it
+    %makes sense no matter what system is used (esp for last two cases)
+    %in case any of these happen something definitly went wrong. Here for
+    %debugging purpose.
+    if isnan(fOutlet_Temp_1) || isnan(fOutlet_Temp_2)
+        keyboard()
+    elseif isinf(fOutlet_Temp_1) || isinf(fOutlet_Temp_2)
+        keyboard()
+    elseif (0>fOutlet_Temp_1) || (0>fOutlet_Temp_2)
+        keyboard()
+    end
+    %writes the values for condensation into the oHX object
+    %for further use
+    fprintf('fOutlet_Temp_1 = %f, fOutlet_Temp_2 = %f\n', fOutlet_Temp_1, fOutlet_Temp_2);
+    
+    keyboard()
     oHX.sCondensateMassFlow = sCondensateFlowRate;
 %%
 elseif strcmpi(sHX_type, '1 n sat')
@@ -2315,14 +3000,14 @@ elseif strcmpi(sHX_type, '1 n sat')
             mD_Hydraulic_Pass(k) = (pi*(fD_Shell/2)^2 - mN_Pipes_Pass(k,1)*pi*...
                                    (mD_o(k,1)/2)^2/(pi*fD_Shell +...
                                     mN_Pipes_Pass(k,1)*pi*mD_o(k,1)));
-            malpha_o(k,1) = functions.calculateHeatTransferCoefficient.convectionPipe(mD_Hydraulic_Pass(k), fLength,...
+            malpha_o(k,1) = convection_pipe(mD_Hydraulic_Pass(k), fLength,...
                             fFlowSpeed_Fluid2, fDyn_Visc_Fluid2,...
                             fDensity_Fluid2, fThermal_Cond_Fluid2,...
                             fC_p_Fluid2, 0);
 
             %calculates the convection coeffcient inside the pipes for each
             %pass
-            malpha_i(k,1) = functions.calculateHeatTransferCoefficient.convectionPipe (mD_i(k,1), fLength,...
+            malpha_i(k,1) = convection_pipe (mD_i(k,1), fLength,...
                             mw_fluid1(k,1), fDyn_Visc_Fluid1,...
                             fDensity_Fluid1, fThermal_Cond_Fluid1,...
                             fC_p_Fluid1, 0);
@@ -2331,7 +3016,7 @@ elseif strcmpi(sHX_type, '1 n sat')
             %please note that the data type should be m for a matrix/vector,
             %but because of error in value return when this value is named
             %differently it is called fR_lambda
-            fR_lambda(k,1) = functions.calculateHeatTransferCoefficient.conductionResistance(fThermal_Cond_Solid, 0,...
+            fR_lambda(k,1) = thermal_resistivity(fThermal_Cond_Solid, 0,...
                                 mD_i(k,1), mD_o(k,1), fLength);
 
             %calculates the thermal resistances from convection for each pass
@@ -2357,9 +3042,9 @@ elseif strcmpi(sHX_type, '1 n sat')
     fDelta_P_1_OverPipe = 0;
     fDelta_P_1_InOut = 0;
     for k = 1:fP
-        fDelta_P_1_OverPipe = fDelta_P_1_OverPipe + functions.calculateDeltaPressure.Pipe(mD_i(k) , fLength, mw_fluid1(k), fDyn_Visc_Fluid1, fDensity_Fluid1, 0);
+        fDelta_P_1_OverPipe = fDelta_P_1_OverPipe + pressure_loss_pipe(mD_i(k) , fLength, mw_fluid1(k), fDyn_Visc_Fluid1, fDensity_Fluid1, 0);
     
-        fDelta_P_1_InOut = fDelta_P_1_InOut + functions.calculateDeltaPressure.PipeBundleInletOutlet(mD_i(k), fs_1, fs_2, mw_fluid1(k), fDyn_Visc_Fluid1, fDensity_Fluid1);
+        fDelta_P_1_InOut = fDelta_P_1_InOut + pressure_loss_InOut_bundle(mD_i(k), fs_1, fs_2, mw_fluid1(k), fDyn_Visc_Fluid1, fDensity_Fluid1);
     
     end
     
@@ -2369,7 +3054,7 @@ elseif strcmpi(sHX_type, '1 n sat')
     %loss can be calculated with the pressure loss over a pipe using the
     %hydraulic diameter between shell and outer pipe diameters
     
-    fDelta_P_2 = functions.calculateDeltaPressure.Pipe(fOuter_Hydraulic_Diameter, fLength,...
+    fDelta_P_2 = pressure_loss_pipe(fOuter_Hydraulic_Diameter, fLength,...
                   fFlowSpeed_Fluid2, fDyn_Visc_Fluid2, fDensity_Fluid2, 0);
     
 %%
@@ -2477,7 +3162,7 @@ elseif strcmpi(sHX_type, '3 2 sat')
     %partially shiffted configuration with one additional input for the
     %shiffting length fs_3
     if length(mHX)==21
-        falpha_sheath = functions.calculateHeatTransferCoefficient.functions.calculateHeatTransferCoefficient.convectionSheathCurrent (fD_o, fD_Baffle,...
+        falpha_sheath = convection_sheath_current (fD_o, fD_Baffle,...
                             fD_Batch, fD_Hole, fD_Shell, fs_1, fs_2,...
                             fN_Pipes, fN_Pipes_Win, fN_Flow_Resist,...
                             fN_Sealings , fN_Pipes_Diam, fDist_Baffles,...
@@ -2487,7 +3172,7 @@ elseif strcmpi(sHX_type, '3 2 sat')
                             fs_3);
     %shiffted or aligend configuration
     elseif length(mHX)==20
-        falpha_sheath = functions.calculateHeatTransferCoefficient.functions.calculateHeatTransferCoefficient.convectionSheathCurrent (fD_o, fD_Baffle,...
+        falpha_sheath = convection_sheath_current (fD_o, fD_Baffle,...
             fD_Batch, fD_Hole, fD_Shell, fs_1, fs_2, fN_Pipes,...
             fN_Pipes_Win, fN_Flow_Resist, fN_Sealings , fN_Pipes_Diam,...
             fDist_Baffles, fHeight_Baffle, fFlowSpeed_Fluid2,...
@@ -2503,7 +3188,7 @@ elseif strcmpi(sHX_type, '3 2 sat')
     %calculates the convection coeffcient on the inner side of the pipes
     %using the function for a simple pipe (for further info view the help 
     %of the function)
-    falpha_pipe = functions.calculateHeatTransferCoefficient.convectionPipe (fD_i, fLength, fFlowSpeed_Fluid1,...
+    falpha_pipe = convection_pipe (fD_i, fLength, fFlowSpeed_Fluid1,...
                     fDyn_Visc_Fluid1, fDensity_Fluid1,...
                     fThermal_Cond_Fluid1, fC_p_Fluid1, 0);
 
@@ -2513,7 +3198,7 @@ elseif strcmpi(sHX_type, '3 2 sat')
     
     %calculates the thermal resitivity for further info view the help 
     %of the function
-    fR_lambda = functions.calculateHeatTransferCoefficient.conductionResistance(fThermal_Cond_Solid, 0, (fD_i/2),...
+    fR_lambda = thermal_resistivity(fThermal_Cond_Solid, 0, (fD_i/2),...
                     (fD_o/2), fLength);
 
     %calculates the heat exchange coeffcient fU
@@ -2531,10 +3216,10 @@ elseif strcmpi(sHX_type, '3 2 sat')
                         fEntry_Temp1, fEntry_Temp2);
     end
 
-    fDelta_P_1_OverPipe = functions.calculateDeltaPressure.Pipe(fD_i , fLength,...
+    fDelta_P_1_OverPipe = pressure_loss_pipe(fD_i , fLength,...
                             fFlowSpeed_Fluid1, fDyn_Visc_Fluid1,...
                             fDensity_Fluid1, 0);
-    fDelta_P_1_InOut = functions.calculateDeltaPressure.PipeBundleInletOutlet(fD_i, fs_1, fs_2,...
+    fDelta_P_1_InOut = pressure_loss_InOut_bundle(fD_i, fs_1, fs_2,...
                             fFlowSpeed_Fluid1, fDyn_Visc_Fluid1,...
                             fDensity_Fluid1);
     
@@ -2546,7 +3231,7 @@ elseif strcmpi(sHX_type, '3 2 sat')
         fconfig_press_loss = fConfig;
     end
     
-    fDelta_P_2 = functions.calculateDeltaPressure.SheathCurrent(fD_o, fD_Shell, fD_Baffle,...
+    fDelta_P_2 = pressure_loss_sheath_current(fD_o, fD_Shell, fD_Baffle,...
     fD_Batch, fD_Hole, fD_Int, fDist_Baffles, fS_e, fHeight_Baffle,...
     fLength_Int, fs_1, fs_2, fN_Pipes, fN_Rows_Trans, fN_Pipes_Diam,...
     fN_Pipes_Win, fN_Sealings, fN_Baffles, fN_Flow_Resist,...

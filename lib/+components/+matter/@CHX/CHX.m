@@ -188,23 +188,26 @@ classdef CHX < vsys
 %HX(this, 'componentname', mHX, sHX_type, iIncrements, Conductivity_Solid, fTempChangeToRecalc, fPercentChangeToRecalc);
 
     properties 
-        %flow to flow processors for fluid 1 and 2 to set outlet temp and
-        %pressure
+        % flow to flow processors for fluid 1 and 2 to set outlet temp and
+        % pressure
         oF2F_1; 
         oF2F_2;
         
-        %User Inputs for the geometry of the heat exchanger (see hx_main
-        %for more information)
-        mHX;
-        %User input for the type of heat exchanger (see hx_man for more
-        %information)
-        sHX_type;
-        %Outlet temperatures of the heat exchangers. These two variables
-        %don't directly serve any purpose but can be used to plot the
-        %outlet temperature directly behind the heat exchanger
+        % User Inputs for the geometry of the heat exchanger
+        tCHX_Parameters;
+        
+        % User input for the type of heat exchanger (see hx_man for more
+        % information)
+        sCHX_type;
+        
+        % Outlet temperatures of the heat exchangers. These two variables
+        % don't directly serve any purpose but can be used to plot the
+        % outlet temperature directly behind the heat exchanger
         fTempOut_Fluid1 = 0;
         fTempOut_Fluid2 = 0;
-        %Old Values for the previous iteration
+        
+        % Old Values for the previous iteration which are used to check if
+        % anything should be recalculated
         fEntryTemp_Old_1 = 0;
         fEntryTemp_Old_2 = 0;
         fMassFlow_Old_1 = 0;
@@ -214,41 +217,52 @@ classdef CHX < vsys
         fOldPressureFlow1 = 0;
         fOldPressureFlow2 = 0;
         
-        %variable to check wether it is the first iteration step
+        % variable to check wether it is the first iteration step
         iFirst_Iteration = int8(1);
         
-        %TODO Replace the following with the heat exchanger material, the
-        %conductivity can then be gathered from the matter table. 
+        % Replace the following with the heat exchanger material, the
+        % conductivity can then be gathered from the matter table. 
         fHX_TC = Inf;    %Heat exchanger material thermal conductivity
-        %initialies for infinite because in this case there is no thermal
-        %resistance from conductance
+        % initialized to infinite because in this case there is no thermal
+        % resistance from conductance
         
-        %vector containing the phase change enthalpy for the different
-        %substances.
+        % vector containing the phase change enthalpy for the different
+        % substances.
         mPhaseChangeEnthalpy = 0;
         
-        %struct containing fields with the substance name that condenses as
-        %field name and the condensate mass flows as field values
-        sCondensateMassFlow = struct('H2O', 0);
+        % Vector containing the overall condensate mass flow for all
+        % substances
+        afCondensateMassFlow;
         
-        %number of incremental heat exchangers that have to be calculated
+        % number of incremental heat exchangers that have to be calculated
         iIncrements = 1;
         
-        
+        % Last execution time of the CHX
         fLastExecution = 0; 
         
+        % Overall heat flow for the latent heat (phase change energy)
         fTotalCondensateHeatFlow = 0;
+        
+        % Overall heat flow (sum of latent and sensible heat, so phase
+        % change energy and temperature difference combined)
         fTotalHeatFlow = 0;
         
+        % Reference to the phase to phase processor which performs the
+        % actual phase change of the condensate
         oP2P;
         
-        fTempChangeToRecalc;
-        fPercentChangeToRecalc;
+        % Here the user can specify by how much [K] the temperature has to
+        % change before the CHX is recalculated
+        fTempChangeToRecalc = 0.5;
         
+        % This value decides how much any value (composition of air,
+        % pressure, etc.) has to change in percent before the CHX is
+        % recalculated
+        fPercentChangeToRecalc = 0.05;
     end
     
     methods
-        function this = CHX(oParent, sName, mHX, sHX_type, iIncrements, fHX_TC, fTempChangeToRecalc, fPercentChangeToRecalc)
+        function this = CHX(oParent, sName, tCHX_Parameters, sCHX_type, iIncrements, fHX_TC, fTempChangeToRecalc, fPercentChangeToRecalc)
             this@vsys(oParent, sName, 60);
             
             %if a thermal conductivity for the heat exchanger is provided
@@ -257,22 +271,19 @@ classdef CHX < vsys
                 this.fHX_TC = fHX_TC;
             end
           
-            this.mHX = mHX;
-            this.sHX_type = sHX_type;      
+            this.tCHX_Parameters = tCHX_Parameters;
+            this.sCHX_type = sCHX_type;      
             this.iIncrements = iIncrements;
             
             if nargin > 6
                 this.fTempChangeToRecalc = fTempChangeToRecalc;
                 this.fPercentChangeToRecalc = fPercentChangeToRecalc;
-            else
-                this.fTempChangeToRecalc = 0.1;
-                this.fPercentChangeToRecalc = 0.01;
             end
             
             %values for phase change enthalpy from http://webbook.nist.gov
             %with molar mass from matter table (just not crosslinked) The
             %index is also from the matter table
-            this.mPhaseChangeEnthalpy = zeros(200,1);
+            this.mPhaseChangeEnthalpy = zeros(1, this.oMT.iSubstances);
             %H2O
             this.mPhaseChangeEnthalpy(this.oMT.tiN2I.H2O) = 40650*(1/0.018015275); %J/kg
             %CO2
@@ -294,6 +305,9 @@ classdef CHX < vsys
             %Methane (CH4)
             this.mPhaseChangeEnthalpy(this.oMT.tiN2I.CH4) = 8500*(1/0.0160425); %J/kg
             
+            % Initiliaze the condensate mass flows to zero:
+            this.afCondensateMassFlow = zeros(1, this.oMT.iSubstances);
+            
             %Because the HX f2f proc is actually added to the parent system
             %of the HX its definition has to take place here instead of the
             %createMatterStructure function
@@ -302,15 +316,14 @@ classdef CHX < vsys
             %values of the heat exchanger
             this.oF2F_1 = components.matter.HX.hx_flow(this, this.oParent, [sName,'_1']);
             this.oF2F_2 = components.matter.HX.hx_flow(this, this.oParent, [sName,'_2']);
+            
         end
         
         function createMatterStructure(this)
             createMatterStructure@vsys(this);
         end
-
-    end
-    
-    methods
+        
+        
         
         function ThermalUpdate(this)
             this.update();
@@ -354,9 +367,9 @@ classdef CHX < vsys
                 this.oF2F_1.setOutFlow(0,0);
                 this.oF2F_2.setOutFlow(0,0);
                 
-                this.sCondensateMassFlow = '';
+                this.afCondensateMassFlow = zeros(1, this.oMT.iSubstances);
 
-                this.updateP2P();
+                this.oP2P.update();
                 return
             end
             
@@ -385,25 +398,31 @@ classdef CHX < vsys
             
                 %sets the structs for the two fluids according to the
                 %definition from HX_main
-                Fluid_1.Massflow                = fMassFlow_1;
-                Fluid_1.Entry_Temperature       = fEntryTemp_1;
-                Fluid_1.Dynamic_Viscosity       = fDynVisc_1;
-                Fluid_1.Density                 = fDensity_1;
-                Fluid_1.Thermal_Conductivity    = fConductivity_1;
-                Fluid_1.Heat_Capacity           = fCp_1;
+                Fluid_1 = struct();
+                Fluid_1.fMassflow                = fMassFlow_1;
+                Fluid_1.fEntry_Temperature       = fEntryTemp_1;
+                Fluid_1.fDynamic_Viscosity       = fDynVisc_1;
+                Fluid_1.fDensity                 = fDensity_1;
+                Fluid_1.fThermal_Conductivity    = fConductivity_1;
+                Fluid_1.fSpecificHeatCapacity    = fCp_1;
+                Fluid_1.oFlow                    = oFlows_1;
 
-                Fluid_2.Massflow                = fMassFlow_2;
-                Fluid_2.Entry_Temperature       = fEntryTemp_2;
-                Fluid_2.Dynamic_Viscosity       = fDynVisc_2;
-                Fluid_2.Density                 = fDensity_2;
-                Fluid_2.Thermal_Conductivity    = fConductivity_2;
-                Fluid_2.Heat_Capacity           = fCp_2;
+                
+                Fluid_2 = struct();
+                Fluid_2.fMassflow                = fMassFlow_2;
+                Fluid_2.fEntry_Temperature       = fEntryTemp_2;
+                Fluid_2.fDynamic_Viscosity       = fDynVisc_2;
+                Fluid_2.fDensity                 = fDensity_2;
+                Fluid_2.fThermal_Conductivity    = fConductivity_2;
+                Fluid_2.fSpecificHeatCapacity    = fCp_2;
+                Fluid_2.oFlow                    = oFlows_2;
+
                 
                 %function call for HX_main to get outlet values
                 % as first value the this struct from object HX is given to
                 % the function HX_main
                 [fTempOut_1, fTempOut_2, fDeltaPress_1, fDeltaPress_2] =...
-                    this.CHX_main(Fluid_1,Fluid_2,this.fHX_TC, this.iIncrements);        
+                    this.(this.sCHX_type)(this.tCHX_Parameters, Fluid_1, Fluid_2, this.fHX_TC, this.iIncrements);        
 
                 %sets the outlet temperatures into the respective variable
                 %inside the heat exchanger object for plotting purposes
@@ -436,39 +455,32 @@ classdef CHX < vsys
                     this.iFirst_Iteration = int8(0);
                 end
                 %tells the ascociated p2p proc to update
-                this.updateP2P();
-                this.fLastExecution = this.oTimer.fTime;
-            end
-        end
-        function updateP2P(this)
-            try
-                this.oP2P.registerUpdate();
-            catch sError
-                %the condensing heat exchanger requires a CHX_p2p proc
-                %to work properly. Otherwise it will calculate the
-                %phase change but it would not actually happen. To add
-                %the p2p proc correctly add it as object to your CHX
-                %object. So if you define the CHX like this in your sytem:
-                %
-                %oCHX = components.matter.CHX(this, 'HeatExchanger',...
-                %    Geometry, sHX_type, iIncrements, Conductivity);
-                %
-                %you can use the oCHX object variable to set the oP2P
-                %property of it later on. (Because the p2p proc also
-                %needs the CHX object as input it is not possible to
-                %add the p2p proc directly at the definition of the
-                %CHX)
-                %
-                %Then you can add the p2p proc while you define it by
-                %setting:
-                %oCHX.oP2P =  components.matter.HX.CHX_p2p(oStore,...
-                %                   sName, sPhaseIn, sPhaseOut, oCHX)
-
-                if isempty(this.oP2P)
+                try
+                    this.oP2P.update();
+                catch
+                    %the condensing heat exchanger requires a CHX_p2p proc
+                    %to work properly. Otherwise it will calculate the
+                    %phase change but it would not actually happen. To add
+                    %the p2p proc correctly add it as object to your CHX
+                    %object. So if you define the CHX like this in your sytem:
+                    %
+                    %oCHX = puda.HESTIA.components.CHX(this, 'HeatExchanger',...
+                    %    Geometry, sHX_type, iIncrements, Conductivity);
+                    %
+                    %you can use the oCHX object variable to set the oP2P
+                    %property of it later on. (Because the p2p proc also
+                    %needs the CHX object as input it is not possible to
+                    %add the p2p proc directly at the definition of the
+                    %CHX)
+                    %
+                    %Then you can add the p2p proc while you define it by
+                    %setting:
+                    %oCHX.oP2P =  puda.HESTIA.components.CHX_p2p(oStore,...
+                    %                   sName, sPhaseIn, sPhaseOut, oCHX)
+                    
                     error('the CHX only works with an additional CHX_p2p proc that should be set as property for the CHX (see comment at this error for more information)')
-                else
-                    error(sError.message)
                 end
+                this.fLastExecution = this.oTimer.fTime;
             end
         end
     end
