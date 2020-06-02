@@ -19,7 +19,7 @@ classdef CHX_p2p < matter.procs.p2ps.flow & event.source
     methods
         function this = CHX_p2p(oStore, sName, sPhaseIn, sPhaseOut, oCHX)
             this@matter.procs.p2ps.flow(oStore, sName, sPhaseIn, sPhaseOut);
-            if ~isprop(oCHX, 'sCondensateMassFlow')
+            if ~isa(oCHX, 'components.matter.CHX')
                 error('the CHX_p2p processor only works in combination with a condensing heat exchanger')
             end
             this.oCHX = oCHX;
@@ -44,24 +44,14 @@ classdef CHX_p2p < matter.procs.p2ps.flow & event.source
             % The tiN2I maps the name of the species to the according index
             % in all the matter table vectors!
             
-            sCondensateMassFlow = this.oCHX.sCondensateMassFlow;
+            afCondensateMassFlow = this.oCHX.afCondensateMassFlow;
             
-            if ~isempty(sCondensateMassFlow)
-                fFlowRate = 0;
-                acCondensateNames = fieldnames(sCondensateMassFlow);
-                %first the overall flowrate of condensate has to be
-                %calculated
-                for k = 1:length(acCondensateNames)
-                    fFlowRate = fFlowRate + sCondensateMassFlow.(acCondensateNames{k});
-                end
-                %then the partials for each substance have to be calculated
-                %this is basically the factor with which the overall flow
-                %rate has to be multiplied to get the individual flow rate
-                this.arExtractPartials = zeros(1, this.oMT.iSubstances);
-                if fFlowRate ~= 0
-                    for k = 1:length(acCondensateNames)
-                        this.arExtractPartials(this.oMT.tiN2I.(acCondensateNames{k})) = sCondensateMassFlow.(acCondensateNames{k})/fFlowRate; 
-                    end
+            if ~isempty(afCondensateMassFlow)
+                fFlowRate = sum(afCondensateMassFlow);
+                if fFlowRate == 0
+                    this.arExtractPartials = zeros(1, this.oMT.iSubstances);
+                else
+                    this.arExtractPartials = afCondensateMassFlow ./ fFlowRate;
                 end
             else
                 fFlowRate = 0;

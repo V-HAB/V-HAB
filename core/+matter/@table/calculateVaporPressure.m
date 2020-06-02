@@ -19,7 +19,7 @@ catch
     
     % First it is necessary to decide for which substance the vapor pressure
     % should be calculated
-    AntoineData = matter.data.AntoineParameters.(sSubstance);
+    AntoineData = matter.data.AntoineData.(sSubstance);
 
     mfLimits = [AntoineData.Range(:).mfLimits];
 

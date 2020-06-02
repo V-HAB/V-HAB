@@ -456,15 +456,15 @@ classdef CHX < vsys
                 end
                 %tells the ascociated p2p proc to update
                 try
-                    this.oP2P.update();
-                catch
+                    this.oP2P.calculateFlowRate();
+                catch oErr
                     %the condensing heat exchanger requires a CHX_p2p proc
                     %to work properly. Otherwise it will calculate the
                     %phase change but it would not actually happen. To add
                     %the p2p proc correctly add it as object to your CHX
                     %object. So if you define the CHX like this in your sytem:
                     %
-                    %oCHX = puda.HESTIA.components.CHX(this, 'HeatExchanger',...
+                    %oCHX = components.matter.CHX(this, 'HeatExchanger',...
                     %    Geometry, sHX_type, iIncrements, Conductivity);
                     %
                     %you can use the oCHX object variable to set the oP2P
@@ -475,10 +475,13 @@ classdef CHX < vsys
                     %
                     %Then you can add the p2p proc while you define it by
                     %setting:
-                    %oCHX.oP2P =  puda.HESTIA.components.CHX_p2p(oStore,...
+                    %oCHX.oP2P =  components.matter.HX.CHX_p2p(oStore,...
                     %                   sName, sPhaseIn, sPhaseOut, oCHX)
-                    
-                    error('the CHX only works with an additional CHX_p2p proc that should be set as property for the CHX (see comment at this error for more information)')
+                    if isempty(this.oP2P)
+                        error('the CHX only works with an additional CHX_p2p proc that should be set as property for the CHX (see comment at this error for more information)')
+                    else
+                        rethrow(oErr)
+                    end
                 end
                 this.fLastExecution = this.oTimer.fTime;
             end
