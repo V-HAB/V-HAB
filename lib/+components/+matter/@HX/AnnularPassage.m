@@ -94,9 +94,9 @@ function [fOutlet_Temp_1, fOutlet_Temp_2, fDelta_P_1, fDelta_P_2,...
     %function is needed to discren which fluid is hotter. (for further
     %information view function help)
         if tHX_Parameters.bParallelFlow
-            hHandle = str2func('temperature_parallelflow');
+            hHandle = str2func('functions.HX.temperature_parallelflow');
         else
-            hHandle = str2func('temperature_counterflow');
+            hHandle = str2func('functions.HX.temperature_counterflow');
         end
         
         if Fluid_1.fEntryTemperature > Fluid_2.fEntryTemperature

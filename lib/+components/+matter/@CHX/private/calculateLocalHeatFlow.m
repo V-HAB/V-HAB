@@ -7,7 +7,7 @@ function [tOutputs] = calculateLocalHeatFlow(oCHX, tInput)
 
 % Detailed description in semester thesis:
 % Development of a dynamic Condensing Heat Exchanger Simulation Model for Virtual Habitat
-% Alexander L. Schmid, 2018, lrt, Supervisor: tInput.fCellAreaniel Puetz
+% Alexander L. Schmid, 2018, lrt, Supervisor: Daniel Puetz
 % ref.ed eqs. to be found there if not stated otherwise
 
 % Calculations based on VDI Waermeatlas (Heat Atlas), 11th edition, 2013, ref.ed as [1]
@@ -282,30 +282,33 @@ end
 % and specific vapor mass flow rate
 
 bRepeat = true;
-mfDifference = abs(mfGasHeatFlux - mfCoolantHeatFlux);	% Difference array of all heat flux values
+mfDifference = mfGasHeatFlux - mfCoolantHeatFlux;	% Difference array of all heat flux values
 while bRepeat
     
     if all(mfDifference == inf)
         % could not find an intersection, using smallest difference
-        mfDifference = abs(mfGasHeatFlux - mfCoolantHeatFlux);		% Difference array of all heat flux values
-        iIntersection = find(mfDifference == min(mfDifference));	% Finding point closest to intersection
+        mfDifference = mfGasHeatFlux - mfCoolantHeatFlux;		% Difference array of all heat flux values
+        iIntersection = find(abs(mfDifference) == min(abs(mfDifference)));	% Finding point closest to intersection
         
-        
-        
-        iLowerBountInput.fCellAreary = iIntersection - 1;
-        iUpperBountInput.fCellAreary = iIntersection + 1;
+        if mfDifference(iIntersection) > 0
+            iLowerPoint = iIntersection;
+            iUpperPoint = iIntersection + 1;
+        else
+            iLowerPoint = iIntersection - 1;
+            iUpperPoint = iIntersection;
+        end
 
         % In case intersection point is far left or right: selection of point at bountInput.fCellAreary
         if iIntersection == 1
-            iLowerBountInput.fCellAreary = 1;
+            iLowerPoint = 1;
         elseif iIntersection == iSteps
-            iUpperBountInput.fCellAreary = iSteps;
+            iUpperPoint = iSteps;
         end
         
-        fTemperature = (mfTemperature(iUpperBountInput.fCellAreary) + mfTemperature(iLowerBountInput.fCellAreary)) / 2;
-        fDeltaTemperature = mfTemperature(iUpperBountInput.fCellAreary) - mfTemperature(iLowerBountInput.fCellAreary);
-        fCoolantSlope = (mfCoolantHeatFlux(iUpperBountInput.fCellAreary) - mfCoolantHeatFlux(iLowerBountInput.fCellAreary)) / fDeltaTemperature;
-        fCoolantOffset =  mfCoolantHeatFlux(iLowerBountInput.fCellAreary) - fCoolantSlope * mfTemperature(iLowerBountInput.fCellAreary);
+        fTemperature = (mfTemperature(iUpperPoint) + mfTemperature(iLowerPoint)) / 2;
+        fDeltaTemperature = mfTemperature(iUpperPoint) - mfTemperature(iLowerPoint);
+        fCoolantSlope = (mfCoolantHeatFlux(iUpperPoint) - mfCoolantHeatFlux(iLowerPoint)) / fDeltaTemperature;
+        fCoolantOffset =  mfCoolantHeatFlux(iLowerPoint) - fCoolantSlope * mfTemperature(iLowerPoint);
         break
     end
     iIntersection = find(mfDifference == min(mfDifference));
@@ -314,29 +317,26 @@ while bRepeat
             iIntersection(2:end) = [];
     end
     
-    iLowerBountInput.fCellAreary = iIntersection - 1;
-    iUpperBountInput.fCellAreary = iIntersection + 1;
+    iLowerPoint = iIntersection - 1;
+    iUpperPoint = iIntersection + 1;
     if iIntersection == 1
-        iLowerBountInput.fCellAreary = 1;
+        iLowerPoint = 1;
     elseif iIntersection == iSteps
-        iUpperBountInput.fCellAreary = iSteps;
+        iUpperPoint = iSteps;
     end
-
-
-        
     
     %%
-    % Now we use lienar interpolation to find the correct temperature, heat
+    % Now we use linear interpolation to find the correct temperature, heat
     % flow and condensate flowrate!
-    fDeltaTemperature = mfTemperature(iUpperBountInput.fCellAreary) - mfTemperature(iLowerBountInput.fCellAreary);
+    fDeltaTemperature = mfTemperature(iUpperPoint) - mfTemperature(iLowerPoint);
 
     % Equation for gas heat flux: fHeatFlux = mGasSlope * fTemperature + mGasOffset
-    fGasSlope = (mfGasHeatFlux(iUpperBountInput.fCellAreary) - mfGasHeatFlux(iLowerBountInput.fCellAreary)) / fDeltaTemperature;
-    fGasOffset =  mfGasHeatFlux(iLowerBountInput.fCellAreary) - fGasSlope * mfTemperature(iLowerBountInput.fCellAreary);
+    fGasSlope = (mfGasHeatFlux(iUpperPoint) - mfGasHeatFlux(iLowerPoint)) / fDeltaTemperature;
+    fGasOffset =  mfGasHeatFlux(iLowerPoint) - fGasSlope * mfTemperature(iLowerPoint);
 
     % Equation for coolant heat flux: fHeatFlux = mCoolantSlope * fTemperature + mCoolantOffset
-    fCoolantSlope = (mfCoolantHeatFlux(iUpperBountInput.fCellAreary) - mfCoolantHeatFlux(iLowerBountInput.fCellAreary)) / fDeltaTemperature;
-    fCoolantOffset =  mfCoolantHeatFlux(iLowerBountInput.fCellAreary) - fCoolantSlope * mfTemperature(iLowerBountInput.fCellAreary);
+    fCoolantSlope = (mfCoolantHeatFlux(iUpperPoint) - mfCoolantHeatFlux(iLowerPoint)) / fDeltaTemperature;
+    fCoolantOffset =  mfCoolantHeatFlux(iLowerPoint) - fCoolantSlope * mfTemperature(iLowerPoint);
 
     % intersection point between the two equations:
     fTemperature = (fGasOffset - fCoolantOffset) / (fCoolantSlope - fGasSlope); % Calculation of interpolated film surface temperature [K], (3.3)
@@ -344,7 +344,7 @@ while bRepeat
     % difference does not occur close to the intersection point but
     % elsewhere. This calculation ensures that the current linear
     % interpolation actually contains the intersection point
-    if fTemperature > mfTemperature(iUpperBountInput.fCellAreary) || fTemperature < mfTemperature(iLowerBountInput.fCellAreary)
+    if fTemperature > mfTemperature(iUpperPoint) || fTemperature < mfTemperature(iLowerPoint)
         mfDifference(iIntersection) = inf;
     else
         bRepeat = false;
@@ -359,10 +359,10 @@ end
 % corresponding temperature. Simply using averaged values is not the way to
 % go, since the intersection point does not necessarily lie in the middle
 % of the intervall!
-fVaporSlope = (mfSpecificMassFlowRate_Vapor(iUpperBountInput.fCellAreary) - mfSpecificMassFlowRate_Vapor(iLowerBountInput.fCellAreary)) / fDeltaTemperature;
-fVaportOffset =  mfSpecificMassFlowRate_Vapor(iLowerBountInput.fCellAreary) - fVaporSlope * mfTemperature(iLowerBountInput.fCellAreary);
+fVaporSlope     = (mfSpecificMassFlowRate_Vapor(iUpperPoint) - mfSpecificMassFlowRate_Vapor(iLowerPoint)) / fDeltaTemperature;
+fVaporOffset    =  mfSpecificMassFlowRate_Vapor(iLowerPoint) - fVaporSlope * mfTemperature(iLowerPoint);
     
-fSpecificMassFlowRate_Vapor = fVaporSlope * fTemperature + fVaportOffset;
+fSpecificMassFlowRate_Vapor = fVaporSlope * fTemperature + fVaporOffset;
 
 % Important, the heat fluxes include the latent heat from condensation,
 % that heat does not result in a temperature change for the gas but only

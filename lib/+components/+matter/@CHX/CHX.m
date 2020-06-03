@@ -1,191 +1,78 @@
 classdef CHX < vsys
-%%Condensing Heat Exchanger Model
-%copy from the normal heat exchanger model files which will be adapted to
-%support condensation over the heat exchanger
-    
-%HX Generic heat exchanger model
+%% Condensing Heat Exchanger Model
 % With this component it is possible to calculate the outlet temperatures 
-% and pressure drops of different heat exchangers
+% and pressure drops of different heat exchangers as well as the generated
+% condensate mass flow
 %
 % Fluid 1, FlowProc 1 is the one with the fluid flowing through the pipes
 % if there are any pipes.
 %
-%The component uses the following user inputs:
+% The component uses the following user inputs:
 %
-%sHX_type with information about what type of heat exchanger should be
-%calculated. The possible inputs as strings are:
-%           'counter annular passage'
-%           'counter plate'
-%           'counter pipe bundle'
-%           'parallel annular passage'
-%           'parallel plate'
-%           'parallel pipe bundle'
-%           'cross'
-%           '1 n sat'
-%           '3 2 sat'
+%% sHX_type 
+% with information about what type of heat exchanger should be calculated.
+% Other types (like the ones available as HX) must be derived from the
+% existing program. But the implemented type of CHX is the one also used on
+% the ISS and the type which is commonly used in life support systems. The
+% possible inputs as strings are currently:
+%           'plate_fin'
 %
-%iIncrements: which decides into how many subsections the heat exchanger
-%             will be split in order to calculate the condensation. The
-%             more subsection are used the more accurate the model gets but
-%             the computation time will increase rapidly as well because
-%             the heat exchanger has to be calculated as often as this number.
-%             (especially for cross flow heat exchangers with mutliple pipe
-%             rows because the number of increments is multiplied with the
-%             number of pipe rows)
+%% iIncrements:
+% which decides into how many subsections the heat exchanger will be split
+% in order to calculate the condensation. The more subsection are used the
+% more accurate the model gets but the computation time will increase
+% rapidly as well because the heat exchanger has to be calculated as often
+% as this number. (especially for cross flow heat exchangers with mutliple
+% pipe rows because the number of increments is multiplied with the number
+% of pipe rows)
 %
-%The vector mHX which contains the information about the geometry of the 
-%heat exchanger. The possible entries are:
+%% tCHX_Parameters
+% The struct tCHX_Parameters contains the information about the geometry of
+% the heat exchanger and therefore depends on the type of CHX used.
+% For plate_fin:
+%             % broadness of the heat exchange area in m
+%             tGeometry.fBroadness        = 0.1;  
+%             % Height of the channel for fluid 1 in m
+%             tGeometry.fHeight_1         = 0.003;
+%             % Height of the channel for fluid 2 in m
+%             tGeometry.fHeight_2         = 0.003;
+%             % length of the heat exchanger in m
+%             tGeometry.fLength           = 0.1;
+%             % thickness of the plate in m
+%             tGeometry.fThickness        = 0.004;
+%             % number of layers stacked
+%             tGeometry.iLayers           = 33;
+%             % number of baffles (evenly distributed)
+%             tGeometry.iBaffles          = 3;
+%             % broadness of a fin of the first canal (air)
+%             tGeometry.fFinBroadness_1	= 1/18;
+%             % broadness of a fin of the second canal (coolant)
+%             tGeometry.fFinBroadness_2	= 1/18; 
+%             %  Thickness of the Fins (for now both fins have the same thickness
+%             tGeometry.fFinThickness     = 0.001;
 %
-%for sHX_type = 'counter annular passage' or 'parallel annular passage'
+%% Optional Inputs:
+%% fThermalConductivityHeatExchangerMaterial
+% the thermal conductivity of the heat exchanger material in W/(m K) (if
+% not provided it is assumed to be infinite)
 %
-%mHX = [fD_i, fD_o, fR_i, fLength] with the parameters:
-%fD_i         = outer diameter of the inner pipe in m
-%fD_o         = inner diameter of the outer pipe in m
-%fR_i         = inner radius of the inner pipe in m
-%fLength      = length of the pipe in m
+%% fTempChangeToRecalc
+% The allowed temperature change in any inflow before the CHX is
+% recalculated in K. Base value is 0.5 K
 %
-%for sHX_type = 'counter plate' or 'parallel plate'
+%% fPercentChangeToRecalc
+% the allowed percentage change in the in flow compositions in [-] (so a
+% value between 0 and 1) before recalculation. Base value is 0.05
 %
-%mHX = [fBroadness, fHeight_1, fHeight_2, fLength, fThickness]
-%with the parameters:
-%fBroadness       = broadness of the heat exchange area in m;
-%fHeight_1        = Height of the channel for fluid 1 in m;
-%fHeight_2        = Height of the channel for fluid 2 in m;
-%fLength          = length of the heat exchanger in m;
-%fThickness       = thickness of the plate in m;
+%% Example
+% please go to user/+examples/condensing_heat_exchanger/+systems/Example.m
+% for an example on how to implement the CHX in a V-HAB system
 %
-%for sHX_type = 'counter pipe bundle' or 'parallel pipe bundle'
-%
-%mHX=[fD_i, fD_o, fD_s, fLength, fN_Pipes, fs_1, fs_2] with the parameters:
-%fD_i         = inner diameter of the pipes in m
-%fD_o         = outer diameter of the pipes in m
-%fD_s         = inner (hydraulic) diameter of the shell
-%fLength      = length of the pipes in m
-%fN_Pipes     = number of pipes
-%fs_1         = distance between the center of two pipes next to each
-%               other perpendicular to flow direction in m
-%fs_2         = distance between the center of two pipes next to each
-%               other in flow direction in m
-%
-%for sHX_type = 'cross'
-%
-%for number of pipes = 0 the parameters are:
-%mHX = [0, fBroadness, fHeight_1, fHeight_2, fLength, fThickness] 
-%with the parameters:
-%fBroadness       = broadness of the heat exchange area in m;
-%fHeight_1        = Height of the channel for fluid 1 in m;
-%fHeight_2        = Height of the channel for fluid 2 in m;
-%fLength          = length of the heat exchanger in m;
-%fThickness       = thickness of the plate in m;
-%for number of pipes >0
-%mHX = [fN_Rows, fN_Pipes, fD_i, fD_o, fLength, fs_1, fs_2, fconfig, fs_3] 
-%with the parameters:
-%fN_Rows        = number of pipe rows
-%fN_Pipes       = number of pipes
-%fD_i           = inner diameter of the pipes in m
-%fD_o           = outer diameter of the pipes in m
-%fLength        = length of the pipes in m
-%fs_1           = distance between the center of two pipes next to each
-%                 other perpendicular to flow direction in m
-%fs_2           = distance between the center of two pipes next to each
-%                 other in flow direction in m
-%fConfig        = parameter to check the configuration,for fConfig = 0 it
-%                 is assumed that the pipes are aligend.For fConfig = 1 it
-%                 is assumed that they are shiffted with the pipes of each
-%                 row shiffted exactly with fs_1/2. For fConfig = 2 a 
-%                 partially shiffted configuration is assumed.  
-%parameters only used for fConfig = 2:
-%fs_3           = distance between the center of two pipes, which are in 
-%                 different rows, measured perpendicular to flow direction 
-%                 in m. 
-%
-% 1 n sat so far still buggy and may yield complex results or wrong results
-%Possible problem is zero point calculation in matlab
-%for sHX_type = '1 n sat'
-%
-%mHX = [fLength, fD_s, mD_i(k), mD_o(k), mN_Pipes_Pass(k)]
-%fLength            = length of the pipes in m
-%fD_s               = shell diameter in m
-%mD_i(k)            = inner pipe diameter of the pass k in m
-%mD_o(k)            = outer pipe diameter of the pass k in m
-%mN_Pipes_Pass(k)   = number of pipes in the pass k
-%
-%the first two values fLength and fD_s are column vectors with only the 
-%first entry not zero. The first entry of these vectors is fLength or fD_s
-%The other values are column vectors with the entry for each pass in each
-%row.
-%Example mHX for a 1,3 HX
-%   fLength  ,   fD_s  ,  fD_i(1)  ,  fD_o(1)  ,  mN_Pipes_Pass(1)
-%    0       ,    0    ,  fD_i(2)  ,  fD_o(2)  ,  mN_Pipes_Pass(2)
-%    0       ,    0    ,  fD_i(3)  ,  fD_o(3)  ,  mN_Pipes_Pass(3)
-%
-%for sHX_type = '3 2 sat'
-%this heat exchanger differs in its input from the other because it
-%requires a cell input, which means the inputs have to be set in {}
-%
-%mHX = {fD_i, fLength, fD_o, fD_Baffle, fD_Batch, fD_Hole, fD_Shell, 
-%       fD_Int, fLength_Int, fs_1, fs_2, fN_Pipes, fn_pipes_win,
-%       fN_Flow_Resist, fN_Flow_Resist_end, fN_Sealings, fN_Pipes_Diam,
-%       fDist_Baffles, fHeight_Baffles, fConfig, fs_3}
-%
-%fD_i (x)       = inner diameter of the pipes in m (if x fD_o is required)
-%fLength        = length of the pipes in m
-%fD_o (x)       = outer diameter of the pipes in m (if x fD_i is required)
-%fD_Baffle (x)  = diameter of the baffles
-%fD_Batch (x)   = outer diameter of the pipe batch
-%fD_Hole (x)    = diameter of the holes in the baffles through which the
-%                 pipes pass
-%fD_Shell       = inner diameter of the shell
-%fD_Int         = inner diameter of interface fittings in m
-%fLength_Int    = length of interface fittings in m
-%fs_1           = distance between the center of two pipes next to each
-%                 other perpendicular to flow direction in m
-%fs_2           = distance between the center of two pipes next to each
-%                 other in flow direction in m
-%fN_Pipes       = total number of pipes in the heat exchanger
-%fn_pipes_win(x)= number of pipes in the window left by a baffle
-%fN_Flow_Resist = number of main flow resistances in the transverse zone
-%                 (see [9] section Gh 4 Bild 6 for instruction on how to
-%                 count them)
-%fN_Flow_Resist_end(x) = number of main flow resistances in the endzone
-%fN_Sealings     = number of sealing strip pairs, between pipes and shell
-%fN_Pipes_Diam(x)= number of pipes at the diameter, counted parallel to
-%                 baffle edges.
-%fDist_Baffles   = distance between baffles in m
-%fHeight_Baffles = Height of baffles
-%fConfig         = parameter to check the configuration,for fConfig = 0 it
-%                 is assumed that the pipes are aligend.For fConfig = 1 it
-%                 is assumed that they are shiffted with the pipes of each
-%                 row shiffted exactly with fs_1/2. For fConfig = 2 a 
-%                 partially shiffted configuration is assumed.  
-%
-%parameters only used for fConfig = 2:
-%fs_3           = distance between the center of two pipes, which are in 
-%                 different rows, measured perpendicular to flow direction 
-%                 in m. 
-%
-%every input marked with (x) above can be set to the string 'x' in order to
-%use assumptions to fill that value.
-%
-%Additionally the thermal conductivity of the heat exchanger material is
-%needed.
-%Conductivity_Solid = thermal conductivity of heat exchanger material
-%                     through which heat is exchanged in W/(m K)
-%If infinte is used for this value no thermal resistance from
-%conductance is assumed.
-%
-%In order to allow the user to decide on a tradeoff between data quality and
-%simulation speed the variables fTempChangeToRecalc and fPercentChangeToRecalc
-%can be used to decide how large the difference in the inlet conditions can
-%be before the CHX recalculates its values. IF THESE ARE SET TOO HIGH IT
-%MAY RESULT IN UNPHYSICAL RESULTS. For example if the mass flow is allowed
-%to change a lot before the CHX recalculates the f2f heat flow will also
-%remain the same, but the temperature difference that is calculated for the
-%flow will be different!
-%
-%these inputs are used in the component call as follows:
-%
-%HX(this, 'componentname', mHX, sHX_type, iIncrements, Conductivity_Solid, fTempChangeToRecalc, fPercentChangeToRecalc);
+%% Notes:
+% Please note that the calculated dew point can be lower than the dew point
+% in the cabin phase, if the pressure in the CHX is higher than in the
+% cabin because of F2Fs procs! That is actually not an error in the code,
+% but a realistic result of the higher total gas pressure in the CHX.
 
     properties 
         % flow to flow processors for fluid 1 and 2 to set outlet temp and
@@ -222,7 +109,7 @@ classdef CHX < vsys
         
         % Replace the following with the heat exchanger material, the
         % conductivity can then be gathered from the matter table. 
-        fHX_TC = Inf;    %Heat exchanger material thermal conductivity
+        fThermalConductivityHeatExchangerMaterial = Inf;    %Heat exchanger material thermal conductivity
         % initialized to infinite because in this case there is no thermal
         % resistance from conductance
         
@@ -262,13 +149,13 @@ classdef CHX < vsys
     end
     
     methods
-        function this = CHX(oParent, sName, tCHX_Parameters, sCHX_type, iIncrements, fHX_TC, fTempChangeToRecalc, fPercentChangeToRecalc)
+        function this = CHX(oParent, sName, tCHX_Parameters, sCHX_type, iIncrements, fThermalConductivityHeatExchangerMaterial, fTempChangeToRecalc, fPercentChangeToRecalc)
             this@vsys(oParent, sName, 60);
             
             %if a thermal conductivity for the heat exchanger is provided
             %it overrides the infinte value with which it is initialised
             if nargin > 5
-                this.fHX_TC = fHX_TC;
+                this.fThermalConductivityHeatExchangerMaterial = fThermalConductivityHeatExchangerMaterial;
             end
           
             this.tCHX_Parameters = tCHX_Parameters;
@@ -422,7 +309,7 @@ classdef CHX < vsys
                 % as first value the this struct from object HX is given to
                 % the function HX_main
                 [fTempOut_1, fTempOut_2, fDeltaPress_1, fDeltaPress_2] =...
-                    this.(this.sCHX_type)(this.tCHX_Parameters, Fluid_1, Fluid_2, this.fHX_TC, this.iIncrements);        
+                    this.(this.sCHX_type)(this.tCHX_Parameters, Fluid_1, Fluid_2, this.fThermalConductivityHeatExchangerMaterial, this.iIncrements);        
 
                 %sets the outlet temperatures into the respective variable
                 %inside the heat exchanger object for plotting purposes

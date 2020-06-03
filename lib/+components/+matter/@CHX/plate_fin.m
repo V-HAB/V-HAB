@@ -473,7 +473,7 @@ else
             % = number of baffles) calculate a new temperature with the
             % built-in function 'temperature_counterflow'
             if iBaffle <= tCHX_Parameters.iBaffles
-                [fMixOutlet_Temp_1, fMixOutlet_Temp_2] = temperature_counterflow(fMixArea,...
+                [fMixOutlet_Temp_1, fMixOutlet_Temp_2] = functions.HX.temperature_counterflow(fMixArea,...
                       fIncrementalU, fHeat_Capacity_Flow_Layers_1, fHeat_Capacity_Flow_Layers_2, fMix_Temp_1, fMix_Temp_2);
 
                 % outlet temperature of the mix area is set as the new

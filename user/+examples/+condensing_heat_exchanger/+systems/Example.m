@@ -13,8 +13,6 @@ classdef Example < vsys
         %calculates all branches at once with regard to dependencies
         %between the branches
         oSystemSolver;
-        
-        aoPhases;
     end
     
     methods
@@ -30,7 +28,7 @@ classdef Example < vsys
             % the .exec method is called when the oParent.exec() is
             % executed (see this .exec() method - always call exec@vsys as
             % well!).
-            this@vsys(oParent, sName, 1);
+            this@vsys(oParent, sName, 60);
             
             eval(this.oRoot.oCfgParams.configCode(this));
             
@@ -39,72 +37,20 @@ classdef Example < vsys
         
         function createMatterStructure(this)
             createMatterStructure@vsys(this);
-            %% Gas System
-            % Creating a store, volume 1 m^3
-            matter.store(this, 'Tank_1', 1.1);
             
-            % uses the custom air helper to generate an air phase with a
-            % defined co2 level and relative humidity
-            fCO2Percent = 0.4;
-            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.Tank_1, 1, struct('CO2', fCO2Percent),  313, 0.5, 1e5);
-               
-            % Adding a phase to the store 'Tank_1', 1 m^3 air
-            oAirPhase_1 = matter.phases.gas(this.toStores.Tank_1, 'Air_1', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
-
-            %this.Air_1.setMatterProperties(
+            matter.store(this, 'Cabin', 10);
+            oCabin              = this.toStores.Cabin.createPhase(      'gas',              'Air',          this.toStores.Cabin.fVolume,        struct('N2', 8e4, 'O2', 2e4, 'CO2', 500),	293,	0.5);
             
-            % Creating a second store, volume 1 m^3
-            matter.store(this, 'Tank_2', 1.1);
+            matter.store(this, 'Coolant', 2);
+            oCoolant            = this.toStores.Coolant.createPhase(	'liquid',           'Water',        this.toStores.Coolant.fVolume,      struct('H2O', 1),                           275.15, 1e5);
             
-            % Adding a phase to the store 'Tank_2', 2 m^3 air
-            oAirPhase_2 = matter.phases.gas(this.toStores.Tank_2, 'Air_2', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
-            
-            
-            %% Water System
-            % Creating a third store, volume 1 m^3
-            matter.store(this, 'Tank_3', 2);
-            
-            % Adding a phase to the store 'Tank_3', 1 m^3 water
-            oCoolantPhase1 = matter.phases.liquid(this.toStores.Tank_3, ...  Store in which the phase is located
-                'Coolant_Phase1', ...        Phase name
-                struct('H2O', 1000), ...         Phase contents
-                275.15,...                  % Phase temperature
-                1e5);                       % Phase pressure
-            
-            % Creating a fourth store, volume 1 m^3
-            matter.store(this, 'Tank_4', 2);
-            %keyboard(); 
-            % Adding a phase to the store 'Tank_4', 1 kg water
-            oCoolantPhase2 = matter.phases.liquid(this.toStores.Tank_4, ...  Store in which the phase is located
-                'Coolant_Phase2', ...         Phase name
-                struct('H2O', 1000), ...          Phase contents
-                275.15,...                    % Phase temperature
-                1e5);                       % Phase pressure
-            
-% %             matter.store(this, 'Humidity', 1);
-%             oHumidityPhase = matter.phases.liquid(this.toStores.Tank_1, 'HumidityPhase', struct('H2O',1), 0.1, 295, 101325);
-%             matter.procs.exmes.liquid(oHumidityPhase, 'Humidity_Out');
-            
-            aoPhases_Temp(1) = oAirPhase_1;
-            aoPhases_Temp(2) = oAirPhase_2;
-            aoPhases_Temp(3) = oCoolantPhase1;
-            aoPhases_Temp(4) = oCoolantPhase2;
-%             aoPhases_Temp(5) = oHumidityPhase;
-            this.aoPhases = aoPhases_Temp;
             %% Heat Exchanger
             
             matter.store(this, 'CHX', 1);
-            oCHX_Air = this.toStores.CHX.createPhase('gas', 'flow', 'CHX_Gas', 0.9, struct('N2', 8e4, 'O2', 2e4, 'CO2', 500), 293.15, 0.5);
+            oCHX_Air            = this.toStores.CHX.createPhase(        'gas',      'flow', 'CHX_Gas',      0.9 * this.toStores.CHX.fVolume,    struct('N2', 8e4, 'O2', 2e4, 'CO2', 500),   293.15, 0.5);
             
-            oCondensatePhase = matter.phases.liquid(this.toStores.CHX, ...  Store in which the phase is located
-                'Condensate_Phase', ...         Phase name
-                struct('H2O', 1), ...      Phase contents
-                295, ...                Phase temperature
-                101325);                 % Phase pressure
+            oCondensatePhase    = this.toStores.CHX.createPhase(        'liquid',           'Condensate',   0.1 * this.toStores.CHX.fVolume,    struct('H2O', 1),                           275.15, 1e5);
             
-            
-            matter.procs.exmes.gas(oCHX_Air, 'Condensate_Out');
-            matter.procs.exmes.liquid(oCondensatePhase, 'Condensate_In');
             % Some configurating variables
             sHX_type = 'plate_fin';       % Heat exchanger type
             
@@ -137,7 +83,7 @@ classdef Example < vsys
             
             % Number of incremental heat exchangers used in the calculation
             % of the CHX
-            iIncrements = 2;
+            iIncrements = 3;
             
             % Defines when the CHX should be recalculated: 
             fTempChangeToRecalc = 0.05;        % If any inlet temperature changes by more than 1 K
@@ -149,47 +95,34 @@ classdef Example < vsys
             
             % adds the P2P proc for the CHX that takes care of the actual
             % phase change
-            oCHX.oP2P = components.matter.HX.CHX_p2p(this.toStores.CHX, 'CondensingHX', 'CHX_Gas.Condensate_Out', 'Condensate_Phase.Condensate_In', oCHX);
-
-            % Humidity Source
-%             components.P2Ps.ManualP2P(this, this.toStores.Tank_1, 'Humidity_Source' , 'HumidityPhase.Humidity_Out', 'Air_1.Humidity_In');
-            
-            %% Adding some pipes
-            components.matter.pipe(this, 'Pipe1', 1, 0.01, 0.0002);
-            components.matter.pipe(this, 'Pipe2', 1, 0.01, 0.0002);
-            components.matter.pipe(this, 'Pipe3', 1, 0.01, 0.0002);
-            components.matter.pipe(this, 'Pipe4', 1, 0.01, 0.0002);
-            components.matter.pipe(this, 'Pipe5', 1, 0.01, 0.0002);
-            components.matter.pipe(this, 'Pipe6', 1, 0.01, 0.0002);
+            oCHX.oP2P = components.matter.HX.CHX_p2p(this.toStores.CHX, 'CondensingHX', oCHX_Air, oCondensatePhase, oCHX);
             
             % Creating the flow path between the two gas tanks via the heat
             % exchanger
             % Input parameter format is always: 
             % 'store.exme', {'f2f-processor, 'f2fprocessor'}, 'store.exme'
-            matter.branch(this, oAirPhase_1,    {'Pipe1',   'CondensingHeatExchanger_1'},               oCHX_Air,       'CHX_Air_In');
-            matter.branch(this, oCHX_Air,       {'Pipe2'},                                              oAirPhase_1,  	'CHX_Air_Out');
+            matter.branch(this, oCabin,     {'CondensingHeatExchanger_1'},   	oCHX_Air,	'CHX_Air_In');
+            matter.branch(this, oCHX_Air,	{},                              	oCabin,  	'CHX_Air_Out');
             
             % Creating the flow path between the two water tanks via the 
             % heat exchanger
-            matter.branch(this, oCoolantPhase1,    {'Pipe3', 'CondensingHeatExchanger_2', 'Pipe4'},     oCoolantPhase2,    'CHX_Water_In');
-            matter.branch(this, oCoolantPhase2,    {'Pipe6'},                                           oCoolantPhase1,    'CHX_Water_Out');
+            matter.branch(this, oCoolant,  	{'CondensingHeatExchanger_2'},  	oCoolant,    'CHX_Water_Loop');
             
 
-%             matter.branch(this, 'Tank_1.Humidity_Out', {'Humidity_Source'}, 'Tank_1.Humidity_In');
-            
         end
         
         function createThermalStructure(this)
             createThermalStructure@vsys(this);
             
-            oCapacityTank_1 = this.toStores.Tank_1.toPhases.Air_1.oCapacity;
-            oHeatSource = thermal.heatsource('AirHeater', 100);
-            oCapacityTank_1.addHeatSource(oHeatSource);
+            oCapacityCabin = this.toStores.Cabin.toPhases.Air.oCapacity;
+            iCrewMember = 3;
+            oHeatSource = thermal.heatsource('AirHeater', 83.1250*iCrewMember);
+            oCapacityCabin.addHeatSource(oHeatSource);
             
             
-            oCapacityTank_4 = this.toStores.Tank_4.toPhases.Coolant_Phase2.oCapacity;
+            oCapacityCoolant = this.toStores.Coolant.toPhases.Water.oCapacity;
             oHeatSource = components.thermal.heatsources.ConstantTemperature('Coolant_Constant_Temperature');
-            oCapacityTank_4.addHeatSource(oHeatSource);
+            oCapacityCoolant.addHeatSource(oHeatSource);
         end
         
         function createSolverStructure(this)
@@ -199,29 +132,17 @@ classdef Example < vsys
             solver.matter.manual.branch(this.toBranches.CHX_Air_In);
             solver.matter.residual.branch(this.toBranches.CHX_Air_Out);
             
-            solver.matter.manual.branch(this.toBranches.CHX_Water_In);
-            solver.matter.manual.branch(this.toBranches.CHX_Water_Out);
+            solver.matter.manual.branch(this.toBranches.CHX_Water_Loop);
             
-
             % Volumetric Flowrate Atmosphere (maximum) 14150 L/min
             % [Wieland1998] --> vol. Flowrate 0.2358 m^3/s
             % Coolant Flowrate CHX ISS 558kg/h [Wieland1998] = 0.1150 kg/s
-            
             fAirVolumetricFlowRate = 0.2358;
             fCoolanttFlowRate = 0.1150;
             this.toBranches.CHX_Air_In.oHandler.setVolumetricFlowRate(fAirVolumetricFlowRate);
             
-            this.toBranches.CHX_Water_In.oHandler.setFlowRate(fCoolanttFlowRate);
-            this.toBranches.CHX_Water_Out.oHandler.setFlowRate(fCoolanttFlowRate);
+            this.toBranches.CHX_Water_Loop.oHandler.setFlowRate(fCoolanttFlowRate);
             
-%             %Flowrate for Humidity Source
-%             afHumidityP2PFlowRates = zeros(1,this.oMT.iSubstances);
-%             afHumidityP2PFlowRates(this.oMT.tiN2I.H2O) = 0.1;
-%             this.toStores.Tank_1.toProcsP2P.Humidity_Source.setFlowRate(afHumidityP2PFlowRates);
-% %             ob5.setFlowRate(afHumidityP2PFlowRates);
-             
-            iCrewMember = 3;
-            this.toStores.Tank_1.toPhases.Air_1.oCapacity.toHeatSources.AirHeater.setHeatFlow(83.1250*iCrewMember);
             
             csStoreNames = fieldnames(this.toStores);
             for iStore = 1:length(csStoreNames)
@@ -229,7 +150,7 @@ classdef Example < vsys
                     oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
                     
                     arMaxChange = zeros(1,this.oMT.iSubstances);
-                    arMaxChange(this.oMT.tiN2I.H2O) = 0.001;
+                    arMaxChange(this.oMT.tiN2I.H2O) = 1e-2;
                     tTimeStepProperties.arMaxChange = arMaxChange;
                     
                     oPhase.setTimeStepProperties(tTimeStepProperties);
@@ -250,19 +171,7 @@ classdef Example < vsys
             % Here it only calls its parent's exec function
             exec@vsys(this);
             
-%             if this.oTimer.fTime > 10
-%                 for iBranch = 1:length(this.aoBranches)
-%                     
-%                     this.aoBranches(iBranch).oHandler.setFlowRate(0.001);
-%                     
-%                 end
-%             else
-%                 for iBranch = 1:length(this.aoBranches)
-%                     
-%                     this.aoBranches(iBranch).oHandler.setFlowRate(1);
-%                     
-%                 end
-%             end
+            % this.toStores.Cabin.toPhases.Air.oCapacity.toHeatSources.AirHeater.setHeatFlow(83.1250*iCrewMember);
         end
     end
 end
