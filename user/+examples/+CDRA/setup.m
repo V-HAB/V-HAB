@@ -363,15 +363,15 @@ classdef setup < simulation.infrastructure
             
             coPlot = cell(4,3);
             coPlot{1,1} = oPlotter.definePlot({'"CDRA CO2 InletFlow"', '"CDRA H2O InletFlow"', '"CDRA CO2 OutletFlow"', '"CDRA H2O OutletFlow"'}, 'CDRA In- and Outlet Flows', tPlotOptions);
-            coPlot{1,2} = oPlotter.definePlot({'"Condensate Flowrate CHX"'}, 'CHX Condensate Flowrate', tPlotOptions);
-            coPlot{1,3} = oPlotter.definePlot({'"Partial Pressure CO2"'}, 'Partial Pressure CO2 Habitat',tPlotOptions);
-            coPlot{2,1} = oPlotter.definePlot({'"Partial Pressure CO2 Torr"'}, 'Partial Pressure CO2 Habitat in Torr',tPlotOptions);
-            coPlot{2,2} = oPlotter.definePlot({'"Relative Humidity Cabin"'}, 'Relative Humidity Cabin',tPlotOptions);
-            coPlot{2,3} = oPlotter.definePlot({'"CO2 Production"', '"CDRA effective CO2 Flow"'}, 'Effective CO2 FlowRates',tPlotOptions);
-            coPlot{3,1} = oPlotter.definePlot({'"Temperature CHX"', '"Temperature TCCV"'}, 'Temperatures in CHX',tPlotOptions);
-            coPlot{3,2} = oPlotter.definePlot({'"Pressure CHX"', '"Pressure TCCV"'}, 'Pressure in CHX', tPlotOptions);
-            coPlot{3,3} = oPlotter.definePlot({'"Partial Pressure H2O TCCV"', '"Partial Pressure CO2 TCCV"'}, 'Partial Pressure H2O and CO2 TCCV', tPlotOptions);
-            coPlot{4,3} = oPlotter.definePlot({'"CDRA Heater Power"'}, 'CDRA Heater Power', tPlotOptions);
+            coPlot{1,2} = oPlotter.definePlot({'"Condensate Flowrate CHX"'},                                    'CHX Condensate Flowrate', tPlotOptions);
+            coPlot{1,3} = oPlotter.definePlot({'"Partial Pressure CO2"'},                                       'Partial Pressure CO2 Habitat',tPlotOptions);
+            coPlot{2,1} = oPlotter.definePlot({'"Partial Pressure CO2 Torr"'},                                  'Partial Pressure CO2 Habitat in Torr',tPlotOptions);
+            coPlot{2,2} = oPlotter.definePlot({'"Relative Humidity Cabin"'},                                    'Relative Humidity Cabin',tPlotOptions);
+            coPlot{2,3} = oPlotter.definePlot({'"CO2 Production"', '"CDRA effective CO2 Flow"'},                'Effective CO2 FlowRates',tPlotOptions);
+            coPlot{3,1} = oPlotter.definePlot({'"Temperature CHX"', '"Temperature TCCV"'},                      'Temperatures in CHX',tPlotOptions);
+            coPlot{3,2} = oPlotter.definePlot({'"Pressure CHX"', '"Pressure TCCV"'},                            'Pressure in CHX', tPlotOptions);
+            coPlot{3,3} = oPlotter.definePlot({'"Partial Pressure H2O TCCV"', '"Partial Pressure CO2 TCCV"'},   'Partial Pressure H2O and CO2 TCCV', tPlotOptions);
+            coPlot{4,3} = oPlotter.definePlot({'"CDRA Heater Power"'},                                          'CDRA Heater Power', tPlotOptions);
             
             
             oPlotter.defineFigure(coPlot,  'Plots');

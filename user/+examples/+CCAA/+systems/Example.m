@@ -5,7 +5,9 @@ classdef Example < vsys
     % PFT-ISSA-9610. Technical Report, 1996.) is used but since the
     % original report was not available, the data used is from the second
     % hand source "ISS Active Thermal Control System Dynamic Modeling",
-    % Christof Roth, 2012, LRT-DA-2012-22, Table 6-1
+    % Christof Roth, 2012, LRT-DA-2012-22, Table 6-1. It was extracted from
+    % the raw data available for this source at the Institute of
+    % Astronautics at TUM.
     % In total 6 protoflight tests with different set point were reported,
     % but not dynamically, only in steady state conditions. Therefore, the
     % example implements 6 CCAAs and runs the 6 test cases in parallel. It
@@ -56,26 +58,37 @@ classdef Example < vsys
             tProtoTestSetpoints(5).fDewPointAir         = 273.15 + 14.51;
             tProtoTestSetpoints(6).fDewPointAir         = 273.15 + 15.01;
             
-            tProtoTestSetpoints(1).fTCCV_Angle          = 5;
-            tProtoTestSetpoints(2).fTCCV_Angle          = 40;
+            % For the first test the source states an angle of 5°, but
+            % looking at the original test data, an angle of 40° was used
+            % for test 1 and the 5° were used for test 2. Which also makes
+            % more sense from a result perspective
+            tProtoTestSetpoints(1).fTCCV_Angle          = 40;
+            tProtoTestSetpoints(2).fTCCV_Angle          = 5;
             tProtoTestSetpoints(3).fTCCV_Angle          = 5;
             tProtoTestSetpoints(4).fTCCV_Angle          = 40;
             tProtoTestSetpoints(5).fTCCV_Angle          = 40;
-            tProtoTestSetpoints(6).fTCCV_Angle          = 30;
+            tProtoTestSetpoints(6).fTCCV_Angle          = 40;
             
-            tProtoTestSetpoints(1).fVolumetricAirFlow	= 35.64 / 3600;
-            tProtoTestSetpoints(2).fVolumetricAirFlow	= 35.64 / 3600;
-            tProtoTestSetpoints(3).fVolumetricAirFlow	= 35.64 / 3600;
-            tProtoTestSetpoints(4).fVolumetricAirFlow	= 35.64 / 3600;
-            tProtoTestSetpoints(5).fVolumetricAirFlow	= 35.64 / 3600;
-            tProtoTestSetpoints(6).fVolumetricAirFlow	= 35.64 / 3600;
+            tProtoTestSetpoints(1).fVolumetricAirFlow	= 0.2;
+            tProtoTestSetpoints(2).fVolumetricAirFlow	= 0.2;
+            tProtoTestSetpoints(3).fVolumetricAirFlow	= 0.2;
+            tProtoTestSetpoints(4).fVolumetricAirFlow	= 0.2;
+            tProtoTestSetpoints(5).fVolumetricAirFlow	= 0.2;
+            tProtoTestSetpoints(6).fVolumetricAirFlow	= 0.2;
             
-            tProtoTestSetpoints(1).fVolumetricCoolantFlow	= 145.15;
-            tProtoTestSetpoints(2).fVolumetricCoolantFlow	= 74.27;
-            tProtoTestSetpoints(3).fVolumetricCoolantFlow	= 75.13;
-            tProtoTestSetpoints(4).fVolumetricCoolantFlow	= 146.66;
-            tProtoTestSetpoints(5).fVolumetricCoolantFlow	= 145.28;
-            tProtoTestSetpoints(6).fVolumetricCoolantFlow	= 74.68;
+            % The unit for the coolant flow in the diploma thesis of C.
+            % Roth are wrong. In other sources the minimum coolant flow is
+            % mentioned to be 600 lb/hr ("Centrifuge Accommodation Module
+            % (CAM) Cabin Air Temperature and Humidity Control Analysis",
+            % Ching-fen Tsai et. al 2005) which is 75.6 g/s so the unit is
+            % likely in g/s
+            
+            tProtoTestSetpoints(1).fCoolantFlow	= 145.15e-3;
+            tProtoTestSetpoints(2).fCoolantFlow	= 74.27e-3;
+            tProtoTestSetpoints(3).fCoolantFlow	= 75.13e-3;
+            tProtoTestSetpoints(4).fCoolantFlow	= 146.66e-3;
+            tProtoTestSetpoints(5).fCoolantFlow	= 145.28e-3;
+            tProtoTestSetpoints(6).fCoolantFlow	= 74.68e-3;
             
             % The values for air pressure etc are not available, therefore
             % we use standard values for the air pressure
@@ -92,13 +105,13 @@ classdef Example < vsys
                 fVaporPressureDewPoint          = this.oMT.calculateVaporPressure(tProtoTestSetpoints(iProtoflightTest).fDewPointAir, 'H2O');
                 
                 tProtoTestSetpoints(iProtoflightTest).rRelHumidity = fVaporPressureDewPoint / fVaporPressureGasTemperature;
-                tAtmosphere.fRelHumidity                           = fVaporPressureDewPoint / fVaporPressureGasTemperature;
+                tAtmosphere.rRelHumidity                           = fVaporPressureDewPoint / fVaporPressureGasTemperature;
                 % Adding the subsystem CCAA
                 oCCAA = components.matter.CCAA.CCAA(this, ['CCAA_', num2str(iProtoflightTest)], 5, tProtoTestSetpoints(iProtoflightTest).fCoolantTemperature, tAtmosphere, sCDRA);
             
                 tFixValues.fTCCV_Angle                  = tProtoTestSetpoints(iProtoflightTest).fTCCV_Angle;
             	tFixValues.fVolumetricAirFlowRate       = tProtoTestSetpoints(iProtoflightTest).fVolumetricAirFlow;
-                tFixValues.fVolumetricCoolantFlowRate   = tProtoTestSetpoints(iProtoflightTest).fVolumetricCoolantFlow;
+                tFixValues.fCoolantFlowRate             = tProtoTestSetpoints(iProtoflightTest).fCoolantFlow;
                 oCCAA.setFixValues(tFixValues);
             end
             
@@ -124,8 +137,7 @@ classdef Example < vsys
                 oCondensate         = this.toStores.(['Condensate_', num2str(iProtoflightTest)]).createPhase(   'liquid',               'Water',        this.toStores.(['Condensate_', num2str(iProtoflightTest)]).fVolume,      struct('H2O', 1), this.tProtoTestSetpoints(iProtoflightTest).fCoolantTemperature, 1e5);
 
                 matter.branch(this, ['CCAAinput',               num2str(iProtoflightTest)],    	{}, oCabin);
-                matter.branch(this, ['CCAA_CHX_Output',         num2str(iProtoflightTest)],  	{}, oCabin);
-                matter.branch(this, ['CCAA_TCCV_Output',        num2str(iProtoflightTest)],   	{}, oCabin);
+                matter.branch(this, ['CCAA_Output',             num2str(iProtoflightTest)],  	{}, oCabin);
                 matter.branch(this, ['CCAA_CondensateOutput',   num2str(iProtoflightTest)],     {}, oCondensate);
                 matter.branch(this, ['CCAA_CoolantInput',       num2str(iProtoflightTest)],     {}, oCoolant);
                 matter.branch(this, ['CCAA_CoolantOutput',      num2str(iProtoflightTest)],   	{}, oCoolant);
@@ -133,8 +145,7 @@ classdef Example < vsys
                 % now the interfaces between this system and the CCAA subsystem
                 % are defined
                 this.toChildren.(['CCAA_', num2str(iProtoflightTest)]).setIfFlows(['CCAAinput',               num2str(iProtoflightTest)],...
-                                                                                  ['CCAA_CHX_Output',         num2str(iProtoflightTest)],...
-                                                                                  ['CCAA_TCCV_Output',        num2str(iProtoflightTest)],...
+                                                                                  ['CCAA_Output',             num2str(iProtoflightTest)],...
                                                                                   ['CCAA_CondensateOutput',   num2str(iProtoflightTest)],...
                                                                                   ['CCAA_CoolantInput',       num2str(iProtoflightTest)],...
                                                                                   ['CCAA_CoolantOutput',      num2str(iProtoflightTest)]);

@@ -301,7 +301,9 @@ while bRepeat
         % In case intersection point is far left or right: selection of point at bountInput.fCellAreary
         if iIntersection == 1
             iLowerPoint = 1;
+            iUpperPoint = 2;
         elseif iIntersection == iSteps
+            iLowerPoint = iSteps - 1;
             iUpperPoint = iSteps;
         end
         
@@ -380,13 +382,13 @@ fHeatFlowGas     = fSpecificHeatFlowRateGas * tInput.fCellArea;			% Calculation 
 fCondensateMassFlow = fSpecificMassFlowRate_Vapor * tInput.fCellArea;		% Condensate mass flow rate [kg/s]
 
 % Calculation of outlet temperatures:
-tInput.fTemperatureGasOutlet     = tInput.fTemperatureGas - (fHeatFlowGas / (tInput.fMassFlowGas * tInput.fSpecificHeatCapacityGas));						% [K], (2.103)
-tInput.fTemperatureCoolantOutlet = tInput.fTemperatureCoolant + (fHeatFlowCoolant / (tInput.fMassFlowCoolant * tInput.fSpecificHeatCapacityCoolant));	% [K], (2.104)
+tOutputs.fTemperatureGasOutlet     = tInput.fTemperatureGas - (fHeatFlowGas / (tInput.fMassFlowGas * tInput.fSpecificHeatCapacityGas));						% [K], (2.103)
+tOutputs.fTemperatureCoolantOutlet = tInput.fTemperatureCoolant + (fHeatFlowCoolant / (tInput.fMassFlowCoolant * tInput.fSpecificHeatCapacityCoolant));	% [K], (2.104)
 
 else
    fCondensateMassFlow = 0; 
-   tInput.fTemperatureGasOutlet = tInput.fTemperatureGas;
-   tInput.fTemperatureCoolantOutlet = tInput.fTemperatureCoolant;
+   tOutputs.fTemperatureGasOutlet       = tInput.fTemperatureGas;
+   tOutputs.fTemperatureCoolantOutlet   = tInput.fTemperatureCoolant;
    fHeatFlowCoolant = 0;
    fHeatFlowGas = 0;
 end
@@ -394,8 +396,6 @@ end
 
 % Construction of output struct
 tOutputs.fCondensateMassFlow        = fCondensateMassFlow;
-tOutputs.fTemperatureGasOutlet 	    = tInput.fTemperatureGasOutlet;
-tOutputs.fTemperatureCoolantOutlet	= tInput.fTemperatureCoolantOutlet;
 tOutputs.fTotalHeatFlow             = fHeatFlowCoolant;
 tOutputs.fGasHeatFlow               = fHeatFlowGas;
 tOutputs.fHeatFlowCondensate        = fHeatFlowCoolant - fHeatFlowGas;

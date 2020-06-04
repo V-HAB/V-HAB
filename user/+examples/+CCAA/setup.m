@@ -26,7 +26,7 @@ classdef setup < simulation.infrastructure
             %% Simulation length
             % Stop when specific time in simulation is reached or after 
             % specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 3600 * 6; % In seconds
+            this.fSimTime = 10; % In seconds
             this.bUseTime = true;
         end
         
@@ -44,6 +44,7 @@ classdef setup < simulation.infrastructure
                 oLog.addValue(['Example:c:CCAA_', num2str(iProtoflightTest) ':c:CCAA_CHX'],                         'fTempOut_Fluid1',            	'K',    ['CCAA_', num2str(iProtoflightTest), ' Air Outlet Temperature']);
                 oLog.addValue(['Example:c:CCAA_', num2str(iProtoflightTest) ':c:CCAA_CHX'],                         'fTempOut_Fluid2',            	'K',    ['CCAA_', num2str(iProtoflightTest), ' Coolant Outlet Temperature']);
                 oLog.addValue(['Example:c:CCAA_', num2str(iProtoflightTest) ':s:CHX.toProcsP2P.CondensingHX'],      'fFlowRate',                    'kg/s', ['CCAA_', num2str(iProtoflightTest), ' Condensate Flow Rate']);
+                oLog.addValue(['Example:c:CCAA_', num2str(iProtoflightTest) ':s:Mixing.toPhases.MixedGas'],         'fTemperature',                 'K',    ['CCAA_', num2str(iProtoflightTest), ' Mixed Air Outlet Temperature']);
                 
             end
         end
@@ -76,7 +77,6 @@ classdef setup < simulation.infrastructure
                 csCondensateFlow {iProtoflightTest}         = ['"CCAA_', num2str(iProtoflightTest), ' Condensate Flow Rate"'];
             end
             
-            
             coPlots{1,1} = oPlotter.definePlot(csTemperatures,        'Temperature', tPlotOptions);
             coPlots{1,2} = oPlotter.definePlot(csRelativeHumidities,   'Relative Humidity', tPlotOptions);
             coPlots{2,2} = oPlotter.definePlot([csCondensateHeatFlow(:), csTotalHeatFlow(:)],   'CCAA Heat Flows', tPlotOptions);
@@ -86,6 +86,87 @@ classdef setup < simulation.infrastructure
             oPlotter.defineFigure(coPlots,  'CCAA Plots', tFigureOptions);
             
             oPlotter.plot();
+            
+            oLogger = this.toMonitors.oLogger;
+            
+            mfAirOutletTemperature      = zeros(oLogger.iLogIndex, 6);
+            mfMixedAirOutletTemperature = zeros(oLogger.iLogIndex, 6);
+            mfCoolantOutletTemperature  = zeros(oLogger.iLogIndex, 6);
+            mfCondensateFlow            = zeros(oLogger.iLogIndex, 6);
+            for iLog = 1:length(oLogger.tLogValues)
+                for iProtoflightTest = 1:6
+                    if strcmp(oLogger.tLogValues(iLog).sLabel, ['CCAA_', num2str(iProtoflightTest), ' Air Outlet Temperature'])
+                        mfAirOutletTemperature(:, iProtoflightTest) = oLogger.mfLog(1:oLogger.iLogIndex, oLogger.tLogValues(iLog).iIndex);
+                    elseif strcmp(oLogger.tLogValues(iLog).sLabel, ['CCAA_', num2str(iProtoflightTest), ' Mixed Air Outlet Temperature'])
+                        mfMixedAirOutletTemperature(:, iProtoflightTest) = oLogger.mfLog(1:oLogger.iLogIndex, oLogger.tLogValues(iLog).iIndex);
+                    elseif strcmp(oLogger.tLogValues(iLog).sLabel, ['CCAA_', num2str(iProtoflightTest), ' Coolant Outlet Temperature'])
+                        mfCoolantOutletTemperature(:, iProtoflightTest) = oLogger.mfLog(1:oLogger.iLogIndex, oLogger.tLogValues(iLog).iIndex);
+                    elseif strcmp(oLogger.tLogValues(iLog).sLabel, ['CCAA_', num2str(iProtoflightTest), ' Condensate Flow Rate'])
+                        mfCondensateFlow(:, iProtoflightTest) = oLogger.mfLog(1:oLogger.iLogIndex, oLogger.tLogValues(iLog).iIndex);
+                    end
+                end
+            end
+            
+            Data = load('user\+examples\+CCAA\+TestData\ProtoflightData.mat');
+            
+            % The first log point are the initialization values. Therefore
+            % we compare the protoflight test data to the second log point.
+            % Also the limits for the plots are set to ease comparison with
+            % data from the old model, where these limits were chosen:
+            figure('Name', 'Protoflight Test Comparison', 'units','normalized','outerposition',[0 0 1 1])
+            subplot(1,3,1)
+            scatter(1:6,  mfAirOutletTemperature(2,:))
+            hold on
+            grid on
+            % Unfortunatly it is not completly clear if the protoflight
+            % test data is the air outlet temperature directly after the
+            % CHX or after the CCAA (where it is mixed with the bypass
+            % flow). But comparing the mixed and non mixed data it seems to
+            % be the air directly after the CHX. If you want to view it
+            % outcomment the next line and add the corresponding legend
+            % entry:
+            % scatter(1:6,  mfMixedAirOutletTemperature(2,:))
+            scatter(1:6,  Data.ProtoflightTestData.AirOutletTemperature', 'x')
+            xticks(1:6)
+            ylim([275, 300])
+            xlabel('Protoflight Test Number')
+            ylabel('Air Outlet Temperature in K')
+            legend('Simulation', 'Protoflight Test')
+            hold off
+            
+            subplot(1,3,2)
+            scatter(1:6,  mfCoolantOutletTemperature(2,:))
+            hold on
+            grid on
+            scatter(1:6,  Data.ProtoflightTestData.CoolantOutletTemperature', 'x')
+            xticks(1:6)
+            ylim([275, 300])
+            xlabel('Protoflight Test Number')
+            ylabel('Coolant Outlet Temperature in K')
+            legend('Simulation', 'Protoflight Test')
+            hold off
+            
+            subplot(1,3,3)
+            scatter(1:6,  mfCondensateFlow(2,:) .* 3600)
+            hold on
+            grid on
+            scatter(1:6,  Data.ProtoflightTestData.CondensateMassFlow', 'x')
+            xticks(1:6)
+            ylim([0, 4])
+            xlabel('Protoflight Test Number')
+            ylabel('Condensate Mass Flow in kg/h')
+            legend('Simulation', 'Protoflight Test')
+            hold off
+            
+%             mfAirTemperatureDifference      = mfAirOutletTemperature(2,:)       - Data.ProtoflightTestData.AirOutletTemperature';
+%             mfCoolantTemperatureDifference  = mfCoolantOutletTemperature(2,:)   - Data.ProtoflightTestData.CoolantOutletTemperature';
+%             mfCondensateDifference          = mfCondensateFlow(2,:) * 3600      - Data.ProtoflightTestData.CondensateMassFlow';
+%             
+%             mfPercentageDifferenceAirTemperature = mfAirTemperatureDifference ./ (Data.ProtoflightTestData.AirOutletTemperature' - 273.15) * 100;
+%             
+%             disp(['The average difference in air outlet temperature is:         ', num2str(mean(mfAirTemperatureDifference), 2), ' K'])
+%             disp(['The average difference in coolant outlet temperature is:     ', num2str(mean(mfCoolantTemperatureDifference), 2), ' K'])
+%             disp(['The average difference in condensate is:                     ', num2str(mean(mfCondensateDifference), 2), ' kg/h'])
         end
     end
 end

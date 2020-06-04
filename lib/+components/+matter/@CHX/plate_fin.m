@@ -1,5 +1,5 @@
 function [fOutlet_Temp_1, fOutlet_Temp_2, fDelta_P_1, fDelta_P_2] = ...
-    plate_fin(oCHX, tCHX_Parameters, Fluid_1, Fluid_2, fThermalConductivitySolid, iIncrements_Parallel)
+    plate_fin(oCHX, tCHX_Parameters, Fluid_1, Fluid_2, fThermalConductivitySolid, iIncrementsAir)
 
 %Function used to calculate the outlet temperatures and pressure drop of a
 %heat exchanger. (It is also possible to return the thermal resistances)
@@ -59,6 +59,12 @@ function [fOutlet_Temp_1, fOutlet_Temp_2, fDelta_P_1, fDelta_P_2] = ...
 %calculates the further needed variables for the heat exchanger from the
 %given values
 
+% We discretize both direction equally. Increments coolant means that we
+% split the coolant flow in this amount of smaller coolant flows (so that
+% we basically have x coolant flows in parallel. The same applies for the
+% increments of air
+iIncrementsCoolant = iIncrementsAir;
+
 %flow speed for the fluids calculated from the massflow with massflow =
 %volumeflow*rho = fw*fA*frho
 fFlowSpeed_Fluid1 = Fluid_1.fMassflow/(tCHX_Parameters.fHeight_1 * tCHX_Parameters.fBroadness *...
@@ -75,9 +81,9 @@ fHeat_Capacity_Flow_Layers_2 = fHeat_Capacity_Flow_2/tCHX_Parameters.iLayers;
 %calculates the area of the heat exchanger fArea =
 %tCHX_Parameters.fBroadness*tCHX_Parameters.fLength;
 
-fIncrementalLength = tCHX_Parameters.fLength/iIncrements_Parallel;
-fIncrementalBroadness = tCHX_Parameters.fBroadness/iIncrements_Parallel;
-fIncrementalArea = (tCHX_Parameters.fBroadness/iIncrements_Parallel)*fIncrementalLength;
+fIncrementalLength = tCHX_Parameters.fLength/(iIncrementsAir * tCHX_Parameters.iBaffles+1);
+fIncrementalBroadness = tCHX_Parameters.fBroadness/iIncrementsCoolant;
+fIncrementalArea = (tCHX_Parameters.fBroadness/iIncrementsAir)*fIncrementalLength;
 
 %uses the function for convection along a plate to calculate the convection
 %coeffcients(for further information view function help)
@@ -120,11 +126,9 @@ fIncrementalU = 1/(fIncrementalArea * (fR_alpha_o_Incremental + fR_alpha_i_Incre
 %smaller heat exchangers and calculating their respective outlet
 %temperatures.
 
-% We discretize both direction equally
-iIncrements_Perpendicular = iIncrements_Parallel;
     
-mCondensateHeatFlow = zeros(iIncrements_Parallel, iIncrements_Perpendicular, tCHX_Parameters.iBaffles+1, tCHX_Parameters.iLayers);
-mHeatFlow           = zeros(iIncrements_Parallel, iIncrements_Perpendicular, tCHX_Parameters.iBaffles+1, tCHX_Parameters.iLayers);
+mCondensateHeatFlow = zeros(iIncrementsAir, iIncrementsCoolant, tCHX_Parameters.iBaffles+1, tCHX_Parameters.iLayers);
+mHeatFlow           = zeros(iIncrementsAir, iIncrementsCoolant, tCHX_Parameters.iBaffles+1, tCHX_Parameters.iLayers);
 %If heat exchange coefficient U is zero there can be no heat transfer
 %between the two fluids
 if fIncrementalU == 0
@@ -141,11 +145,11 @@ else
     oMT = Fluid_1.oFlow.oMT;
     
     % preallocation of variables matrices increased to four dimensions.
-    mOutlet_Temp_1      = nan(iIncrements_Parallel, iIncrements_Perpendicular,tCHX_Parameters.iBaffles+1,tCHX_Parameters.iLayers);
-    mOutlet_Temp_2      = nan(iIncrements_Parallel, iIncrements_Perpendicular,tCHX_Parameters.iBaffles+1,tCHX_Parameters.iLayers);
-    mCondensateHeatFlow = nan(iIncrements_Parallel, iIncrements_Perpendicular,tCHX_Parameters.iBaffles+1,tCHX_Parameters.iLayers);
-    mCondensateFlowRate = zeros(iIncrements_Parallel, iIncrements_Perpendicular,tCHX_Parameters.iBaffles+1,tCHX_Parameters.iLayers);
-    mHeatFlow           = NaN(iIncrements_Parallel, iIncrements_Perpendicular, tCHX_Parameters.iBaffles+1, tCHX_Parameters.iLayers);
+    mOutlet_Temp_1      = nan(iIncrementsAir, iIncrementsCoolant,tCHX_Parameters.iBaffles+1,tCHX_Parameters.iLayers);
+    mOutlet_Temp_2      = nan(iIncrementsAir, iIncrementsCoolant,tCHX_Parameters.iBaffles+1,tCHX_Parameters.iLayers);
+    mCondensateHeatFlow = nan(iIncrementsAir, iIncrementsCoolant,tCHX_Parameters.iBaffles+1,tCHX_Parameters.iLayers);
+    mCondensateFlowRate = zeros(iIncrementsAir, iIncrementsCoolant,tCHX_Parameters.iBaffles+1,tCHX_Parameters.iLayers);
+    mHeatFlow           = NaN(iIncrementsAir, iIncrementsCoolant, tCHX_Parameters.iBaffles+1, tCHX_Parameters.iLayers);
     
     tCHX_Parameters.CHX_Type = 'VerticalTube';
     % CHX.CHX_Type = 'HorizontalTube';
@@ -153,16 +157,16 @@ else
     % Toggle calculation mode, whether gasflow influence on Heatflux should
     % be considered
     tCHX_Parameters.GasFlow = true;
-    tCHX_Parameters.fMassFlowGas = Fluid_1.fMassflow/(iIncrements_Parallel*tCHX_Parameters.iLayers);	% Mass flow rate of Watervapor-Air-Mix [kg/s]
-    tCHX_Parameters.fMassFlowCoolant = Fluid_2.fMassflow/(iIncrements_Parallel*tCHX_Parameters.iLayers);	% Mass flow rate of coolant [kg/s]
+    tCHX_Parameters.fMassFlowGas = Fluid_1.fMassflow/(iIncrementsAir*tCHX_Parameters.iLayers);	% Mass flow rate of Watervapor-Air-Mix [kg/s]
+    tCHX_Parameters.fMassFlowCoolant = Fluid_2.fMassflow/(iIncrementsCoolant*tCHX_Parameters.iLayers);	% Mass flow rate of coolant [kg/s]
 
     % TO DO: Make adaptive!
     tCHX_Parameters.Vapor	 = 'H2O';					% Vapor
     tCHX_Parameters.Inertgas = 'Air';					% Inertgas
     tCHX_Parameters.Coolant  = 'H2O';					% Coolant
 
-    tCHX_Parameters.fCellLength                 = tCHX_Parameters.fLength/iIncrements_Parallel;
-    tCHX_Parameters.fCellBroadness              = tCHX_Parameters.fBroadness/iIncrements_Parallel;
+    tCHX_Parameters.fCellLength                 = tCHX_Parameters.fLength/(iIncrementsCoolant);
+    tCHX_Parameters.fCellBroadness              = tCHX_Parameters.fBroadness/iIncrementsAir;
     tCHX_Parameters.fCellArea                   = fIncrementalArea;
     tCHX_Parameters.alpha_coolant               = falpha_o;
     tCHX_Parameters.alpha_gas                   = falpha_pipe;
@@ -174,8 +178,8 @@ else
     tCHX_Parameters.fHydraulicDiameter          = 4*(tCHX_Parameters.fHeight_1 * tCHX_Parameters.fCellBroadness)/(2 * tCHX_Parameters.fHeight_1 + 2 * tCHX_Parameters.fCellBroadness);     % Hydraulic diameter [m]
     tCHX_Parameters.fCharacteristicLength       = tCHX_Parameters.fHydraulicDiameter;
 
-    fInitialWaterFlow = Fluid_1.oFlow.arPartialMass(oMT.tiN2I.H2O) * tCHX_Parameters.fMassFlowGas;
-    fInitialWaterFlowGlobal = fInitialWaterFlow;
+    fInitialWaterFlowPerCell = Fluid_1.oFlow.arPartialMass(oMT.tiN2I.H2O) * tCHX_Parameters.fMassFlowGas;
+    fInitialWaterFlowGlobal = fInitialWaterFlowPerCell;
 
     % Area for mix zone tCHX_Parameters.iBaffles + 1 = number of divided
     % parts. *2 because two parts form the length of the mix zone. 10% of
@@ -208,18 +212,18 @@ else
     tFinOutput.iFinCounterAir      = 1;
     tFinOutput.iFinCounterCoolant  = 1;
 
-    mMoleFracVapor = nan(iIncrements_Parallel, iIncrements_Perpendicular);
+    mMoleFracVapor = nan(iIncrementsAir, iIncrementsCoolant);
 
     %% New Calculation with discretization
     % added two more loops for the layer and baffles calculations
     for iLayer = 1:tCHX_Parameters.iLayers
         for iBaffle = 1:(tCHX_Parameters.iBaffles+1)
-            for iIncrementsParallel = 1:iIncrements_Parallel
-                for iIncremetsPerpendicular = 1:iIncrements_Perpendicular
+            for iAirIncrement = 1:iIncrementsAir
+                for iCoolantIncrement = 1:iIncrementsCoolant
                     % checks if the fin for the actual cell is high or low
                     % (high means additional resistance)
 
-                    tFinOutput = FinConfig(iIncrementsParallel, iIncremetsPerpendicular, tFinOutput, tFinInput);
+                    tFinOutput = FinConfig(iAirIncrement, iCoolantIncrement, tFinOutput, tFinInput);
 
                     iFinResistance = tFinOutput.iFinStateCoolant + tFinOutput.iFinStateAir*2;
 
@@ -245,7 +249,7 @@ else
                     %plate heat exchanger and the to calculate the new
                     %outlet temperature of the heat exchanger (with regard
                     %to condensation from the later sections).
-                    if iIncremetsPerpendicular == 1 && iIncrementsParallel == 1
+                    if iCoolantIncrement == 1 && iAirIncrement == 1
                         % Fluid film of previous cell, that is entering current cell [kg/s]
                         tCHX_Parameters.fMassFlowFilm = 0;
                         % Temperature of incoming gas flow in [K]
@@ -254,7 +258,7 @@ else
                         tCHX_Parameters.fTemperatureCoolant    	= Fluid_2.fEntry_Temperature;
                         % Molar fraction of the (condensing) vapor in the
                         % overall gas flow
-                        tCHX_Parameters.fMolarFractionVapor     = (fInitialWaterFlow/ oMT.afMolarMass(oMT.tiN2I.H2O)) / (tCHX_Parameters.fMassFlowGas / Fluid_1.oFlow.fMolarMass);
+                        tCHX_Parameters.fMolarFractionVapor     = (fInitialWaterFlowPerCell/ oMT.afMolarMass(oMT.tiN2I.H2O)) / (tCHX_Parameters.fMassFlowGas / Fluid_1.oFlow.fMolarMass);
 
                         tCHX_Parameters.arPartialMassesGas = Fluid_1.oFlow.arPartialMass;
 
@@ -286,25 +290,27 @@ else
                         fHeatFlowGasDown        = tOutputs.fGasHeatFlow;
 
                         % summation of the separate values
-                        mHeatFlow(iIncrementsParallel,iIncremetsPerpendicular,iBaffle,iLayer) = fHeatFlowUp + fHeatFlowDown;
+                        mHeatFlow(iAirIncrement,iCoolantIncrement,iBaffle,iLayer) = fHeatFlowUp + fHeatFlowDown;
                         fHeatFlowGas = fHeatFlowGasUp+fHeatFlowGasDown;
 
-                        mCondensateFlowRate(iIncrementsParallel,iIncremetsPerpendicular,iBaffle,iLayer) = fCondensatFlowRateUp + fCondensatFlowRateDown;
-                        mCondensateHeatFlow(iIncrementsParallel,iIncremetsPerpendicular,iBaffle,iLayer) = fHeatFlowCondensateUp + fHeatFlowCondensateDown;
+                        mCondensateFlowRate(iAirIncrement,iCoolantIncrement,iBaffle,iLayer) = fCondensatFlowRateUp + fCondensatFlowRateDown;
+                        mCondensateHeatFlow(iAirIncrement,iCoolantIncrement,iBaffle,iLayer) = fHeatFlowCondensateUp + fHeatFlowCondensateDown;
 
                         % new calculation of the outlet temperatures with
                         % the adjusted heat flows
-                        mOutlet_Temp_1(iIncrementsParallel,iIncremetsPerpendicular,iBaffle,iLayer) = Fluid_1.fEntry_Temperature - (fHeatFlowGas / (tCHX_Parameters.fSpecificHeatCapacityGas * tOutputs.fMassFlowGas));
-                        mOutlet_Temp_2(iIncrementsParallel,iIncremetsPerpendicular,iBaffle,iLayer) = Fluid_2.fEntry_Temperature + ((fHeatFlowUp) / (tCHX_Parameters.fMassFlowCoolant * tCHX_Parameters.fSpecificHeatCapacityGas));
+                        mOutlet_Temp_1(iAirIncrement,iCoolantIncrement,iBaffle,iLayer) = Fluid_1.fEntry_Temperature - (fHeatFlowGas / (tCHX_Parameters.fSpecificHeatCapacityGas * tOutputs.fMassFlowGas));
+                        mOutlet_Temp_2(iAirIncrement,iCoolantIncrement,iBaffle,iLayer) = Fluid_2.fEntry_Temperature + ((fHeatFlowUp) / (tCHX_Parameters.fMassFlowCoolant * tCHX_Parameters.fSpecificHeatCapacityGas));
 
-                    elseif iIncremetsPerpendicular == 1 && iIncrementsParallel ~= 1
+                    elseif iCoolantIncrement == 1 && iAirIncrement ~= 1
 
                         % Current condensate flow in [kg/s]
-                        fCurrentWaterFlow                   = fInitialWaterFlow - sum(mCondensateFlowRate(1:iIncrementsParallel,iIncremetsPerpendicular,iBaffle,iLayer)); 
+                        fCurrentWaterFlow                   = fInitialWaterFlowPerCell - sum(sum(mCondensateFlowRate(iAirIncrement,:,1:iBaffle,iLayer))); 
                         % Fluid film of previous cell, that is entering current cell in [kg/s]
-                        tCHX_Parameters.fMassFlowFilm       = fInitialWaterFlow - fCurrentWaterFlow;
+                        % calculate by calculating the total film mass flow
+                        % rate for the current air increment and layer:
+                        tCHX_Parameters.fMassFlowFilm       = fInitialWaterFlowPerCell - fCurrentWaterFlow;
                         % Temperature of incoming gas flow in [K]
-                        tCHX_Parameters.fTemperatureGas   	= mOutlet_Temp_1(iIncrementsParallel-1,iIncremetsPerpendicular,iBaffle,iLayer);
+                        tCHX_Parameters.fTemperatureGas   	= mOutlet_Temp_1(iAirIncrement-1,iCoolantIncrement,iBaffle,iLayer);
                         % Temperature of incoming cooling fluid in [K]
                         tCHX_Parameters.fTemperatureCoolant	= Fluid_2.fEntry_Temperature;
                         % Molar fraction of the (condensing) vapor in the
@@ -312,10 +318,9 @@ else
                         tCHX_Parameters.fMolarFractionVapor	= (fCurrentWaterFlow/ oMT.afMolarMass(oMT.tiN2I.H2O)) / (tCHX_Parameters.fMassFlowGas / Fluid_1.oFlow.fMolarMass);
 
                         % Debug option
-                        mMoleFracVapor(iIncrementsParallel,iIncremetsPerpendicular) = tCHX_Parameters.fMolarFractionVapor;
-
-                        tCHX_Parameters.arPartialMassesGas = Fluid_1.oFlow.arPartialMass;
-                        tCHX_Parameters.arPartialMassesGas(oMT.tiN2I.H2O) = (fCurrentWaterFlow/fInitialWaterFlow) * tCHX_Parameters.arPartialMassesGas(oMT.tiN2I.H2O);
+                        mMoleFracVapor(iAirIncrement,iCoolantIncrement) = tCHX_Parameters.fMolarFractionVapor;
+                        
+                        tCHX_Parameters.arPartialMassesGas(oMT.tiN2I.H2O) = (fCurrentWaterFlow/fInitialWaterFlowPerCell) * Fluid_1.oFlow.arPartialMass(oMT.tiN2I.H2O);
 
                         [tOutputs]              = calculateLocalHeatFlow(oCHX, tCHX_Parameters);
                         fHeatFlowUp             = tOutputs.fTotalHeatFlow;
@@ -334,35 +339,35 @@ else
                         fHeatFlowCondensateDown = tOutputs.fHeatFlowCondensate;
                         fHeatFlowGasDown        = tOutputs.fGasHeatFlow;
 
-                        mHeatFlow(iIncrementsParallel,iIncremetsPerpendicular,iBaffle,iLayer) = fHeatFlowUp+fHeatFlowDown;
+                        mHeatFlow(iAirIncrement,iCoolantIncrement,iBaffle,iLayer) = fHeatFlowUp+fHeatFlowDown;
                         fHeatFlowGas = fHeatFlowGasUp+fHeatFlowGasDown;
 
-                        mCondensateFlowRate(iIncrementsParallel,iIncremetsPerpendicular,iBaffle,iLayer) = fCondensatFlowRateUp+fCondensatFlowRateDown;
-                        mCondensateHeatFlow(iIncrementsParallel,iIncremetsPerpendicular,iBaffle,iLayer) = fHeatFlowCondensateUp + fHeatFlowCondensateDown;
+                        mCondensateFlowRate(iAirIncrement,iCoolantIncrement,iBaffle,iLayer) = fCondensatFlowRateUp+fCondensatFlowRateDown;
+                        mCondensateHeatFlow(iAirIncrement,iCoolantIncrement,iBaffle,iLayer) = fHeatFlowCondensateUp + fHeatFlowCondensateDown;
 
-                        mOutlet_Temp_1(iIncrementsParallel,iIncremetsPerpendicular,iBaffle,iLayer) = mOutlet_Temp_1(iIncrementsParallel-1,iIncremetsPerpendicular,iBaffle,iLayer) - (fHeatFlowGas / (tCHX_Parameters.fSpecificHeatCapacityGas * tOutputs.fMassFlowGas));
-                        mOutlet_Temp_2(iIncrementsParallel,iIncremetsPerpendicular,iBaffle,iLayer) = Fluid_2.fEntry_Temperature + ((fHeatFlowUp) / (tCHX_Parameters.fMassFlowCoolant * tCHX_Parameters.fSpecificHeatCapacityGas));
+                        mOutlet_Temp_1(iAirIncrement,iCoolantIncrement,iBaffle,iLayer) = mOutlet_Temp_1(iAirIncrement-1,iCoolantIncrement,iBaffle,iLayer) - (fHeatFlowGas / (tCHX_Parameters.fSpecificHeatCapacityGas * tOutputs.fMassFlowGas));
+                        mOutlet_Temp_2(iAirIncrement,iCoolantIncrement,iBaffle,iLayer) = Fluid_2.fEntry_Temperature + ((fHeatFlowUp) / (tCHX_Parameters.fMassFlowCoolant * tCHX_Parameters.fSpecificHeatCapacityGas));
 
-                    elseif iIncremetsPerpendicular ~= 1 && iIncrementsParallel == 1
+                    elseif iCoolantIncrement ~= 1 && iAirIncrement == 1
                         % Fluid film of previous cell, that is entering current cell [kg/s]
                         tCHX_Parameters.fMassFlowFilm = 0;
                         % Temperature of incoming gas flow in [K]
                         tCHX_Parameters.fTemperatureGas            = Fluid_1.fEntry_Temperature;
 
                         if iLayer == 1
-                            fInlet_fTemperatureCoolant_up    	= mOutlet_Temp_2(iIncrementsParallel,iIncremetsPerpendicular-1,iBaffle,iLayer);
-                            fInlet_fTemperatureCoolant_down   	= mOutlet_Temp_2(iIncrementsParallel,iIncremetsPerpendicular-1,iBaffle,iLayer);
+                            fInlet_fTemperatureCoolant_up    	= mOutlet_Temp_2(iAirIncrement,iCoolantIncrement-1,iBaffle,iLayer);
+                            fInlet_fTemperatureCoolant_down   	= mOutlet_Temp_2(iAirIncrement,iCoolantIncrement-1,iBaffle,iLayer);
                         else
-                            fInlet_fTemperatureCoolant_up      	= mOutlet_Temp_2(iIncrementsParallel,iIncremetsPerpendicular-1,iBaffle,iLayer);			% Temp of cooling fluid [K]
-                            fInlet_fTemperatureCoolant_down    	= mOutlet_Temp_2(iIncrementsParallel,iIncremetsPerpendicular-1,iBaffle,iLayer-1);
+                            fInlet_fTemperatureCoolant_up      	= mOutlet_Temp_2(iAirIncrement,iCoolantIncrement-1,iBaffle,iLayer);			% Temp of cooling fluid [K]
+                            fInlet_fTemperatureCoolant_down    	= mOutlet_Temp_2(iAirIncrement,iCoolantIncrement-1,iBaffle,iLayer-1);
                         end
                         % Molar fraction of the (condensing) vapor in the
                         % overall gas flow
-                        tCHX_Parameters.fMolarFractionVapor     = (fInitialWaterFlow/ oMT.afMolarMass(oMT.tiN2I.H2O)) / (tCHX_Parameters.fMassFlowGas / Fluid_1.oFlow.fMolarMass);
+                        tCHX_Parameters.fMolarFractionVapor     = (fInitialWaterFlowPerCell/ oMT.afMolarMass(oMT.tiN2I.H2O)) / (tCHX_Parameters.fMassFlowGas / Fluid_1.oFlow.fMolarMass);
                         tCHX_Parameters.arPartialMassesGas      = Fluid_1.oFlow.arPartialMass;                          
 
                         % Debug option
-                        mMoleFracVapor(iIncrementsParallel,iIncremetsPerpendicular) = tCHX_Parameters.fMolarFractionVapor;
+                        mMoleFracVapor(iAirIncrement,iCoolantIncrement) = tCHX_Parameters.fMolarFractionVapor;
                         % Temperature of incoming cooling fluid in [K]
                         tCHX_Parameters.fTemperatureCoolant = fInlet_fTemperatureCoolant_up;
                         [tOutputs]              = calculateLocalHeatFlow(oCHX, tCHX_Parameters);
@@ -383,42 +388,39 @@ else
                         fHeatFlowCondensateDown = tOutputs.fHeatFlowCondensate;
                         fHeatFlowGasDown        = tOutputs.fGasHeatFlow;
 
-                        mHeatFlow(iIncrementsParallel,iIncremetsPerpendicular,iBaffle,iLayer) = fHeatFlowUp+fHeatFlowDown;
+                        mHeatFlow(iAirIncrement,iCoolantIncrement,iBaffle,iLayer) = fHeatFlowUp+fHeatFlowDown;
                         fHeatFlowGas = fHeatFlowGasUp+fHeatFlowGasDown;
 
-                        mCondensateFlowRate(iIncrementsParallel,iIncremetsPerpendicular,iBaffle,iLayer) = fCondensatFlowRateUp+fCondensatFlowRateDown;
-                        mCondensateHeatFlow(iIncrementsParallel,iIncremetsPerpendicular,iBaffle,iLayer) = fHeatFlowCondensateUp + fHeatFlowCondensateDown;
+                        mCondensateFlowRate(iAirIncrement,iCoolantIncrement,iBaffle,iLayer) = fCondensatFlowRateUp+fCondensatFlowRateDown;
+                        mCondensateHeatFlow(iAirIncrement,iCoolantIncrement,iBaffle,iLayer) = fHeatFlowCondensateUp + fHeatFlowCondensateDown;
 
-                        mOutlet_Temp_1(iIncrementsParallel,iIncremetsPerpendicular,iBaffle,iLayer) = Fluid_1.fEntry_Temperature - (fHeatFlowGas / (tCHX_Parameters.fSpecificHeatCapacityGas * tOutputs.fMassFlowGas));
-                        mOutlet_Temp_2(iIncrementsParallel,iIncremetsPerpendicular,iBaffle,iLayer) = mOutlet_Temp_2(iIncrementsParallel,iIncremetsPerpendicular-1,iBaffle,iLayer) + (fHeatFlowUp / (tCHX_Parameters.fMassFlowCoolant * tCHX_Parameters.fSpecificHeatCapacityGas));
+                        mOutlet_Temp_1(iAirIncrement,iCoolantIncrement,iBaffle,iLayer) = Fluid_1.fEntry_Temperature - (fHeatFlowGas / (tCHX_Parameters.fSpecificHeatCapacityGas * tOutputs.fMassFlowGas));
+                        mOutlet_Temp_2(iAirIncrement,iCoolantIncrement,iBaffle,iLayer) = mOutlet_Temp_2(iAirIncrement,iCoolantIncrement-1,iBaffle,iLayer) + (fHeatFlowUp / (tCHX_Parameters.fMassFlowCoolant * tCHX_Parameters.fSpecificHeatCapacityGas));
 
                         % new calulation of the water temperatues in the
                         % lower layer
                         if iLayer > 1
-                            mOutlet_Temp_2(iIncrementsParallel,iIncremetsPerpendicular,iBaffle,iLayer-1) = mOutlet_Temp_2(iIncrementsParallel,iIncremetsPerpendicular-1,iBaffle,iLayer-1) + (fHeatFlowDown / (tCHX_Parameters.fMassFlowCoolant * tCHX_Parameters.fSpecificHeatCapacityGas));
+                            mOutlet_Temp_2(iAirIncrement,iCoolantIncrement,iBaffle,iLayer-1) = mOutlet_Temp_2(iAirIncrement,iCoolantIncrement-1,iBaffle,iLayer-1) + (fHeatFlowDown / (tCHX_Parameters.fMassFlowCoolant * tCHX_Parameters.fSpecificHeatCapacityGas));
                         end
 
                     else
 
-                        fCurrentWaterFlow               = fInitialWaterFlow - sum(mCondensateFlowRate(1:iIncrementsParallel,iIncremetsPerpendicular,iBaffle,iLayer));
-                        tCHX_Parameters.fMassFlowFilm   = fInitialWaterFlow - fCurrentWaterFlow;					% Fluid film of previous cell, that is entering current cell [kg/s]
-                        tCHX_Parameters.fTemperatureGas	= mOutlet_Temp_1(iIncrementsParallel-1,iIncremetsPerpendicular,iBaffle,iLayer);			% Temp of incoming gasflow [K]
+                        fCurrentWaterFlow               = fInitialWaterFlowPerCell - sum(sum(mCondensateFlowRate(iAirIncrement,:,1:iBaffle,iLayer)));
+                        tCHX_Parameters.fMassFlowFilm   = fInitialWaterFlowPerCell - fCurrentWaterFlow;					% Fluid film of previous cell, that is entering current cell [kg/s]
+                        tCHX_Parameters.fTemperatureGas	= mOutlet_Temp_1(iAirIncrement-1,iCoolantIncrement,iBaffle,iLayer);			% Temp of incoming gasflow [K]
                         if iLayer == 1
-                            fInlet_fTemperatureCoolant_up     = mOutlet_Temp_2(iIncrementsParallel,iIncremetsPerpendicular-1,iBaffle,iLayer);			% Temp of cooling fluid [K]
-                            fInlet_fTemperatureCoolant_down   = mOutlet_Temp_2(iIncrementsParallel,iIncremetsPerpendicular-1,iBaffle,iLayer);
+                            fInlet_fTemperatureCoolant_up     = mOutlet_Temp_2(iAirIncrement,iCoolantIncrement-1,iBaffle,iLayer);			% Temp of cooling fluid [K]
+                            fInlet_fTemperatureCoolant_down   = mOutlet_Temp_2(iAirIncrement,iCoolantIncrement-1,iBaffle,iLayer);
                         else
-                            fInlet_fTemperatureCoolant_up     = mOutlet_Temp_2(iIncrementsParallel,iIncremetsPerpendicular-1,iBaffle,iLayer);
-                            fInlet_fTemperatureCoolant_down   = mOutlet_Temp_2(iIncrementsParallel,iIncremetsPerpendicular-1,iBaffle,iLayer-1);
+                            fInlet_fTemperatureCoolant_up     = mOutlet_Temp_2(iAirIncrement,iCoolantIncrement-1,iBaffle,iLayer);
+                            fInlet_fTemperatureCoolant_down   = mOutlet_Temp_2(iAirIncrement,iCoolantIncrement-1,iBaffle,iLayer-1);
                         end
                         tCHX_Parameters.fMolarFractionVapor = (fCurrentWaterFlow/ oMT.afMolarMass(oMT.tiN2I.H2O)) / (tCHX_Parameters.fMassFlowGas / Fluid_1.oFlow.fMolarMass); % mol/s mol/s
 
                         % Debug option
-                        mMoleFracVapor(iIncrementsParallel,iIncremetsPerpendicular) = tCHX_Parameters.fMolarFractionVapor;
-
-                        tCHX_Parameters.arPartialMassesGas = Fluid_1.oFlow.arPartialMass;
-                        % TO DO: write better calculation where
-                        % sum(this.arPartialMassesGas) == 1
-                        tCHX_Parameters.arPartialMassesGas(oMT.tiN2I.H2O) = (fCurrentWaterFlow/fInitialWaterFlow) * tCHX_Parameters.arPartialMassesGas(oMT.tiN2I.H2O);
+                        mMoleFracVapor(iAirIncrement,iCoolantIncrement) = tCHX_Parameters.fMolarFractionVapor;
+                        
+                        tCHX_Parameters.arPartialMassesGas(oMT.tiN2I.H2O) = (fCurrentWaterFlow/fInitialWaterFlowPerCell) * Fluid_1.oFlow.arPartialMass(oMT.tiN2I.H2O);
 
                         tCHX_Parameters.fTemperatureCoolant = fInlet_fTemperatureCoolant_up;
 
@@ -440,17 +442,22 @@ else
                         fHeatFlowCondensateDown = tOutputs.fHeatFlowCondensate;
                         fHeatFlowGasDown        = tOutputs.fGasHeatFlow;
 
-                        mHeatFlow(iIncrementsParallel,iIncremetsPerpendicular,iBaffle,iLayer) = fHeatFlowUp+fHeatFlowDown;
+                        mHeatFlow(iAirIncrement,iCoolantIncrement,iBaffle,iLayer) = fHeatFlowUp+fHeatFlowDown;
                         fHeatFlowGas = fHeatFlowGasUp+fHeatFlowGasDown;
 
-                        mCondensateFlowRate(iIncrementsParallel,iIncremetsPerpendicular,iBaffle,iLayer) = fCondensatFlowRateUp+fCondensatFlowRateDown;
-                        mCondensateHeatFlow(iIncrementsParallel,iIncremetsPerpendicular,iBaffle,iLayer) = fHeatFlowCondensateUp + fHeatFlowCondensateDown;
+                        mCondensateFlowRate(iAirIncrement,iCoolantIncrement,iBaffle,iLayer) = fCondensatFlowRateUp+fCondensatFlowRateDown;
+                        mCondensateHeatFlow(iAirIncrement,iCoolantIncrement,iBaffle,iLayer) = fHeatFlowCondensateUp + fHeatFlowCondensateDown;
 
-                        mOutlet_Temp_1(iIncrementsParallel,iIncremetsPerpendicular,iBaffle,iLayer) = mOutlet_Temp_1(iIncrementsParallel-1,iIncremetsPerpendicular,iBaffle,iLayer) - (fHeatFlowGas / (tCHX_Parameters.fSpecificHeatCapacityGas * tOutputs.fMassFlowGas));
-                        mOutlet_Temp_2(iIncrementsParallel,iIncremetsPerpendicular,iBaffle,iLayer) = mOutlet_Temp_2(iIncrementsParallel,iIncremetsPerpendicular-1,iBaffle,iLayer) + (fHeatFlowUp / (tCHX_Parameters.fMassFlowCoolant * tCHX_Parameters.fSpecificHeatCapacityCoolant));
+                        mOutlet_Temp_1(iAirIncrement,iCoolantIncrement,iBaffle,iLayer) = mOutlet_Temp_1(iAirIncrement-1,iCoolantIncrement,iBaffle,iLayer) - (fHeatFlowGas / (tCHX_Parameters.fSpecificHeatCapacityGas * tOutputs.fMassFlowGas));
+                        mOutlet_Temp_2(iAirIncrement,iCoolantIncrement,iBaffle,iLayer) = mOutlet_Temp_2(iAirIncrement,iCoolantIncrement-1,iBaffle,iLayer) + (fHeatFlowUp / (tCHX_Parameters.fMassFlowCoolant * tCHX_Parameters.fSpecificHeatCapacityCoolant));
 
+                        if isnan(mOutlet_Temp_1(iAirIncrement,iCoolantIncrement,iBaffle,iLayer)) || mOutlet_Temp_1(iAirIncrement,iCoolantIncrement,iBaffle,iLayer) < 273
+                            
+                            keyboard()
+                        end
+                        
                         if iLayer > 1
-                            mOutlet_Temp_2(iIncrementsParallel,iIncremetsPerpendicular,iBaffle,iLayer-1) = mOutlet_Temp_2(iIncrementsParallel,iIncremetsPerpendicular-1,iBaffle,iLayer-1) + (fHeatFlowDown / (tCHX_Parameters.fMassFlowCoolant * tCHX_Parameters.fSpecificHeatCapacityGas));
+                            mOutlet_Temp_2(iAirIncrement,iCoolantIncrement,iBaffle,iLayer-1) = mOutlet_Temp_2(iAirIncrement,iCoolantIncrement-1,iBaffle,iLayer-1) + (fHeatFlowDown / (tCHX_Parameters.fMassFlowCoolant * tCHX_Parameters.fSpecificHeatCapacityGas));
                         end
 
                     end
@@ -463,8 +470,8 @@ else
             tFinOutput.fOverhangAir   = 0;
 
 
-            % temperateus calcualtion for the mix zone. First step is to
-            % average the outlet temperatues of the channels in the cross
+            % temperature calculation for the mix zone. First step is to
+            % average the outlet temperatures of the channels in the cross
             % flow section
             fMix_Temp_1 = sum(mOutlet_Temp_1(end,:,iBaffle,iLayer))/size(mOutlet_Temp_1,2);
             fMix_Temp_2 = sum(mOutlet_Temp_2(:,end,iBaffle,iLayer))/size(mOutlet_Temp_2,2);
@@ -484,15 +491,15 @@ else
 
             % recalculation of the initial waterflow as the sluber bars
             % remove the condensate in the mix zone
-            fInitialWaterFlow = fInitialWaterFlow - (sum(sum(mCondensateFlowRate(:,:,iBaffle,iLayer)))/(iIncrements_Parallel));
-            if fInitialWaterFlow < 0
-                fInitialWaterFlow = 0;
+            fInitialWaterFlowPerCell = fInitialWaterFlowPerCell - (sum(sum(mCondensateFlowRate(:,:,iBaffle,iLayer)))/(iIncrementsAir));
+            if fInitialWaterFlowPerCell < 0
+                fInitialWaterFlowPerCell = 0;
             end
 
         end
 
         % reset inlet variables of the loop for the next layer
-        fInitialWaterFlow = fInitialWaterFlowGlobal;
+        fInitialWaterFlowPerCell = fInitialWaterFlowGlobal;
         Fluid_1.fEntry_Temperature = fEntry_Global1;
         Fluid_2.fEntry_Temperature = fEntry_Global2;
 
@@ -500,8 +507,8 @@ else
     %% put keyboard or breakpoint here if you want internal values of the CHX
     %  mesh(mOutlet_Temp_1); hold on; mesh(mOutlet_Temp_2);
     %keyboard() calculates the outlet temperatures by averaging the results
-    fOutlet_Temp_1 = sum(sum(mOutlet_Temp_1(end,:,tCHX_Parameters.iBaffles+1,:)))/(iIncrements_Perpendicular*tCHX_Parameters.iLayers);
-    fOutlet_Temp_2 = sum(sum(mOutlet_Temp_2(:,end,tCHX_Parameters.iBaffles+1,:)))/(iIncrements_Parallel*tCHX_Parameters.iLayers);
+    fOutlet_Temp_1 = sum(sum(mOutlet_Temp_1(end,:,tCHX_Parameters.iBaffles+1,:)))/(iIncrementsCoolant*tCHX_Parameters.iLayers);
+    fOutlet_Temp_2 = sum(sum(mOutlet_Temp_2(:,end,tCHX_Parameters.iBaffles+1,:)))/(iIncrementsAir*tCHX_Parameters.iLayers);
 end
 
 oCHX.fTotalCondensateHeatFlow = sum(sum(sum(sum(mCondensateHeatFlow))));

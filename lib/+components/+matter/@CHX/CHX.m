@@ -90,8 +90,8 @@ classdef CHX < vsys
         % Outlet temperatures of the heat exchangers. These two variables
         % don't directly serve any purpose but can be used to plot the
         % outlet temperature directly behind the heat exchanger
-        fTempOut_Fluid1 = 0;
-        fTempOut_Fluid2 = 0;
+        fTempOut_Fluid1 = 293;
+        fTempOut_Fluid2 = 293;
         
         % Old Values for the previous iteration which are used to check if
         % anything should be recalculated

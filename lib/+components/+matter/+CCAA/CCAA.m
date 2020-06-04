@@ -18,8 +18,7 @@ classdef CCAA < vsys
         % values for the TCCV angle and coolant/gas flows as implemented
         tFixValues;
         bUseFixValues;
-    end
-    properties
+        
         bKickValveAktivated = 0;            % Variable used to execute the kick valve
         fKickValveAktivatedTime = 0;        % Variable used to execute the kick valve
         
@@ -160,20 +159,11 @@ classdef CCAA < vsys
             createMatterStructure@vsys(this);
             
             
-            % Standard pressure used for the phase definition of water
-            % phases
-            fPressure = 101325;
-            % Mass percent of CO2 in the air, used to initialize the phases
-            fCO2Percent = 0.0062;
-            
             %% Creating the stores
             % Creating the TCCV (Temperatue Check and Control Valve)
-            % The 1 m³ volume is too large for the actual system but V-HAB
-            % has trouble correctly calculating small volumes
-            matter.store(this, 'TCCV', 1); 
+            matter.store(this, 'TCCV', 1e-6); 
             % Uses the custom air helper to set the air phase
-            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.TCCV, this.toStores.TCCV.fVolume, struct('CO2', fCO2Percent), this.tAtmosphere.fTemperature, this.tAtmosphere.fRelHumidity, this.tAtmosphere.fPressure);
-            oAir = matter.phases.flow.gas(this.toStores.TCCV, 'TCCV_PhaseGas', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
+            oAir	= this.toStores.TCCV.createPhase( 'gas', 'flow', 'TCCV_PhaseGas', this.toStores.TCCV.fVolume, struct('N2', 0.7896 * this.tAtmosphere.fPressure, 'O2', 0.21 * this.tAtmosphere.fPressure, 'CO2',  0.0004 * this.tAtmosphere.fPressure),	this.tAtmosphere.fTemperature,	this.tAtmosphere.rRelHumidity);
             
             matter.procs.exmes.gas(oAir, 'Port_In');
             matter.procs.exmes.gas(oAir, 'Port_Out_1');
@@ -186,14 +176,12 @@ classdef CCAA < vsys
             %
             % The 2 m³ volume is too large for the actual system but V-HAB
             % has trouble correctly calculating small volumes
-            matter.store(this, 'CHX', 2);
+            matter.store(this, 'CHX', 0.11);
             % Input phase
-            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.CHX, 1, struct('CO2', fCO2Percent), this.fCoolantTemperature, 0, this.tAtmosphere.fPressure);
-            oInput = matter.phases.flow.gas(this.toStores.CHX, 'CHX_PhaseIn',  cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
+            oInput	= this.toStores.CHX.createPhase( 'gas', 'flow', 'CHX_PhaseIn', 1e-6, struct('N2', 0.7896 * this.tAtmosphere.fPressure, 'O2', 0.21 * this.tAtmosphere.fPressure, 'CO2',  0.0004 * this.tAtmosphere.fPressure),	this.tAtmosphere.fTemperature,	this.tAtmosphere.rRelHumidity);
             
             % H2O phase
-            cWaterHelper = matter.helper.phase.create.water(this.toStores.CHX, 1, this.fCoolantTemperature, fPressure);
-            oH2O = matter.phases.liquid(this.toStores.CHX, 'CHX_H2OPhase', cWaterHelper{1}, cWaterHelper{2}, cWaterHelper{3});
+            oH2O            = this.toStores.CHX.createPhase('liquid',  'CHX_H2OPhase',       0.1,      struct('H2O', 1), this.fCoolantTemperature, this.tAtmosphere.fPressure);
             this.fInitialCHXWaterMass = oH2O.fMass;
             % Creating the ports
             matter.procs.exmes.gas(oInput, 'Flow_In');
@@ -206,34 +194,42 @@ classdef CCAA < vsys
             matter.procs.exmes.liquid(oH2O, 'filterport_Liquid');
             matter.procs.exmes.liquid(oH2O, 'Flow_Out_Liquid');
             
+            matter.store(this, 'Mixing', 1e-6);
+            % Input phase
+            oMixing	= this.toStores.Mixing.createPhase( 'gas', 'flow', 'MixedGas', 1e-6, struct('N2', 0.7896 * this.tAtmosphere.fPressure, 'O2', 0.21 * this.tAtmosphere.fPressure, 'CO2',  0.0004 * this.tAtmosphere.fPressure),	this.tAtmosphere.fTemperature,	this.tAtmosphere.rRelHumidity);
+            
+            matter.procs.exmes.gas(oMixing, 'Bypass_In');
+            matter.procs.exmes.gas(oMixing, 'CHX_Air_In');
+            matter.procs.exmes.gas(oMixing, 'CCAA_Out');
+            
             % Creating the CHX
             % Some configurating variables
             sHX_type = 'plate_fin';       % Heat exchanger type
             % broadness of the heat exchange area in m
-            tGeometry.fBroadness        = 0.1;  
+            tGeometry.fBroadness        = 0.35;  
             % Height of the channel for fluid 1 in m
-            tGeometry.fHeight_1         = 0.003;
+            tGeometry.fHeight_1         = 0.004;
             % Height of the channel for fluid 2 in m
-            tGeometry.fHeight_2         = 0.003;
+            tGeometry.fHeight_2         = 0.004;
             % length of the heat exchanger in m
-            tGeometry.fLength           = 0.1;
+            tGeometry.fLength           = 0.5;
             % thickness of the plate in m
-            tGeometry.fThickness        = 0.004;
+            tGeometry.fThickness        = 0.005;
             % number of layers stacked
             tGeometry.iLayers           = 33;
             % number of baffles (evenly distributed)
             tGeometry.iBaffles          = 3;
             % broadness of a fin of the first canal (air)
-            tGeometry.fFinBroadness_1	= 1/18;
+            tGeometry.fFinBroadness_1	= tGeometry.fBroadness/18;
             % broadness of a fin of the second canal (coolant)
-            tGeometry.fFinBroadness_2	= 1/18; 
+            tGeometry.fFinBroadness_2	= tGeometry.fBroadness/18; 
             %  Thickness of the Fins (for now both fins have the same thickness
             tGeometry.fFinThickness     = 0.001;
-            % Conductivity of the Heat exchanger solid material
-            Conductivity = 15;
+            % Conductivity of the Heat exchanger solid material (W/m K)
+            Conductivity = 205;
             % Number of incremental heat exchangers used in the calculation
             % of the CHX
-            iIncrements = 3;
+            iIncrements = 4;
             % Defines when the CHX should be recalculated: 
             fTempChangeToRecalc = 0.05;        % If any inlet temperature changes by more than 1 K
             fPercentChangeToRecalc = 0.05;  % If any inlet flowrate or composition changes by more than 0.25%
@@ -249,7 +245,7 @@ classdef CCAA < vsys
             % Store that contains the coolant passing through the CHX. This
             % store is only necessary because it is not possible to have
             % System Interfaces without a store in between.
-            matter.store(this, 'CoolantStore', 0.03);
+            matter.store(this, 'CoolantStore', 1e-6);
             % H2O phase
             % Temperature is from ICES-2015-27: Low temperature loop in US lab 
             % has a temperature between 4.4°c and 9.4°C. But also a document from
@@ -257,8 +253,7 @@ classdef CCAA < vsys
             % From Active Thermal Control System (ATCS) Overview:
             % http://www.nasa.gov/pdf/473486main_iss_atcs_overview.pdf
             
-            cWaterHelper = matter.helper.phase.create.water(this.toStores.CoolantStore, 0.02, this.fCoolantTemperature, fPressure);
-            oH2O = matter.phases.liquid(this.toStores.CoolantStore, 'CoolantPhase', cWaterHelper{1}, cWaterHelper{2}, cWaterHelper{3});
+            oH2O            = this.toStores.CoolantStore.createPhase('liquid', 'flow',  'CHX_H2OPhase',       this.toStores.CoolantStore.fVolume,      struct('H2O', 1), this.fCoolantTemperature, this.tAtmosphere.fPressure);
             matter.procs.exmes.liquid(oH2O, 'Flow_In_Coolant');
             matter.procs.exmes.liquid(oH2O, 'Flow_Out_Coolant');
             
@@ -268,14 +263,18 @@ classdef CCAA < vsys
             
             components.matter.pipe(this, 'Pipe_TCCV', 1, 0.1, 2e-3);
             components.matter.pipe(this, 'Pipe_CHX', 1, 0.1, 2e-3);
+            components.matter.pipe(this, 'Pipe_Out', 1, 0.1, 2e-3);
+            components.matter.pipe(this, 'Pipe_Coolant_Out', 1, 0.1, 2e-3);
             
-            matter.branch(this, 'TCCV.Port_In',                     {},             'CCAA_In',                  'CCAA_In_FromCabin');	% Creating the flowpath into this subsystem
-            matter.branch(this, 'TCCV.Port_Out_1',                  {'CCAA_CHX_1'}, 'CHX.Flow_In',              'TCCV_CHX');
-            matter.branch(this, 'CHX.Flow_Out_Gas',                 {'Pipe_CHX'},   'CCAA_CHX_Air_Out',         'CHX_Cabin');
-            matter.branch(this, 'TCCV.Port_Out_2',                  {'Pipe_TCCV'},  'CCAA_TCCV_Air_Out',       	'TCCV_Cabin');
-            matter.branch(this, 'CHX.Flow_Out_Liquid',              {},             'CCAA_CHX_Condensate_Out',  'Condensate_Out');      % Creating the water flowpath out of this subsystem
-            matter.branch(this, 'CoolantStore.Flow_In_Coolant',     {},             'CCAA_CoolantIn',           'Coolant_In');
-            matter.branch(this, 'CoolantStore.Flow_Out_Coolant',    {'CCAA_CHX_2'}, 'CCAA_CoolantOut',          'Coolant_Out');
+            matter.branch(this, 'TCCV.Port_In',                     {},                     'CCAA_In',                  'CCAA_In_FromCabin');	% Creating the flowpath into this subsystem
+            matter.branch(this, 'TCCV.Port_Out_1',                  {'CCAA_CHX_1'},         'CHX.Flow_In',              'TCCV_CHX');
+            matter.branch(this, 'CHX.Flow_Out_Gas',                 {'Pipe_CHX'},           'Mixing.CHX_Air_In',        'CHX_Cabin');
+            matter.branch(this, 'TCCV.Port_Out_2',                  {'Pipe_TCCV'},          'Mixing.Bypass_In',       	'TCCV_Cabin');
+            matter.branch(this, 'Mixing.CCAA_Out',                  {'Pipe_Out'},           'CCAA_Air_Out',              'CCAA_Air_Out');
+            matter.branch(this, 'CHX.Flow_Out_Liquid',              {},                     'CCAA_CHX_Condensate_Out',  'Condensate_Out');      % Creating the water flowpath out of this subsystem
+            matter.branch(this, 'CoolantStore.Flow_In_Coolant',     {'CCAA_CHX_2'},         'CCAA_CoolantIn',           'Coolant_In');
+            matter.branch(this, 'CoolantStore.Flow_Out_Coolant',    {'Pipe_Coolant_Out'},  	'CCAA_CoolantOut',          'Coolant_Out');
+            
             
             % These branches are only necessary if a CDRA is connected to
             % the CCAA
@@ -300,9 +299,8 @@ classdef CCAA < vsys
             solver.matter.manual.branch(this.toBranches.TCCV_Cabin);
             solver.matter.manual.branch(this.toBranches.Condensate_Out);
             solver.matter.manual.branch(this.toBranches.Coolant_In);
-            solver.matter.manual.branch(this.toBranches.Coolant_Out);
             
-            aoMultiSolverBranches = [this.toBranches.TCCV_CHX, this.toBranches.CHX_Cabin];
+            aoMultiSolverBranches = [this.toBranches.TCCV_CHX, this.toBranches.CHX_Cabin, this.toBranches.CCAA_Air_Out, this.toBranches.Coolant_Out];
             solver.matter_multibranch.iterative.branch(aoMultiSolverBranches, 'complex');
             
             if ~isempty(this.sCDRA)
@@ -320,11 +318,12 @@ classdef CCAA < vsys
                 this.fTCCV_Angle = this.tFixValues.fTCCV_Angle;
                 fFlowPercentageCHX = this.Interpolation(this.fTCCV_Angle);
                 
+                this.toBranches.CCAA_In_FromCabin.oHandler.setVolumetricFlowRate(-this.tFixValues.fVolumetricAirFlowRate);
+                
                 fTCCV_To_Cabin_FlowRate = (1 - fFlowPercentageCHX) * this.tFixValues.fVolumetricAirFlowRate; 
                 this.toBranches.TCCV_Cabin.oHandler.setVolumetricFlowRate(fTCCV_To_Cabin_FlowRate);
                 
-                this.toBranches.Coolant_In.oHandler.setVolumetricFlowRate(-this.tFixValues.fVolumetricCoolantFlowRate);
-                this.toBranches.Coolant_Out.oHandler.setVolumetricFlowRate(this.tFixValues.fVolumetricCoolantFlowRate);
+                this.toBranches.Coolant_In.oHandler.setFlowRate(-this.tFixValues.fCoolantFlowRate);
                 
             else
                 fInFlow = this.fVolumetricFlowRate*this.oAtmosphere.fDensity;
@@ -363,7 +362,6 @@ classdef CCAA < vsys
                     %performance data is given for 600 lb/hr so this flow rate is
                     %assumed here for the coolant
                     this.toBranches.Coolant_In.oHandler.setFlowRate(-0.0755987283); %600 lb/hr
-                    this.toBranches.Coolant_Out.oHandler.setFlowRate(0.0755987283); %600 lb/hr
                 end
             end
             
@@ -390,19 +388,18 @@ classdef CCAA < vsys
         end           
         
             %% Function to connect the system and subsystem level branches with each other
-        function setIfFlows(this, sInterface1, sInterface2, sInterface3, sInterface4, sInterface5, sInterface6, sInterface7)
-            this.connectIF('CCAA_In' , sInterface1);
-            this.connectIF('CCAA_CHX_Air_Out' , sInterface2);
-            this.connectIF('CCAA_TCCV_Air_Out' , sInterface3);
-            this.connectIF('CCAA_CHX_Condensate_Out' , sInterface4);
-            this.connectIF('CCAA_CoolantIn' , sInterface5);
-            this.connectIF('CCAA_CoolantOut' , sInterface6);
+        function setIfFlows(this, sAirIn, sAirOut, sCondensateOut, sCoolantIn, sCoolantOut, sCDRA_IF)
+            this.connectIF('CCAA_In' ,                  sAirIn);
+            this.connectIF('CCAA_Air_Out' ,             sAirOut);
+            this.connectIF('CCAA_CHX_Condensate_Out' ,  sCondensateOut);
+            this.connectIF('CCAA_CoolantIn' ,           sCoolantIn);
+            this.connectIF('CCAA_CoolantOut' ,          sCoolantOut);
             this.oAtmosphere = this.toBranches.CCAA_In_FromCabin.coExmes{2}.oPhase;
             
-            if nargin == 8
+            if nargin >= 7
                 % Case of a CDRA connected to the CCAA
-                this.connectIF('CCAA_CHX_to_CDRA_Out' , sInterface7);
-            elseif nargin < 7 || nargin > 8
+                this.connectIF('CCAA_CHX_to_CDRA_Out' , sCDRA_IF);
+            elseif nargin < 6 || nargin > 7
                 error('CCAA Subsystem was given the wrong number of interfaces')
             end
             
@@ -412,7 +409,7 @@ classdef CCAA < vsys
             % tFixValues can have the following fields:
             % fTCCV_Angle
             % fVolumetricAirFlowRate
-            % fVolumetricCoolantFlowRate
+            % fCoolantFlowRate
             this.tFixValues = tFixValues;
             this.bUseFixValues = true;
         end
@@ -471,7 +468,6 @@ classdef CCAA < vsys
                 this.toBranches.CCAA_In_FromCabin.oHandler.setFlowRate(0);
                 this.toBranches.TCCV_Cabin.oHandler.setFlowRate(0);
                 this.toBranches.Coolant_In.oHandler.setFlowRate(0); 
-                this.toBranches.Coolant_Out.oHandler.setFlowRate(0);
                 
                 return
             end
