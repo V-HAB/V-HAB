@@ -17,7 +17,7 @@ classdef CHX < vsys
 % possible inputs as strings are currently:
 %           'plate_fin'
 %
-%% iIncrements:
+%% miIncrements:
 % which decides into how many subsections the heat exchanger will be split
 % in order to calculate the condensation. The more subsection are used the
 % more accurate the model gets but the computation time will increase
@@ -25,6 +25,8 @@ classdef CHX < vsys
 % as this number. (especially for cross flow heat exchangers with mutliple
 % pipe rows because the number of increments is multiplied with the number
 % of pipe rows)
+% For some CHX both fluids can be discretized seperatly, therefore a vector
+% is used to discretize both directions differently!
 %
 %% tCHX_Parameters
 % The struct tCHX_Parameters contains the information about the geometry of
@@ -122,7 +124,8 @@ classdef CHX < vsys
         afCondensateMassFlow;
         
         % number of incremental heat exchangers that have to be calculated
-        iIncrements = 1;
+        % for fluid 1 and fluid 2
+        miIncrements = [1, 1];
         
         % Last execution time of the CHX
         fLastExecution = 0; 
@@ -146,10 +149,16 @@ classdef CHX < vsys
         % pressure, etc.) has to change in percent before the CHX is
         % recalculated
         fPercentChangeToRecalc = 0.05;
+        
+        % This is a struct the different types of CHX can use to store
+        % variables that are required persistently
+        txCHX_Parameters;
+        
+        hBindPostTickUpdate;
     end
     
     methods
-        function this = CHX(oParent, sName, tCHX_Parameters, sCHX_type, iIncrements, fThermalConductivityHeatExchangerMaterial, fTempChangeToRecalc, fPercentChangeToRecalc)
+        function this = CHX(oParent, sName, tCHX_Parameters, sCHX_type, miIncrements, fThermalConductivityHeatExchangerMaterial, fTempChangeToRecalc, fPercentChangeToRecalc)
             this@vsys(oParent, sName, 60);
             
             %if a thermal conductivity for the heat exchanger is provided
@@ -160,7 +169,7 @@ classdef CHX < vsys
           
             this.tCHX_Parameters = tCHX_Parameters;
             this.sCHX_type = sCHX_type;      
-            this.iIncrements = iIncrements;
+            this.miIncrements = miIncrements;
             
             if nargin > 6
                 this.fTempChangeToRecalc = fTempChangeToRecalc;
@@ -204,6 +213,7 @@ classdef CHX < vsys
             this.oF2F_1 = components.matter.HX.hx_flow(this, this.oParent, [sName,'_1']);
             this.oF2F_2 = components.matter.HX.hx_flow(this, this.oParent, [sName,'_2']);
             
+            this.hBindPostTickUpdate = this.oTimer.registerPostTick(@this.update, 'thermal' , 'pre_solver');
         end
         
         function createMatterStructure(this)
@@ -268,8 +278,8 @@ classdef CHX < vsys
                 (abs(1-(fMassFlow_2/this.fMassFlow_Old_2)) > this.fPercentChangeToRecalc)||...                      %if mass flow changes by more than X%
                 (max(abs(1-(oFlows_1.arPartialMass./this.arPartialMass1Old))) > this.fPercentChangeToRecalc)||...  	%if composition of mass flow changed by more than X%
                 (max(abs(1-(oFlows_2.arPartialMass./this.arPartialMass2Old))) > this.fPercentChangeToRecalc)||...   %if composition of mass flow changed by more than X%
-                (abs(1-(oFlows_1.fPressure/this.fOldPressureFlow1)) > this.fPercentChangeToRecalc)||...             %if Pressure changed by more than X%
-                (abs(1-(oFlows_2.fPressure/this.fOldPressureFlow2)) > this.fPercentChangeToRecalc)                  %if Pressure changed by more than X%
+                (abs(1-(oFlows_1.fPressure/this.fOldPressureFlow1)) > 3*this.fPercentChangeToRecalc)||...             %if Pressure changed by more than X%
+                (abs(1-(oFlows_2.fPressure/this.fOldPressureFlow2)) > 3*this.fPercentChangeToRecalc)                  %if Pressure changed by more than X%
                             
                 fDensity_1 = oFlows_1.getDensity();
                 fDensity_2 = oFlows_2.getDensity();
@@ -309,7 +319,7 @@ classdef CHX < vsys
                 % as first value the this struct from object HX is given to
                 % the function HX_main
                 [fTempOut_1, fTempOut_2, fDeltaPress_1, fDeltaPress_2] =...
-                    this.(this.sCHX_type)(this.tCHX_Parameters, Fluid_1, Fluid_2, this.fThermalConductivityHeatExchangerMaterial, this.iIncrements);        
+                    this.(this.sCHX_type)(this.tCHX_Parameters, Fluid_1, Fluid_2, this.fThermalConductivityHeatExchangerMaterial, this.miIncrements);        
 
                 %sets the outlet temperatures into the respective variable
                 %inside the heat exchanger object for plotting purposes

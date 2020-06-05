@@ -206,15 +206,15 @@ classdef CCAA < vsys
             % Some configurating variables
             sHX_type = 'plate_fin';       % Heat exchanger type
             % broadness of the heat exchange area in m
-            tGeometry.fBroadness        = 0.35;  
+            tGeometry.fBroadness        = 0.75;  
             % Height of the channel for fluid 1 in m
             tGeometry.fHeight_1         = 0.004;
             % Height of the channel for fluid 2 in m
             tGeometry.fHeight_2         = 0.004;
             % length of the heat exchanger in m
-            tGeometry.fLength           = 0.5;
+            tGeometry.fLength           = 0.25;
             % thickness of the plate in m
-            tGeometry.fThickness        = 0.005;
+            tGeometry.fThickness        = 0.001;
             % number of layers stacked
             tGeometry.iLayers           = 33;
             % number of baffles (evenly distributed)
@@ -224,19 +224,19 @@ classdef CCAA < vsys
             % broadness of a fin of the second canal (coolant)
             tGeometry.fFinBroadness_2	= tGeometry.fBroadness/18; 
             %  Thickness of the Fins (for now both fins have the same thickness
-            tGeometry.fFinThickness     = 0.001;
+            tGeometry.fFinThickness     = 0.0003;
             % Conductivity of the Heat exchanger solid material (W/m K)
             Conductivity = 205;
             % Number of incremental heat exchangers used in the calculation
             % of the CHX
-            iIncrements = 4;
+            miIncrements = [4,4];
             % Defines when the CHX should be recalculated: 
-            fTempChangeToRecalc = 0.05;        % If any inlet temperature changes by more than 1 K
-            fPercentChangeToRecalc = 0.05;  % If any inlet flowrate or composition changes by more than 0.25%
+            fTempChangeToRecalc = 1;        % If any inlet temperature changes by more than 1 K
+            fPercentChangeToRecalc = 0.05;  % If any inlet flowrate or composition changes by more than 5%
             
             % defines the heat exchanged object using the previously created properties
             % (oParent, sName, mHX, sHX_type, iIncrements, fHX_TC, fTempChangeToRecalc, fPercentChangeToRecalc)
-            oCCAA_CHX = components.matter.CHX(this, 'CCAA_CHX', tGeometry, sHX_type, iIncrements, Conductivity, fTempChangeToRecalc, fPercentChangeToRecalc);
+            oCCAA_CHX = components.matter.CHX(this, 'CCAA_CHX', tGeometry, sHX_type, miIncrements, Conductivity, fTempChangeToRecalc, fPercentChangeToRecalc);
             
             % adds the P2P proc for the CHX that takes care of the actual
             % phase change
