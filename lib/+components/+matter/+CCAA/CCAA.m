@@ -358,9 +358,16 @@ classdef CCAA < vsys
 
                 if this.bActive == 1
                     %% Setting of initial flow rates
-                    %allowed coolant flow is between 600 and 1290 lb/hr but the CHX
+                    %allowed coolant flow is between 600 and 1230 lb/hr but the CHX
                     %performance data is given for 600 lb/hr so this flow rate is
-                    %assumed here for the coolant
+                    %assumed here for the coolant. See 
+                    % "Living together in space: the design and operation
+                    % of the life support systems on the International
+                    % Space Station", Wieland, Paul O., 1998, page 104
+                    % Note that the coolant flow is provided with 
+                    % 1230 lb/hr for the lab and hab and 600 lb/hr for the
+                    % Node 2 and AL
+                    
                     this.toBranches.Coolant_In.oHandler.setFlowRate(-0.0755987283); %600 lb/hr
                 end
             end
