@@ -74,8 +74,8 @@ classdef BioFilter < matter.store
             % 8 P2P objects to hold the nominal level of the matters  
             % (CH4N2O, NH3, NH4OH, HNO2, HNO3, H2O, O2, CO2) in "BioPhase"
             % which is described in the section 4.2.2.2 in the thesis.
-            components.matter.P2Ps.ManualP2P(this.oContainer, this, 'BiofilterOut',  'BioPhase.Bio_P2P_Out' , 'FlowPhase.Flow_P2P_Out');
-            components.matter.P2Ps.ManualP2P(this.oContainer, this, 'BiofilterIn',   'BioPhase.Bio_P2P_In' , 'FlowPhase.Flow_P2P_In');
+            components.matter.P2Ps.ManualP2P(this, 'BiofilterOut',  'BioPhase.Bio_P2P_Out' , 'FlowPhase.Flow_P2P_Out');
+            components.matter.P2Ps.ManualP2P(this, 'BiofilterIn',   'BioPhase.Bio_P2P_In' , 'FlowPhase.Flow_P2P_In');
             
             % TO DO: saturation of NH3 into the atmosphere must be added
             % again with a good calculation

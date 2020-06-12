@@ -28,10 +28,10 @@ classdef CROP < vsys
             % Get initial concentrations of main reactants (CH4N2O, NH3, NH4OH, HNO2, HNO3)
             sFullpath = mfilename('fullpath');
             [sFile,~,~] = fileparts(sFullpath);
-            asFile_Path = strsplit(sFile,'\');
+            asFile_Path = strsplit(sFile,filesep);
             iLen_File_Path = length(asFile_Path);
-            sPath = strjoin(asFile_Path(1,1:(iLen_File_Path-1)),'\');
-            load([sPath '\+CROP\+components\Initial_Settings.mat'], 'tfInitial_Settings');
+            sPath = strjoin(asFile_Path(1,1:(iLen_File_Path-1)), filesep);
+            load([sPath strrep('\+CROP\+components\Initial_Settings.mat','\',filesep)], 'tfInitial_Settings');
             
             % Convert the concentrations to masses for calculation since
             % the calculation in V-HAB is based on mass
