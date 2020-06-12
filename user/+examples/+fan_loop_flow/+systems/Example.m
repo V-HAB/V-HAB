@@ -35,7 +35,7 @@ classdef Example < vsys
             matter.procs.exmes.gas(oGasPhase, 'Port_2');
             
             % Adding a fan to move the gas
-            components.matter.fan(this, 'Fan', 55000, 'Left2Right');
+            components.matter.fan(this, 'Fan', 55000);
              
             % Adding a pipe to connect the tanks
             components.matter.pipe(this, 'Pipe_1', 1, 0.02);
@@ -55,6 +55,8 @@ classdef Example < vsys
             % specific solver. In this case we will use the linear
             % solver. 
             solver.matter.interval.branch(this.toBranches.Tank_1__Port_1___Tank_1__Port_2);
+            
+            this.toProcsF2F.Fan.switchOn();
             
             this.setThermalSolvers();
         end

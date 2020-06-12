@@ -17,7 +17,7 @@ classdef Two_Tanks_Definition < simulation.infrastructure
             % Creating the 'Example' system as a child of the root system
             % of this simulation. 
             
-            tutorials.compressible_liquid_solver.systems.Two_Tanks(this.oSimulationContainer, 'Two_Tanks');
+            examples.compressible_liquid_solver.systems.Two_Tanks(this.oSimulationContainer, 'Two_Tanks');
             
             % Sim time [s]
             this.fSimTime = 0.05;
