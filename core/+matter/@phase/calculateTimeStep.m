@@ -248,7 +248,7 @@ end
 % earlier tick. If we used setTimeStep(fNewStep, true) in all cases the
 % update function of a phase might never be called if massupdates are
 % always triggered before!
-if this.fLastUpdate == this.oTimer.fTime
+if this.fLastUpdate == this.oTimer.fTime || this.bFlow
     this.setTimeStep(fNewStep, true);
 else
     this.setTimeStep(fNewStep);
