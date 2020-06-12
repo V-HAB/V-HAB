@@ -383,7 +383,10 @@ classdef container < sys
                     % using the previously created fluidic conductor.
                     sLeftPort  = [oProcessor.oStore.sName, '.', oExMeIn.sName];
                     sRightPort = [oProcessor.oStore.sName, '.', oExMeOut.sName];
-                    thermal.branch(oProcessor.oStore.oContainer, sLeftPort, {sCustomName}, sRightPort, sCustomName, oProcessor);
+                    oBranch = thermal.branch(oProcessor.oStore.oContainer, sLeftPort, {sCustomName}, sRightPort, sCustomName, oProcessor);
+                    
+                    % Setting a reference to this thermal branch on the P2P 
+                    oProcessor.setThermalBranch(oBranch);
                 end
             end
             

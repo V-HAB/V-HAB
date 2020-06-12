@@ -21,8 +21,8 @@ if length(varargin) == 1
         end
         
     elseif strcmp(varargin{1}.sObjectType, 'flow')
-        sMatterState = varargin{1}.oBranch.getInEXME().oPhase.sType;
         oPhase = varargin{1}.oBranch.getInEXME().oPhase;
+        sMatterState = oPhase.sType;
         tbReference.bFlow = true;
         
         % For flows not partial masses but partial mass ratios are stored

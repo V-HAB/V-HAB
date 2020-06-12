@@ -1001,7 +1001,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             afTotalInOuts = afTotalInOuts * fLastStep;
             
             % check if a compound mass update is required:
-            if any(any(this.arInFlowCompoundMass)) || bCompoundManipulator
+            if any(this.arInFlowCompoundMass, 'all') || bCompoundManipulator
                 % Update the compound mass. We do this before we update the
                 % total mass because we must use the total mass of the phase
                 % from before, minus all the outflows but not yet plus the

@@ -202,8 +202,11 @@ classdef branch < base.branch
                 % ensures that the matter properties don't become zero if
                 % the coExmes{1} phase is empty.
                 
-                afPressure = [ this.coExmes{1}.getExMeProperties(), this.coExmes{2}.getExMeProperties() ];
-                if afPressure(1) >= afPressure(2); iWhichExme = 1; else; iWhichExme = 2; end
+                if this.coExmes{1}.oPhase.fPressure >= this.coExmes{2}.oPhase.fPressure
+                    iWhichExme = 1; 
+                else
+                    iWhichExme = 2; 
+                end
                 
                 for iI = 1:this.iFlowProcs
                     if isa(this.aoFlowProcs(iI), 'components.matter.valve') && ~this.aoFlowProcs(iI).bOpen
