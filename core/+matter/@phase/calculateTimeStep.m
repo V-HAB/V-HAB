@@ -86,7 +86,7 @@ else
         % has the unit [1/s], giving us the percentage change per second of the
         % overall mass of the phase.
         fChange = sum(afPartialFlows);
-
+        
         if fChange == 0
             rTotalPerSecond = 0;
         else
@@ -111,7 +111,7 @@ else
             % introduce big issues ...
             rTotalPerSecond = abs(fChange / this.fMass);
         end
-
+        
         %% Partial mass change compared to partial mas
         % note that rPartialsPerSecond from the calculation is the partial mass
         % change compared to the total mass, while this calculation is the
@@ -238,7 +238,6 @@ else
         end
     end
 end
-
 
 % Set the time step for this phase. If the update was also called in this
 % tick we also reset the time at which the phase was last executed thus

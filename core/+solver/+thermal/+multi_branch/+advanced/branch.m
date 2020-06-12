@@ -34,7 +34,7 @@ classdef branch < solver.thermal.multi_branch.basic.branch
 % Therefore, we can envision two possible solution approaches for a multi
 % thermal solver in a combined system. One would be the accurate solution,
 % where the whole thermal solver must be updated for ANY change in the
-% matter domain. That is basically the “basic” thermal multi branch solver.
+% matter domain. That is basically the 'basic' thermal multi branch solver.
 % It is updated in case anything in the matter domain is changed.
 % 
 % For the advanced thermal multi branch, we at first do not allow mass
@@ -125,7 +125,11 @@ classdef branch < solver.thermal.multi_branch.basic.branch
         mbNonUniqueCapacities;
         mbNonUniqueCapacitiesTransposed;
         
+        % An array of thermal capacity objects. This array only contains
+        % the unique capacities.
         aoUniqueCapacities;
+        
+        % Number of unique capacities in this solver network.
         iUniqueCapacities;
         
         % Options struct for the ode solver, see help for the ode solver
@@ -139,7 +143,9 @@ classdef branch < solver.thermal.multi_branch.basic.branch
         % time step results.
         fExecutionTimeStep;
         
+        % 
         hCalculateTemperatureChangeRate;
+        
         % These properties store the last ODE results
         mfTimePoints;
         mfSolutionTemperatures;
@@ -160,6 +166,7 @@ classdef branch < solver.thermal.multi_branch.basic.branch
             else
                 this.tOdeOptions = tOdeOptions;
             end
+            
             this.fTimeStep = fTimeStep;
             
             afHeatCapacities = [this.aoCapacities.fTotalHeatCapacity]';

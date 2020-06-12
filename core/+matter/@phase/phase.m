@@ -294,12 +294,21 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % the post tick at the timer and contains all necessary inputs
         % already. The same is true for the other two handles below.
         hBindPostTickMassUpdate
+        
         % Handle to bind a post tick update of this phase
         hBindPostTickUpdate
+        
         % Handle to bind a post tick time step calculation of this phase
         hBindPostTickTimeStep
         
+        % An empty array that is initialized in the constructor. It is used
+        % to increase the performance of the getTotalMassChange() method.
+        % By having this array pre-defined, it saves a call to zeros() that
+        % is quite slow and since this method is called very often the
+        % small performance improvement has a big impact.
         afEmptyCompoundMassArray;
+        
+        % Another empty matrix created for the same reason as afEmptyCompoundMassArray
         mfEmptyTotalFlows;
     end
     
@@ -441,9 +450,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % bind post tick updates. These functions are stored as
             % properties and can then simply be called with e.g. 
             % this.hBindPostTickMassUpdate();
-            this.hBindPostTickMassUpdate  = this.oTimer.registerPostTick(@this.massupdate,        'matter',        'phase_massupdate');
-            this.hBindPostTickUpdate      = this.oTimer.registerPostTick(@this.update,            'matter',        'phase_update');
-            this.hBindPostTickTimeStep    = this.oTimer.registerPostTick(@this.calculateTimeStep, 'post_physics' , 'timestep');
+            this.hBindPostTickMassUpdate = this.oTimer.registerPostTick(@this.massupdate,        'matter',       'phase_massupdate');
+            this.hBindPostTickUpdate     = this.oTimer.registerPostTick(@this.update,            'matter',       'phase_update');
+            this.hBindPostTickTimeStep   = this.oTimer.registerPostTick(@this.calculateTimeStep, 'post_physics', 'timestep');
         end
         
         function this = registerMassupdate(this, ~)
@@ -569,7 +578,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % properties the function will overwrite the value,
                 % otherwise it will throw an error
                 if ~any(strcmp(sField, csPossibleFieldNames))
-                    error(['The function setTimeStepProperties was provided the unknown input parameter: ', sField, ' please view the help of the function for possible input parameters']);
+                    error('VHAB:Phase:UnknownTimeStepProperty', ['The function setTimeStepProperties was provided the unknown input parameter: ', sField, ' please view the help of the function for possible input parameters.']);
                 end
                 
 
@@ -578,11 +587,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 xProperty = tTimeStepProperties.(sField);
 
                 if ~isfloat(xProperty)
-                    error(['The ', sField,' value provided to the setTimeStepProperties function is not defined correctly as it is not a (scalar, or vector of) float']);
+                    error('VHAB:Phase:IllegalTimeStepPropertyFormat', ['The ', sField,' value provided to the setTimeStepProperties function is not defined correctly as it is not a (scalar, or vector of) float.']);
                 end
 
                 if strcmp(sField, 'arMaxChange') && (length(xProperty) ~= this.oMT.iSubstances)
-                    error('The arMaxChange value provided to the setTimeStepProperties function is not defined correctly. It has the wrong length');
+                    error('VHAB:Phase:arMaxChangeArrayTooLong', 'The arMaxChange value provided to the setTimeStepProperties function is not defined correctly. It has the wrong length.');
                 end
 
                 this.(sField) = tTimeStepProperties.(sField);
@@ -700,7 +709,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % function because it is a thermal domain property!
             csValidProperties = {'fVolume', 'fMassToPressure', 'fDensity'};
             if ~any(strcmp(sPropertyName, csValidProperties))
-                 error(['The function BindSetProperty was provided the unknown input parameter: ', sPropertyName, ' please view the help of the function for possible input parameters']);
+                 error('VHAB:Phase:UnknownPropertyForBind', ['The function BindSetProperty was provided the unknown input parameter: ', sPropertyName, ' please view the help of the function for possible input parameters']);
             end
                 
             hSetProperty = @(xNewValue) this.setProperty(sPropertyName, xNewValue);
@@ -820,6 +829,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             if any(aiOutFlows)
                 mfInflowDetails(logical(aiOutFlows),:) = [];
             end
+            
             % Now sum up in-/outflows over all EXMEs
             afTotalInOuts = sum(mfTotalFlows, 1);
             
@@ -834,7 +844,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Checking for NaNs. It is necessary to do this here so the
             % origin of NaNs can be found easily during debugging.
             if any(isnan(afTotalInOuts))
-                error('Error in phase ''%s''. The flow rate of EXME ''%s'' is NaN.', this.sName, this.coProcsEXME{isnan(afTotalInOuts)}.sName);
+                error('VHAB:Phase:ExMeFlowRateIsNaN', 'Error in phase ''%s''. The flow rate of EXME ''%s'' is NaN.', this.sName, this.coProcsEXME{isnan(afTotalInOuts)}.sName);
             end
         end
         
@@ -1000,6 +1010,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % contain the manipulator flowrates yet!
                 afTotalOuts = this.afCurrentTotalInOuts * fLastStep;
                 afTotalIns = afTotalOuts;
+                
                 % Note that for the outflows we set everything larger than
                 % 0 to 0! so the larger than 0 for the outflows and the
                 % smaller than 0 for the inflows are correct!
@@ -1059,7 +1070,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
             % Now calculate the new total heat capacity for the
             % asscociated capacity (the specific heat capacity is updated
-            % based on changes in pressure/tenperature etc as it is only
+            % based on changes in pressure/temperature etc as it is only
             % indirectly influenced by the mass)
             this.oCapacity.setTotalHeatCapacity(this.fMass * this.oCapacity.fSpecificHeatCapacity);
             
@@ -1134,7 +1145,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Now update the matter properties
             this.fMolarMass = this.oMT.calculateMolarMass(this.afMass);
             
-            % we check against the timestep and only do the calculation if
+            % We check against the timestep and only do the calculation if
             % it hasn't been done before. Additional checks if the matter
             % properties changed sufficiently to make a matter table update
             % of the property necessary are performed within the function

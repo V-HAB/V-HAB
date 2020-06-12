@@ -92,8 +92,8 @@ classdef (Abstract) p2p < matter.flow & event.source
 
                 % Find the phases
                 try
-                    oPhaseOut   = this.oStore.toPhases.(sPhaseOut);
-                catch
+                    oPhaseOut = this.oStore.toPhases.(sPhaseOut);
+                catch %#ok<CTCH>
                     this.throw('p2p', 'Phase could not be found: out phase "%s"', sPhaseOut);
                 end
                 if isempty(sExMeOut)

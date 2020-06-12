@@ -77,7 +77,11 @@ classdef (Abstract) flow < matter.phase
             % Required Inputs:
             % fPressure: Pressure of the flow node in Pa
             if fPressure < 0
-                error(['a negative pressure occured in the flow phase ', this.sName, ' in store ', this.oStore.sName, '. This can happen if e.g. the f2f have a too large pressure drops for a constant flowrate boundary forcing the solver to converge to a solution with negative pressures. Please check your system']);
+                error('VHAB:FlowPhase:NegativePressure',['A negative pressure occured in the flow phase ', ...
+                      this.sName, ' in store ', this.oStore.sName, '. ', ...
+                      'This can happen if e.g. the f2f have a too large pressure drops for a constant flowrate '; ...
+                      'boundary forcing the solver to converge to a solution with negative pressures. ', ...
+                      'Please check your system']);
             end
             this.fVirtualPressure = fPressure;
             this.fMassToPressure = fPressure;
@@ -112,6 +116,7 @@ classdef (Abstract) flow < matter.phase
                 
                 return;
             end
+            
             if nargin < 2
                 %NOTE these should probably be named e.g. afRelevantFlows
                 %     because e.g. p2ps both in and out used!
@@ -167,6 +172,7 @@ classdef (Abstract) flow < matter.phase
                         end
                     end
                 end
+                
                 % Now we delete all of the rows in the mfInflowDetails matrix
                 % that belong to out-flows.
                 if any(aiOutFlows)

@@ -6,7 +6,7 @@ classdef flow < matter.procs.p2p
     % used. If the P2P flowrate does not depend on the branch flowrates use
     % a stationary P2P instead!
     
-    % to easier discern between P2Ps that are stationary and do not change
+    % To easier discern between P2Ps that are stationary and do not change
     % within one tick and flow p2ps where the p2p flowrate must be
     % recalculated in every tick, a constant property is defined
     properties (Constant)

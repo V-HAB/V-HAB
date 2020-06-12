@@ -412,12 +412,12 @@ classdef flow < base
             this.fTemperature = fTemperature;
             
             % Reset to empty, so if requested again, recalculated!
-            if (abs(this.fTemperature       - this.tfPropertiesAtLastMassPropertySet.fTemperature) > 0.5)
+            if (abs(this.fTemperature - this.tfPropertiesAtLastMassPropertySet.fTemperature) > 0.5)
 
                 this.fDensity          = [];
                 this.fDynamicViscosity = [];
 
-                this.tfPropertiesAtLastMassPropertySet.fTemperature     = this.fTemperature;
+                this.tfPropertiesAtLastMassPropertySet.fTemperature = this.fTemperature;
             end
             this.fDensity          = [];
             this.fDynamicViscosity = [];

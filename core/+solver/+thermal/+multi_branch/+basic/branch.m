@@ -177,9 +177,9 @@ classdef branch < base & event.source
             end
             
             this.aoBranches = aoBranches;
-            this.iBranches = length(this.aoBranches);
+            this.iBranches  = length(this.aoBranches);
             
-            this.oTimer     = this.aoBranches(1).oTimer;
+            this.oTimer = this.aoBranches(1).oTimer;
             
             % we only have to do this once, but initially we have to create
             % the thermal network we want to solve here
@@ -295,12 +295,12 @@ classdef branch < base & event.source
                 oRightCapacity = this.aoBranches(iBranch).coExmes{2}.oCapacity;
                 
                 % Initializing the index variables
-                iLeftCapacityIndex = 0;
+                iLeftCapacityIndex  = 0;
                 iRightCapacityIndex = 0;
                 
                 % Initializing two booleans to capture if the capacities
                 % are unique within the network.
-                bNonUniqueLeftCapacity = false;
+                bNonUniqueLeftCapacity  = false;
                 bNonUniqueRightCapacity = false;
                 
                 % If this is the first radiation branch, we store the

@@ -98,12 +98,9 @@ classdef gas < matter.phase
         end
         
         function afPartsPerMillion = get.afPartsPerMillion(this)
-            %% get.fPressure
-            % Since the pressure is a dependent property but some child
-            % classes require a different calculation approach for
-            % the pressure this function only defines the function name
-            % which is used to calculate the pressure (since child classes
-            % cannot overload this function).
+            % Calculates the PPM value on demand.
+            % Made this a dependent variable to reduce the computational
+            % load during run-time since the value is rarely used. 
             afPartsPerMillion = this.oMT.calculatePartsPerMillion(this);
         end
     end

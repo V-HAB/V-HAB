@@ -54,6 +54,7 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
         
         % cell array containing all heat sources within this capacity
         coHeatSource;
+        
         % struct array containing all heat sources within this capacitiy
         % with their names as the corresponding field names
         toHeatSources;
@@ -248,6 +249,7 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
             if (this.oTimer.iTick <= 0)
                 return
             end
+            
             if isempty(this.fPressureLastHeatCapacityUpdate) ||...
                (abs(this.fPressureLastHeatCapacityUpdate - this.oPhase.fPressure) > 100) ||...
                (abs(this.fTemperatureLastHeatCapacityUpdate - this.fTemperature) > 1) ||...
@@ -634,14 +636,14 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
             % currently the possible time step properties that can be set
             % by the user are:
             %
-            % rMaxChange:   Maximum allowed percentage change in the total
-            %               temperature of the capacity
-            % fMaxStep:     Maximum time step in seconds
-            % fMinStep:     Minimum time step in seconds
-            % fFixedTimeStep:     Fixed (constant) time step in seconds, if this
-            %               property is set all other time step properties
-            %               will be ignored and the set time step will be
-            %               used
+            % rMaxChange:     Maximum allowed percentage change in the total
+            %                 temperature of the capacity
+            % fMaxStep:       Maximum time step in seconds
+            % fMinStep:       Minimum time step in seconds
+            % fFixedTimeStep: Fixed (constant) time step in seconds, if this
+            %                 property is set all other time step properties
+            %                 will be ignored and the set time step will be
+            %                 used
             
             % In order to define these provide a struct with the fieldnames
             % as described here to this function for the values that you

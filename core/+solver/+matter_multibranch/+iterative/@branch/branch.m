@@ -489,7 +489,7 @@ classdef branch < base & event.source
                 % properties the function will overwrite the value,
                 % otherwise it will throw an error
                 if ~any(strcmp(sField, csPossibleFieldNames))
-                    error(['The function setSolverProperties was provided the unknown input parameter: ', sField, ' please view the help of the function for possible input parameters']);
+                    error('VHAB:MatterMultiBranch:UnknownParameter',['The function setSolverProperties was provided the unknown input parameter: ', sField, ' please view the help of the function for possible input parameters']);
                 end
                 
 
@@ -498,7 +498,7 @@ classdef branch < base & event.source
                 xProperty = tSolverProperties.(sField);
 
                 if ~isfloat(xProperty)
-                    error(['The ', sField,' value provided to the setSolverProperties function is not defined correctly as it is not a (scalar, or vector of) float']);
+                    error('VHAB:MatterMultiBranch:IncorrectParameter',['The ', sField,' value provided to the setSolverProperties function is not defined correctly as it is not a (scalar, or vector of) float']);
                 end
                 
                 this.(sField) = tSolverProperties.(sField);
@@ -620,7 +620,7 @@ classdef branch < base & event.source
                 oProc = oBranch.aoFlowProcs(iProc);
                 try
                     afHydraulicDiameters(iProc) = oProc.fDiameter;
-                catch 
+                catch  %#ok<CTCH>
                     this.throw('ChokedFlowCheck','The processor ''%s'' does not have a ''fDiameter'' property. In order to support the checkForChokedFlow() method it must be implemented.', oProc.sName);
                 end
             end
@@ -802,7 +802,7 @@ classdef branch < base & event.source
 
                                 oLeftBoundary = this.toBoundaryPhases.(csBoundaries{iBoundaryLeft});
 
-                            catch
+                            catch %#ok<CTCH>
                                 continue
                             end
                             if isempty(oLeftBoundary) || isempty(coRightSide)

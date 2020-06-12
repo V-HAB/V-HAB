@@ -26,7 +26,7 @@ classdef fluidic < thermal.procs.conductor
             
             this.oMassBranch = oMassBranch;
             
-            % we do not bind the matter branch update to this conductor,
+            % We do not bind the matter branch update to this conductor,
             % because the solver handles this as it is necessary in any
             % case and adding additional triggers would slow down the
             % simulation
@@ -47,9 +47,11 @@ classdef fluidic < thermal.procs.conductor
             % heat capacity of the flow individually which would take time
             fSpecificHeatCapacity = this.oThermalBranch.coExmes{iExme}.oCapacity.fSpecificHeatCapacity;
             
-            % flowrate in kg/s * J / (kg K) = W/K --> inverse = K/W
             fResistance = 1 / abs(this.oMassBranch.fFlowRate * fSpecificHeatCapacity);
+            % Flow rate in kg/s * J / (kg K) = W/K --> inverse = K/W
             
+            % Storing the current value in a property for logging and
+            % debugging purposes.
             this.fResistance = fResistance;
             
             if ~base.oDebug.bOff

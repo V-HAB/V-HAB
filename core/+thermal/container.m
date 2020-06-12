@@ -129,7 +129,7 @@ classdef container < sys
             % custom name. Otherwise use the generic name
             if ~isempty(oThermalBranch.sCustomName)
                 if isfield(this.toThermalBranches, oThermalBranch.sCustomName)
-                    error('A thermal branch with this custom name already exists')
+                    error('VHAB:ThermalContainer:BranchAlreadyExists','A thermal branch with this custom name already exists')
                 else
                     this.toThermalBranches.(oThermalBranch.sCustomName) = oThermalBranch;
                 end
@@ -380,7 +380,7 @@ classdef container < sys
                     end
                     
                     % Now we generically create the corresponding thermal branch
-                    % using the previously created fluidic conductor
+                    % using the previously created fluidic conductor.
                     sLeftPort  = [oProcessor.oStore.sName, '.', oExMeIn.sName];
                     sRightPort = [oProcessor.oStore.sName, '.', oExMeOut.sName];
                     thermal.branch(oProcessor.oStore.oContainer, sLeftPort, {sCustomName}, sRightPort, sCustomName, oProcessor);
