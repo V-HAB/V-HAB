@@ -25,6 +25,17 @@ classdef (Abstract) flow < matter.phase
         % An array of zeros will be stored here to avoid having to call
         % zeros() a lot. 
         mfEmptyCompoundMassFlow;
+        
+        % A reference to the multi-branch solver this phases is part of.
+        oMultiBranchSolver;
+        
+        % The following three properties capture the pressure, temperature
+        % and partial mass state of the flow through this phase. This is done
+        % in an effort to reduce the calls to calculateSpecificHeatCapacity
+        % in the matter table. See setMatterProperties() for details.
+        fPressureLastHeatCapacityUpdate;
+        fTemperatureLastHeatCapacityUpdate;
+        arPartialMassLastHeatCapacityUpdate;
     end
     
     methods
@@ -231,9 +242,49 @@ classdef (Abstract) flow < matter.phase
                 this.arPartialMass = zeros(1, this.oMT.iSubstances);
             end
         end
+        
+        function setHandler(this, oMultiBranchSolver)
+            %SETHANDLER Sets reference to multi-branch solver
+            this.oMultiBranchSolver = oMultiBranchSolver;
+        end
     end
     
     methods  (Access = protected)
+        
+        function update(this)
+            % Overloading the matter.phase's update method. Most of what we
+            % need is being done either in the massupdate() or
+            % updatePressure() methods. The only thing that is done in
+            % matter.phase.update() that is of relevance for a flow phase
+            % is calling updateSpecificHeatCapacity() on the phase's
+            % capacity, so we do that below.
+            
+            % There are some additional properties that are calculated in
+            % the child classes of matter.phase (i.e. gas, solid, liquid).
+            % These are made dependent properties in the flow versions of
+            % those phases and calculated on demand. 
+            
+            % We check if the matter properties changed sufficiently to
+            % make a matter table update of the property necessary are
+            % performed within the function.
+            if isempty(this.fPressureLastHeatCapacityUpdate) ||...
+               (abs(this.fPressureLastHeatCapacityUpdate - this.fPressure) > 100) ||...
+               (abs(this.fTemperatureLastHeatCapacityUpdate - this.fTemperature) > 1) ||...
+               (max(abs(this.arPartialMassLastHeatCapacityUpdate - this.arPartialMass)) > 0.01)
+                
+                % Recalculating the specific heat capacity
+                this.oCapacity.setSpecificHeatCapacity(this.oMT.calculateSpecificHeatCapacity(this));
+                
+                % Setting the properties for the next check
+                this.fPressureLastHeatCapacityUpdate     = this.fPressure;
+                this.fTemperatureLastHeatCapacityUpdate  = this.fTemperature;
+                this.arPartialMassLastHeatCapacityUpdate = this.arPartialMass;
+            end
+            
+            % Updating the fLastUpdate property
+            this.fLastUpdate = this.oTimer.fTime;
+        end
+        
         function massupdate(this, varargin)
             %% flow phase massupdate
             % We call the massupdate together with the function to update

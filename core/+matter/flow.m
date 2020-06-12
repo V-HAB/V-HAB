@@ -16,10 +16,6 @@ classdef flow < base
         fSpecificHeatCapacity = 0;       % [J/K/kg]
         fMolarMass            = 0;       % [kg/mol]
         
-        % Re-calculated every tick in setData/seal
-        % Partial pressures of the matter of the flow
-        afPartialPressure;  % [Pa]
-        
         % Only recalculated when setData was executed and requested again!
         % Density of the matter of the flow in kg/m�
         fDensity;           % [kg/m^3]
@@ -69,6 +65,11 @@ classdef flow < base
         % especially in the matter table, this property can be used to see
         % if an object is derived from this class. 
         sObjectType = 'flow';
+    end
+    
+    properties (Dependent)
+        % Partial pressures of the matter of the flow
+        afPartialPressure;  % [Pa]
     end
     
     properties (SetAccess = private, GetAccess = private)
@@ -169,8 +170,6 @@ classdef flow < base
                     this.arPartialMass  = oPhase.arPartialMass;
                     this.fMolarMass     = oPhase.fMolarMass;
                     this.arCompoundMass = oPhase.arCompoundMass;
-                    
-                    this.afPartialPressure = this.oMT.calculatePartialPressures(this);
                 end
 
             end
@@ -224,6 +223,10 @@ classdef flow < base
             end
             
             fDynamicViscosity = this.fDynamicViscosity;
+        end
+        
+        function afPartialPressure = get.afPartialPressure(this)
+            afPartialPressure = this.oMT.calculatePartialPressures(this);
         end
     end
     
@@ -356,45 +359,6 @@ classdef flow < base
             
             this.thRemoveCBs.out = [];
             this.oOut = [];
-        end
-        
-        
-        function setMatterProperties(this, fFlowRate, arPartialMass, fTemperature, fPressure, arCompoundMass)
-            %% setMatterProperties
-            % For derived classes of flow, can set the matter properties 
-            % through this method manually. In contrast to setData, this 
-            % method does not get information automatically from the 
-            % inflowing exme but just uses the provided values. This allows
-            % derived, but still generic classes (namely matter.p2ps.flow 
-            % and matter.p2ps.stationary) to ensure control over the actual
-            % processor implementatins when they set the flow properties.
-            %
-            % Required Inputs:
-            % fFlowRate:        new mass flow rate in kg/s
-            % arPartialMass:    new partial mass ratios (vector with length
-            %                   of (1, oMT.iSubstances) where the sum of
-            %                   the vector is 1
-            % fTemperature:     new temperature of the flow in K
-            % fPressure:        new pressure of the flow in Pa
-            
-            this.fFlowRate     = fFlowRate;
-            this.arPartialMass = arPartialMass;
-            this.fTemperature  = fTemperature;
-            this.fPressure     = fPressure;
-            
-            if this.fFlowRate >= 0
-                oPhase = this.oIn.oPhase;
-            else
-                oPhase = this.oOut.oPhase;
-            end
-            
-            this.fSpecificHeatCapacity = oPhase.oCapacity.fSpecificHeatCapacity;
-            this.fMolarMass            = oPhase.fMolarMass;
-            if nargin > 5
-                this.arCompoundMass    = arCompoundMass;
-            else
-                this.arCompoundMass    = oPhase.arCompoundMass;
-            end
         end
         
     end
@@ -611,9 +575,6 @@ classdef flow < base
                     end
                     fExMePress = fExMePress - afPressures(iIndex);
                 end
-                
-                % Re-calculate partial pressures
-                oFlow.afPartialPressure = oFlow.oMT.calculatePartialPressures(oFlow);
                 
                 % Reset to empty, so if requested again, recalculated!
                 if (abs(oFlow.fTemperature       - oFlow.tfPropertiesAtLastMassPropertySet.fTemperature) > 0.5) ||...

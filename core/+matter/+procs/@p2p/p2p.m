@@ -13,6 +13,14 @@ classdef (Abstract) p2p < matter.flow & event.source
         % therefore no thermal P2P exists and instead a thermal branch is
         % used to model the heat transfer of this P2P
         oThermalBranch;
+        
+        % The following three properties capture the pressure, temperature
+        % and partial mass state of the flow through this p2p. This is done
+        % in an effort to reduce the calls to calculateSpecificHeatCapacity
+        % in the matter table. See setMatterProperties() for details.
+        fPressureLastHeatCapacityUpdate;
+        fTemperatureLastHeatCapacityUpdate;
+        arPartialMassLastHeatCapacityUpdate;
     end
     
     properties (SetAccess = private, GetAccess = public)
@@ -308,29 +316,61 @@ classdef (Abstract) p2p < matter.flow & event.source
             % the ingoing Exme is used based on the fFlowRate. If fFlowRate
             % is not provided the current property fFlowRate is used
             
+            % Checking for the presence of the fFlowRate input argument
+            if (nargin < 2) || isempty(fFlowRate)
+                fFlowRate = this.fFlowRate; 
+            else
+                this.fFlowRate = fFlowRate;
+            end
             
-            if (nargin < 2) || isempty(fFlowRate), fFlowRate = this.fFlowRate; end
-            
-            % We're a p2p, so we're directly connected to EXMEs
+            % We use the sign of the flow rate to determine the exme from
+            % which we take the matter properties
             if fFlowRate >= 0
                 oExme = this.oIn;
             else
                 oExme = this.oOut;
             end
             
-            
+            % Checking for the presence of the arPartialMass input argument
             if nargin < 3 || isempty(arPartialMass)
-                arPartialMass = oExme.oPhase.arPartialMass;
+                this.arPartialMass = oExme.oPhase.arPartialMass;
+            else
+                this.arPartialMass = arPartialMass;
             end
             
+            % Checking for the presence of the fTemperature input argument
+            if nargin > 3
+                bNoTemperature = isempty(fTemperature);
+            else
+                bNoTemperature = true;
+            end
             
-            % Get matter properties from in exme. 
-            [ fExMePressure, fExMeTemperature ] = oExme.getExMeProperties();
+            % Checking for the presence of the fPressure input argument
+            if nargin > 4
+                bNoPressure = isempty(fPressure);
+            else
+                bNoPressure = true;
+            end
             
-            % Check temp and pressure. First temp ... cause that might
-            % change in a p2p ... pressure not really.
-            if (nargin < 4) || isempty(fTemperature), fTemperature = fExMeTemperature; end
-            if (nargin < 5) || isempty(fPressure), fPressure = fExMePressure; end
+            % If temperature or pressure are not given, we get those values
+            % from the inflowing exme.
+            if nargin < 4 || bNoTemperature || bNoPressure
+                [ fExMePressure, fExMeTemperature ] = oExme.getExMeProperties();
+            end
+            
+            % Setting the fTemperature property
+            if (nargin < 4) || bNoTemperature
+                this.fTemperature = fExMeTemperature; 
+            else
+                this.fTemperature = fTemperature;
+            end
+            
+            % Setting the fPressure property
+            if (nargin < 5) || bNoPressure
+                this.fPressure = fExMePressure; 
+            else
+                this.fPressure = fPressure;
+            end
                 
             % Connected phases have to do a massupdate before we set the
             % new flow rate - so the mass for the LAST time step, with the
@@ -338,7 +378,42 @@ classdef (Abstract) p2p < matter.flow & event.source
             this.oIn.oPhase.registerMassupdate();
             this.oOut.oPhase.registerMassupdate();
             
-            setMatterProperties@matter.flow(this, fFlowRate, arPartialMass, fTemperature, fPressure);
+            % If the flow rate is zero, 
+            if this.fFlowRate == 0
+                this.fSpecificHeatCapacity = 0;
+                return;
+            end
+            
+            afMass = this.arPartialMass .* this.fFlowRate;
+            
+            this.fMolarMass = this.oMT.calculateMolarMass(afMass);
+            
+            if isempty(this.fPressureLastHeatCapacityUpdate) ||...
+               (abs(this.fPressureLastHeatCapacityUpdate - this.fPressure) > 100) ||...
+               (abs(this.fTemperatureLastHeatCapacityUpdate - this.fTemperature) > 1) ||...
+               (max(abs(this.arPartialMassLastHeatCapacityUpdate - this.arPartialMass)) > 0.01)
+           
+                % Calculating the number of mols for each species
+                afMols = afMass ./ this.oMT.afMolarMass; 
+
+                % Calculating the total number of mols
+                fGasAmount = sum(afMols);
+
+                % Calculating the partial amount of each species by mols
+                arFractions = afMols ./ fGasAmount;
+
+                % Calculating the partial pressures by multiplying with the
+                % total pressure in the phase
+                afPartialPressures = arFractions .* this.fPressure;
+                
+                afMass = this.oMT.resolveCompoundMass(afMass, this.oIn.oPhase.arCompoundMass);
+                
+                this.fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(oExme.oPhase.sType, afMass, this.fTemperature, afPartialPressures);
+                
+                this.fPressureLastHeatCapacityUpdate     = this.fPressure;
+                this.fTemperatureLastHeatCapacityUpdate  = this.fTemperature;
+                this.arPartialMassLastHeatCapacityUpdate = this.arPartialMass;
+            end
             
             if this.bTriggersetMatterPropertiesCallbackBound
                 this.trigger('setMatterProperties');

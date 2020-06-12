@@ -62,36 +62,6 @@ classdef flow < matter.procs.p2p
         % attached to the oOut exme of this p2p.
         
     end
-    
-    methods (Access = protected)
-        function setMatterProperties(this, fFlowRate, arPartials)
-            %% flow p2p setMatterProperties
-            %
-            % If the p2p is updated it sets the new flow rates using this
-            % method. In addition to the basic operations from the general
-            % P2P we must set register the phase massupdates to trigger a
-            % recalculation of the partial mass composition
-            %
-            % Required Inputs:
-            % fFlowRate:     The current total flowrate of the p2p in kg/s.
-            %                Total means it must be the sum of all partial
-            %                mass flow rates
-            % arPartialMass: Vector containing the partial mass flow ratios
-            %                to convert fFlowRate into a vector with
-            %                partial mass flows by using fFlowRate *
-            %                arPartialMass
-            
-            % The phase that called update already did matterupdate, but 
-            % set the fLastUpd to curr time so doesn't do that again
-            this.oIn.oPhase.registerMassupdate();
-            this.oOut.oPhase.registerMassupdate();
-            
-            
-            % Set matter properties. Calculates molar mass, heat capacity,
-            % etc.
-            setMatterProperties@matter.procs.p2p(this, fFlowRate, arPartials);
-            
-        end
-    end
+
 end
 

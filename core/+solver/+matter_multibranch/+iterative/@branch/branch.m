@@ -680,6 +680,8 @@ classdef branch < base & event.source
 
                             this.tiObjUuidsToColIndex.(oPhase.sUUID) = iColIndex;
                             this.coColIndexToObj{iColIndex} = oPhase;
+                            
+                            oPhase.setHandler(this);
                         end
                         
                     % 'Real' phase - boundary condition

@@ -4,6 +4,8 @@ function update(this)
     % information on the solution routine please view the initial code
     % section!
     
+    this.bUpdateInProgress = true;
+    
     this.fLastUpdate         = this.oTimer.fTime;
     
     if ~base.oDebug.bOff
@@ -615,6 +617,8 @@ function update(this)
             abAlreadyUpdated(iB) = true;
         end
     end
+    
+    this.bUpdateInProgress = false;
     
     if this.bTriggerUpdateCallbackBound
         this.trigger('update');
