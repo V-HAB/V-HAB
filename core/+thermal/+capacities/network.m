@@ -71,7 +71,9 @@ classdef network < thermal.capacity
                 this.setTimeStep(inf,true);
             end
             
-            this.oHandler.hBindPostTickUpdate();
+            if this.oHandler.bPostTickUpdateNotBound
+                this.oHandler.hBindPostTickUpdate();
+            end
         end
     end
     

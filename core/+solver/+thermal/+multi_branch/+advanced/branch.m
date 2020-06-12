@@ -155,11 +155,24 @@ classdef branch < solver.thermal.multi_branch.basic.branch
         % These properties store the last ODE results
         mfTimePoints;
         mfSolutionTemperatures;
+        
+        % A boolean property that is set to false once the update() method
+        % is bound to a post tick. This is used to short-circuit calls to
+        % the bindPostTick() method by the network capacities. If this was
+        % not in place, every single capacity in the network would call
+        % this method during every tick, which is unneccessary. 
+        bPostTickUpdateNotBound = true;
     end
     
     properties (SetAccess = private, GetAccess = protected)
         % Callback to set time step in [s]
         setTimeStep;
+        
+        % A function handle that actually binds the update() method of this
+        % class to a timer post tick. This was created to prevent all
+        % capacities in this network calling the bind() method on the timer
+        % every tick. 
+        hActuallyBindPostTick;
     end
     
     methods
@@ -288,12 +301,19 @@ classdef branch < solver.thermal.multi_branch.basic.branch
             %
             % The thermal multi branch solver is executed after the
             % capacities, heat sources and normal thermal solvers.
-            this.hBindPostTickUpdate = this.oTimer.registerPostTick(@this.update, 'thermal' , 'multibranch_solver');
+            this.hActuallyBindPostTick = this.oTimer.registerPostTick(@this.update, 'thermal' , 'multibranch_solver');
+            this.hBindPostTickUpdate = @this.bindPostTickUpdate;
             
         end
     end
     
     methods (Access = protected)
+        
+        function bindPostTickUpdate(this)
+            this.bPostTickUpdateNotBound = false;
+            this.hActuallyBindPostTick();
+        end
+        
         function mfTemperatureChangeRate = calculateTemperatureChangeRate(this, afCurrentTemperatures, ~)
             % Calculates the rate of temperature change. This function is
             % called by the ODE solver at each internal timestep of the ODE
@@ -371,6 +391,7 @@ classdef branch < solver.thermal.multi_branch.basic.branch
             
             this.fLastUpdate = this.oTimer.fTime;
             this.bRegisteredOutdated = false;
+            this.bPostTickUpdateNotBound = true;
             
             if this.bTriggerUpdateCallbackBound
                 this.trigger('update');
