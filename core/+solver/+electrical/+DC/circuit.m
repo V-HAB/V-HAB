@@ -42,11 +42,19 @@ classdef circuit < base & event.source
 
     
     methods
-        function this = circuit(oCircuit)
+        function this = circuit(oCircuit, fFixedTimeStep)
             this.oCircuit = oCircuit;
             
+            if nargin > 1
+                this.fFixedTS = fFixedTimeStep;
+            end
+            
             % Use circuit's container timer reference to bind for time step
-            this.setTimeStep = this.oCircuit.oTimer.bind(@(~) this.solve(), 0);
+            if isempty(this.fFixedTS)
+                this.setTimeStep = this.oCircuit.oTimer.bind(@(~) this.solve(), 0);
+            else
+                this.setTimeStep = this.oCircuit.oTimer.bind(@(~) this.solve(), this.fFixedTS);
+            end
             
             % If the circuit triggers the 'outdated' event, need to
             % re-calculate the currents and voltages!

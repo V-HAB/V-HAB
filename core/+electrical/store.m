@@ -39,7 +39,7 @@ classdef (Abstract) store < base
         fTimeStep = 0;
         
         % Fixed time step for updating
-        fFixedTimeStep = 1;
+        fFixedTimeStep;
         
         % A handle to the set time step method for this specific object as
         % a child of the timer object
@@ -92,10 +92,13 @@ classdef (Abstract) store < base
             % Return if we are already sealed
             if this.bSealed, return; end
             
-            % Bind the .update method to the timer, with a time step of 0
-            % (i.e. smallest step), will be adapted after each .update
-            this.hSetTimeStep = this.oTimer.bind(@(~) this.update(), 0);
-            
+            if isempty(this.fFixedTimeStep)
+                % Bind the .update method to the timer, with a time step of 0
+                % (i.e. smallest step), will be adapted after each .update
+                this.hSetTimeStep = this.oTimer.bind(@(~) this.update(), 0);
+            else
+                this.hSetTimeStep = this.oTimer.bind(@(~) this.update(), this.fFixedTimeStep);
+            end
             % Setting the bSealed property to true
             this.bSealed = true;
         end
@@ -110,6 +113,10 @@ classdef (Abstract) store < base
             else
                 this.throw('getTerminal','There is no terminal ''%s'' on store %s.', sTerminalName, this.sName);
             end
+        end
+        
+        function setFixedTimeStep(this, fFixedTimeStep)
+            this.fFixedTimeStep = fFixedTimeStep;
         end
         
     end
