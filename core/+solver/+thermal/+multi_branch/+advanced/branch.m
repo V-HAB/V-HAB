@@ -378,7 +378,7 @@ classdef branch < solver.thermal.multi_branch.basic.branch
             fStepEndTime   = this.oTimer.fTime;
             this.fExecutionTimeStep = fStepEndTime - fStepBeginTime;
             
-            this.afSourceRateVector = [this.aoCapacities(~this.abNonUniqueCapacity).fHeatSourceHeatFlow]';
+            this.afSourceRateVector = [this.aoCapacities(~this.abNonUniqueCapacity).fTotalHeatSourceHeatFlow]';
             this.afSourceRateVector = this.afSourceRateVector ./ [this.aoCapacities(~this.abNonUniqueCapacity).fTotalHeatCapacity]';
             
             [this.mfTimePoints, this.mfSolutionTemperatures] = ode45(this.hCalculateTemperatureChangeRate, [fStepBeginTime, fStepEndTime], this.afTemperatures, this.tOdeOptions);
