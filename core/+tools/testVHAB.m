@@ -913,36 +913,36 @@ if exist(fullfile(sTestDirectory, tTest.name, 'setup.m'), 'file')
         % Actually running the simulation
         oLastSimObj.run();
         
-        % Done! Let's plot stuff!
-        oLastSimObj.plot();
-        
-        % If we are running in parallel, we need to jump through some hoops
-        % to get the figures saved. The plotter knows that it is being run
-        % on a parallel worker, so it has created the aoFigures array in
-        % the base workspace of the worker. So here, if we are running in
-        % parallel, we pull this variable from the base workspace into our
-        % local workspace to save it. If we are running in series, then we
-        % just set it to empty; the saveFigures() function knows how to
-        % deal with that. 
-        if bParallelExecution
-            aoFigures = evalin('base', 'aoFigures');
-        else
-            aoFigures = [];
-        end
-        
-        % Saving the figures to the pre-determined location
-        tools.saveFigures(sFolderPath, strrep(tTest.name,'+',''), aoFigures);
-        
-        % Closing all windows so we can see the console again. The
-        % drawnow() call is necessary, because otherwise MATLAB would just
-        % jump over the close('all') instruction and run the next sim.
-        % Stupid behavior, but this is the workaround. We only need to do
-        % this when running in series, because then the windows are
-        % not visible on the parallel workers anyway.
-        if ~bParallelExecution
-            close('all');
-            drawnow();
-        end
+%         % Done! Let's plot stuff!
+%         oLastSimObj.plot();
+%         
+%         % If we are running in parallel, we need to jump through some hoops
+%         % to get the figures saved. The plotter knows that it is being run
+%         % on a parallel worker, so it has created the aoFigures array in
+%         % the base workspace of the worker. So here, if we are running in
+%         % parallel, we pull this variable from the base workspace into our
+%         % local workspace to save it. If we are running in series, then we
+%         % just set it to empty; the saveFigures() function knows how to
+%         % deal with that. 
+%         if bParallelExecution
+%             aoFigures = evalin('base', 'aoFigures');
+%         else
+%             aoFigures = [];
+%         end
+%         
+%         % Saving the figures to the pre-determined location
+%         tools.saveFigures(sFolderPath, strrep(tTest.name,'+',''), aoFigures);
+%         
+%         % Closing all windows so we can see the console again. The
+%         % drawnow() call is necessary, because otherwise MATLAB would just
+%         % jump over the close('all') instruction and run the next sim.
+%         % Stupid behavior, but this is the workaround. We only need to do
+%         % this when running in series, because then the windows are
+%         % not visible on the parallel workers anyway.
+%         if ~bParallelExecution
+%             close('all');
+%             drawnow();
+%         end
         
         % Store information about the simulation duration and errors. This
         % will be saved later on to allow a comparison between different

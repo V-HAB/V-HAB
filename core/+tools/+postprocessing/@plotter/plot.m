@@ -712,13 +712,13 @@ for iFigure = 1:length(this.coFigures)
     
 end
 
-% In case we are running a simulation using the parallel pool, we need to
-% assign the aoFigures array in the base workspace so the parallel worker
-% can save them into a file. Without this there would be no way to access
-% the figure objects after the plot() method has finished executing. 
-if this.oSimulationInfrastructure.bParallelExecution
-    assignin('base','aoFigures',aoFigures);
-end
+% % In case we are running a simulation using the parallel pool, we need to
+% % assign the aoFigures array in the base workspace so the parallel worker
+% % can save them into a file. Without this there would be no way to access
+% % the figure objects after the plot() method has finished executing. 
+% if this.oSimulationInfrastructure.bParallelExecution
+%     assignin('base','aoFigures',aoFigures);
+% end
 
 function KeyPressFunction(oFigure, oKeyData)
     %KEYPRESSFUNCTION Enables keyboard control of undock subplot buttons
