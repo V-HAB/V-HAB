@@ -115,23 +115,22 @@ classdef setup < simulation.infrastructure
             % data from the old model, where these limits were chosen:
             figure('Name', 'Protoflight Test Comparison', 'units','normalized','outerposition',[0 0 1 1])
             subplot(1,3,1)
-            scatter(1:6,  mfAirOutletTemperature(2,:))
-            hold on
-            grid on
             % Unfortunatly it is not completly clear if the protoflight
             % test data is the air outlet temperature directly after the
             % CHX or after the CCAA (where it is mixed with the bypass
-            % flow). But comparing the mixed and non mixed data it seems to
-            % be the air directly after the CHX. If you want to view it
-            % outcomment the next line and add the corresponding legend
+            % flow). But comparing the data from the test and the
+            % simulation it seems to be after the mixing, otherwise the
+            % outlet air temperatures cannot be explained
+            scatter(1:6,  mfMixedAirOutletTemperature(4,:))
+            hold on
+            grid on
             % entry:
-            % scatter(1:6,  mfMixedAirOutletTemperature(2,:))
             scatter(1:6,  Data.ProtoflightTestData.AirOutletTemperature', 'x')
             xticks(1:6)
             ylim([275, 300])
             xlabel('Protoflight Test Number')
             ylabel('Air Outlet Temperature in K')
-            legend('Simulation', 'Protoflight Test')
+            legend('Simulation', 'Protoflight Test');
             hold off
             
             subplot(1,3,2)

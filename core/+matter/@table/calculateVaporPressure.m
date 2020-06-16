@@ -23,8 +23,8 @@ catch
 
     mfLimits = [AntoineData.Range(:).mfLimits];
 
-    % Should be fine if we can calculate it up to 10000 K
-    afTemperature = 0:1:10000;
+    % Should be fine if we can calculate it up to 1000 K
+    afTemperature = 0:1:1000;
 
     afVaporPressure = zeros(1,length(afTemperature));
     for iTemperature = 1:length(afTemperature)

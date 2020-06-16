@@ -154,6 +154,8 @@ classdef CHX < vsys
         % variables that are required persistently
         txCHX_Parameters;
         
+        hVaporPressureInterpolation;
+        
         hBindPostTickUpdate;
     end
     
@@ -214,6 +216,19 @@ classdef CHX < vsys
             this.oF2F_2 = components.matter.HX.hx_flow(this, this.oParent, [sName,'_2']);
             
             this.hBindPostTickUpdate = this.oTimer.registerPostTick(@this.update, 'thermal' , 'pre_solver');
+            
+            % Since the gridded Interpolant function is faster if we use a
+            % smaller grid, we initialize it with values realistic for the
+            % CHX to speed up the calculation instead of using the matter
+            % table function
+            afTemperature = 273:333;
+            afVaporPressure = zeros(1,length(afTemperature));
+            for iTemperature = 1:length(afTemperature)
+                afVaporPressure(iTemperature) = this.oMT.calculateVaporPressure(afTemperature(iTemperature), 'H2O');
+            end
+    
+            this.hVaporPressureInterpolation = griddedInterpolant(afTemperature, afVaporPressure,'linear','none');
+        
         end
         
         function createMatterStructure(this)
@@ -271,16 +286,16 @@ classdef CHX < vsys
             end
             
             %if query to see if the CHX has to be recalculated
-            if  this.iFirst_Iteration == 1 ||...                                                                    %if it is the first iteration
-                (abs(fEntryTemp_1-this.fEntryTemp_Old_1) > this.fTempChangeToRecalc) ||...                          %if entry temp changed by more than X°
-                (abs(1-(fMassFlow_1/this.fMassFlow_Old_1)) > this.fPercentChangeToRecalc) ||...                 	%if mass flow changes by more than X%
-                (abs(fEntryTemp_2-this.fEntryTemp_Old_2) > this.fTempChangeToRecalc)||...                           %if entry temp changed by more than X°
-                (abs(1-(fMassFlow_2/this.fMassFlow_Old_2)) > this.fPercentChangeToRecalc)||...                      %if mass flow changes by more than X%
-                (max(abs(1-(oFlows_1.arPartialMass./this.arPartialMass1Old))) > this.fPercentChangeToRecalc)||...  	%if composition of mass flow changed by more than X%
-                (max(abs(1-(oFlows_2.arPartialMass./this.arPartialMass2Old))) > this.fPercentChangeToRecalc)||...   %if composition of mass flow changed by more than X%
-                (abs(1-(oFlows_1.fPressure/this.fOldPressureFlow1)) > 3*this.fPercentChangeToRecalc)||...             %if Pressure changed by more than X%
-                (abs(1-(oFlows_2.fPressure/this.fOldPressureFlow2)) > 3*this.fPercentChangeToRecalc)                  %if Pressure changed by more than X%
-                            
+            if  this.iFirst_Iteration == 1 ||...                                                                            %if it is the first iteration
+                (abs(fEntryTemp_1 - this.fEntryTemp_Old_1)                          > this.fTempChangeToRecalc)         ||...	%if entry temp changed by more than X°
+                (abs(1 - (fMassFlow_1 / this.fMassFlow_Old_1))                      > this.fPercentChangeToRecalc)      ||...  	%if mass flow changes by more than X%
+                (abs(fEntryTemp_2 - this.fEntryTemp_Old_2)                          > this.fTempChangeToRecalc)         ||...  	%if entry temp changed by more than X°
+                (abs(1 - (fMassFlow_2 / this.fMassFlow_Old_2))                      > this.fPercentChangeToRecalc)      ||... 	%if mass flow changes by more than X%
+                (max(abs(1 - (oFlows_1.arPartialMass ./ this.arPartialMass1Old)))   > this.fPercentChangeToRecalc)      ||...  	%if composition of mass flow changed by more than X%
+                (max(abs(1 - (oFlows_2.arPartialMass ./ this.arPartialMass2Old)))   > this.fPercentChangeToRecalc)      ||... 	%if composition of mass flow changed by more than X%
+                (abs(1 - (oFlows_1.fPressure / this.fOldPressureFlow1))             > 3 * this.fPercentChangeToRecalc)  ||...	%if Pressure changed by more than X%
+                (abs(1 - (oFlows_2.fPressure / this.fOldPressureFlow2))             > 3 * this.fPercentChangeToRecalc)          %if Pressure changed by more than X%
+                
                 fDensity_1 = oFlows_1.getDensity();
                 fDensity_2 = oFlows_2.getDensity();
                 
@@ -303,7 +318,6 @@ classdef CHX < vsys
                 Fluid_1.fThermal_Conductivity    = fConductivity_1;
                 Fluid_1.fSpecificHeatCapacity    = fCp_1;
                 Fluid_1.oFlow                    = oFlows_1;
-
                 
                 Fluid_2 = struct();
                 Fluid_2.fMassflow                = fMassFlow_2;
@@ -313,7 +327,6 @@ classdef CHX < vsys
                 Fluid_2.fThermal_Conductivity    = fConductivity_2;
                 Fluid_2.fSpecificHeatCapacity    = fCp_2;
                 Fluid_2.oFlow                    = oFlows_2;
-
                 
                 %function call for HX_main to get outlet values
                 % as first value the this struct from object HX is given to

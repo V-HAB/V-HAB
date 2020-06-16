@@ -138,7 +138,7 @@ classdef setup < simulation.infrastructure
             zslice = round(iNodesPerDirection / 2, 0);
             figure
             slice(Xq,Yq,Zq,mfInterpolatedTemperature,xslice,yslice,zslice)
-            
+            colorbar
             afTimePoints = 0:10:afTime(end);
             
             figure
@@ -157,13 +157,30 @@ classdef setup < simulation.infrastructure
                 yslice = iNodesPerDirection;
                 zslice = round(iNodesPerDirection / 2, 0);
                 slice(Xq,Yq,Zq,mfInterpolatedTemperature,xslice,yslice,zslice);
-                
+                colorbar
                 set(oClock, 'String', sprintf('%i',afTimePoints(iTime)));
                 
                 drawnow
+                F(iTime) = getframe(gcf) ;
                 pause(0.5);
                 
             end
+            
+%             % create the video writer with 20 fps
+%             writerObj = VideoWriter('TemperaturesCube.avi');
+%             writerObj.FrameRate = 20; % this results in 20* Time Step as
+%             speed for the video
+%             % set the seconds per image
+%             % open the video writer
+%             open(writerObj);
+%             % write the frames to the video
+%             for i=1:length(F)
+%                 % convert the image to a frame
+%                 frame = F(i) ;
+%                 writeVideo(writerObj, frame);
+%             end
+%             % close the writer object
+%             close(writerObj);
             
         end
         

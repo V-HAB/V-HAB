@@ -206,30 +206,30 @@ classdef CCAA < vsys
             % Some configurating variables
             sHX_type = 'plate_fin';       % Heat exchanger type
             % broadness of the heat exchange area in m
-            tGeometry.fBroadness        = 0.75;  
+            tGeometry.fBroadness        = 1;  
             % Height of the channel for fluid 1 in m
-            tGeometry.fHeight_1         = 0.004;
+            tGeometry.fHeight_1         = 0.002;
             % Height of the channel for fluid 2 in m
-            tGeometry.fHeight_2         = 0.004;
+            tGeometry.fHeight_2         = 0.002;
             % length of the heat exchanger in m
-            tGeometry.fLength           = 0.25;
+            tGeometry.fLength           = 1;
             % thickness of the plate in m
-            tGeometry.fThickness        = 0.001;
+            tGeometry.fThickness        = 0.0002;
             % number of layers stacked
             tGeometry.iLayers           = 33;
             % number of baffles (evenly distributed)
             tGeometry.iBaffles          = 3;
             % broadness of a fin of the first canal (air)
-            tGeometry.fFinBroadness_1	= tGeometry.fBroadness/18;
+            tGeometry.fFinBroadness_1	= tGeometry.fBroadness/180;
             % broadness of a fin of the second canal (coolant)
-            tGeometry.fFinBroadness_2	= tGeometry.fBroadness/18; 
+            tGeometry.fFinBroadness_2	= tGeometry.fBroadness/180; 
             %  Thickness of the Fins (for now both fins have the same thickness
-            tGeometry.fFinThickness     = 0.0003;
+            tGeometry.fFinThickness     = 0.0002;
             % Conductivity of the Heat exchanger solid material (W/m K)
             Conductivity = 205;
             % Number of incremental heat exchangers used in the calculation
             % of the CHX
-            miIncrements = [4,4];
+            miIncrements = [20,10];
             % Defines when the CHX should be recalculated: 
             fTempChangeToRecalc = 1;        % If any inlet temperature changes by more than 1 K
             fPercentChangeToRecalc = 0.05;  % If any inlet flowrate or composition changes by more than 5%
@@ -420,6 +420,19 @@ classdef CCAA < vsys
             this.tFixValues = tFixValues;
             this.bUseFixValues = true;
         end
+        
+        function setCoolantFlowRate(this, fCoolantMassFlow)
+            % This function can be used to change the coolant mass flow.
+            % The base value is 600 lb/hr, but e.g. in US Lab and Hab the
+            % flowrate is 1230 lb/hr see:
+            % "Living together in space: the design and operation of the
+            % life support systems on the International Space Station",
+            % Wieland, Paul O., 1998, page 104 Note that the coolant flow
+            % is provided with 1230 lb/hr for the lab and hab and 600 lb/hr
+            % for the Node 2 and AL
+            this.toBranches.Coolant_In.oHandler.setFlowRate(-fCoolantMassFlow);
+        end
+        
         function setNumericalParameters(this, fTempChange, fPercentChange)
             
             % Temp Change allowed before CHX is recalculated

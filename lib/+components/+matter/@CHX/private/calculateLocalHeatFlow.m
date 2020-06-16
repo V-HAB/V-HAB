@@ -71,12 +71,12 @@ beta_Gas_0 = Sh_Gas_0 * DiffCoeff_Gas / tInput.fCharacteristicLength;											
 fDeltaTemp = tInput.fTemperatureGas - tInput.fTemperatureCoolant;
 
 % if smaller than 1e-13 fDelta equals zero and everything else goes NaN
-if fDeltaTemp > 1e-13
+if fDeltaTemp > 1e-10
     
 % Initially the algorithm simply calculates the heat flows at all
 % temperatures in between the coolant and gas temperature, this step
 % decides the inidividual steps made in that case in [K]
-fSearchStep = 0.5;
+fSearchStep = 1;
 if fDeltaTemp < fSearchStep
     fSearchStep = 0.5 * fDeltaTemp;
 end
@@ -102,7 +102,14 @@ mfFilmFlowRate                  = zeros(iSteps,1);
 %% Calculation of the heatflows from gas to film and coolant to film for all temperatures in between the coolant and gas temperature
 for iStep = 1:iSteps
 	% Molar fraction of vapor right above the condensate film surface [-], based on Antoine equation, (2.39)
-    mfMolFractionVaporAtSurface(iStep) = oCHX.oMT.calculateVaporPressure(mfTemperature(iStep), tInput.Vapor) / tInput.fPressureGas;
+    try
+        % It is faster to store the interpolation in the CHX:
+        mfMolFractionVaporAtSurface(iStep) = oCHX.hVaporPressureInterpolation(mfTemperature(iStep)) / tInput.fPressureGas;
+    catch oErr
+        mfMolFractionVaporAtSurface(iStep) = oCHX.oMT.calculateVaporPressure(mfTemperature(iStep), tInput.Vapor) / tInput.fPressureGas;
+        
+        oCHX.hVaporPressureInterpolation = oCHX.oMT.ttxMatter.(tInput.Vapor).tInterpolations.VaporPressure;
+    end
 
     % Consideration of Stefan diffusion in mass transfer coefficient [m/s], (2.36)
     mfBeta_Gas(iStep) = beta_Gas_0 * (tInput.fMolarFractionVapor - mfMolFractionVaporAtSurface(iStep))^(-1) * log((1 - mfMolFractionVaporAtSurface(iStep))/(1 - tInput.fMolarFractionVapor));
@@ -373,13 +380,14 @@ fSpecificMassFlowRate_Vapor = fVaporSlope * fTemperature + fVaporOffset;
 % Calculation of coolant heat flux [W/m^2], (3.2)
 fSpecificHeatFlowRateCoolant = fCoolantSlope * fTemperature + fCoolantOffset;
 
-% Calculation of gas heat flux ** without ** latent heat! [W/m^2], (2.100)
-fSpecificHeatFlowRateGas     = fSpecificHeatFlowRateCoolant  - ( fSpecificMassFlowRate_Vapor * fVaporisationEnthalpy);
-
-fHeatFlowCoolant = fSpecificHeatFlowRateCoolant * tInput.fCellArea;		% Calculation of coolant heat flow [W], (2.102)
-fHeatFlowGas     = fSpecificHeatFlowRateGas * tInput.fCellArea;			% Calculation of gas heat flow [W], without latent heat of condensed vapor! (2.101)
-
 fCondensateMassFlow = fSpecificMassFlowRate_Vapor * tInput.fCellArea;		% Condensate mass flow rate [kg/s]
+% We cannot vaporize more water than what has already condensed
+if (tInput.fMassFlowFilm + fCondensateMassFlow) < 0
+    fCondensateMassFlow = -tInput.fMassFlowFilm;
+end
+fHeatFlowCoolant = fSpecificHeatFlowRateCoolant * tInput.fCellArea;                                                     % Calculation of coolant heat flow [W], (2.102)
+fHeatFlowGas     = fSpecificHeatFlowRateCoolant * tInput.fCellArea  - ( fCondensateMassFlow * fVaporisationEnthalpy);	% Calculation of gas heat flow [W], without latent heat of condensed vapor! (2.101)
+
 
 % Calculation of outlet temperatures:
 tOutputs.fTemperatureGasOutlet     = tInput.fTemperatureGas - (fHeatFlowGas / (tInput.fMassFlowGas * tInput.fSpecificHeatCapacityGas));						% [K], (2.103)
@@ -393,7 +401,10 @@ else
    fHeatFlowGas = 0;
 end
 
-
+% fPressureH2O = tInput.fMolarFractionVapor * tInput.fPressureGas;
+% fVaporPressure =  oCHX.hVaporPressureInterpolation(fTemperature);
+% fMaximumCondensateFlow = (fPressureH2O - fVaporPressure) * (tInput.fMassFlowGas / tInput.fDensityGas) / (tInput.fTemperatureGas * oCHX.oMT.Const.fUniversalGas / oCHX.oMT.afMolarMass(oCHX.oMT.tiN2I.H2O));
+    
 % Construction of output struct
 tOutputs.fCondensateMassFlow        = fCondensateMassFlow;
 tOutputs.fTotalHeatFlow             = fHeatFlowCoolant;
