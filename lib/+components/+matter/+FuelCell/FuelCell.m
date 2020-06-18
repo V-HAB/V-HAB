@@ -108,26 +108,29 @@ classdef FuelCell < vsys
             components.matter.valve(this,'Valve_H2', false);
             components.matter.valve(this,'Valve_O2', false);
             
+            components.matter.checkvalve(this,'Checkvalve_H2', false);
+            components.matter.checkvalve(this,'Checkvalve_O2', false);
+            
             % fans
             components.matter.fan_simple(this, 'H2_Compressor', 2e5, false);
             components.matter.fan_simple(this, 'O2_Compressor', 2e5, false);
             
             % Internal Branches
-            matter.branch(this, oH2,                {'H2_Compressor'},          oH2_Out,            'H2_to_Outlet');
-            matter.branch(this, oO2,                {'O2_Compressor'},          oO2_Dryer,          'O2_to_Dryer');
+            matter.branch(this, oH2,                {'H2_Compressor'},                          oH2_Out,            'H2_to_Outlet');
+            matter.branch(this, oO2,                {'O2_Compressor'},                          oO2_Dryer,          'O2_to_Dryer');
             
             % Interfaces branches
-            matter.branch(this, oH2,                {'Valve_H2', 'Pipe_H2_In'},	'H2_Inlet',         'H2_Inlet');
-            matter.branch(this, oH2_Out,          	{'Pipe_H2_Out'},            'H2_Outlet',        'H2_Outlet');
+            matter.branch(this, oH2,                {'Valve_H2', 'Pipe_H2_In'},                 'H2_Inlet',         'H2_Inlet');
+            matter.branch(this, oH2_Out,          	{'Pipe_H2_Out', 'Checkvalve_H2'},           'H2_Outlet',        'H2_Outlet');
             
-            matter.branch(this, oO2,                {'Valve_O2', 'Pipe_O2_In'},	'O2_Inlet',         'O2_Inlet');
-            matter.branch(this, oO2_Dryer,          {'Pipe_O2_Out'},            'O2_Outlet',        'O2_Outlet');
+            matter.branch(this, oO2,                {'Valve_O2', 'Pipe_O2_In'},                 'O2_Inlet',     'O2_Inlet');
+            matter.branch(this, oO2_Dryer,          {'Pipe_O2_Out', 'Checkvalve_O2'},         	'O2_Outlet',        'O2_Outlet');
             
             
-            matter.branch(this, oCooling,           {'Pipe_Cooling_In'},        'Cooling_Inlet',  	'Cooling_Inlet');
-            matter.branch(this, oCooling,           {'Pipe_Cooling_Out'},       'Cooling_Outlet',	'Cooling_Outlet');
+            matter.branch(this, oCooling,           {'Pipe_Cooling_In'},                        'Cooling_Inlet',  	'Cooling_Inlet');
+            matter.branch(this, oCooling,           {'Pipe_Cooling_Out'},                       'Cooling_Outlet',	'Cooling_Outlet');
             
-            matter.branch(this, oRecoveredWater,  	{},                         'Water_Outlet',     'Water_Outlet');
+            matter.branch(this, oRecoveredWater,  	{},                                         'Water_Outlet',     'Water_Outlet');
             
             % adding the fuel cell reaction manip
             components.matter.FuelCell.components.FuelCellReaction('FuelCellReaction', oMembrane);

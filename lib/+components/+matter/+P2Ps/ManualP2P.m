@@ -51,8 +51,12 @@ classdef ManualP2P < matter.procs.p2ps.stationary
             % old flow rate, is actually moved from tank to tank. In the
             % massupdate the update for the P2P will be triggered, which is
             % then executed in the post tick after the phase massupdates
-            this.oIn.oPhase.registerMassupdate();
-            this.oOut.oPhase.registerMassupdate();
+            if this.oIn.oPhase.fLastMassUpdate == this.oTimer.fTime && this.oOut.oPhase.fLastMassUpdate == this.oTimer.fTime
+                this.update();
+            else
+                this.oIn.oPhase.registerMassupdate();
+                this.oOut.oPhase.registerMassupdate();
+            end
         end
         
         function setMassTransfer(this, afPartialMasses, fTime)

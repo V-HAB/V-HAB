@@ -89,6 +89,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 mfAbsorptionEnthalpyHelper = mfAbsorptionEnthalpyHelper + rAbsorberMassRatio * this.oMT.ttxMatter.(this.csAbsorbers{iAbsorber}).tAbsorberParameters.mfAbsorptionEnthalpy;
             end
             this.mfAbsorptionEnthalpy = mfAbsorptionEnthalpyHelper;
+            this.mfFlowRates = zeros(1, this.oMT.iSubstances);
         end
         
         function calculateFlowRate(this, afInFlowRates, aarInPartials, ~, ~)
