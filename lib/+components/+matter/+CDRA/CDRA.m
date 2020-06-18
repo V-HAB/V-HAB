@@ -737,7 +737,7 @@ classdef CDRA < vsys
             % full system results in close to singular matrix, which might
             % lead to issues.
             tSolverProperties.fMaxError = 1e-6;
-            tSolverProperties.iMaxIterations = 500;
+            tSolverProperties.iMaxIterations = 1000;
             tSolverProperties.fMinimumTimeStep = 1;
             tSolverProperties.iIterationsBetweenP2PUpdate = 200;
 
