@@ -408,7 +408,7 @@ classdef (Abstract) p2p < matter.flow & event.source
                 
                 afMass = this.oMT.resolveCompoundMass(afMass, this.oIn.oPhase.arCompoundMass);
                 
-                this.fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(oExme.oPhase.sType, afMass, this.fTemperature, afPartialPressures);
+                this.fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity('mixture', afMass, this.fTemperature, afPartialPressures);
                 
                 this.fPressureLastHeatCapacityUpdate     = this.fPressure;
                 this.fTemperatureLastHeatCapacityUpdate  = this.fTemperature;
