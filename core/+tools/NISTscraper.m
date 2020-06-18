@@ -82,7 +82,7 @@ fStartingPressure = 0.000001;
 
 % Right now, we're only interested in pressures up to 100 bars, which is 10
 % MPa
-fMaximumPressure = 10;
+fMaximumPressure = 30;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% End of user modified section                                        %%%
