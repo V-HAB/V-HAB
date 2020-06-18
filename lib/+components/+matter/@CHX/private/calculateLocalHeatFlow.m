@@ -387,7 +387,10 @@ if (tInput.fMassFlowFilm + fCondensateMassFlow) < 0
 end
 fHeatFlowCoolant = fSpecificHeatFlowRateCoolant * tInput.fCellArea;                                                     % Calculation of coolant heat flow [W], (2.102)
 fHeatFlowGas     = fSpecificHeatFlowRateCoolant * tInput.fCellArea  - ( fCondensateMassFlow * fVaporisationEnthalpy);	% Calculation of gas heat flow [W], without latent heat of condensed vapor! (2.101)
-
+if fHeatFlowGas < 0
+    fHeatFlowGas = 0;
+    fCondensateMassFlow = fHeatFlowCoolant / fVaporisationEnthalpy;
+end
 
 % Calculation of outlet temperatures:
 tOutputs.fTemperatureGasOutlet     = tInput.fTemperatureGas - (fHeatFlowGas / (tInput.fMassFlowGas * tInput.fSpecificHeatCapacityGas));						% [K], (2.103)
