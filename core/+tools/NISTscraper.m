@@ -99,8 +99,8 @@ iFileID = fopen([sPath,'NIST_Scraper_Data.csv'],'w+');
 sOutputString_1 = '';
 sOutputString_2 = '';
 for iI = 1:length(csSubstanceKeys)
-    sOutputString_1 = strcat(sOutputString_1, csSubstanceKeys{iI},',');
-    sOutputString_2 = strcat(sOutputString_2, csSubstanceNames{iI},',');
+    sOutputString_1 = strcat(sOutputString_1, csSubstanceKeys{iI},';');
+    sOutputString_2 = strcat(sOutputString_2, csSubstanceNames{iI},';');
 end
 sOutputString_1(end) = '';
 sOutputString_2(end) = '';
@@ -377,7 +377,7 @@ for iI = 1:length(csSubstanceKeys)
             oHeaderFile = fopen([sPath, sIsochoricHeaderFileName],'w+');
             sColumnFormat = '%s';
             for iL = 1:(length(csColumnNames)-1)
-                sColumnFormat = strcat(sColumnFormat, ',%s');
+                sColumnFormat = strcat(sColumnFormat, ';%s');
             end
             sColumnFormat = strcat(sColumnFormat, '\n');
             fprintf(oHeaderFile,sColumnFormat,csColumnNames{:,1});
@@ -596,7 +596,7 @@ for iI = 1:length(csSubstanceKeys)
             oHeaderFile = fopen([sPath, sIsobaricHeaderFileName],'w+');
             sColumnFormat = '%s';
             for iL = 1:(length(csColumnNames)-1)
-                sColumnFormat = strcat(sColumnFormat, ',%s');
+                sColumnFormat = strcat(sColumnFormat, ';%s');
             end
             sColumnFormat = strcat(sColumnFormat, '\n');
             fprintf(oHeaderFile,sColumnFormat,csColumnNames{:,1});
