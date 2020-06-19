@@ -1,7 +1,7 @@
 function [ cParams, sDefaultPhase ] = N2Atmosphere(oStore, fVolume, fTemperature, rRH, fPressure)
 %N2ATMOSPHERE helper to create a matter phase with a space suit test
 %   atmosphere using 99.9% nitrogen and 0.1% carbon dioxide. If just volume
-%   given, created as a 99.9% nitrogen atmosphere at 28900 Pa, 20°C and 0%
+%   given, created as a 99.9% nitrogen atmosphere at 28900 Pa, 20degC and 0%
 %   relative humidity.
 %
 % SuitVolume Parameters:
@@ -53,11 +53,10 @@ else
     fMassGes = 0;
     fMassFractionH2O = 0;
 end
+
 % Matter composition
-tfMass = struct(...
-    'N2',  0.95 * fMass, ...
-    'CO2', 0.05 * fMass ...
-    );
+tfMass = struct('N2',  0.95 * fMass);
+
 % Calculate H2O mass if present 
 tfMass.H2O = fMassGes * fMassFractionH2O; 
 

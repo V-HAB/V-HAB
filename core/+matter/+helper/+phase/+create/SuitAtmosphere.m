@@ -3,7 +3,7 @@ function [ cParams, sDefaultPhase ] = SuitAtmosphere(oStore, fVolume, fTemperatu
 %   Atmosphere will have 100% oxygen plus any given humidity at any given
 %   pressure.
 %   If just volume given, created as a 100% oxygen atmosphere at 28900 Pa, 
-%   20°C and 0% relative humidity.
+%   20degC and 0% relative humidity.
 %
 % SuitVolume Parameters:
 %   fVolume         - Volume in SI m3
@@ -55,44 +55,6 @@ else
     fMassFractionH2O = 0;
 end
 
-if rRH
-    % Calculation of the saturation vapour pressure
-    % by using the MAGNUS Formula(validity: -45degC <= T <= 60degC, for
-    % water); Formula is only correct for pure steam, not the mixture
-    % of air and water; enhancement factors can be used by a
-    % Poynting-Correction (pressure and temperature dependent); the values of the enhancement factors are in
-    % the range of 1+- 10^-3; thus they are neglected.
-    % Formula is also only correct for water and air, not pure oxygen.
-    %Source: Important new Values of the Physical Constants of 1986, Vapour
-    % Pressure Formulations based on ITS-90, and Psychrometer Formulae. In: Z. Meteorol.
-    % 40, 5, S. 340-344, (1990)
-    
-    fSaturationVapourPressure = 6.11213 * exp(17.62 * (fTemperature-273.15) / (243.12 + (fTemperature-273.15))) * 100;
-    
-    % calculate vapour pressure [Pa]
-    fVapourPressure = rRH*fSaturationVapourPressure; 
-    
-    % calculate mass fraction of H2O in air
-    fMassFractionH2O = fMolarMassH2O/fMolarMassO2*fVapourPressure/(fPressure-fVapourPressure);
-    
-    % calculate molar fraction of H2O in air
-    fMolarFractionH2O = fMassFractionH2O/fMolarMassH2O*fMolarMassO2; 
-    
-    % p V = m / M * R_m * T -> mol mass in g/mol so divide p*V=n*R*T;
-    
-    %calculate total mass
-    fMassGes = (fPressure) * fVolume * ((fMolarFractionH2O*fMolarMassH2O+(1-fMolarFractionH2O)*fMolarMassO2)) / fRm / fTemperature; 
-    
-    % calculate dry air mass
-    fMass = fMassGes*(1-fMassFractionH2O); 
-    
-else
-    fMass = fPressure * fVolume * fMolarMassO2 / fRm / fTemperature;
-    
-    % Need to set this to zero in case of dry gas
-    fMassGes = 0;
-    fMassFractionH2O = 0;
-end
 % Matter composition
 tfMass = struct('O2', fDryMass);
 
