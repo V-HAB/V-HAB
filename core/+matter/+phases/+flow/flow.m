@@ -77,28 +77,6 @@ classdef (Abstract) flow < matter.phase
             this.bind('update_partials',@(~)this.updatePartials());
         end
         
-        function setPressure(this, fPressure)
-            %% setPressure
-            % INTERNAL FUNCTION!
-            % This function is called by the multi branch solver to set the
-            % pressure of the connected flow nodes. Should not be used by
-            % the user, however access restrictions would require further
-            % queries and since this function is called very often, that
-            % would slow down the simulation.
-            % Required Inputs:
-            % fPressure: Pressure of the flow node in Pa
-            if fPressure < 0
-                error('VHAB:FlowPhase:NegativePressure',['A negative pressure occured in the flow phase ', ...
-                      this.sName, ' in store ', this.oStore.sName, '. ', ...
-                      'This can happen if e.g. the f2f have a too large pressure drops for a constant flowrate '; ...
-                      'boundary forcing the solver to converge to a solution with negative pressures. ', ...
-                      'Please check your system']);
-            end
-            this.fVirtualPressure = fPressure;
-            this.fMassToPressure = fPressure;
-        end
-        
-        
         function updatePartials(this, afPartialInFlows)
             %% updatePartials
             % INTERNAL FUNCTION!
@@ -340,6 +318,29 @@ classdef (Abstract) flow < matter.phase
                 fPressure = this.fVirtualPressure;
             end
         end
+    end
+    
+    methods (Access = ?solver.matter_multibranch.iterative.branch)
+        
+        function setPressure(this, fPressure)
+            %% setPressure
+            % This function can only be called by the multi branch solver
+            % to set the pressure of the connected flow nodes. 
+            % 
+            % Required Inputs: fPressure: Pressure of the flow node in Pa
+            
+            if fPressure < 0
+                error('VHAB:FlowPhase:NegativePressure',['A negative pressure occured in the flow phase ', ...
+                      this.sName, ' in store ', this.oStore.sName, '. ', ...
+                      'This can happen if e.g. the f2f have a too large pressure drops for a constant flowrate '; ...
+                      'boundary forcing the solver to converge to a solution with negative pressures. ', ...
+                      'Please check your system']);
+            end
+            
+            this.fVirtualPressure = fPressure;
+            this.fMassToPressure  = fPressure;
+        end
+        
     end
 end
 
