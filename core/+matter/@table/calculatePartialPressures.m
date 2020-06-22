@@ -31,8 +31,11 @@ if length(varargin) == 1
         end
         
         afMass = varargin{1}.afMass;
-        
-        fPressure = varargin{1}.fMass * varargin{1}.fMassToPressure;
+        if varargin{1}.bFlow
+            fPressure = varargin{1}.fVirtualPressure;
+        else
+            fPressure = varargin{1}.fMass * varargin{1}.fMassToPressure;
+        end
         
     elseif strcmp(varargin{1}.sObjectType, 'flow')
         oFlow = varargin{1};

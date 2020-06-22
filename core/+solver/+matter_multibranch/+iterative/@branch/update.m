@@ -321,7 +321,11 @@ function update(this)
                     % calculation. We don't do this if the current branch
                     % is being corrected for oscillating. 
                     if ~(this.abOscillationCorrectedBranches(aiBranch) && this.bFinalLoop)
-                        this.afFlowRates(aiBranch) = (this.afFlowRates(aiBranch) * 5 + afResults(iColumn)) / 6;
+                        if bP2POscillationDetected
+                            this.afFlowRates(aiBranch) = (this.afFlowRates(aiBranch) * 10 + afResults(iColumn)) / 11;
+                        else
+                            this.afFlowRates(aiBranch) = (this.afFlowRates(aiBranch) * 5 + afResults(iColumn)) / 6;
+                        end
                     end
                 end
             elseif strcmp(oObj.sObjectType, 'phase')
@@ -400,7 +404,7 @@ function update(this)
                     arErrors = abs(afFrsDiff ./ afPrevFrs);
                     
                     % Now we find the branches that have the maximum error.
-                    aiOffendingBranches = find(arErrors == rError);
+                    aiOffendingBranches = find(arErrors >= rErrorMax);
                     
                     % How many are there?
                     iNumberOfOffendingBranches = length(aiOffendingBranches);
@@ -475,6 +479,12 @@ function update(this)
                     end
                 end
             else
+                % if you reach this, please view debugging tipps at the
+                % beginning of this file!
+                keyboard();
+                this.throw('update', 'too many iterations, error %.12f', rError);
+            end
+            if this.iIteration > this.iMaxIterations + 10
                 % if you reach this, please view debugging tipps at the
                 % beginning of this file!
                 keyboard();
