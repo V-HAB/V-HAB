@@ -1,7 +1,7 @@
 classdef Example < vsys
     
     properties (SetAccess = protected, GetAccess = public)
-        
+        fHourModuloCounter = 0;
     end
     methods
         function this = Example(oParent, sName)
@@ -79,6 +79,12 @@ classdef Example < vsys
                 % Inlet flow represents about 86.4 kg of waste water per day
                 this.toChildren.WPA.toBranches.Inlet.oHandler.setFlowRate(-0.001);
             end
+            
+            % This code synchronizes everything once per hour
+            if mod(this.oTimer.fTime, 3600) < this.fHourModuloCounter
+                this.oTimer.synchronizeCallBacks();
+            end
+            this.fHourModuloCounter = mod(this.oTimer.fTime, 3600);
         end
     end
 end

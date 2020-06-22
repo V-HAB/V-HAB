@@ -10,7 +10,7 @@ classdef setup < simulation.infrastructure
         function this = setup(ptConfigParams, tSolverParams)
             %ttMonitorConfig = struct();
             
-            ttMonitorConfig = struct('oLogger', struct('cParams', {{ true, 200000 }}));
+            ttMonitorConfig = struct('oLogger', struct('cParams', {{ true, 20000 }}));
             
             ttMonitorConfig.oTimeStepObserver.sClass = 'simulation.monitors.timestepObserver';
             ttMonitorConfig.oTimeStepObserver.cParams = { 0 };
@@ -19,7 +19,7 @@ classdef setup < simulation.infrastructure
             examples.WPA.systems.Example(this.oSimulationContainer,'Example');
             %% Simulation length
             
-            this.fSimTime = 86400 * 12;  % 12; % In seconds
+            this.fSimTime = 86400 * 200;  % 12; % In seconds
             
             this.bUseTime = true;
         end
