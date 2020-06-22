@@ -187,10 +187,11 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
     for iBoundary = 1:length(afBoundaryHelper)
         abEqualize = abs(afBoundaryHelper - afBoundaryHelper(iBoundary)) < this.fMinPressureDiff & ~(afBoundaryHelper == 0);
         
-        fEqualizedPressure = sum(afBoundaryHelper(abEqualize)) / sum(abEqualize);
-        
-        afBoundaryConditions(abEqualize) = fEqualizedPressure .* miSigns(abEqualize);
-        
+        if sum(abEqualize) > 0
+            fEqualizedPressure = sum(afBoundaryHelper(abEqualize)) / sum(abEqualize);
+
+            afBoundaryConditions(abEqualize) = fEqualizedPressure .* miSigns(abEqualize);
+        end
         if any(isnan(afBoundaryConditions))
             this.throw('updatePDCoeffs','NaN in the pressure drop coefficients.');
         end

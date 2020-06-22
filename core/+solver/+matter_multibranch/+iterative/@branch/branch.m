@@ -651,6 +651,35 @@ classdef branch < base & event.source
             
         end
        
+        function registerUpdate(this, ~)
+            % this function registers an update
+            
+            if ~(this.oTimer.fTime > this.fLastSetOutdated) && this.bRegisteredOutdated
+                return;
+            end
+            
+            if ~base.oDebug.bOff, this.out(1, 1, 'reg-post-tick', 'Multi-Solver - register outdated? [%i]', { ~this.bRegisteredOutdated }); end
+            
+            for iB = 1:this.iBranches
+                for iE = 1:2
+                    this.aoBranches(iB).coExmes{iE}.oPhase.registerMassupdate();
+                end
+            end
+            
+            % Allows other functions to register an event to this trigger
+            if this.bTriggerRegisterUpdateCallbackBound
+                this.trigger('register_update');
+            end
+
+            if ~base.oDebug.bOff, this.out(1, 1, 'registerUpdate', 'Registering update() method on the multi-branch solver.'); end
+            
+            this.hBindPostTickUpdate();
+            this.hBindPostTickTimeStepCalculation();
+            
+            this.bRegisteredOutdated = true;
+            this.fLastSetOutdated = this.oTimer.fTime;
+        end
+        
     end
     
     
@@ -720,35 +749,6 @@ classdef branch < base & event.source
             this.csVariablePressurePhases = fieldnames(this.toVariablePressurePhases);
             this.csObjUuidsToColIndex     = fieldnames(this.tiObjUuidsToColIndex);
             this.csBoundaryPhases         = fieldnames(this.toBoundaryPhases);
-        end
-        
-        function registerUpdate(this, ~)
-            % this function registers an update
-            
-            if ~(this.oTimer.fTime > this.fLastSetOutdated) && this.bRegisteredOutdated
-                return;
-            end
-            
-            if ~base.oDebug.bOff, this.out(1, 1, 'reg-post-tick', 'Multi-Solver - register outdated? [%i]', { ~this.bRegisteredOutdated }); end
-            
-            for iB = 1:this.iBranches
-                for iE = 1:2
-                    this.aoBranches(iB).coExmes{iE}.oPhase.registerMassupdate();
-                end
-            end
-            
-            % Allows other functions to register an event to this trigger
-            if this.bTriggerRegisterUpdateCallbackBound
-                this.trigger('register_update');
-            end
-
-            if ~base.oDebug.bOff, this.out(1, 1, 'registerUpdate', 'Registering update() method on the multi-branch solver.'); end
-            
-            this.hBindPostTickUpdate();
-            this.hBindPostTickTimeStepCalculation();
-            
-            this.bRegisteredOutdated = true;
-            this.fLastSetOutdated = this.oTimer.fTime;
         end
         
         function calculateTimeStep(this)

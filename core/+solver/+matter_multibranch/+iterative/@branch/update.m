@@ -289,7 +289,14 @@ function update(this)
             % TBD: decide if we need a better way to get the pressures in
             % this case. E.g. find out which boundary phase affects which
             % branches and set these pressures for the flow phases
-            fAverageBoundaryPressure = sum(afBoundaryConditions(1:iStartZeroSumEquations-1)) / sum(afBoundaryConditions(1:iStartZeroSumEquations-1) ~= 0);
+            iBoundaries = sum(afBoundaryConditions(1:iStartZeroSumEquations-1) ~= 0);
+            if iBoundaries == 0
+                % In some cases this can occur during the iteration where
+                % valves close and only open in the next iteration
+                fAverageBoundaryPressure = this.oMT.Standard.Pressure;
+            else
+                fAverageBoundaryPressure = sum(afBoundaryConditions(1:iStartZeroSumEquations-1)) / iBoundaries;
+            end
             if any(isnan(afResults))
                 this.throw('solver', 'NaNs in the Multi-Branch Solver Results!');
             end
