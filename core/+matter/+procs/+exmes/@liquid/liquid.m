@@ -78,8 +78,10 @@ classdef liquid < matter.procs.exme
             %calculates the pressure at the exme by using the inherent tank
             %pressure for 0g and adding the pressure which is created by
             %gravity
-            this.fPressure = this.oPhase.fPressure + this.fLiquidLevel*...
-                this.fAcceleration*this.oPhase.fDensity;
+            if this.fAcceleration ~= 0
+                this.fPressure = this.oPhase.fPressure + this.fLiquidLevel*...
+                    this.fAcceleration*this.oPhase.fDensity;
+            end
             
             this.fTemperature = this.oPhase.fTemperature;
             
@@ -158,10 +160,13 @@ classdef liquid < matter.procs.exme
                 % Calculates the pressure at the exme by using the inherent
                 % tank pressure for 0g and adding the pressure which is
                 % created by gravity
-                this.fPressure = fPressureTank + this.fLiquidLevel * this.fAcceleration * fDensityLiquid;
-                
+                if this.fAcceleration ~= 0
+                    this.fPressure = fPressureTank + this.fLiquidLevel * this.fAcceleration * fDensityLiquid;
+                end
             else
-                this.fPressure = this.oPhase.fPressure;
+                if this.fAcceleration ~= 0
+                    this.fPressure = this.oPhase.fPressure;
+                end
                 this.fTemperature = this.oPhase.fTemperature;
             end
         end
