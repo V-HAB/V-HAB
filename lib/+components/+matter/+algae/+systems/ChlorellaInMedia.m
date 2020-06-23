@@ -72,9 +72,7 @@ classdef ChlorellaInMedia < vsys
 
             matter.phases.mixture(this.toStores.GrowthChamber, 'GrowthMedium', 'liquid', this.tfGrowthChamberComponents, 303, 1e5);
             
-            %the true after 'gas' makes this to be a flow node, composition
-            %of this phase is ignored if it is true (flow).
-            this.toStores.GrowthChamber.createPhase('gas', 'flow', 'AirInGrowthChamber', 0.05 ,struct('O2',5000, 'CO2', 59000), 293, 0.5);
+            this.toStores.GrowthChamber.createPhase('gas', 'AirInGrowthChamber', 0.05 ,struct('O2',5000, 'CO2', 59000), 293, 0.5);
             
             
             %% Air Connection to Photobioreactor Air Supply in PBR Parent System 

@@ -25,10 +25,10 @@ classdef Two_Tanks < vsys
         function createMatterStructure(this)
             createMatterStructure@vsys(this);
             % Creating a store
-            matter.store(this, 'Tank_1', 1, 0);
+            matter.store(this, 'Tank_1', 1);
             
             % Creating a second store
-            matter.store(this, 'Tank_2', 1, 0);
+            matter.store(this, 'Tank_2', 1);
             
             oWaterPhase1 = this.toStores.Tank_1.createPhase('water', 1, 293, 2*10^5);
             %oAirPhase1 = this.toStores.Tank_1.createPhase('air', 0.5, 293, 0, 2*10^5);

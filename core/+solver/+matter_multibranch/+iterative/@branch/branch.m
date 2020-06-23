@@ -335,25 +335,6 @@ classdef branch < base & event.source
         
         fInitializationFlowRate;
         
-        % This boolean array identifies those branches that are to be
-        % checked for choked flow conditions. Since this is a fairly
-        % complex calculation, it can be turned on and off per branch,
-        % rather than globally. To enable this functionality, just pass the
-        % branch object you want to montior to the
-        % activateChokedFlowChecking() method of this class.
-        abCheckForChokedFlow;
-        
-        % This boolean array contains all branches that contain a choked
-        % flow for a given iteration of the solver.
-        abChokedBranches;
-        
-        % This cell contains the pressure drop values for each branch with
-        % a choked flow. We need these values as inputs to the
-        % setBranchFlowRate callback. The values for the pressure
-        % differences are calculated in the
-        % updatePressureDropCoefficients() method of this class.
-        cafChokedBranchPressureDiffs;
-        
         % As a performance enhancement, these booleans are set to true once
         % a callback is bound to the 'update' and 'register_update'
         % triggers, respectively. Only then are the triggers actually sent.
@@ -378,8 +359,49 @@ classdef branch < base & event.source
         % iterations' error when the oscillating branches have been
         % corrected. 
         bBranchOscillationSuppressionActive = false;
+        
+        % A boolean that is set to true while the update() method of this
+        % class is being run. It is used by the flow phase objects to
+        % determine if it is safe to use their afPP and rRelHumidity
+        % properties or not. During the update those properties may change
+        % between solver iterations.
+        bUpdateInProgress = false;
     end
     
+    properties (SetAccess = protected, GetAccess = public)
+        %% Properties related to choked flow checking
+        
+        % This boolean array identifies those branches that are to be
+        % checked for choked flow conditions. Since this is a fairly
+        % complex calculation, it can be turned on and off per branch,
+        % rather than globally. To enable this functionality, just pass the
+        % branch object you want to montior to the
+        % activateChokedFlowChecking() method of this class.
+        abCheckForChokedFlow;
+        
+        % This boolean array contains all branches that contain a choked
+        % flow for a given iteration of the solver.
+        abChokedBranches;
+        
+        % This cell contains the pressure drop values for each branch with
+        % a choked flow. We need these values as inputs to the
+        % setBranchFlowRate callback. The values for the pressure
+        % differences are calculated in the
+        % updatePressureDropCoefficients() method of this class.
+        cafChokedBranchPressureDiffs;
+        
+        % The following three properties capture the pressure, temperature
+        % partial mass, adiabatic index and initialization state of the
+        % flow through the branches where choked flow checking is
+        % activated. This is done in an effort to reduce the calls to
+        % calculateAdiabaticIndex() in the matter table. See
+        % checkForChokedFlow() for details.
+        afPressureLastCheck;
+        afTemperatureLastCheck;
+        mrPartialMassLastCheck;
+        afAdiabaticIndex;
+        abChokedFlowCheckInitialized;
+    end
     
     methods
         function this = branch(aoBranches, sMode)
@@ -394,15 +416,21 @@ classdef branch < base & event.source
                 this.sSolverType = 'coefficient';
             end
             
-            this.aoBranches = aoBranches;
-            this.iBranches  = length(this.aoBranches);
-            this.abCheckForChokedFlow = false(this.iBranches,1);
-            this.abChokedBranches = false(this.iBranches,1);
-            this.cafChokedBranchPressureDiffs = cell(this.iBranches,1);
+            % Initializing a bunch of properties
+            this.aoBranches                     = aoBranches;
+            this.iBranches                      = length(this.aoBranches);
+            this.abCheckForChokedFlow           = false(this.iBranches,1);
+            this.abChokedBranches               = false(this.iBranches,1);
+            this.cafChokedBranchPressureDiffs   = cell(this.iBranches,1);
+            this.abChokedFlowCheckInitialized   = false(this.iBranches,1);
+            this.afPressureLastCheck            = zeros(this.iBranches,1);
+            this.afTemperatureLastCheck         = zeros(this.iBranches,1);
+            this.afAdiabaticIndex               = zeros(this.iBranches,1);
+            this.mrPartialMassLastCheck         = zeros(this.iBranches,this.aoBranches(1).oMT.iSubstances);
             this.abOscillationCorrectedBranches = false(this.iBranches,1);
-            this.mbExternalBoundaryBranches = zeros(this.iBranches,1);
-            this.oMT        = this.aoBranches(1).oMT;
-            this.oTimer     = this.aoBranches(1).oTimer;
+            this.mbExternalBoundaryBranches     = zeros(this.iBranches,1);
+            this.oMT                            = this.aoBranches(1).oMT;
+            this.oTimer                         = this.aoBranches(1).oTimer;
             
             % Preset
             this.chSetBranchFlowRate = cell(1, this.iBranches);
@@ -586,12 +614,32 @@ classdef branch < base & event.source
             % Calculating the pressure difference. Always positive!
             fPressureDiff = fUpstreamPressure - fDownstreamPressure;
             
+            oPhase = oBranch.coExmes{iPhaseIndex}.oPhase;
+            
             % We need to calculate the adiabatic index for the critical
-            % pressure calculation below. 
-            fAdiabaticIndex = this.oMT.calculateAdiabaticIndex(oBranch.coExmes{iPhaseIndex}.oPhase);
+            % pressure calculation below. To reduce the number of calls to
+            % the matter table findProperty() method, we only do this if
+            % the parameters of the inflowing phase have changed
+            % significantly.
+            if ~this.abChokedFlowCheckInitialized(iBranch) ||...
+               (abs(this.afPressureLastCheck(iBranch) - oPhase.fPressure) > 100) ||...
+               (abs(this.afTemperatureLastCheck(iBranch) - oPhase.fTemperature) > 1) ||...
+               (max(abs(this.mrPartialMassLastCheck(iBranch,:) - oPhase.arPartialMass)) > 0.01)
+                
+                % Recalculating the adiabatic index
+                this.afAdiabaticIndex(iBranch) = this.oMT.calculateAdiabaticIndex(oPhase);
+                
+                % Setting the properties for the next check
+                this.afPressureLastCheck(iBranch)      = oPhase.fPressure;
+                this.afTemperatureLastCheck(iBranch)   = oPhase.fTemperature;
+                this.mrPartialMassLastCheck(iBranch,:) = oPhase.arPartialMass;
+                
+                
+                this.abChokedFlowCheckInitialized(iBranch) = true;
+            end
             
             % Now we can calculate the critical pressure for this branch. 
-            fCriticalPressure = fUpstreamPressure * (2 / (fAdiabaticIndex + 1))^(fAdiabaticIndex / (fAdiabaticIndex - 1));
+            fCriticalPressure = fUpstreamPressure * (2 / (this.afAdiabaticIndex(iBranch) + 1))^(this.afAdiabaticIndex(iBranch) / (this.afAdiabaticIndex(iBranch) - 1));
             
             % If the downstream pressure is smaller or equal to the
             % critical pressure, the flow is choked. Otherwise we just
@@ -647,7 +695,7 @@ classdef branch < base & event.source
             % but decided not to spend any more time on this. So:
             % NOTE: The source of the following equations is Wikipedia and
             % may not be correct. Should make sure it's good at some point.
-            fChokedFlowRate = fDischargeCoefficient * fMinimumArea * sqrt(fAdiabaticIndex * oBranch.coExmes{iPhaseIndex}.oPhase.fDensity * fUpstreamPressure * (2/(fAdiabaticIndex+1))^((fAdiabaticIndex + 1)/(fAdiabaticIndex - 1)));
+            fChokedFlowRate = fDischargeCoefficient * fMinimumArea * sqrt(this.afAdiabaticIndex(iBranch) * oBranch.coExmes{iPhaseIndex}.oPhase.fDensity * fUpstreamPressure * (2/(this.afAdiabaticIndex(iBranch)+1))^((this.afAdiabaticIndex(iBranch) + 1)/(this.afAdiabaticIndex(iBranch) - 1)));
             
         end
        
@@ -680,6 +728,8 @@ classdef branch < base & event.source
 
                             this.tiObjUuidsToColIndex.(oPhase.sUUID) = iColIndex;
                             this.coColIndexToObj{iColIndex} = oPhase;
+                            
+                            oPhase.setHandler(this);
                         end
                         
                     % 'Real' phase - boundary condition

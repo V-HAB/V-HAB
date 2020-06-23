@@ -27,7 +27,7 @@ classdef Dryer <  matter.procs.p2ps.flow
             
             fWaterFlowRate = afPartialInFlows(this.oMT.tiN2I.H2O);
             
-            this.setMatterProperties(this.fDryingEfficiency * fWaterFlowRate, this.arPartialsAdsorption);
+            this.setMatterProperties(this.fDryingEfficiency * fWaterFlowRate, this.arPartialsAdsorption, this.oOut.oPhase.fTemperature, this.oOut.oPhase.fPressure);
         end
     end
     methods (Access = protected)

@@ -31,7 +31,7 @@ classdef ConstantTemperature < thermal.heatsource
                 this.throw('setCapacity', 'Heatsource already has a capacity object');
             end
             
-            % bin callpack to update this heat source before updating the
+            % bind callback to update this heat source before updating the
             % heatsource heatflows of the capacity. Note do not use a
             % consant temperature heat source together with any other heat
             % source (why would you do that?)

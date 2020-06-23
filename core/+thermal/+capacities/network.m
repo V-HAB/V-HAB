@@ -10,11 +10,6 @@ classdef network < thermal.capacity
         
         % Index of this capacity in the 
         iHandlerCapacityIndex;
-        
-        % For the total heat source heat flow rate to be easily accesible
-        % to the thermal network solver, we store it in this property for
-        % each capacity
-        fHeatSourceHeatFlow = 0;
     end
     
     methods
@@ -61,17 +56,21 @@ classdef network < thermal.capacity
             % the capacities, heat sources and other thermal branches
             
             % This function can also be called by a connected heat sources
-            % therefore, we update the fHeatSourceHeatFlow property:
-            this.fHeatSourceHeatFlow = 0;
+            % therefore, we update the fTotalHeatSourceHeatFlow property:
+            afHeatSourceFlows = zeros(this.iHeatSources,1);
             for iI = 1:this.iHeatSources
-                this.fHeatSourceHeatFlow = this.coHeatSource{iI}.fHeatFlow;
+                afHeatSourceFlows(iI) = this.coHeatSource{iI}.fHeatFlow;
             end
+            
+            this.fTotalHeatSourceHeatFlow = sum(afHeatSourceFlows);
             
             if this.fTimeStep ~= inf
                 this.setTimeStep(inf,true);
             end
             
-            this.oHandler.hBindPostTickUpdate();
+            if this.oHandler.bPostTickUpdateNotBound
+                this.oHandler.hBindPostTickUpdate();
+            end
         end
     end
     

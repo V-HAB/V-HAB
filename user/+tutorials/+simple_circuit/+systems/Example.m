@@ -36,7 +36,8 @@ classdef Example < vsys
             oCircuit = this.toCircuits.ExampleCircuit;
             
             % Create source
-            electrical.stores.constantVoltageSource(oCircuit, 'VoltageSource', 'DC', 6);
+            oVoltageSource = electrical.stores.constantVoltageSource(oCircuit, 'VoltageSource', 'DC', 6);
+            oVoltageSource.setFixedTimeStep(1);
             
             % Create resistors
             electrical.components.resistor(oCircuit, 'Resistor1', 7.5);

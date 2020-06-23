@@ -292,14 +292,10 @@ classdef Example < vsys
                             oNode = this.coNodes{iX, iY, iZ}.oCapacity;
                             
                             % Creating a heat source
-                            oHeatSource = thermal.heatsource(['Heater_Node_X', num2str(iX),'_Y', num2str(iY),'_Z', num2str(iZ)], 0);
+                            oHeatSource = thermal.heatsource(['Heater_Node_X', num2str(iX),'_Y', num2str(iY),'_Z', num2str(iZ)], this.fHeatFlow / 8);
                             
                             % Adding the heat source to the node
                             oNode.addHeatSource(oHeatSource);
-                            
-                            % Setting the initial heat flow for the heat
-                            % source
-                            oHeatSource.setHeatFlow(this.fHeatFlow / 8);
                             
                             % Adding the heat source to the property array
                             this.aoHeatSources(end+1) = oHeatSource;
@@ -315,14 +311,10 @@ classdef Example < vsys
                 oNode = this.coNodes{iCenterNodeIndex, iCenterNodeIndex, iCenterNodeIndex}.oCapacity;
                 
                 % Creating a heat source
-                oHeatSource = thermal.heatsource(['Heater_Node_X', num2str(iCenterNodeIndex),'_Y', num2str(iCenterNodeIndex),'_Z', num2str(iCenterNodeIndex)], 0);
+                oHeatSource = thermal.heatsource(['Heater_Node_X', num2str(iCenterNodeIndex),'_Y', num2str(iCenterNodeIndex),'_Z', num2str(iCenterNodeIndex)], this.fHeatFlow);
                 
                 % Adding the heat source to the node
                 oNode.addHeatSource(oHeatSource);
-                
-                % Setting the initial heat flow for the heat
-                % source
-                oHeatSource.setHeatFlow(this.fHeatFlow);
                 
                 % Setting the property to this heat source. 
                 this.aoHeatSources = oHeatSource;

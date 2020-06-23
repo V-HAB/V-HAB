@@ -4,6 +4,8 @@ function update(this)
     % information on the solution routine please view the initial code
     % section!
     
+    this.bUpdateInProgress = true;
+    
     this.fLastUpdate         = this.oTimer.fTime;
     
     if ~base.oDebug.bOff
@@ -281,12 +283,14 @@ function update(this)
             % case we only solve the flowrates, as the pressures cannot be
             % solved. Therefore, we set a flag to use the boundary
             % pressures for the phase pressures
+            warning('off','all');
             afResults = mfPhasePressuresAndFlowRates(iStartZeroSumEquations:end,:) \ afBoundaryConditions(iStartZeroSumEquations:end);
+            warning('on','all');
             bSolveOnlyFlowrates = true;
             % TBD: decide if we need a better way to get the pressures in
             % this case. E.g. find out which boundary phase affects which
             % branches and set these pressures for the flow phases
-            fAverageBoundaryPressure = sum(afBoundaryConditions(1:iStartZeroSumEquations-1)) / sum(afBoundaryConditions(1:iStartZeroSumEquations-1) ~= 0);
+            fAverageBoundaryPressure = abs(sum(afFullBoundaryConditions(1:iStartZeroSumEquationsFull-1)) / sum(afFullBoundaryConditions(1:iStartZeroSumEquationsFull-1) ~= 0));
             if any(isnan(afResults))
                 this.throw('solver', 'NaNs in the Multi-Branch Solver Results!');
             end
@@ -317,11 +321,15 @@ function update(this)
                     % calculation. We don't do this if the current branch
                     % is being corrected for oscillating. 
                     if ~(this.abOscillationCorrectedBranches(aiBranch) && this.bFinalLoop)
-                        this.afFlowRates(aiBranch) = (this.afFlowRates(aiBranch) * 5 + afResults(iColumn)) / 6;
+                        if bP2POscillationDetected
+                            this.afFlowRates(aiBranch) = (this.afFlowRates(aiBranch) * 10 + afResults(iColumn)) / 11;
+                        else
+                            this.afFlowRates(aiBranch) = (this.afFlowRates(aiBranch) * 5 + afResults(iColumn)) / 6;
+                        end
                     end
                 end
             elseif strcmp(oObj.sObjectType, 'phase')
-            	if bSolveOnlyFlowrates
+                if bSolveOnlyFlowrates
                     oObj.setPressure(fAverageBoundaryPressure);
                 else
                     if afResults(iColumn) < 0
@@ -331,7 +339,7 @@ function update(this)
                         % initialization is at low flow rates. We ignore this
                         % value here and hopefully the solver will calculate
                         % something better in the next iteration. Just in case,
-                        % we record the objects here to help with debugging. 
+                        % we record the objects here to help with debugging.
                         toPhasesWithNegativePressures.(oObj.sUUID) = oObj;
                     else
                         oObj.setPressure(afResults(iColumn));
@@ -396,7 +404,7 @@ function update(this)
                     arErrors = abs(afFrsDiff ./ afPrevFrs);
                     
                     % Now we find the branches that have the maximum error.
-                    aiOffendingBranches = find(arErrors == rError);
+                    aiOffendingBranches = find(arErrors >= rErrorMax);
                     
                     % How many are there?
                     iNumberOfOffendingBranches = length(aiOffendingBranches);
@@ -471,6 +479,12 @@ function update(this)
                     end
                 end
             else
+                % if you reach this, please view debugging tipps at the
+                % beginning of this file!
+                keyboard();
+                this.throw('update', 'too many iterations, error %.12f', rError);
+            end
+            if this.iIteration > this.iMaxIterations + 10
                 % if you reach this, please view debugging tipps at the
                 % beginning of this file!
                 keyboard();
@@ -615,6 +629,8 @@ function update(this)
             abAlreadyUpdated(iB) = true;
         end
     end
+    
+    this.bUpdateInProgress = false;
     
     if this.bTriggerUpdateCallbackBound
         this.trigger('update');

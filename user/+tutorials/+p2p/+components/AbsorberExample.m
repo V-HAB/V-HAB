@@ -75,7 +75,7 @@ classdef AbsorberExample < matter.procs.p2ps.stationary & event.source
             % instead of afMass(X), btw) to determine load.
             this.rLoad = this.oOut.oPhase.afMass(iSpecies) / this.fCapacity;
             
-            if this.fCapacity == 0, this.rLoad = 1; end;
+            if this.fCapacity == 0, this.rLoad = 1; end
             
             %this.rLoad = 0;
             

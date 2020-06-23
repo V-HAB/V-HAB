@@ -75,13 +75,18 @@ classdef fan < matter.procs.f2f
             'fZeroCrossingLower',   0.0048 ...  m^3/s
             );
         
-        % Boolean variable to enable or disable the pressure rise at the
-        % beginning of a simulation. This prevents some solvers from
+        % Boolean variable to enable or disable the gradual pressure rise
+        % after the fan is turned on. This prevents some solvers from
         % becoming unstable due to the large pressure spike produced by the
-        % fan when starting at zero flow rate. 
-        %TODO should implement this better and make it use the gradual rise
-        %after each shutdown, not just at the beginning of a simulation.
+        % fan when starting at zero flow rate.
         bUsePressureRise = false;
+        
+        % Simulation time index when the state of this fan switched from
+        % off to on. 
+        fTurnOnTime = -1;
+        
+        % Boolean variable that stores the previous state of this fan.
+        bPreviouslyOff = true;
         
         % Maximum delta pressure of the fan at the current speed setpoint
         fMaximumDeltaPressure;
@@ -97,7 +102,7 @@ classdef fan < matter.procs.f2f
     end
     
     methods
-        function this = fan(oContainer, sName, fSpeedSetpoint, tCharacteristic)
+        function this = fan(oContainer, sName, fSpeedSetpoint, bUsePressureRise, tCharacteristic)
             % Constructor 
             % Required inputs: 
             % oContainer        Reference to the matter container this f2f
@@ -121,9 +126,16 @@ classdef fan < matter.procs.f2f
             % tells solvers that this component produces a pressure rise
             this.bActive = true;
             
+            % The user can opt to turn on a feature that gradually
+            % increases the pressure rise created by this fan over one
+            % second after it is turned on. 
+            if nargin > 3
+                this.bUsePressureRise = bUsePressureRise;
+            end
+            
             % If a specific characteristic is used, read in the data and
             % override the defaults
-            if nargin > 3
+            if nargin > 4
                 this.tCharacteristic = tCharacteristic;
             end
             
@@ -153,6 +165,7 @@ classdef fan < matter.procs.f2f
         
         function switchOff(this)
             this.bTurnedOn = false;
+            this.bPreviouslyOff = true;
             this.oBranch.setOutdated();
         end
         
@@ -285,10 +298,21 @@ classdef fan < matter.procs.f2f
             % pressure at the start of a simulation over a time
             % period of one second. This is done to prevent solver
             % issues caused by a large pressure spike.
-            if this.bUsePressureRise
-                fRiseTime = 1;
-                if this.oTimer.fTime < fRiseTime
-                    fDeltaPressure = fDeltaPressure * (-1 * ((this.oTimer.fTime - fRiseTime) / fRiseTime)^2 + 1);
+            if this.bUsePressureRise && fFlowRate >= 0
+                if this.bPreviouslyOff == true
+                    this.fTurnOnTime = this.oTimer.fTime;
+                    this.bPreviouslyOff = false;
+                end
+                
+                fTotalRiseTime = 1;
+                fCurrentRiseTime = this.oTimer.fTime - this.fTurnOnTime - fTotalRiseTime;
+                if fCurrentRiseTime < fTotalRiseTime
+                    if fFlowRate > 0
+                        fNudgeFactor = -1;
+                    else
+                        fNudgeFactor = 0;
+                    end
+                    fDeltaPressure = fDeltaPressure * (-1 * (fCurrentRiseTime / fTotalRiseTime)^2 + 1) + fNudgeFactor;
                 end
             end
             

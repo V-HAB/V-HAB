@@ -314,7 +314,7 @@ classdef branch < solver.matter.base.branch
                 fPressureRise   =  sum(mfData(mfData < 0));
             end
             fPressureDrop   =  sum(mfData(mfData > 0));
-            fError          =  abs(fPressureDifference + fPressureRise) - abs(fPressureDrop);
+            fError          =  abs(fPressureDifference - fPressureRise) - abs(fPressureDrop);
         end
         
         function [fTimeStep] = calculateTimeStep(this, fFlowRate, afDeltaP)

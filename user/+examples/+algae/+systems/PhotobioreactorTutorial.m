@@ -30,7 +30,7 @@ classdef PhotobioreactorTutorial< vsys
             this.txPhotobioreactorProperties = ...
                 struct(...
                 'sLightColor',              'RedExperimental', ...  %Radiation energy source (light) of photobioreactor. options:Red, Blue, Yellow, Green, Daylight, RedExperimental
-                'fSurfacePPFD',             400, ...                %[µmol/m2s] irradiance on surface of PBR. best performance when selecting a value at or just below inhibition -> maximum of PBR in saturated growth zone. Above inhibition growth would be inhibited. 
+                'fSurfacePPFD',             400, ...                %[Âµmol/m2s] irradiance on surface of PBR. best performance when selecting a value at or just below inhibition -> maximum of PBR in saturated growth zone. Above inhibition growth would be inhibited. 
                 'fGrowthVolume',            0.5, ...               %[m3]. Algal growth volume filled with growth medium.
                 'fDepthBelowSurface',       0.0025, ...             %[m]. depth of the photobioreactor below the irradiated surface. Typically has strong influence on growth because of radiation attenuation at high depths.     
                 'fMembraneSurface',         10, ...                 %[m2]. Area of air exchange membrane. can be limiting when pressure gradient is low and surface small
@@ -276,15 +276,6 @@ classdef PhotobioreactorTutorial< vsys
             
             matter.procs.exmes.liquid(oCondensatePhase, 'Port_1');
             
-            % Adding heat sources to keep the cabin and coolant water at a
-            % constant temperature
-            oHeatSource = components.thermal.heatsources.ConstantTemperature('Cabin_Constant_Temperature');
-            oCabinPhase.oCapacity.addHeatSource(oHeatSource);
-            
-            oHeatSource = components.thermal.heatsources.ConstantTemperature('Coolant_Constant_Temperature');
-            oCoolantPhase.oCapacity.addHeatSource(oHeatSource);
-            
-            
             %define branches for CCAA
             matter.branch(this, 'CCAAinput', {}, 'Cabin.Port_1');
             matter.branch(this, 'CCAA_CHX_Output', {}, 'Cabin.Port_2');
@@ -297,6 +288,23 @@ classdef PhotobioreactorTutorial< vsys
             % now the interfaces between this system and the CCAA subsystem
             % are defined
             this.toChildren.CCAA.setIfFlows('CCAAinput', 'CCAA_CHX_Output', 'CCAA_TCCV_Output', 'CCAA_CondensateOutput', 'CCAA_CoolantInput', 'CCAA_CoolantOutput');
+            
+        end
+        
+        function createThermalStructure(this)
+            createThermalStructure@vsys(this);
+            
+            % Adding heat sources to keep the cabin and coolant water at a
+            % constant temperature
+            oHeatSource = components.thermal.heatsources.ConstantTemperature('Cabin_Constant_Temperature');
+            this.toStores.Cabin.toPhases.CabinAir.oCapacity.addHeatSource(oHeatSource);
+            
+            oHeatSource = components.thermal.heatsources.ConstantTemperature('Coolant_Constant_Temperature');
+            this.toStores.CoolantStore.toPhases.Coolant_Phase.oCapacity.addHeatSource(oHeatSource);
+            
+            for iHuman = 1:this.iNumberOfCrewMembers
+                this.toChildren.(['Human_', num2str(iHuman)]).createHumanHeatSource();
+            end
             
         end
         

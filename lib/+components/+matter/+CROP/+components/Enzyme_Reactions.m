@@ -47,14 +47,14 @@ classdef Enzyme_Reactions < matter.manips.substance.stationary
            % enzyme-related reactants))
            sFullpath = mfilename('fullpath');
            [sFile,~,~] = fileparts(sFullpath);
-           load([sFile '\Parameter.mat'], 'tReaction');
-           load([sFile '\pH_model.mat'], 'tpH_Diagram');
-           load([sFile '\Initial_Settings.mat'], 'tfInitial_Settings');
+           load([sFile filesep 'Parameter.mat'], 'tReaction');
+           load([sFile filesep 'pH_model.mat'], 'tpH_Diagram');
+           load([sFile filesep 'Initial_Settings.mat'], 'tfInitial_Settings');
            
-           asFile_Path = strsplit(sFile,'\');
+           asFile_Path = strsplit(sFile,filesep);
            iLen_File_Path = length(asFile_Path);
-           sPath = strjoin(asFile_Path(1,1:(iLen_File_Path-1)),'\');
-           load([sPath '\+validation\Data_Experiment.mat']);
+           sPath = strjoin(asFile_Path(1,1:(iLen_File_Path-1)),filesep);
+           load([sPath strrep('\+validation\Data_Experiment.mat','\',filesep)]);
                            
 
            % Rate constants

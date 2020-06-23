@@ -123,7 +123,13 @@ classdef branch < solver.thermal.multi_branch.basic.branch
         % rates for capacities that have both linear and radiative heat
         % transfer are added up.
         mbNonUniqueCapacities;
-        mbNonUniqueCapacitiesTransposed;
+        
+        % Similar to the mbNonUniqueCapacities properties, this matrix
+        % includes a subset of that matrix with only the radiative
+        % capacities. This is done to increase the performance of the ODE
+        % solver function by reducing the size of matrices that need to be
+        % handled.
+        mbRadiativeCapacities;
         
         % An array of thermal capacity objects. This array only contains
         % the unique capacities.
@@ -149,11 +155,24 @@ classdef branch < solver.thermal.multi_branch.basic.branch
         % These properties store the last ODE results
         mfTimePoints;
         mfSolutionTemperatures;
+        
+        % A boolean property that is set to false once the update() method
+        % is bound to a post tick. This is used to short-circuit calls to
+        % the bindPostTick() method by the network capacities. If this was
+        % not in place, every single capacity in the network would call
+        % this method during every tick, which is unneccessary. 
+        bPostTickUpdateNotBound = true;
     end
     
     properties (SetAccess = private, GetAccess = protected)
         % Callback to set time step in [s]
         setTimeStep;
+        
+        % A function handle that actually binds the update() method of this
+        % class to a timer post tick. This was created to prevent all
+        % capacities in this network calling the bind() method on the timer
+        % every tick. 
+        hActuallyBindPostTick;
     end
     
     methods
@@ -185,10 +204,10 @@ classdef branch < solver.thermal.multi_branch.basic.branch
             % change rates from linear and raidative part that impact the
             % same capacity:
             
-            csUUID_LinearRateCapacities     = {this.aoCapacities(1:this.iFirstRadiativeCapacity-1).sUUID};
-            csUUID_RadiativeRateCapacities  = {this.aoCapacities(this.iFirstRadiativeCapacity:end).sUUID};
-            iLinearCapacities = this.iFirstRadiativeCapacity-1;
-            iRadiativeCapacities = length(csUUID_RadiativeRateCapacities);
+            csUUID_LinearRateCapacities    = {this.aoCapacities(1:this.iFirstRadiativeCapacity-1).sUUID};
+            csUUID_RadiativeRateCapacities = {this.aoCapacities(this.iFirstRadiativeCapacity:end).sUUID};
+            iLinearCapacities              = this.iFirstRadiativeCapacity-1;
+            iRadiativeCapacities           = length(csUUID_RadiativeRateCapacities);
             
             % If we have an afTemperatures vector as calculated by the
             % basic thermal multi branch solver we now want a matrix that
@@ -197,22 +216,66 @@ classdef branch < solver.thermal.multi_branch.basic.branch
             iNonUniqueCapacities = sum(this.abNonUniqueCapacity);
             this.mbNonUniqueCapacities = false(this.iCapacities - iNonUniqueCapacities, this.iCapacities);
             
+            % There may be unique nodes that are radiative only, so we need
+            % to count them here.
+            iNumberOfUniqueRadiativeNodes = iRadiativeCapacities - iNonUniqueCapacities;
+            
             for iLinearCapacity = 1:iLinearCapacities
-                for iRadiativeCapacity = 1:iRadiativeCapacities
-                    % The index for the linear capacity must be true
-                    % regardless, otherwise the temperatures of the linear
-                    % capacities would be set to 0 if no radiative capacity
-                    % is present
-                    this.mbNonUniqueCapacities(iLinearCapacity, iLinearCapacity) = true;
-                        
-                    if strcmp(csUUID_LinearRateCapacities{iLinearCapacity}, csUUID_RadiativeRateCapacities{iRadiativeCapacity})
-                        this.mbNonUniqueCapacities(iLinearCapacity, iLinearCapacities + iRadiativeCapacity) = true;
-                    end
+                % The index for the linear capacity must be true
+                % regardless, otherwise the temperatures of the linear
+                % capacities would be set to 0 if no radiative capacity
+                % is present
+                this.mbNonUniqueCapacities(iLinearCapacity, iLinearCapacity) = true;
+                
+                % If the current capacity also has a radiative branch
+                % attached to it, we will find it here.
+                iRadiativeCapacity = find(strcmp(csUUID_LinearRateCapacities{iLinearCapacity}, csUUID_RadiativeRateCapacities), 1);
+                
+                % If we found an index, we also set it to true. 
+                if ~isempty(iRadiativeCapacity)
+                    this.mbNonUniqueCapacities(iLinearCapacity, iLinearCapacities + iRadiativeCapacity) = true;
                 end
             end
-            this.mbNonUniqueCapacitiesTransposed = this.mbNonUniqueCapacities';
+            
+            % Initializing a counter
+            iUniqueRadiativeNodeCounter = 0;
+            
+            % Now we need to go through all radiative capacities and find
+            % the ones that are radiative only, meaning the have no
+            % conductive or convective branches attached to them.
+            for iRadiativeCapacity = 1:iRadiativeCapacities
+                % We look for the current capacity in the array of linear
+                % capacities.
+                iLinearCapacity = find(strcmp(csUUID_RadiativeRateCapacities{iRadiativeCapacity}, csUUID_LinearRateCapacities), 1);
+                
+                % Checking if we found it or not.
+                if isempty(iLinearCapacity)
+                    % We found one! So we increase the counter.
+                    iUniqueRadiativeNodeCounter = iUniqueRadiativeNodeCounter + 1;
+                    
+                    % This is just a fail-safe to make sure nothing goes
+                    % wrong and we find more nodes than actually exist.
+                    if iUniqueRadiativeNodeCounter > iNumberOfUniqueRadiativeNodes
+                        this.throw('Oops, something went wrong while creating the thermal solver network. Check radiative node setup.');
+                    end
+                    
+                    % Now we can set the appropriate index in the
+                    % mbNonUniqueCapacities matrix to true.
+                    this.mbNonUniqueCapacities(iLinearCapacities + iUniqueRadiativeNodeCounter, iLinearCapacities + iRadiativeCapacity) = true;
+                end
+                
+            end
+            
+            % In the ODE function we need subset of the
+            % mbNonUniqueCapacities matrix in its transposed form. This
+            % subset only contains the radiative capacities. In order to
+            % increase performance we store it in a property.
+            mbNonUniqueCapacitiesTransposed = this.mbNonUniqueCapacities';
+            this.mbRadiativeCapacities = mbNonUniqueCapacitiesTransposed(this.iFirstRadiativeCapacity:end, :);
+            
             % Getting the temperatures of all capacities.
             afTemperatures = [this.aoCapacities.fTemperature]';
+            
             % Only use the unique temperatures for the ode solver
             this.afTemperatures = afTemperatures(~this.abNonUniqueCapacity);
             
@@ -220,9 +283,7 @@ classdef branch < solver.thermal.multi_branch.basic.branch
             % capacities:
             this.aoUniqueCapacities = this.aoCapacities(~this.abNonUniqueCapacity);
             this.iUniqueCapacities  = length(this.aoUniqueCapacities);
-            for iCapacites = 1:this.iUniqueCapacities
-                this.aoUniqueCapacities(iCapacites).setHandler(this, iCapacites);
-            end
+            arrayfun(@(oCapacity, iIndex) oCapacity.setHandler(this, iIndex), this.aoUniqueCapacities, (1:this.iUniqueCapacities)');
             
             % Define rate of change function for ODE solver.
             this.hCalculateTemperatureChangeRate = @(t, m) this.calculateTemperatureChangeRate(m, t);
@@ -240,12 +301,19 @@ classdef branch < solver.thermal.multi_branch.basic.branch
             %
             % The thermal multi branch solver is executed after the
             % capacities, heat sources and normal thermal solvers.
-            this.hBindPostTickUpdate = this.oTimer.registerPostTick(@this.update, 'thermal' , 'multibranch_solver');
+            this.hActuallyBindPostTick = this.oTimer.registerPostTick(@this.update, 'thermal' , 'multibranch_solver');
+            this.hBindPostTickUpdate = @this.bindPostTickUpdate;
             
         end
     end
     
     methods (Access = protected)
+        
+        function bindPostTickUpdate(this)
+            this.bPostTickUpdateNotBound = false;
+            this.hActuallyBindPostTick();
+        end
+        
         function mfTemperatureChangeRate = calculateTemperatureChangeRate(this, afCurrentTemperatures, ~)
             % Calculates the rate of temperature change. This function is
             % called by the ODE solver at each internal timestep of the ODE
@@ -254,9 +322,24 @@ classdef branch < solver.thermal.multi_branch.basic.branch
             %
             % The last parameter is the current time at the solver
             % iteration step. It is not used here.
-
-            afNonUniqueCurrentTemperatures = this.mbNonUniqueCapacitiesTransposed * afCurrentTemperatures;
-            afNonUniqueCurrentTemperatures(this.iFirstRadiativeCapacity:end) = afNonUniqueCurrentTemperatures(this.iFirstRadiativeCapacity:end).^4;
+            
+            % We need an array of all node temperatures as they are used in
+            % the linear system of equations. That means that all linear
+            % temperatures can be used as is, while the radiative
+            % temperatures need to be raised to the power of four. 
+            
+            % First we get the linear temperatures, which are just the
+            % first part of the afCurrentTemperatures array up until the
+            % index this.iFirstRadiativeCapacity-1.
+            afLinearNodeTemperatures = afCurrentTemperatures(1:this.iFirstRadiativeCapacity-1);
+            
+            % Now we get the radiative node temperatures by multiplying the
+            % current temperatures with the radiative capacities matrix.
+            afRadiativeNodeTemperatures = this.mbRadiativeCapacities * afCurrentTemperatures;
+            
+            % To get the full temperature array we now concatenate the two
+            % arrays we just produced.
+            afNonUniqueCurrentTemperatures = [afLinearNodeTemperatures; afRadiativeNodeTemperatures];
             
             mfNonUniqueTemperatureChangeRate = this.mfTemperatureChangeRateMatrix * afNonUniqueCurrentTemperatures;
             
@@ -295,7 +378,7 @@ classdef branch < solver.thermal.multi_branch.basic.branch
             fStepEndTime   = this.oTimer.fTime;
             this.fExecutionTimeStep = fStepEndTime - fStepBeginTime;
             
-            this.afSourceRateVector = [this.aoCapacities(~this.abNonUniqueCapacity).fHeatSourceHeatFlow]';
+            this.afSourceRateVector = [this.aoCapacities(~this.abNonUniqueCapacity).fTotalHeatSourceHeatFlow]';
             this.afSourceRateVector = this.afSourceRateVector ./ [this.aoCapacities(~this.abNonUniqueCapacity).fTotalHeatCapacity]';
             
             [this.mfTimePoints, this.mfSolutionTemperatures] = ode45(this.hCalculateTemperatureChangeRate, [fStepBeginTime, fStepEndTime], this.afTemperatures, this.tOdeOptions);
@@ -308,6 +391,7 @@ classdef branch < solver.thermal.multi_branch.basic.branch
             
             this.fLastUpdate = this.oTimer.fTime;
             this.bRegisteredOutdated = false;
+            this.bPostTickUpdateNotBound = true;
             
             if this.bTriggerUpdateCallbackBound
                 this.trigger('update');

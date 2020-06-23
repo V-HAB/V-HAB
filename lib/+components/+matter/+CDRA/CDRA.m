@@ -736,8 +736,8 @@ classdef CDRA < vsys
             % bed specifically, which helps with debugging. Additional the
             % full system results in close to singular matrix, which might
             % lead to issues.
-            tSolverProperties.fMaxError = 1e-6;
-            tSolverProperties.iMaxIterations = 500;
+            tSolverProperties.fMaxError = 1e-5;
+            tSolverProperties.iMaxIterations = 1000;
             tSolverProperties.fMinimumTimeStep = 1;
             tSolverProperties.iIterationsBetweenP2PUpdate = 200;
 
@@ -777,6 +777,10 @@ classdef CDRA < vsys
                         tTimeStepProperties.fMinStep = 1e-4;
                         
                         oPhase.setTimeStepProperties(tTimeStepProperties);
+                    else
+                        % The absorber phase updates also trigger a solver
+                        % update
+                        oPhase.bind('update_post', @oSolver.registerUpdate);
                     end
                 end
             end

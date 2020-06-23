@@ -89,6 +89,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 mfAbsorptionEnthalpyHelper = mfAbsorptionEnthalpyHelper + rAbsorberMassRatio * this.oMT.ttxMatter.(this.csAbsorbers{iAbsorber}).tAbsorberParameters.mfAbsorptionEnthalpy;
             end
             this.mfAbsorptionEnthalpy = mfAbsorptionEnthalpyHelper;
+            this.mfFlowRates = zeros(1, this.oMT.iSubstances);
         end
         
         function calculateFlowRate(this, afInFlowRates, aarInPartials, ~, ~)
@@ -159,13 +160,25 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             % dividided with mass in this case
                 if ~(isempty(afInFlowRates) || all(sum(aarInPartials) == 0))
                     this.afPartialInFlows = sum((afInFlowRates .* aarInPartials),1);
-                    
+
                     afCurrentMolsIn     = (this.afPartialInFlows ./ this.oMT.afMolarMass);
                     arFractions         = afCurrentMolsIn ./ sum(afCurrentMolsIn);
                     afPP                = arFractions .*  fPressure; 
                 else
                     this.afPartialInFlows = zeros(1,this.oMT.iSubstances);
-                    afPP = this.oIn.oPhase.afPP;
+                    
+                    %THIS IS A HACK I don't know what a better solution is
+                    %here. The call to get the afPP property only fails
+                    %during tick 0, I haven't followed up to see if it is
+                    %just never used again, or if in the other instances
+                    %the property is accessed outside of the update in the
+                    %multi-branch solver.
+                    try
+                        afPP = this.oIn.oPhase.afPP;
+                    catch
+                        return
+                    end
+                    
                 end
             end
             
@@ -331,7 +344,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             
             %% Set the values for the two P2Ps
             this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(fDesorptionFlowRate, arPartialsDesorption);
-            this.setMatterProperties(fAdsorptionFlowRate, arPartialsAdsorption);
+            this.setMatterProperties(fAdsorptionFlowRate, arPartialsAdsorption, this.oOut.oPhase.fTemperature, this.oOut.oPhase.fPressure);
             
             %% Set the heat flow of the adsorption process
             % For this a heat flow inside the adsorber phase must be

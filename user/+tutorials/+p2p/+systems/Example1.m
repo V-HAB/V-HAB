@@ -45,7 +45,7 @@ classdef Example1 < vsys
             % as needed.
             fFilterVolume = 1;
             matter.store(this, 'Filter', fFilterVolume);
-            oFlow = this.toStores.Filter.createPhase('air', 'flow', 'FlowPhase', fFilterVolume/ 2, 293.15);
+            oFlow = this.toStores.Filter.createPhase('air', 'FlowPhase', fFilterVolume/ 2, 293.15);
             
             oFiltered = matter.phases.gas(this.toStores.Filter, ...
                           'FilteredPhase', ... Phase name
@@ -56,10 +56,10 @@ classdef Example1 < vsys
             % Create the according exmes - default for the external
             % connections, i.e. the air stream that should be filtered. The
             % filterports are internal ones for the p2p processor to use.
-            matter.procs.exmes.gas(oFlow,       'In');
-            matter.procs.exmes.gas(oFlow,       'In_P2P');
-            matter.procs.exmes.gas(oFlow,  	'Out');
-            matter.procs.exmes.gas(oFiltered,  	'Out_P2P');
+            matter.procs.exmes.gas(oFlow,     'In');
+            matter.procs.exmes.gas(oFlow,     'In_P2P');
+            matter.procs.exmes.gas(oFlow,  	  'Out');
+            matter.procs.exmes.gas(oFiltered, 'Out_P2P');
             
             % Creating the p2p processor
             % Input parameters: name, flow phase name, absorber phase name, 
@@ -69,7 +69,7 @@ classdef Example1 < vsys
             tutorials.p2p.components.AbsorberExample(this.toStores.Filter, 'filterproc', 'FlowPhase.In_P2P', 'FilteredPhase.Out_P2P', fSubstance, fCapacity);
             
             % Adding a fan
-            components.matter.fan(this, 'Fan', 40000);
+            components.matter.fan(this, 'Fan', 40000, true);
             
             % Adding pipes to connect the components
             components.matter.pipe(this, 'Pipe_1', 0.5, 0.005);
@@ -79,11 +79,8 @@ classdef Example1 < vsys
             % Creating the flowpath (=branch) between the components
             % Since we are using default exme-processors here, the input
             % format can be 'store.phase' instead of 'store.exme'
-            %oBranch_1 = this.createBranch('Atmos.Out', { 'Pipe_1', 'Fan', 'Pipe_2' }, 'Filter.In');
-            %oBranch_2 = this.createBranch('Filter.Out', {'Pipe_3' }, 'Atmos.In');
-            %oBranch_1 = matter.branch(this, 'Atmos.Out', { 'Pipe_1', 'Fan', 'Pipe_2' }, 'Filter.In');
-            oBranch_1 = matter.branch(this, 'Atmos.Out', { 'Pipe_1', 'Fan', 'Pipe_2' }, 'Filter.In');
-            oBranch_2 = matter.branch(this, 'Filter.Out', {'Pipe_3' }, 'Atmos.In');
+            matter.branch(this, 'Atmos.Out', { 'Pipe_1', 'Fan', 'Pipe_2' }, 'Filter.In');
+            matter.branch(this, 'Filter.Out', {'Pipe_3' }, 'Atmos.In');
             
             
         end
@@ -118,8 +115,8 @@ classdef Example1 < vsys
             
             
             
-            this.oB1 = solver.matter.iterative.branch(this.aoBranches(1));
-            this.oB2 = solver.matter.iterative.branch(this.aoBranches(2));
+            this.oB1 = solver.matter.interval.branch(this.aoBranches(1));
+            this.oB2 = solver.matter.interval.branch(this.aoBranches(2));
             
             
             
@@ -133,7 +130,7 @@ classdef Example1 < vsys
 %             this.oB1.iDampFR = 5;
 %             this.oB2.iDampFR = 5;
             
-            
+            this.toProcsF2F.Fan.switchOn();
             
             
             % Phases
@@ -165,7 +162,7 @@ classdef Example1 < vsys
             
             %if fTime >= 100, keyboard(); end;
             
-            if fTime >= 750 && fTime < 1250 && oFan.bActive % fSpeedSetpoint ~= 0
+            if fTime >= 750 && fTime < 1250 && oFan.bTurnedOn % fSpeedSetpoint ~= 0
                 fprintf('Fan OFF at second %f and tick %i\n', fTime, this.oTimer.iTick);
                 %oFan.fSpeedSetpoint = 0;
                 oFan.switchOff();
@@ -174,7 +171,7 @@ classdef Example1 < vsys
                     this.oB1.setFlowRate(0);
                 end
                 
-            elseif fTime >= 1250 && ~oFan.bActive % fSpeedSetpoint ~= 40000
+            elseif fTime >= 1250 && ~oFan.bTurnedOn % fSpeedSetpoint ~= 40000
                 fprintf('Fan ON at second %f and tick %i\n', fTime, this.oTimer.iTick);
                 
                 %oFan.fSpeedSetpoint = 40000;
