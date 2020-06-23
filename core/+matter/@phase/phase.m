@@ -78,8 +78,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % row contains the mass ratio composition for the corresponding
         % mass if that mass is a compound. (e.g. if the compound has the
         % matter table entry 234, then row 234 contains its composition.
-        % The current masses of the compounds can be calculated using:
-        % this.afMass' .* this.arCompoundMass
+        % The current masses of the compounds can be calculated by using
+        % the resolveCompoundMass function of the matter table
         arCompoundMass;
         
         % During the getTotalMassChange in the calculate time step

@@ -1,4 +1,4 @@
-function updateNetwork(this, bForceP2Pcalc)
+function updateNetwork(this, bForceP2Pcalc, bManipUpdate)
     %UPDATENETWORK Updates the network of branches associated with this solver
     % This function is used to update the network of the solver. P2Ps are
     % only recalculated if either the solver reached initial convergence
@@ -62,6 +62,15 @@ function updateNetwork(this, bForceP2Pcalc)
                             oPhase.updatePartials(afInFlowRates .* aarInPartials);
                         end
                         
+                        if bManipUpdate
+                            if oPhase.iSubstanceManipulators > 0
+                                oPhase.toManips.substance.calculateConversionRate(afInFlowRates, aarInPartials);
+                                % If we have a manip, we have to update the
+                                % partial masses again
+                                oPhase.updatePartials(afInFlowRates .* aarInPartials);
+                            end
+                        end
+                        
                         if bForceP2Pcalc
                             
                             for iProcP2P = 1:oPhase.iProcsP2P
@@ -121,6 +130,7 @@ function updateNetwork(this, bForceP2Pcalc)
                             end
                             aarInPartials(oPhase.iProcsEXME + iProcP2P, :) = oProcP2P.arPartialMass;
                         end
+                        
                         
                         % Now the phase is updated again this time with the
                         % partial flowrates of the P2Ps as well!

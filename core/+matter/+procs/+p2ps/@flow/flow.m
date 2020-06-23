@@ -41,6 +41,26 @@ classdef flow < matter.procs.p2p
             end
             
         end
+        function oSolver = findSolver(this)
+            
+            csExmes = fieldnames(this.oIn.oPhase.toProcsEXME);
+            for iExme = 1:length(csExmes)
+                if ~this.oIn.oPhase.toProcsEXME.(csExmes{iExme}).bFlowIsAProcP2P
+                    if isa(this.oIn.oPhase.toProcsEXME.(csExmes{iExme}).oFlow.oBranch.oHandler, 'solver.matter_multibranch.iterative.branch')
+                        oSolver = this.oIn.oPhase.coProcsEXME{iExme}.oFlow.oBranch.oHandler;
+                    end
+                end
+            end
+            
+            csExmes = fieldnames(this.oOut.oPhase.toProcsEXME);
+            for iExme = 1:length(csExmes)
+                if ~this.oOut.oPhase.toProcsEXME.(csExmes{iExme}).bFlowIsAProcP2P
+                    if isa(this.oOut.oPhase.toProcsEXME.(csExmes{iExme}).oFlow.oBranch.oHandler, 'solver.matter_multibranch.iterative.branch')
+                        oSolver = this.oOut.oPhase.coProcsEXME{iExme}.oFlow.oBranch.oHandler;
+                    end
+                end
+            end
+        end
     end
     
     methods (Abstract)

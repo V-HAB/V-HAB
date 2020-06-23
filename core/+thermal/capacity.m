@@ -498,7 +498,7 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
             % this is recalculated, these are acceptable errors.
             
             % This is not a flow phase. 
-            if this.fTotalHeatCapacity == 0
+                if this.fTotalHeatCapacity <= 1e-15
                 % Setting the temperature to 293 K. If the temperature
                 % is set to zero, it will cause problems with several
                 % solvers that use the capacity temperature for density
