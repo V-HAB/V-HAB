@@ -64,7 +64,7 @@ classdef Example < vsys
             % Struct containg basic atmospheric values for the
             % initialization of the CCAA
             tAtmosphere.fTemperature = 295;
-            tAtmosphere.fRelHumidity = 0.5;
+            tAtmosphere.rRelHumidity = 0.5;
             tAtmosphere.fPressure = 101325;
             tAtmosphere.fCO2Percent = 0.0062;
             
@@ -103,8 +103,7 @@ classdef Example < vsys
             
             % Adding extract/merge processors to the phase
             matter.procs.exmes.gas(oCabinPhase, 'Port_ToCCAA');
-            matter.procs.exmes.gas(oCabinPhase, 'Port_FromCCAA_CHX');
-            matter.procs.exmes.gas(oCabinPhase, 'Port_FromCCAA_TCCV');
+            matter.procs.exmes.gas(oCabinPhase, 'Port_FromCCAA');
             
             matter.procs.exmes.gas( oCabinPhase, 'CDRA_Port_1');
             
@@ -162,21 +161,20 @@ classdef Example < vsys
             matter.procs.exmes.gas( oConnectionPhase, 'Port_1');
             matter.procs.exmes.gas( oConnectionPhase, 'Port_2');
             
-            matter.branch(this, 'CCAAinput', {}, 'Cabin.Port_ToCCAA');
-            matter.branch(this, 'CCAA_CHX_Output', {}, 'Cabin.Port_FromCCAA_CHX');
-            matter.branch(this, 'CCAA_TCCV_Output', {}, 'Cabin.Port_FromCCAA_TCCV');
-            matter.branch(this, 'CCAA_CondensateOutput', {}, 'CondensateStore.Port_1');
-            matter.branch(this, 'CCAA_CoolantInput', {}, 'CoolantStore.Port_1');
-            matter.branch(this, 'CCAA_CoolantOutput', {}, 'CoolantStore.Port_2');
-            matter.branch(this, 'CCAA_CHX_to_CDRA_Out', {}, 'CCAA_CDRA_Connection.Port_1');
+            matter.branch(this, 'CCAA_Input',               {}, 'Cabin.Port_ToCCAA');
+            matter.branch(this, 'CCAA_Output',              {}, 'Cabin.Port_FromCCAA');
+            matter.branch(this, 'CCAA_CondensateOutput',    {}, 'CondensateStore.Port_1');
+            matter.branch(this, 'CCAA_CoolantInput',        {}, 'CoolantStore.Port_1');
+            matter.branch(this, 'CCAA_CoolantOutput',       {}, 'CoolantStore.Port_2');
+            matter.branch(this, 'CCAA_CHX_to_CDRA_Out',     {}, 'CCAA_CDRA_Connection.Port_1');
             
-            matter.branch(this, 'CDRA_Input', {}, 'CCAA_CDRA_Connection.Port_2');
-            matter.branch(this, 'CDRA_Output', {}, 'Cabin.CDRA_Port_1');
-            matter.branch(this, 'CDRA_Vent', {}, 'Vented.Port_1');
+            matter.branch(this, 'CDRA_Input',               {}, 'CCAA_CDRA_Connection.Port_2');
+            matter.branch(this, 'CDRA_Output',              {}, 'Cabin.CDRA_Port_1');
+            matter.branch(this, 'CDRA_Vent',                {}, 'Vented.Port_1');
             
             % now the interfaces between this system and the CCAA subsystem
             % are defined
-            this.toChildren.CCAA.setIfFlows('CCAAinput', 'CCAA_CHX_Output', 'CCAA_TCCV_Output', 'CCAA_CondensateOutput', 'CCAA_CoolantInput', 'CCAA_CoolantOutput', 'CCAA_CHX_to_CDRA_Out');
+            this.toChildren.CCAA.setIfFlows('CCAA_Input', 'CCAA_Output', 'CCAA_CondensateOutput', 'CCAA_CoolantInput', 'CCAA_CoolantOutput', 'CCAA_CHX_to_CDRA_Out');
             
             this.toChildren.CDRA.setIfFlows('CDRA_Input', 'CDRA_Output', 'CDRA_Vent');
             

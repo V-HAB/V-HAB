@@ -229,7 +229,7 @@ classdef CCAA < vsys
             Conductivity = 205;
             % Number of incremental heat exchangers used in the calculation
             % of the CHX
-            miIncrements = [12,6];
+            miIncrements = [10,5];
             % Defines when the CHX should be recalculated: 
             fTempChangeToRecalc = 1;        % If any inlet temperature changes by more than 1 K
             fPercentChangeToRecalc = 0.05;  % If any inlet flowrate or composition changes by more than 5%
