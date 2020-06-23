@@ -10,8 +10,8 @@ Plastic;Plastic;solid;0.04347;0;0;0;;;980;;;;;;;;;;;;
 H2O2;HydrogenPeroxide;liquid;0.03401468;0;0;0;272.72;423.3;1450;1267;;;;;http://webbook.nist.gov/cgi/inchi/InChI%3D1S/H2O2/c1-2/h1-2H;;;;;;
 O3;Ozone;gas;0.0479982;0;0;0;81;161;2.144;;;;;;;;;;;;
 KO2;PotassiumSuperoxide;solid;0.0711;0;0;0;653.15;;2140;;;;;;;;;;;;
-NaOH;SodiumHydroxide;liquid;;0;0;0.63;;;2130;1488;;;;;;;;;;;https://chem.libretexts.org/Bookshelves/Physical_and_Theoretical_Chemistry_Textbook_Maps/Supplemental_Modules_(Physical_and_Theoretical_Chemistry)/Acids_and_Bases/Monoprotic_Versus_Polyprotic_Acids_And_Bases/Polyprotic_Acids_and_Bases_1
-NaOH;SodiumHydroxide;solid;;0;0;0.63;;;2130;1488;;;;;;;;;;;https://chem.libretexts.org/Bookshelves/Physical_and_Theoretical_Chemistry_Textbook_Maps/Supplemental_Modules_(Physical_and_Theoretical_Chemistry)/Acids_and_Bases/Monoprotic_Versus_Polyprotic_Acids_And_Bases/Polyprotic_Acids_and_Bases_1
+NaOH;SodiumHydroxide;liquid;;0;0;10000000;;;2130;1488;;;;;;;;;;;Dissociation assumed to occur completly
+NaOH;SodiumHydroxide;solid;;0;0;10000000;;;2130;1488;;;;;;;;;;;Dissociation assumed to occur completly
 KOH;PotassiumHydroxide;solid;0.05611;0;0;0.316;633.15;1593.15;2044;1180;;;;;;;;;;;https://chem.libretexts.org/Bookshelves/Physical_and_Theoretical_Chemistry_Textbook_Maps/Supplemental_Modules_(Physical_and_Theoretical_Chemistry)/Acids_and_Bases/Monoprotic_Versus_Polyprotic_Acids_And_Bases/Polyprotic_Acids_and_Bases_1
 LiOH;LithiumHydroxide;solid;0.02395;0;0;0;735;1197;1460;2071;;;;;;;;;;;
 H;Hydrogen;gas;0.00100794;0;0;0;14.15;20.25;0.084;709;;0.02;;;;;;;;;
