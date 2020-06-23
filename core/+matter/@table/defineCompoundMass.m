@@ -89,6 +89,7 @@ this.afNutritionalEnergy(this.iSubstances) = 0;
 % Charge is also set to 0, if it contains charged substances, this is
 % detected when resolving the compound
 this.aiCharge(this.iSubstances) = 0;
+this.afDissociationConstant(this.iSubstances) = 0;
 
 % Absorbers store a vector with the same length as the number of substances
 % in the matter table for the adsorption enthalpy. To ensure consistency we

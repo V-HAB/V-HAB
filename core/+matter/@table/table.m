@@ -84,6 +84,12 @@ classdef table < base
         % can correctly calculate the nutritional content
         afNutritionalEnergy;
         
+        % An array containing the dissocication constants for the
+        % corresponding substances. For acids, it contains the acid
+        % dissociation constants, for bases it contains the base
+        % dissociation constant
+        afDissociationConstant;
+        
         % This struct maps all substance names according to an index, hence
         % the name N2I, for 'name to index'. The index corresponds to the
         % order in which the substances are stored in ttxMatter.
@@ -284,8 +290,9 @@ classdef table < base
                 end
                 
                 % And finally we create an entry in the molar mass array.
-                this.afMolarMass(iI) = fMolarMass;
-                this.aiCharge(iI)    = tSubstance.iCharge;
+                this.afMolarMass(iI)            = fMolarMass;
+                this.aiCharge(iI)               = tSubstance.iCharge;
+                this.afDissociationConstant(iI)	= tSubstance.fDissociationConstant;
                 
                 this.afNutritionalEnergy(iI) = tSubstance.fNutritionalEnergy;
             end
@@ -392,6 +399,16 @@ classdef table < base
             tElements = struct();   % Return struct
             sCurrentElement = '';          %
             sAtomCount   = '';
+            
+            % Remove ion denominators from the name of the molecule
+            iPlusStart = regexp(sMolecule, 'plus', 'once');
+            if ~isempty(iPlusStart)
+                sMolecule(iPlusStart:iPlusStart + 3) = [];
+            end
+            iMinusStart = regexp(sMolecule, 'minus', 'once');
+            if ~isempty(iMinusStart)
+                sMolecule(iMinusStart:iMinusStart + 4) = [];
+            end
             
             % Going through the input string character by character
             for iI = 1:length(sMolecule)
