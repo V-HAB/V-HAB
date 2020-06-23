@@ -77,12 +77,12 @@ classdef Electrolyzer < vsys
             
             oMembrane   = matter.phases.mixture(this.toStores.Electrolyzer, 'Membrane', 'solid', struct('H2O',0.5,'H2',0.1,'O2',0.1), fInitialTemperature, 1e5);
             
-            oH2         = this.toStores.Electrolyzer.createPhase(  'gas', 'flow', 'H2_Channel',   0.05, struct('H2', 1e5),  fInitialTemperature, 0.8);
-            oO2         = this.toStores.Electrolyzer.createPhase(  'gas', 'flow', 'O2_Channel',   0.05, struct('O2', 1e5),  fInitialTemperature, 0.8);
+            oH2         = this.toStores.Electrolyzer.createPhase(  'gas',    'flow',    'H2_Channel',       0.05, struct('H2', 1e5),  fInitialTemperature, 0.8);
+            oO2         = this.toStores.Electrolyzer.createPhase(  'gas',    'flow',    'O2_Channel',       0.05, struct('O2', 1e5),  fInitialTemperature, 0.8);
             
-            oWater      = this.toStores.Electrolyzer.createPhase(  'liquid',      'ProductWater',   0.1, struct('H2O', 1),  fInitialTemperature, 1e5);
+            oWater      = this.toStores.Electrolyzer.createPhase(  'liquid',            'ProductWater',     0.1, struct('H2O', 1),  fInitialTemperature, 1e5);
             
-            oCooling    = this.toStores.Electrolyzer.createPhase(  'liquid',      'CoolingSystem',  0.1, struct('H2O', 1),  340, 1e5);
+            oCooling    = this.toStores.Electrolyzer.createPhase(  'liquid', 'flow', 	'CoolingSystem',    0.1, struct('H2O', 1),  340, 1e5);
             
             % pipes
             components.matter.pipe(this, 'Pipe_H2_Out',         1.5, 0.003);
@@ -209,6 +209,7 @@ classdef Electrolyzer < vsys
                     % voltage is the reversible voltage without losses
                     % (efficiency of 100%)
                     this.fCellVoltage = fReversibleVoltage;
+            
                 else
                     %% Calculation of losses
                     % activation losses (Eq 6) from the source above
@@ -258,6 +259,12 @@ classdef Electrolyzer < vsys
             fHeatFlow = this.fStackCurrent * this.fStackVoltage * (1 - this.rEfficiency);
             
             this.toStores.Electrolyzer.toPhases.CoolingSystem.oCapacity.toHeatSources.Electrolyzer_HeatSource.setHeatFlow(fHeatFlow);
+            
+            % We limit the temperature difference over the Electrolyzer to
+            % ~10 K by setting the coolant flow accordingly:
+            fCoolantFlow = fHeatFlow / (this.toBranches.Cooling_Inlet.coExmes{2}.oPhase.oCapacity.fSpecificHeatCapacity * 5);
+            
+            this.toBranches.Cooling_Inlet.oHandler.setFlowRate(-fCoolantFlow);
         end
         
         function setPower(this, fPower)

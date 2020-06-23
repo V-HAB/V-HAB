@@ -7,10 +7,12 @@ classdef SCRA < vsys
     % water and methane. The methane is then vented over board but the
     % water can be used by the electrolyzer again to generate more oxygen.
     
-    properties
+    properties (SetAccess = protected, GetAccess = public)
         
         fCoolantTemperature;
         aoMultiSolverBranches;
+        
+        fCurrentPowerConsumption = 0; % W
     end
     
     methods
@@ -84,9 +86,6 @@ classdef SCRA < vsys
                 'H2O', 0.49    * fVolumeCRA_Sabatier * fDensityH2O),...
                 fVolumeCRA_Sabatier, 866.15);
             
-            oHeatSource = components.thermal.heatsources.ConstantTemperature('Sabatier_Constant_Temperature');
-            oCRA_SabatierPhase.oCapacity.addHeatSource(oHeatSource);
-            
             components.matter.SCRA.const_press_exme(oCRA_SabatierPhase, 'CRA_Sabatier_H2in', 1e5);
             components.matter.SCRA.const_press_exme(oCRA_SabatierPhase, 'CRA_Sabatier_CO2in', 1e5);
             components.matter.SCRA.const_press_exme(oCRA_SabatierPhase, 'CRA_Sabatier_out', 1e5);
@@ -125,9 +124,6 @@ classdef SCRA < vsys
                 'CH4', 0.49    * fVolumeCRA_Sabatier * fDensityCH4,...
                 'H2O', 0.49    * fVolumeCRA_Sabatier * fDensityH2O),...
                 fVolumeCRA_Sabatier, 420.15);
-            
-            oHeatSource = components.thermal.heatsources.ConstantTemperature('Sabatier2_Constant_Temperature');
-            oCRA_SabatierPhase_2.oCapacity.addHeatSource(oHeatSource);
             
             components.matter.SCRA.const_press_exme(oCRA_SabatierPhase_2, 'CRA_Sabatier_2_in', 1e5);
             components.matter.SCRA.const_press_exme(oCRA_SabatierPhase_2, 'CRA_Sabatier_2_out', 1e5);
@@ -176,10 +172,6 @@ classdef SCRA < vsys
                 'H2' , fDensityH2  * fVolumeGasWaterRec,...
                 'CH4', fDensityCH4 * fVolumeGasWaterRec),...
                 fVolumeGasWaterRec, 293.15);
-            
-            
-            oHeatSource = components.thermal.heatsources.ConstantTemperature('WaterRecovery_Constant_Temperature');
-            oCRA_WaterRecLiquidPhase.oCapacity.addHeatSource(oHeatSource);
             
             components.matter.SCRA.const_press_exme(oCRA_WaterRecGasPhase, 'CRA_WaterRec_SabatierProducts_in', 1e5);
             components.matter.SCRA.const_press_exme(oCRA_WaterRecGasPhase, 'DryGasOut', 1e5);
@@ -231,6 +223,22 @@ classdef SCRA < vsys
                                           this.toBranches.Sabatier1to2; ...
                                           this.toBranches.CRA_ProductstoWaterRecbranch; ...
                                           this.toBranches.CRA_DryGastoVent];
+        end
+        
+        function createThermalStructure(this)
+            % First we always need to call the createThermalStructure()
+            % method of the parent class.
+            createThermalStructure@vsys(this);
+            
+            oHeatSource = components.thermal.heatsources.ConstantTemperature('Sabatier_Constant_Temperature');
+            this.toStores.CRA_Sabatier.toPhases.CRA_Sabatierphase.oCapacity.addHeatSource(oHeatSource);
+            
+            oHeatSource = components.thermal.heatsources.ConstantTemperature('Sabatier2_Constant_Temperature');
+            this.toStores.CRA_Sabatier_2.toPhases.CRA_Sabatierphase_2.oCapacity.addHeatSource(oHeatSource);
+            
+            oHeatSource = components.thermal.heatsources.ConstantTemperature('WaterRecovery_Constant_Temperature');
+            this.toStores.CRA_WaterRec.toPhases.WRecgas.oCapacity.addHeatSource(oHeatSource);
+            
         end
         
         function createSolverStructure(this)
@@ -285,6 +293,17 @@ classdef SCRA < vsys
         
         function exec(this, ~)
             exec@vsys(this);
+            
+            fFlowRate = this.toBranches.CRA_CO2_In.fFlowRate;
+            oInFlow = this.toBranches.CRA_CO2_In.aoFlows(1);
+            
+            % The power consumption of a compressor can be calculated using
+            % equation 8 from "Modeling and Simulation of Air Compressor
+            % Energy Use", Chris Schmidt et. al, 2005
+            % https://www.aceee.org/files/proceedings/2005/data/papers/SS05_Panel01_Paper13.pdf
+            % assuming we have to increase the pressure from 0.01 bar to 1
+            % bar in a two stage compression
+            this.fCurrentPowerConsumption = fFlowRate * oInFlow.fSpecificHeatCapacity * 293 * (((1e5 / 1e4)^1.289 - 1) + ((1e4 / 1e3)^1.289 - 1));
             
         end
     end

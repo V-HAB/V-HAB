@@ -82,13 +82,13 @@ classdef FuelCell < vsys
             % components (H2 Channel, O2 Channel, Membrane, Cooling System)
             matter.store(this, 'FuelCell', 0.5);
             
-            oH2 =       this.toStores.FuelCell.createPhase(  'gas', 'flow', 'H2_Channel',   0.025, struct('H2', 1e5),  fInitialTemperature, 0.8);
-            oH2_Out =   this.toStores.FuelCell.createPhase(  'gas', 'flow', 'H2_Outlet',    0.025, struct('H2', 1e5),  fInitialTemperature, 0.8);
-            oO2 =       this.toStores.FuelCell.createPhase(  'gas', 'flow', 'O2_Channel',   0.05, struct('O2', 1e5),  fInitialTemperature, 0.8);
+            oH2 =       this.toStores.FuelCell.createPhase(  'gas',     'flow', 'H2_Channel',   0.025, struct('H2', 1e5),  fInitialTemperature, 0.8);
+            oH2_Out =   this.toStores.FuelCell.createPhase(  'gas',     'flow', 'H2_Outlet',    0.025, struct('H2', 1e5),  fInitialTemperature, 0.8);
+            oO2 =       this.toStores.FuelCell.createPhase(  'gas',     'flow', 'O2_Channel',   0.05, struct('O2', 1e5),  fInitialTemperature, 0.8);
             
-            oMembrane = this.toStores.FuelCell.createPhase(  'gas',         'Membrane',     0.3, struct('O2', 0.5e5, 'H2', 0.5e5),  fInitialTemperature, 0.8);
+            oMembrane = this.toStores.FuelCell.createPhase(  'gas',             'Membrane',     0.3, struct('O2', 0.5e5, 'H2', 0.5e5),  fInitialTemperature, 0.8);
             
-            oCooling =  this.toStores.FuelCell.createPhase(  'liquid',      'CoolingSystem',0.1, struct('H2O', 1),  340, 1e5);
+            oCooling =  this.toStores.FuelCell.createPhase(  'liquid',  'flow',	'CoolingSystem',0.1, struct('H2O', 1),  340, 1e5);
             
             matter.store(this, 'O2_WaterSeperation', 0.01 + 1e-6);
             oO2_Dryer       = this.toStores.O2_WaterSeperation.createPhase(  'gas', 'flow', 'O2',   1e-6, struct('O2', 1e5),  fInitialTemperature, 0.8);
@@ -295,6 +295,12 @@ classdef FuelCell < vsys
             fHeatFlow = this.fStackCurrent * this.fStackVoltage * (1 - this.rEfficiency);
             
             this.toStores.FuelCell.toPhases.CoolingSystem.oCapacity.toHeatSources.FuelCell_HeatSource.setHeatFlow(fHeatFlow);
+            
+            % We limit the temperature difference over the Electrolyzer to
+            % ~10 K by setting the coolant flow accordingly:
+            fCoolantFlow = fHeatFlow / (this.toBranches.Cooling_Inlet.coExmes{2}.oPhase.oCapacity.fSpecificHeatCapacity * 5);
+            
+            this.toBranches.Cooling_Inlet.oHandler.setFlowRate(-fCoolantFlow);
         end
         
         function setPower(this, fPower)

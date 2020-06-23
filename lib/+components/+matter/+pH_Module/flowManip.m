@@ -33,16 +33,14 @@ classdef flowManip < matter.manips.substance.flow & components.matter.pH_Module.
             afPartialInFlows(afPartialInFlows < 0) = 0;
             
             if any(afPartialInFlows(this.abDissociation)) && afPartialInFlows(this.oMT.tiN2I.H2O) > 10^-12
-                afIonFlows = afPartialInFlows(this.oMT.aiCharge ~= 0);
-                arIonPartials = afIonFlows ./ sum(afIonFlows);
+                afFlows = afPartialInFlows(this.abRelevantSubstances);
+                arPartials = afFlows ./ sum(afFlows);
                 
-                if  all(abs(((this.arLastPartials - arPartials) ./ (this.arLastPartials + 1e-8))) < this.rMaxChange)
-                    afResultingFlows = afPartialInFlows + this.afPartialFlows;
-                    if ~any(afResultingFlows < 0)
-                        return
-                    end
+                if all(abs(((this.arLastPartials - arPartials) ./ (this.arLastPartials + 1e-8))) < this.rMaxChange)
+                    return
                 end
-                this.arLastIonPartials = arIonPartials;
+                this.arLastPartials = arPartials;
+                
                 % Volumetric flowrate in l/s!
                 fVolumetricFlowRate = (sum(afPartialInFlows) / this.oPhase.fDensity) * 1000;
 

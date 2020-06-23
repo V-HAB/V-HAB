@@ -9,7 +9,7 @@ classdef CCAA < vsys
     % temperature control is achiev through a normal heat exchanger which
     % is not modelled at the moment.
     
-    properties (SetAccess = public, GetAccess = public)
+    properties (SetAccess = protected, GetAccess = public)
         %Variable to decide wether the CCAA is active or not. Used for the
         %Case study to make it easier to switch them on or off
         bActive = true;
@@ -85,6 +85,12 @@ classdef CCAA < vsys
         % Time at which the temperature started to deviate from the set
         % point by more than 0.5 K
         fErrorTime = 0;
+        
+        % See "Living together in space: the design and operation of the
+        % life support systems on the International Space Station" P.O.
+        % Wieland, 1998, page 104, where the CCAA fan power consumption is
+        % mentioned to be 410 W
+        fCurrentPowerConsumption = 410; % W
     end
     
     methods 
@@ -99,7 +105,7 @@ classdef CCAA < vsys
             % initialization for the CCAA
             if isempty(tAtmosphere)
                 this.tAtmosphere.fTemperature = this.oMT.Standard.Temperature;
-                this.tAtmosphere.fRelHumidity = 0.5;
+                this.tAtmosphere.rRelHumidity = 0.5;
                 this.tAtmosphere.fPressure    = this.oMT.Standard.Pressure;
             else
                 this.tAtmosphere = tAtmosphere;
@@ -475,6 +481,16 @@ classdef CCAA < vsys
             fTCCV_To_Cabin_FlowRate = (1 - fFlowPercentageCHX) * (fInFlow+fInFlow2);
 
             this.toBranches.TCCV_Cabin.oHandler.setFlowRate(fTCCV_To_Cabin_FlowRate);
+        end
+        
+        function setActive(this, bActive)
+            % This function can be used to set the CDRA inactive,
+            this.bActive = bActive;
+            if this.bActive
+                this.fCurrentPowerConsumption =  410;
+            else
+                this.fCurrentPowerConsumption = 0;
+            end
         end
     end
     

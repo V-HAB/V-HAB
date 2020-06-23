@@ -280,8 +280,6 @@ classdef CHX < vsys
                 this.oF2F_2.setOutFlow(0,0);
                 
                 this.afCondensateMassFlow = zeros(1, this.oMT.iSubstances);
-
-                this.oP2P.update();
                 return
             end
             
