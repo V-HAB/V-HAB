@@ -17,19 +17,30 @@ classdef heatsource < base & event.source
         % actually a heat sink and cools the capacity
         fHeatFlow = 0; % [W]
         
+        % As with the manual solver in the mass domain, we cannot change
+        % the heat flow directly, as we first have to perform the
+        % temperature update of the capacity with the old heat flow to
+        % transfer the correct amount of thermal energy!
+        fRequestedHeatFlow = 0; % [W]
+        
         % Object reference to the capacity in which this heat source is
         % located
         oCapacity;
     end
     
     properties (Access = protected)
-        % A handle for the update of the thermal solver. To be used,
-        % whenever the power of this heat source is updated. 
-        hTriggerSolverUpdate;
+        % A handle to trigger the post tick update of the heat source. To
+        % be used whenever the heat flow changes (note directly changing
+        % the heat flow is not allowed for energy conversation reasons, see
+        % discussion of mass balance on the matter domain side)
+        hBindPostTickUpdate;
+        
+        chUnbindFunctions;
         
         % Performance hack - only .trigger() if .bind() happened. Replaces
         % the specific multi heat source handling.
         bTriggerUpdateCallbackBound = false;
+        bTriggerSetFlowRateCallbackBound = false;
     end
     
     methods
@@ -45,6 +56,7 @@ classdef heatsource < base & event.source
             if nargin > 1
                 this.fHeatFlow = fHeatFlow;
             end
+            
         end
         
         function setHeatFlow(this, fHeatFlow)
@@ -55,20 +67,21 @@ classdef heatsource < base & event.source
             % store the previous heat flow as old heat flow and provide it
             % as possible input for other functions bound to the update
             % trigger of this heat flow
-            fHeatFlowOld   = this.fHeatFlow;
-            this.fHeatFlow = fHeatFlow;
+            this.fRequestedHeatFlow = fHeatFlow;
             
             % Tell the capacity that its time step is now outdated as a
-            % heat flow has changed
-            if this.fHeatFlow ~= fHeatFlowOld
+            % heat flow has changed. If the heat flow is identical we do
+            % not have to do anything
+            if this.fHeatFlow ~= this.fRequestedHeatFlow 
                 this.oCapacity.setOutdatedTS();
+                this.hBindPostTickUpdate();
             end
             
             % If anything is bound to this trigger of this heat source, we
             % trigger an event to tell other objects/functions that this
             % heat source was updated
-            if this.bTriggerUpdateCallbackBound
-                this.trigger('update', struct('fHeatFlowOld', fHeatFlowOld, 'fHeatFlow', fHeatFlow));
+            if this.bTriggerSetFlowRateCallbackBound
+                this.trigger('setHeatFlow', struct('fHeatFlowOld', this.fHeatFlow, 'fHeatFlow', this.fRequestedHeatFlow));
             end
         end
         
@@ -81,6 +94,8 @@ classdef heatsource < base & event.source
             else
                 this.throw('setCapacity', 'Heatsource already has a capacity object');
             end
+            
+            [this.hBindPostTickUpdate,          this.chUnbindFunctions{end+1}] = this.oCapacity.oTimer.registerPostTick(@this.updateHeatFlow, 'thermal', 'heatsources');
         end
         
         % Catch 'bind' calls, so we can set a specific boolean property to
@@ -92,7 +107,18 @@ classdef heatsource < base & event.source
             % Only do for set
             if strcmp(sType, 'update')
                 this.bTriggerUpdateCallbackBound = true;
+            elseif strcmp(sType, 'setHeatFlow')
+                this.bTriggerSetFlowRateCallbackBound = true;
             end
+        end
+    end
+    methods (Access = protected)
+        
+        function updateHeatFlow(this)
+            % Since the temperature update of the capacity was called
+            % beforehand, we can now set the newly requested heat flow for
+            % the heat source!
+            this.fHeatFlow = this.fRequestedHeatFlow;
         end
     end 
 end

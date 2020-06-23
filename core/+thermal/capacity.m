@@ -44,6 +44,9 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
         % Boolean to identify this as a boundary capacity
         bBoundary = false;
         
+        % Boolean to identify this as a flow capacity
+        bFlow = false;
+        
         %% Associated objects
         % The phase which is the matter domain representation of this
         % capacity (as there is no capacity without matter)
@@ -168,12 +171,16 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
     
     methods
         
-        function this = capacity(oPhase, fTemperature)
+        function this = capacity(oPhase, fTemperature, bFlow)
             %CAPACITY Create new thermal capacity object
             %   Create a new capacity with a name and associated phase
             %   object. Capacities are generated automatically together
             %   with phases and all thermal calculations are performed here
-            
+            if nargin < 3
+                this.bFlow = false;
+            else
+                this.bFlow = bFlow;
+            end
             % Set associated objects.
             this.oPhase     = oPhase;
             this.oContainer = this.oPhase.oStore.oContainer;
@@ -215,8 +222,12 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
             % Initialize the heat source cell
             this.coHeatSource = cell.empty();
             
-            %% Register post tick callbacks for massupdate and update        
-            [this.hBindPostTickTemperatureUpdate, this.chUnbindFunctions{end+1}] = this.oTimer.registerPostTick(@this.updateTemperature, 'thermal', 'capacity_temperatureupdate');
+            %% Register post tick callbacks for massupdate and update
+            if this.bFlow
+                [this.hBindPostTickTemperatureUpdate, this.chUnbindFunctions{end+1}] = this.oTimer.registerPostTick(@this.updateTemperature, 'thermal', 'flow_capacity_temperatureupdate');
+            else
+                [this.hBindPostTickTemperatureUpdate, this.chUnbindFunctions{end+1}] = this.oTimer.registerPostTick(@this.updateTemperature, 'thermal', 'capacity_temperatureupdate');
+            end
             [this.hBindPostTickTimeStep,          this.chUnbindFunctions{end+1}] = this.oTimer.registerPostTick(@this.calculateTimeStep, 'post_physics', 'timestep');
             
             % Register the first temperature update
@@ -440,6 +451,11 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
             % Only sets a boolean in the timer to true, so it does not
             % matter if we do this multiple times --> no check required
             this.hBindPostTickTimeStep();
+            % Since this function is called when the heat flows change, we
+            % also have to call the temperature update to transfer the
+            % correct amount of thermal energy before changing the heat
+            % flows!
+            this.registerUpdateTemperature();
         end
         
         function registerUpdateTemperature(this, ~)
@@ -481,126 +497,18 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
             % controls the maximum allowed changes in composition until
             % this is recalculated, these are acceptable errors.
             
-            
-            % In case this is a flow phase with 0 mass (and therefore also
-            % 0 capacity by itself) the temperature calculation must be
-            % adapted to reflect this correctly
-            if this.oPhase.bFlow
-                % Initializing three arrays that will hold the information
-                % gathered from all exmes connected to this capacity.
-                afMatterFlowRate       = zeros(1,this.iProcsEXME);
-                afSpecificHeatCapacity = zeros(1,this.iProcsEXME);
-                afTemperature          = zeros(1,this.iProcsEXME);
-                
-                % we cannot use the fCurrentHeatFlow property directly
-                % because it would contain mass based heat flows, which are
-                % not valid for flow phases
-                fSolverHeatFlow = 0;
-                
-                % Looping through all the thermal exmes 
-                for iExme = 1:this.iProcsEXME
-                    % for basic_fluidic branches, the thermal branch
-                    % represent a matter based mass transfer, and therefore
-                    % we can use this to calculate the overall heat
-                    % capacity flow entering the phase
-                    if isa(this.aoExmes(iExme).oBranch.oHandler, 'solver.thermal.basic_fluidic.branch')
-                        % Now we need to find out in which direction the
-                        % branch is connected. Positive is from left to
-                        % right. In this case we are looking at the coExmes
-                        % cell and here index 1 is left and index 2 is
-                        % right. 
-                        % When we compare this capacity's phase to the
-                        % phase of the matter exme at one end of the
-                        % branch, we can determine if we are at the right
-                        % or left side of that branch. 
-                        if this.aoExmes(iExme).oBranch.oMatterObject.coExmes{1}.oPhase == this.oPhase
-                            % We're at the left side
-                            iMatterExme = 1;
-                            iOtherExme = 2;
-                        else
-                            % We're at the right side
-                            iMatterExme = 2;
-                            iOtherExme = 1;
-                        end
-                        
-                        % Now we can get the flow rate of this exme and
-                        % more importantly the sign. 
-                        fFlowRate = this.aoExmes(iExme).oBranch.oMatterObject.fFlowRate * this.aoExmes(iExme).oBranch.oMatterObject.coExmes{iMatterExme}.iSign;
-                        
-                        % We only consider inflows. Outflows change the
-                        % temperature through a change in mass and thereby
-                        % total heat capacity. 
-                        if fFlowRate > 0
-                            % Setting the matter flow rate and specific
-                            % heat capacity for this exme.
-                            afMatterFlowRate(iExme) = fFlowRate;
-                            afSpecificHeatCapacity(iExme) = this.aoExmes(iExme).oBranch.oMatterObject.coExmes{iOtherExme}.oFlow.fSpecificHeatCapacity;
-                            
-                            % To get the temperature of the inflow, we need
-                            % to look at the afTemperatures array in the
-                            % thermal branch. This is necessary, because
-                            % matter f2f processors can change the
-                            % temperature via their fHeatFlow property.
-                            % This is taken into account in the thermal
-                            % solver when the afTemperatures array is
-                            % populated. Depending on which end of the
-                            % branch this capacity is located (left or
-                            % right) we get the first or last element in
-                            % the array. 
-                            if iMatterExme == 1
-                                afTemperature(iExme) = this.aoExmes(iExme).oBranch.afTemperatures(1);
-                            else
-                                afTemperature(iExme) = this.aoExmes(iExme).oBranch.afTemperatures(end);
-                            end
-                        end
-                    else
-                        % in case a different solver is used, we need the
-                        % heat flow calculated by that solver, to add it to
-                        % the heat flows from the sources. The heat flows
-                        % from mass transport can be neglected since their
-                        % temperature is directly used to calculate the
-                        % base temperature
-                        fSolverHeatFlow = fSolverHeatFlow + this.aoExmes(iExme).iSign * this.aoExmes(iExme).fHeatFlow;
-                    end
-                end
-                
-                % Now we can calculate the overall heat capacity flow into
-                % the phase.
-                fOverallHeatCapacityFlow = sum(afMatterFlowRate .* afSpecificHeatCapacity);
-                
-                % Triggering in case someone wants to do something here
-                if this.bTriggerSetCalculateFlowConstantTemperatureCallbackBound
-                    this.trigger('calculateFlowConstantTemperature');
-                end
-                
-                % If nothing flows into the phase, we maintain the previous
-                % temperature, otherwise we calculate it using all of the
-                % information we have gathered so far.
-                if fOverallHeatCapacityFlow == 0
-                    fTemperatureNew = this.fTemperature;
-                else
-                    % We also need to take into account all of the heat
-                    % sources connected to this capacity.
-                    fSourceHeatFlow = sum(cellfun(@(cCell) cCell.fHeatFlow, this.coHeatSource));
-                    
-                    % Calculating the new temperature
-                    fTemperatureNew = (sum(afMatterFlowRate .* afSpecificHeatCapacity .* afTemperature) / fOverallHeatCapacityFlow) + (fSourceHeatFlow + fSolverHeatFlow)/fOverallHeatCapacityFlow;
-                end
+            % This is not a flow phase. 
+            if this.fTotalHeatCapacity == 0
+                % Setting the temperature to 293 K. If the temperature
+                % is set to zero, it will cause problems with several
+                % solvers that use the capacity temperature for density
+                % calculations, even though the flow rate is zero. 
+                fTemperatureNew = 293;
             else
-                % This is not a flow phase. 
-                if this.fTotalHeatCapacity == 0
-                    % Setting the temperature to 293 K. If the temperature
-                    % is set to zero, it will cause problems with several
-                    % solvers that use the capacity temperature for density
-                    % calculations, even though the flow rate is zero. 
-                    fTemperatureNew = 293;
-                else
-                    % Calculating the new temperature based on the current
-                    % heat flow. This value is calculated in the
-                    % calculateTimeStep() method of this class. 
-                    fTemperatureNew = this.fTemperature + ((this.fCurrentHeatFlow / this.fTotalHeatCapacity) * fLastStep);
-                end
-
+                % Calculating the new temperature based on the current
+                % heat flow. This value is calculated in the
+                % calculateTimeStep() method of this class. 
+                fTemperatureNew = this.fTemperature + ((this.fCurrentHeatFlow / this.fTotalHeatCapacity) * fLastStep);
             end
             
             % Setting the properties that help us determine if we need to

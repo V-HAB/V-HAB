@@ -305,6 +305,8 @@ classdef container < sys
                         thermal.capacities.boundary(oPhase, oPhase.fTemperature);
                     elseif oPhase.bThermalNetworkNode
                         thermal.capacities.network(oPhase, oPhase.fTemperature, false);
+                    elseif isa(oPhase, 'matter.phases.flow.flow')
+                        thermal.capacities.flow(oPhase, oPhase.fTemperature);
                     else
                         thermal.capacity(oPhase, oPhase.fTemperature);
                     end
