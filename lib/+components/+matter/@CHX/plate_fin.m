@@ -378,8 +378,12 @@ else
                         % Debug option
                         mMoleFracVapor(iAirIncrement,iCoolantIncrement) = tCHX_Parameters.fMolarFractionVapor;
 
-                        tCHX_Parameters.arPartialMassesGas(oMT.tiN2I.H2O) = (fCurrentWaterFlow/fInitialWaterFlowPerCell) * Fluid_1.oFlow.arPartialMass(oMT.tiN2I.H2O);
-
+                        if fInitialWaterFlowPerCell == 0
+                            tCHX_Parameters.arPartialMassesGas(oMT.tiN2I.H2O) = 0;
+                        else
+                            tCHX_Parameters.arPartialMassesGas(oMT.tiN2I.H2O) = (fCurrentWaterFlow/fInitialWaterFlowPerCell) * Fluid_1.oFlow.arPartialMass(oMT.tiN2I.H2O);
+                        end
+                        
                         tCHX_Parameters.fTemperatureCoolant = fInlet_fTemperatureCoolant_up;
                         
                         if abs(fTemperatureGasLastMatterProps - tCHX_Parameters.fTemperatureGas) > 2
@@ -407,7 +411,11 @@ else
                         if fCurrentRemainingWaterFlow < 0
                             fCurrentRemainingWaterFlow = 0;
                         end
-                        tCHX_Parameters.arPartialMassesGas(oMT.tiN2I.H2O) = (fCurrentRemainingWaterFlow/fInitialWaterFlowPerCell) * Fluid_1.oFlow.arPartialMass(oMT.tiN2I.H2O);
+                        if fInitialWaterFlowPerCell == 0
+                            tCHX_Parameters.arPartialMassesGas(oMT.tiN2I.H2O) = 0;
+                        else
+                            tCHX_Parameters.arPartialMassesGas(oMT.tiN2I.H2O) = (fCurrentRemainingWaterFlow/fInitialWaterFlowPerCell) * Fluid_1.oFlow.arPartialMass(oMT.tiN2I.H2O);
+                        end
                         tCHX_Parameters.fMolarFractionVapor	= (fCurrentRemainingWaterFlow/ oMT.afMolarMass(oMT.tiN2I.H2O)) / (tCHX_Parameters.fMassFlowGas / Fluid_1.oFlow.fMolarMass);
                         
                         [tOutputs]              = calculateLocalHeatFlow(oCHX, tCHX_Parameters);

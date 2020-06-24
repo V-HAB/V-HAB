@@ -19,6 +19,16 @@ if iFluid == 2
     tInput.fSpecificHeatCapacityFilm    = oMT.calculateSpecificHeatCapacity('liquid', arVapor, fSurfaceTemperatureInitialization);			% Specific Heat Capacity Film [J/(kg*K)]
     tInput.fThermalConductivityFilm     = oMT.calculateThermalConductivity('liquid', arVapor, fSurfaceTemperatureInitialization);	% Thermal Conductivity Film [W/(m*K)]
     tInput.fSpecificHeatCapacityCoolant = oMT.calculateSpecificHeatCapacity('liquid', afPressureCoolant, tInput.fTemperatureCoolant, afPressureCoolant);
+    
+    if tInput.fDynamicViscosityFilm == 0
+        % Assume dynamic viscosity of water if we currently have no film,
+        % to prevent errors in the reynolds calculation
+        tInput.fDynamicViscosityFilm        = 8.9e-4;
+        tInput.fDensityFilm                 = 998;
+        tInput.fSpecificHeatCapacityFilm    = 4184;
+        tInput.fThermalConductivityFilm     = 0.6;
+        tInput.fSpecificHeatCapacityCoolant = 4184;
+    end
 else
 %% Matter Properties of gas
     tInput.fDensityGas                  = oMT.calculateDensity('gas', tInput.arPartialMassesGas, tInput.fTemperatureGas, afPartialPressures);

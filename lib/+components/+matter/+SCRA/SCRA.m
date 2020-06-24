@@ -26,12 +26,6 @@ classdef SCRA < vsys
         function createMatterStructure(this)
             createMatterStructure@vsys(this);
             
-            %Temp Change allowed before CHX are recalculated
-            fTempChange = 1;
-            %Percental Change allowed to Massflow/Pressure/Composition of
-            %Flow before CHX is recalculated
-            fPercentChange = 0.025;
-            
             fVolumeCRA_Sabatier = 0.1;
             matter.store(this, 'CRA_Sabatier', fVolumeCRA_Sabatier);
             
@@ -131,19 +125,41 @@ classdef SCRA < vsys
             %The actual CHX that is used is unknown and therefore this
             %simply uses a heat exchanger with somewhat realistic values.
             %If data on the actual CHX is found this should be corrected.
+            % Creating the CHX
+            % Some configurating variables
+            sHX_type = 'plate_fin';       % Heat exchanger type
+            % broadness of the heat exchange area in m
+            tGeometry.fBroadness        = 1;  
+            % Height of the channel for fluid 1 in m
+            tGeometry.fHeight_1         = 0.002;
+            % Height of the channel for fluid 2 in m
+            tGeometry.fHeight_2         = 0.002;
+            % length of the heat exchanger in m
+            tGeometry.fLength           = 1;
+            % thickness of the plate in m
+            tGeometry.fThickness        = 0.0002;
+            % number of layers stacked
+            tGeometry.iLayers           = 33;
+            % number of baffles (evenly distributed)
+            tGeometry.iBaffles          = 3;
+            % broadness of a fin of the first canal (air)
+            tGeometry.fFinBroadness_1	= tGeometry.fBroadness/180;
+            % broadness of a fin of the second canal (coolant)
+            tGeometry.fFinBroadness_2	= tGeometry.fBroadness/180; 
+            %  Thickness of the Fins (for now both fins have the same thickness
+            tGeometry.fFinThickness     = 0.0002;
+            % Conductivity of the Heat exchanger solid material (W/m K)
+            Conductivity = 205;
+            % Number of incremental heat exchangers used in the calculation
+            % of the CHX
+            miIncrements = [8,4];
+            % Defines when the CHX should be recalculated: 
+            fTempChangeToRecalc = 1;        % If any inlet temperature changes by more than 1 K
+            fPercentChangeToRecalc = 0.05;  % If any inlet flowrate or composition changes by more than 5%
             
-            %Counter flow plate heat exchanger
-            sHX_type = 'counter plate';
-            % [fBroadness, fHeight_1, fHeight_2, fLength, fThickness]
-            Geometry = [1, 0.01, 0.01, 1, 0.001];
-            Conductivity = 15;
-            
-            iIncrements = 0;
-            
-            % HX Params: oParent, sName, mHX, sHX_type, fHX_TC
-            % adding the heat exchanger
-            oCRA_CHX = components.matter.CHX(this, 'CRA_SabatierCHX', Geometry, sHX_type, iIncrements, Conductivity, fTempChange, fPercentChange);
-            %oHX = components.HX(this, 'HeatExchanger', Geometry, sHX_type, Conductivity);
+            % defines the heat exchanged object using the previously created properties
+            % (oParent, sName, mHX, sHX_type, iIncrements, fHX_TC, fTempChangeToRecalc, fPercentChangeToRecalc)
+            oCRA_CHX = components.matter.CHX(this, 'CRA_SabatierCHX', tGeometry, sHX_type, miIncrements, Conductivity, fTempChangeToRecalc, fPercentChangeToRecalc);
             
             %CRA Water Recovery
             %Recovers the water from the sabatier production gas
@@ -183,7 +199,9 @@ classdef SCRA < vsys
             
             %adds the P2P proc for the CHX that takes care of the actual
             %phase change
-            oCRA_CHX.oP2P = components.matter.HX.CHX_p2p(this.toStores.CRA_WaterRec,'CondensingHX', 'WRecgas.WRUnitin1', 'RecoveredWater.WRUnitout', oCRA_CHX);
+            % adds the P2P proc for the CHX that takes care of the actual
+            % phase change
+            oCRA_CHX.oP2P = components.matter.HX.CHX_p2p(this.toStores.CRA_WaterRec, 'CondensingHX', 'WRecgas.WRUnitin1', 'RecoveredWater.WRUnitout', oCRA_CHX);
             
             %this is only necessary because V-HAB does not allow two
             %interfaces to other systems in the same branch

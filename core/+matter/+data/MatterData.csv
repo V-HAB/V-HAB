@@ -247,3 +247,4 @@ C2H6O2;Ethylenglycol;liquid;;0;0;0.00E+00;257;470;1110;1320;;;;;;;;;;;
 C3H6O;Aceton;liquid;;0;-1;0.00E+00;178;329;784;1320;;;;;;;;;;;% H. Kalka, ?The Closed Carbonate System.? [Online]. Available: http://www.aqion.de/site/160. [Accessed: 04-Nov-2018]. thesis literatuere [91]
 H2O;Water;liquid;;0;0;1.00E-14;;;;;;;;;;;;;;;
 CO2;CarbonDioxide;gas;;0;0;4.40E-07;;;;;;;;;;;;;;;
+LunarRegolith;LunarRegolith;solid;1;0;0;0.00E+00;;;1450;800;;;1;;;;;;;;
