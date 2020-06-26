@@ -238,16 +238,22 @@ classdef CDRA < vsys
             % cell number during the simulation. The adsorbed in the
             % calculation can be reduced since it is both in the
             % denominator and numerator
-            fLoadingFirstCell13x        = (0.16 * 5) / tInitialization.Zeolite13x.iCellNumber;
-            tStandardInit.Zeolite13x.mfInitialH2O          = fLoadingFirstCell13x : -fLoadingFirstCell13x/(tInitialization.Zeolite13x.iCellNumber - 1) : 0;
-           	
-            fLoadingFirstCellSylobeadAbsorb = (0.28 * 5) / tInitialization.Sylobead.iCellNumber;
-            tStandardInit.Sylobead.mfInitialH2OAbsorb         = fLoadingFirstCellSylobeadAbsorb : -fLoadingFirstCellSylobeadAbsorb/(tInitialization.Sylobead.iCellNumber - 1) : 0;
+%             fLoadingFirstCell13x        = (0.16 * 5) / tInitialization.Zeolite13x.iCellNumber;
+%             tStandardInit.Zeolite13x.mfInitialH2O          = fLoadingFirstCell13x : -fLoadingFirstCell13x/(tInitialization.Zeolite13x.iCellNumber - 1) : 0;
+%            	
+%             fLoadingFirstCellSylobeadAbsorb = (0.28 * 5) / tInitialization.Sylobead.iCellNumber;
+%             tStandardInit.Sylobead.mfInitialH2OAbsorb         = fLoadingFirstCellSylobeadAbsorb : -fLoadingFirstCellSylobeadAbsorb/(tInitialization.Sylobead.iCellNumber - 1) : 0;
+%             
+%             fLoadingFirstCellSylobeadDesorb = (0.05 * 5) / tInitialization.Sylobead.iCellNumber;
+%             tStandardInit.Sylobead.mfInitialH2ODesorb         = fLoadingFirstCellSylobeadDesorb : -fLoadingFirstCellSylobeadDesorb/(tInitialization.Sylobead.iCellNumber - 1) : 0;
+%             
+%         	tStandardInit.Zeolite5A.mfInitialH2O              = zeros(tInitialization.Zeolite5A.iCellNumber,1);
             
-            fLoadingFirstCellSylobeadDesorb = (0.05 * 5) / tInitialization.Sylobead.iCellNumber;
-            tStandardInit.Sylobead.mfInitialH2ODesorb         = fLoadingFirstCellSylobeadDesorb : -fLoadingFirstCellSylobeadDesorb/(tInitialization.Sylobead.iCellNumber - 1) : 0;
-            
-        	tStandardInit.Zeolite5A.mfInitialH2O              = zeros(tInitialization.Zeolite5A.iCellNumber,1);
+            tStandardInit.Zeolite13x.mfInitialH2O           = zeros(tInitialization.Zeolite13x.iCellNumber,1);
+           	tStandardInit.Sylobead.mfInitialH2OAbsorb     	= zeros(tInitialization.Sylobead.iCellNumber,1);
+            tStandardInit.Sylobead.mfInitialH2ODesorb       = zeros(tInitialization.Sylobead.iCellNumber,1);
+            tStandardInit.Zeolite5A.mfInitialH2O            = zeros(tInitialization.Zeolite5A.iCellNumber,1);
+
             
             csTypes = {'Zeolite13x', 'Sylobead', 'Zeolite5A'};
             % Check whether the standard definition for the initial masses
@@ -774,7 +780,7 @@ classdef CDRA < vsys
                         tTimeStepProperties.arMaxChange = arMaxChange;
                         tTimeStepProperties.rMaxChange = 0.1;
                         tTimeStepProperties.fMaxStep = 60;
-                        tTimeStepProperties.fMinStep = 1e-4;
+                        tTimeStepProperties.fMinStep = 1;
                         
                         oPhase.setTimeStepProperties(tTimeStepProperties);
                     else
