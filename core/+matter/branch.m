@@ -283,11 +283,9 @@ classdef branch < base.branch
             
             % No pressure? Distribute equally.
             if nargin < 3 || isempty(afPressureDrops) || any(isinf(afPressureDrops))
-                fPressureDiff = (this.coExmes{1}.getExMeProperties() - this.coExmes{2}.getExMeProperties());
-                
-                % Each flow proc produces the same pressure drop, the sum
-                % being the actual pressure difference.
-                afPressureDrops = ones(1, this.iFlowProcs) * (fPressureDiff) / this.iFlowProcs;
+                % in this case (e.g. no f2fs) assume no pressure drop to
+                % occur
+                afPressureDrops = zeros(1, this.iFlowProcs);
                 
                 % Note: no matter the flow direction, positive values on
                 % afPRessure always denote a pressure DROP
