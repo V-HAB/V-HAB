@@ -57,7 +57,13 @@ classdef RespirationGasExchangeO2 < matter.procs.p2ps.flow
                 afPP                = arFractions .* fGasPressure; 
             else
                 afPartialFlowsAir = zeros(1,this.oMT.iSubstances);
-                afPP = this.oIn.oPhase.afPP;
+                afPP = zeros(1,this.oMT.iSubstances);
+                % In case nothing flows we assume standard ISS air
+                % composition because otherwise the calculated values will
+                % result in inf and NaN values later on
+                afPP(this.oMT.tiN2I.N2) = 8e4;
+                afPP(this.oMT.tiN2I.O2) = 2.1e4;
+                afPP(this.oMT.tiN2I.CO2) = 400;
             end
             
             if ~(isempty(afOutsideInFlowRate) || all(sum(aarOutsideInPartials) == 0))

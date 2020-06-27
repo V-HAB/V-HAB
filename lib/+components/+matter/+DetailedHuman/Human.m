@@ -233,6 +233,19 @@ classdef Human < vsys
             end
         end
         
+        function moveHuman(this, oNewCabinPhase)
+            % This function can be used to move the human from the current
+            % cabin phase, to another cabin phase. Only the air interfaces
+            % are moved, but if you also want to move other interfaces
+            % (e.g. having the human on a spacewalk would require all
+            % Interfaces to be adjusted) you can use the same logic on your
+            % system to reconnect the other interfaces as well!
+            this.toBranches.Air_In.coExmes{2}.reconnectExMe(oNewCabinPhase);
+            this.toBranches.Air_Out.coExmes{2}.reconnectExMe(oNewCabinPhase);
+            
+            this.toThermalBranches.SensibleHeatOutput.coExmes{2}.reconnectExMe(oNewCabinPhase.oCapacity);
+        end
+        
         function addP2PBranch(this, oBranch)
             this.aoP2PBranches(end+1,1) = oBranch;
             

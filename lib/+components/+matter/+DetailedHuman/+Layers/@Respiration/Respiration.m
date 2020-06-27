@@ -648,6 +648,12 @@ classdef Respiration < vsys
                                                            (this.fMaximalPeriheralChemorezeptorDischargeFrequency + this.fMinimalPeriheralChemorezeptorDischargeFrequency * ...
                                                            exp((fPartialPressureO2_Arteries - this.fPeripheralChemorezeptorPartialPressureO2_Constant) / this.fKpc)) /...
                                                            (1 + exp((fPartialPressureO2_Arteries - this.fPeripheralChemorezeptorPartialPressureO2_Constant) / this.fKpc)));
+           
+            if fNewPeriheralChemorezeptorDischargeFrequency > this.fMaximalPeriheralChemorezeptorDischargeFrequency
+               fNewPeriheralChemorezeptorDischargeFrequency = this.fMaximalPeriheralChemorezeptorDischargeFrequency;
+            elseif fNewPeriheralChemorezeptorDischargeFrequency < this.fMinimalPeriheralChemorezeptorDischargeFrequency
+               fNewPeriheralChemorezeptorDischargeFrequency = this.fMinimalPeriheralChemorezeptorDischargeFrequency;
+            end
             
         end
         
