@@ -103,7 +103,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             % themselves should not be used for that we cannot use the gas
             % flow node values directly otherwise the P2P influences itself)
             
-            if length(afInFlowRates) ~= length(this.tOldValues.afInFlowRates) || any(this.tOldValues.afInFlowRates ~= afInFlowRates) || any(any(this.tOldValues.aarInPartials ~= aarInPartials))
+            if this.bDesorption || length(afInFlowRates) ~= length(this.tOldValues.afInFlowRates) || any(this.tOldValues.afInFlowRates ~= afInFlowRates) || any(any(this.tOldValues.aarInPartials ~= aarInPartials))
                 
                 this.tOldValues.afInFlowRates = afInFlowRates;
                 this.tOldValues.aarInPartials = aarInPartials;

@@ -148,10 +148,6 @@ classdef CDRA < vsys
             this.tGeometry.Sylobead.fAbsorberVolume          =   this.oMT.calculateDensity('solid', struct('Sylobead_B125', 1))     * fMassSylobead;
             this.tGeometry.Zeolite5A.fAbsorberVolume         =   this.oMT.calculateDensity('solid', struct('Zeolite5A', 1))         * fMassZeolite5A;
             
-%             this.tGeometry.Zeolite13x.fAbsorberVolume        =   (1-this.tGeometry.Zeolite13x.rVoidFraction)        * fCrossSection * this.tGeometry.Zeolite13x.fLength;
-%             this.tGeometry.Sylobead.fAbsorberVolume          =   (1-this.tGeometry.Sylobead.rVoidFraction)          * fCrossSection * this.tGeometry.Sylobead.fLength;
-%             this.tGeometry.Zeolite5A.fAbsorberVolume         =   (1-this.tGeometry.Zeolite5A.rVoidFraction)         * fCrossSection * this.tGeometry.Zeolite5A.fLength;
-            
             % These are the correct estimates for the flow volumes of each
             % bed which are used in the filter adsorber proc for
             % calculations. 
@@ -742,7 +738,7 @@ classdef CDRA < vsys
             % bed specifically, which helps with debugging. Additional the
             % full system results in close to singular matrix, which might
             % lead to issues.
-            tSolverProperties.fMaxError = 1e-5;
+            tSolverProperties.fMaxError = 1e-4;
             tSolverProperties.iMaxIterations = 1000;
             tSolverProperties.fMinimumTimeStep = 1;
             tSolverProperties.iIterationsBetweenP2PUpdate = 200;
