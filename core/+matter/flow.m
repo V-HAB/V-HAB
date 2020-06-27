@@ -261,7 +261,7 @@ classdef flow < base
             % methods, since aoFlows attribute has SetAccess private!
             elseif isa(oProc, 'matter.procs.f2f')
                 if ~any(oProc.aoFlows == this)
-                    this.throw('addProc', 'Object processor aoFlows property is not the same as this one - use processor''s addFlow method!');
+                    this.throw('addProc', 'This proc already has two flows connected, you probably already added it to another branch');
                 end
             elseif isa(oProc, 'matter.procs.exme')
                 if ~any(oProc.oFlow == this)

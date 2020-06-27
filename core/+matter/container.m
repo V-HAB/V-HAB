@@ -312,7 +312,11 @@ classdef container < sys
             
             for iBranch = 1:length(this.aoBranches)
                 if isempty(this.aoBranches(iBranch).oHandler)
-                    error('Error in System ''%s''. The branch ''%s'' has no solver.', this.sName, this.aoBranches(iBranch).sName);
+                    if isempty(this.aoBranches(iBranch).sCustomName)
+                        error('Error in System ''%s''. The branch ''%s'' has no solver.', this.sName, this.aoBranches(iBranch).sName);
+                    else
+                        error('Error in System ''%s''. The branch ''%s'' has no solver.', this.sName, this.aoBranches(iBranch).sCustomName);
+                    end
                 end
                 
             end

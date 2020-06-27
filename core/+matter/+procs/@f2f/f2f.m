@@ -145,19 +145,12 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             % Call addProc on the flow, provide function handle to
             % enable removing, returns the sign for the flow rate, throws
             % an error if something went wrong.
-            try
-                % Provide function handle to removeFlow - even though that
-                % method is protected, it can be called from outside
-                % through that! Wrap in anonymous function so no way to
-                % remove another flow.
-                oFlow.addProc(this, @() this.removeFlow(oFlow));
             
-            catch oErr
-                % Reset back to default MF
-                this.aoFlows(iFlowID) = this.oMT.oFlowZero;
-                
-                rethrow(oErr);
-            end
+            % Provide function handle to removeFlow - even though that
+            % method is protected, it can be called from outside
+            % through that! Wrap in anonymous function so no way to
+            % remove another flow.
+            oFlow.addProc(this, @() this.removeFlow(oFlow));
         end
     end
     
