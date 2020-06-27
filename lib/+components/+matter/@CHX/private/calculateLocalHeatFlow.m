@@ -44,19 +44,22 @@ if strcmp(tInput_Type,'HorizontalTube') && (tInput.GasFlow == false)
 end
 
 % Calculation of dimensionless quantities:
-Re_Gas = ReynoldsNumberGas(tInput.fMassFlowGas, tInput.fDynamicViscosityGas, tInput.fCharacteristicLength, tInput_Type);	% Reynolds-Number gas mixture [-], (2.12)
+Re_Gas = ReynoldsNumberGas(tInput.fMassFlowGas, tInput.fDynamicViscosityGas, tInput.fHydraulicDiameter, tInput_Type);	% Reynolds-Number gas mixture [-], (2.12)
 
 Pr_Gas = (tInput.fDynamicViscosityGas * tInput.fSpecificHeatCapacityGas) / tInput.fThermalConductivityGas;	% Prandtl-Number gas mixture [-], (2.41)
 
-Nu_Gas_0 = NusseltNumberGas(Re_Gas, Pr_Gas, tInput_Type);											% Nusseltnumber of gas mixture [-], (2.40)
+Nu_Gas_0 = NusseltNumberGas(Re_Gas, Pr_Gas, tInput.fHydraulicDiameter, tInput.fCharacteristicLength);											% Nusseltnumber of gas mixture [-], (2.40)
 
 Sc_Gas = tInput.fKinematicViscosityGas / DiffCoeff_Gas;													% Schmidt-Number of gas mixture [-], (2.44)
 
-Sh_Gas_0 = SherwoodNumber(Re_Gas, Sc_Gas, tInput_Type);												% Sherwood number of gas mixture [-], (2.43)
+% No this is not a typo, the Sherwood number can be calculated using the
+% same equations as the nusselt number, by just using Sc instead of Pr. See
+% the VDI heat atlas section which is mentioned in the function!
+Sh_Gas_0 = NusseltNumberGas(Re_Gas, Sc_Gas, tInput.fHydraulicDiameter, tInput.fCharacteristicLength);												% Sherwood number of gas mixture [-], (2.43)
 
 % -----
 
-beta_Gas_0 = Sh_Gas_0 * DiffCoeff_Gas / tInput.fCharacteristicLength;												% Mass transfer coefficient gas mixture [m/s], (2.45)
+beta_Gas_0 = Sh_Gas_0 * DiffCoeff_Gas / tInput.fHydraulicDiameter;												% Mass transfer coefficient gas mixture [m/s], (2.45)
 
 % Calculation of two separate heat flux paths from the gas through the condensate film and wall to the coolant (Algorithms 1 & 2):
 % 
@@ -112,13 +115,18 @@ for iStep = 1:iSteps
     end
 
     % Consideration of Stefan diffusion in mass transfer coefficient [m/s], (2.36)
-    mfBeta_Gas(iStep) = beta_Gas_0 * (tInput.fMolarFractionVapor - mfMolFractionVaporAtSurface(iStep))^(-1) * log((1 - mfMolFractionVaporAtSurface(iStep))/(1 - tInput.fMolarFractionVapor));
+    if tInput.fMolarFractionVapor == 0 && tInput.fMassFlowFilm == 0
+        % In this case we neither have a vapor nor a film, so there will no
+        % diffusion
+        mfSpecificMassFlowRate_Vapor(iStep) = 0;
+    else
+        mfBeta_Gas(iStep) = beta_Gas_0 * (tInput.fMolarFractionVapor - mfMolFractionVaporAtSurface(iStep))^(-1) * log((1 - mfMolFractionVaporAtSurface(iStep))/(1 - tInput.fMolarFractionVapor));
 
-    % Wall-normal area-specific diffusive vapor mass flow [kg/(s*m^2)], (2.33)
-    mfSpecificMassFlowRate_Vapor(iStep) = mfBeta_Gas(iStep) * tInput.fDensityGas * (tInput.fMolarFractionVapor - mfMolFractionVaporAtSurface(iStep));
-
+        % Wall-normal area-specific diffusive vapor mass flow [kg/(s*m^2)], (2.33)
+        mfSpecificMassFlowRate_Vapor(iStep) = mfBeta_Gas(iStep) * tInput.fDensityGas * (tInput.fMolarFractionVapor - mfMolFractionVaporAtSurface(iStep));
+    end
     % Heat transfer coefficient between gas and film [W/(m^2 K)], (2.42)
-    fHeatTransferCoeff_Gas_0 = (Nu_Gas_0 * tInput.fThermalConductivityGas) / tInput.fCharacteristicLength;
+    fHeatTransferCoeff_Gas_0 = (Nu_Gas_0 * tInput.fThermalConductivityGas) / tInput.fHydraulicDiameter;
 
     % Factor for Ackermann-Correction [-], (2.35)
     a_q = (mfSpecificMassFlowRate_Vapor(iStep) * tInput.fSpecificHeatCapacityGas) / fHeatTransferCoeff_Gas_0;
@@ -152,7 +160,7 @@ for iStep = 1:iSteps
         end
     % Calculation of condensing heat exchanger if condensate film exists
     else
-        Re_Film = ReynoldsNumberFilm(mfFilmFlowRate(iStep), tInput.fDynamicViscosityFilm, tInput.fCharacteristicLength, tInput_Type);	% Reynolds number Condensate Film [-], (2.55)
+        Re_Film = ReynoldsNumberFilm(mfFilmFlowRate(iStep), tInput.fDynamicViscosityFilm, tInput.fHydraulicDiameter, tInput_Type);	% Reynolds number Condensate Film [-], (2.55)
         if Re_Film >= 10000
             warning('Re_Film >= 10000: Range of validity exceeded!');
             return

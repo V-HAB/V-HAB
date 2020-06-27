@@ -25,6 +25,13 @@ classdef CCAA < vsys
         mfCHXAirFlow;                       % Table used to calculate the flow rates of the ARS valve
         fTCCV_Angle = 40;                   % opening angle of the TCCV valve, set inititally to the medium value (min is 9° max is 84°)
         
+        % allowed coolant flow is between 600 and 1230 lb/hr See "Living
+        % together in space: the design and operation of the life support
+        % systems on the International Space Station", Wieland, Paul O.,
+        % 1998, page 104 Note that the coolant flow is provided with 1230
+        % lb/hr for the lab and hab and 600 lb/hr for the Node 2 and AL
+        fCoolantFlowRate = 0.0755987283; % 600 lb/hr
+        
         % The CHX data is given for 50 to 450 cfm so the CCAA
         % should have at least 450 cfm of inlet flow that can enter
         % the CHX. And 450 cfm are 0.2124 m^3/s
@@ -285,16 +292,12 @@ classdef CCAA < vsys
             % These branches are only necessary if a CDRA is connected to
             % the CCAA
             if ~isempty(this.sCDRA)
-                matter.branch(this, 'CHX.Flow_Out_Gas2',            {},                         'CCAA_CHX_to_CDRA_Out',     'CHX_CDRA');
+                matter.branch(this, 'CHX.Flow_Out_Gas2',            {},                     'CCAA_CHX_to_CDRA_Out',     'CHX_CDRA');
             end
             
         end
         
         function sealThermalStructure(this)
-            if ~isempty(this.sCDRA)
-                this.oParent.toChildren.(this.sCDRA).setReferencePhase(this.oAtmosphere);
-            end
-            
             sealThermalStructure@thermal.container(this);
         end
              
@@ -313,10 +316,6 @@ classdef CCAA < vsys
                 solver.matter.manual.branch(this.toBranches.CHX_CDRA);
                 
                 this.toBranches.CHX_CDRA.oHandler.setFlowRate(this.fCDRA_FlowRate);
-                
-                if this.fCDRA_FlowRate == 0
-                    this.toBranches.CDRA_TCCV.oHandler.setActive(false);
-                end
             end
             
             if this.bUseFixValues
@@ -364,17 +363,7 @@ classdef CCAA < vsys
 
                 if this.bActive == 1
                     %% Setting of initial flow rates
-                    %allowed coolant flow is between 600 and 1230 lb/hr but the CHX
-                    %performance data is given for 600 lb/hr so this flow rate is
-                    %assumed here for the coolant. See 
-                    % "Living together in space: the design and operation
-                    % of the life support systems on the International
-                    % Space Station", Wieland, Paul O., 1998, page 104
-                    % Note that the coolant flow is provided with 
-                    % 1230 lb/hr for the lab and hab and 600 lb/hr for the
-                    % Node 2 and AL
-                    
-                    this.toBranches.Coolant_In.oHandler.setFlowRate(-0.0755987283); %600 lb/hr
+                    this.toBranches.Coolant_In.oHandler.setFlowRate(-this.fCoolantFlowRate);
                 end
             end
             
@@ -436,7 +425,8 @@ classdef CCAA < vsys
             % Wieland, Paul O., 1998, page 104 Note that the coolant flow
             % is provided with 1230 lb/hr for the lab and hab and 600 lb/hr
             % for the Node 2 and AL
-            this.toBranches.Coolant_In.oHandler.setFlowRate(-fCoolantMassFlow);
+            this.fCoolantFlowRate = fCoolantMassFlow;
+            this.toBranches.Coolant_In.oHandler.setFlowRate(-this.fCoolantFlowRate);
         end
         
         function setNumericalParameters(this, fTempChange, fPercentChange)
@@ -488,8 +478,12 @@ classdef CCAA < vsys
             this.bActive = bActive;
             if this.bActive
                 this.fCurrentPowerConsumption =  410;
+                this.toBranches.Coolant_In.oHandler.setFlowRate(-this.fCoolantFlowRate); 
             else
                 this.fCurrentPowerConsumption = 0;
+                this.toBranches.CCAA_In_FromCabin.oHandler.setFlowRate(0);
+                this.toBranches.TCCV_Cabin.oHandler.setFlowRate(0);
+                this.toBranches.Coolant_In.oHandler.setFlowRate(0); 
             end
         end
     end

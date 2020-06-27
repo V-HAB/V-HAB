@@ -206,7 +206,7 @@ else
     tCHX_Parameters.fThermalConductivitySolid   = fThermalConductivitySolid;
     tCHX_Parameters.fPressureGas                = Fluid_1.oFlow.fPressure;
     tCHX_Parameters.fHydraulicDiameter          = 4*(tCHX_Parameters.fHeight_1 * tCHX_Parameters.fFinBroadness_1)/(2 * tCHX_Parameters.fHeight_1 + 2 * tCHX_Parameters.fFinBroadness_1);     % Hydraulic diameter [m]
-    tCHX_Parameters.fCharacteristicLength       = tCHX_Parameters.fHydraulicDiameter;
+    tCHX_Parameters.fCharacteristicLength       = tCHX_Parameters.fLength;
     tCHX_Parameters.arPartialMassesGas          = Fluid_1.oFlow.arPartialMass;
 
     fInitialWaterFlowPerCell = Fluid_1.oFlow.arPartialMass(oMT.tiN2I.H2O) * tCHX_Parameters.fMassFlowGas;
