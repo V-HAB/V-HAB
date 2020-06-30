@@ -242,8 +242,6 @@ classdef CDRA < vsys
 %             
 %             fLoadingFirstCellSylobeadDesorb = (0.05 * 5) / tInitialization.Sylobead.iCellNumber;
 %             tStandardInit.Sylobead.mfInitialH2ODesorb         = fLoadingFirstCellSylobeadDesorb : -fLoadingFirstCellSylobeadDesorb/(tInitialization.Sylobead.iCellNumber - 1) : 0;
-%             
-%         	tStandardInit.Zeolite5A.mfInitialH2O              = zeros(tInitialization.Zeolite5A.iCellNumber,1);
             
             tStandardInit.Zeolite13x.mfInitialH2O           = zeros(tInitialization.Zeolite13x.iCellNumber,1);
            	tStandardInit.Sylobead.mfInitialH2OAbsorb     	= zeros(tInitialization.Sylobead.iCellNumber,1);
@@ -281,9 +279,9 @@ classdef CDRA < vsys
             
             % this factor times the mass flow^2 will decide the pressure
             % loss.
-            this.tGeometry.Zeolite13x.mfFrictionFactor  = 1e8   /tInitialization.Zeolite13x.iCellNumber * ones(tInitialization.Zeolite13x.iCellNumber,1);
-            this.tGeometry.Sylobead.mfFrictionFactor  	= 1e8   /tInitialization.Sylobead.iCellNumber   * ones(tInitialization.Sylobead.iCellNumber,1);
-            this.tGeometry.Zeolite5A.mfFrictionFactor   = 1e9   /tInitialization.Zeolite5A.iCellNumber  * ones(tInitialization.Zeolite5A.iCellNumber,1);
+            this.tGeometry.Zeolite13x.mfFrictionFactor  = 1e7   /tInitialization.Zeolite13x.iCellNumber * ones(tInitialization.Zeolite13x.iCellNumber,1);
+            this.tGeometry.Sylobead.mfFrictionFactor  	= 1e7   /tInitialization.Sylobead.iCellNumber   * ones(tInitialization.Sylobead.iCellNumber,1);
+            this.tGeometry.Zeolite5A.mfFrictionFactor   = 1e8   /tInitialization.Zeolite5A.iCellNumber  * ones(tInitialization.Zeolite5A.iCellNumber,1);
             
             % The surface area is required to calculate the thermal
             % exchange between the absorber and the gas flow. It is

@@ -17,7 +17,7 @@ classdef CCAA < vsys
         % To emulate protoflight test data the option to set specific
         % values for the TCCV angle and coolant/gas flows as implemented
         tFixValues;
-        bUseFixValues;
+        bUseFixValues = false;
         
         bKickValveAktivated = 0;            % Variable used to execute the kick valve
         fKickValveAktivatedTime = 0;        % Variable used to execute the kick valve

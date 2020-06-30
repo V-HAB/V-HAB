@@ -113,7 +113,10 @@ for iStep = 1:iSteps
         
         oCHX.hVaporPressureInterpolation = oCHX.oMT.ttxMatter.(tInput.Vapor).tInterpolations.VaporPressure;
     end
-
+    if tInput.fMassFlowFilm == 0
+        mfMolFractionVaporAtSurface(iStep) = 0;
+    end
+ 
     % Consideration of Stefan diffusion in mass transfer coefficient [m/s], (2.36)
     if tInput.fMolarFractionVapor == 0 && tInput.fMassFlowFilm == 0
         % In this case we neither have a vapor nor a film, so there will no
@@ -138,7 +141,11 @@ for iStep = 1:iSteps
     mfFilmFlowRate(iStep) = tInput.fMassFlowFilm + mfSpecificMassFlowRate_Vapor(iStep) * tInput.fCellArea;
     % Consideration of possible vaporization
     if mfFilmFlowRate(iStep) < 0
-        mfSpecificMassFlowRate_Vapor(iStep) = - tInput.fMassFlowFilm / tInput.fCellArea;
+        if tInput.fMassFlowFilm < 0
+            mfSpecificMassFlowRate_Vapor(iStep) = 0;
+        else
+            mfSpecificMassFlowRate_Vapor(iStep) = - tInput.fMassFlowFilm / tInput.fCellArea;
+        end
         mfFilmFlowRate(iStep) = 0;
     end
     

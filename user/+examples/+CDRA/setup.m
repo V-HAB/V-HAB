@@ -57,6 +57,7 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Example:c:CCAA:s:TCCV.toPhases.TCCV_PhaseGas',  	'afPP(this.oMT.tiN2I.H2O)',                 'Pa',   'Partial Pressure H2O TCCV');
             oLog.addValue('Example:c:CCAA:s:TCCV.toPhases.TCCV_PhaseGas',  	'afPP(this.oMT.tiN2I.CO2)',                 'Pa',   'Partial Pressure CO2 TCCV');
             oLog.addValue('Example:c:CCAA:s:CHX.toProcsP2P.CondensingHX',   'fFlowRate',                                'kg/s', 'Condensate Flowrate CHX');
+            oLog.addValue('Example:c:CCAA',                                 'fTCCV_Angle',                               '°',   'TCCV Angle');
             
             iCellNumber13x = this.oSimulationContainer.toChildren.Example.toChildren.CDRA.tGeometry.Zeolite13x.iCellNumber;
             iCellNumberSylobead = this.oSimulationContainer.toChildren.Example.toChildren.CDRA.tGeometry.Sylobead.iCellNumber;
@@ -372,6 +373,8 @@ classdef setup < simulation.infrastructure
             coPlot{3,2} = oPlotter.definePlot({'"Pressure CHX"', '"Pressure TCCV"'},                            'Pressure in CHX', tPlotOptions);
             coPlot{3,3} = oPlotter.definePlot({'"Partial Pressure H2O TCCV"', '"Partial Pressure CO2 TCCV"'},   'Partial Pressure H2O and CO2 TCCV', tPlotOptions);
             coPlot{4,3} = oPlotter.definePlot({'"CDRA Heater Power"'},                                          'CDRA Heater Power', tPlotOptions);
+            coPlot{4,2} = oPlotter.definePlot({'"TCCV Angle"'},                                                 'CCAA TCCV Angle', tPlotOptions);
+            coPlot{4,1} = oPlotter.definePlot({'"Temperature Atmosphere"'},                                     'Cabin Temperature', tPlotOptions);
             
             
             oPlotter.defineFigure(coPlot,  'Plots');

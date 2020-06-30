@@ -313,12 +313,13 @@ classdef Example < vsys
             
             % Adding heat sources to keep the cabin and coolant water at a
             % constant temperature
-            oHeatSource = thermal.heatsource('Heater', 940); %according to ICES 2000-01-2345 940 of sensible load)
+            oHeatSource = thermal.heatsource('Heater', 940); %according to ICES 2000-01-2345 940 W of sensible load)
             this.toStores.Cabin.toPhases.CabinAir.oCapacity.addHeatSource(oHeatSource);
             
             oHeatSource = components.thermal.heatsources.ConstantTemperature('Coolant_Constant_Temperature');
             this.toStores.CoolantStore.toPhases.Coolant_Phase.oCapacity.addHeatSource(oHeatSource);
             
+            this.toChildren.CDRA.setReferencePhase(this.toStores.Cabin.toPhases.CabinAir);
             
         end
         
@@ -327,7 +328,7 @@ classdef Example < vsys
             
             % Cabin setpoint according to ICES 2000-01-2345 was 65 degree
             % fahrenheit
-            this.toChildren.CCAA.setTemperature(18.33);
+            this.toChildren.CCAA.setTemperature(273.15 + 18.33);
             
             tTimeStepProperties.rMaxChange = 0.5;
             this.toStores.CondensateStore.toPhases.Condensate_Phase.setTimeStepProperties(tTimeStepProperties);
