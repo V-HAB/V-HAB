@@ -29,9 +29,6 @@ fVaporisationEnthalpy = oCHX.mPhaseChangeEnthalpy(oCHX.oMT.tiN2I.(tInput.Vapor))
 % Thermal transmittance between coolant and wall of gas side [W/(m^2*K)]:
 fHeatTransferCoeffWallCoolant = ((tInput.fThickness/tInput.fThermalConductivitySolid) + ((tInput.fFinThickness/tInput.fThermalConductivitySolid)*tInput.iFinCoolant) + (1/tInput.alpha_coolant))^(-1); % 
 
-% Diffusion coefficient of binary gas mixture [m/s^2], (2.20)
-DiffCoeff_Gas = Bin_diff_coeff(tInput.Vapor, tInput.Inertgas, tInput.fTemperatureGas, tInput.fPressureGas);
-
 % Switch between calculation of vertical and horizontal pipe:
 % Vertical:   Calculation with gravity acting on condensate film (flowing down)
 % Horizontal: Calculation with simulated zero-gravity condition
@@ -44,23 +41,13 @@ if strcmp(tInput_Type,'HorizontalTube') && (tInput.GasFlow == false)
 end
 
 % Calculation of dimensionless quantities:
-Re_Gas = ReynoldsNumberGas(tInput.fMassFlowGas, tInput.fDynamicViscosityGas, tInput.fHydraulicDiameter, tInput_Type);	% Reynolds-Number gas mixture [-], (2.12)
+Re_Gas = tInput.tDimensionlessQuantitiesGas.fRe;	% Reynolds-Number gas mixture [-], (2.12)
 
-Pr_Gas = (tInput.fDynamicViscosityGas * tInput.fSpecificHeatCapacityGas) / tInput.fThermalConductivityGas;	% Prandtl-Number gas mixture [-], (2.41)
+% Pr_Gas = tInput.tDimensionlessQuantitiesGas.fPr;	% Prandtl-Number gas mixture [-], (2.41)
 
-Nu_Gas_0 = NusseltNumberGas(Re_Gas, Pr_Gas, tInput.fHydraulicDiameter, tInput.fCharacteristicLength);											% Nusseltnumber of gas mixture [-], (2.40)
-
-Sc_Gas = tInput.fKinematicViscosityGas / DiffCoeff_Gas;													% Schmidt-Number of gas mixture [-], (2.44)
-
-% No this is not a typo, the Sherwood number can be calculated using the
-% same equations as the nusselt number, by just using Sc instead of Pr. See
-% the VDI heat atlas section which is mentioned in the function!
-Sh_Gas_0 = NusseltNumberGas(Re_Gas, Sc_Gas, tInput.fHydraulicDiameter, tInput.fCharacteristicLength);												% Sherwood number of gas mixture [-], (2.43)
+Nu_Gas_0 = tInput.tDimensionlessQuantitiesGas.fNu;											% Nusseltnumber of gas mixture [-], (2.40)
 
 % -----
-
-beta_Gas_0 = Sh_Gas_0 * DiffCoeff_Gas / tInput.fHydraulicDiameter;												% Mass transfer coefficient gas mixture [m/s], (2.45)
-
 % Calculation of two separate heat flux paths from the gas through the condensate film and wall to the coolant (Algorithms 1 & 2):
 % 
 % Step 1: Variation of film surface temperature -> two different heat flux values:
@@ -79,7 +66,11 @@ if fDeltaTemp > 1e-10
 % Initially the algorithm simply calculates the heat flows at all
 % temperatures in between the coolant and gas temperature, this step
 % decides the inidividual steps made in that case in [K]
-fSearchStep = 1;
+if fDeltaTemp > oCHX.iMaximumNumberOfSearchSteps
+    fSearchStep = fDeltaTemp / oCHX.iMaximumNumberOfSearchSteps;
+else
+    fSearchStep = oCHX.fSearchStepTemperatureDifference;
+end
 if fDeltaTemp < fSearchStep
     fSearchStep = 0.5 * fDeltaTemp;
 end
@@ -108,13 +99,21 @@ for iStep = 1:iSteps
     try
         % It is faster to store the interpolation in the CHX:
         mfMolFractionVaporAtSurface(iStep) = oCHX.hVaporPressureInterpolation(mfTemperature(iStep)) / tInput.fPressureGas;
+        if isnan(mfMolFractionVaporAtSurface(iStep))
+            
+            fTemperatureDifference = mfTemperature(end)+5 - 273;
+            fDeltaTemperature = fTemperatureDifference / 50;
+            oCHX.defineVaporPressureInterpolation(273:fTemperatureDifference:mfTemperature(end)+5);
+            mfMolFractionVaporAtSurface(iStep) = oCHX.hVaporPressureInterpolation(mfTemperature(iStep)) / tInput.fPressureGas;
+        end
     catch oErr
         mfMolFractionVaporAtSurface(iStep) = oCHX.oMT.calculateVaporPressure(mfTemperature(iStep), tInput.Vapor) / tInput.fPressureGas;
         
         oCHX.hVaporPressureInterpolation = oCHX.oMT.ttxMatter.(tInput.Vapor).tInterpolations.VaporPressure;
     end
-    if tInput.fMassFlowFilm == 0
-        mfMolFractionVaporAtSurface(iStep) = 0;
+    
+    if mfMolFractionVaporAtSurface(iStep) > 1
+        mfMolFractionVaporAtSurface(iStep) = 1;
     end
  
     % Consideration of Stefan diffusion in mass transfer coefficient [m/s], (2.36)
@@ -123,7 +122,7 @@ for iStep = 1:iSteps
         % diffusion
         mfSpecificMassFlowRate_Vapor(iStep) = 0;
     else
-        mfBeta_Gas(iStep) = beta_Gas_0 * (tInput.fMolarFractionVapor - mfMolFractionVaporAtSurface(iStep))^(-1) * log((1 - mfMolFractionVaporAtSurface(iStep))/(1 - tInput.fMolarFractionVapor));
+        mfBeta_Gas(iStep) = tInput.tDimensionlessQuantitiesGas.beta_Gas_0 * (tInput.fMolarFractionVapor - mfMolFractionVaporAtSurface(iStep))^(-1) * log((1 - mfMolFractionVaporAtSurface(iStep))/(1 - tInput.fMolarFractionVapor));
 
         % Wall-normal area-specific diffusive vapor mass flow [kg/(s*m^2)], (2.33)
         mfSpecificMassFlowRate_Vapor(iStep) = mfBeta_Gas(iStep) * tInput.fDensityGas * (tInput.fMolarFractionVapor - mfMolFractionVaporAtSurface(iStep));
@@ -432,8 +431,4 @@ tOutputs.fHeatFlowCondensate        = fHeatFlowCoolant - fHeatFlowGas;
 %additional Outputs
 tOutputs.fMassFlowGas               = tInput.fMassFlowGas;
 % tOutputs.fThermalResistance         = fHeatTransferCoeffWallCoolant+ fThermalTransmittanceFilm;
-
-
-
-
 end

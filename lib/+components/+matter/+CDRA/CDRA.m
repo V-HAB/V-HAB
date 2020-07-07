@@ -578,8 +578,8 @@ classdef CDRA < vsys
             this.tMassNetwork.InternalBranches_Sylobead_2(end+1) = oBranch;
             
             % Interface between 13x and 5A zeolite absorber beds
-            components.matter.Temp_Dummy(this, 'PreCooler_5A1', 285, 1000);
-            components.matter.Temp_Dummy(this, 'PreCooler_5A2', 285, 1000);
+            components.matter.Temp_Dummy(this, 'PreCooler_5A1', 281, 1000);
+            components.matter.Temp_Dummy(this, 'PreCooler_5A2', 281, 1000);
             components.matter.valve(this, 'Valve_13x1_to_5A_1', 0);
             components.matter.valve(this, 'Valve_13x2_to_5A_2', 0);
             components.matter.pipe(this, 'Pipe_13x1_to_5A_1', fPipelength, fPipeDiameter, fFrictionFactor);
@@ -740,26 +740,8 @@ classdef CDRA < vsys
             tSolverProperties.iMaxIterations = 1000;
             tSolverProperties.fMinimumTimeStep = 1;
             tSolverProperties.iIterationsBetweenP2PUpdate = 200;
-
-            oInterfacePhase = this.toBranches.CDRA_Vacuum.coExmes{2}.oPhase;
-            if oInterfacePhase.bFlow
-                % Check if a SCRA is located on the IF and if so add the
-                % branch to the multi branch solver
-                for iExme = 1:oInterfacePhase.iProcsEXME
-                    if oInterfacePhase.coProcsEXME{iExme} ~= this.toBranches.CDRA_Vacuum.coExmes{2}
-                        if isa(oInterfacePhase.coProcsEXME{iExme}.oFlow.oBranch.coExmes{1}.oPhase.oStore.oContainer, 'components.matter.SCRA.SCRA')
-                            aoSCRA_Branches = oInterfacePhase.coProcsEXME{iExme}.oFlow.oBranch.coExmes{1}.oPhase.oStore.oContainer.aoMultiSolverBranches;
-                            
-                            aoMultiSolverBranches = [this.aoBranches; aoSCRA_Branches];
-                        end
-                    end
-                end
-            else
-                aoMultiSolverBranches = this.aoBranches;
-            end
             
-                
-            oSolver = solver.matter_multibranch.iterative.branch(aoMultiSolverBranches, 'complex');
+            oSolver = solver.matter_multibranch.iterative.branch(this.aoBranches, 'complex');
             oSolver.setSolverProperties(tSolverProperties);
             
             csStores = fieldnames(this.toStores);
@@ -806,11 +788,11 @@ classdef CDRA < vsys
         end           
         
         %% Function to connect the system and subsystem level branches with each other
-        function setIfFlows(this, sInterface1, sInterface2, sInterface3)
+        function setIfFlows(this, CDRA_Air_In, CDRA_Air_Out, CDRA_Vacuum)
             if nargin == 4
-                this.connectIF('CDRA_Air_In' ,  sInterface1);
-                this.connectIF('CDRA_Air_Out',  sInterface2);
-                this.connectIF('CDRA_Vacuum',   sInterface3);
+                this.connectIF('CDRA_Air_In' ,  CDRA_Air_In);
+                this.connectIF('CDRA_Air_Out',  CDRA_Air_Out);
+                this.connectIF('CDRA_Vacuum',   CDRA_Vacuum);
             else
                 error('CDRA Subsystem was given a wrong number of interfaces')
             end
@@ -822,9 +804,12 @@ classdef CDRA < vsys
             end
         end
         
-        function setReferencePhase(this, oCabinPhase)
+        function setReferencePhase(this, oCabinPhase, iCDRA)
             this.oAtmosphere = oCabinPhase;
             
+            if nargin < 3
+                iCDRA = 1;
+            end
             % assumed heat transfer cooefficient between CDRA and
             % atmosphere: 0.195
             
@@ -883,10 +868,10 @@ classdef CDRA < vsys
                         sConductorName3 = [sName, '_Cabin_Conductor_Adsorber_', num2str(iCell), '_', num2str(iCell+1)];
                         thermal.procs.conductors.conductive(this, sConductorName3, mfResistance(iType, 3));
                         
-                        csThermalInterfaces{iIF} = ['CDRA_ThermalIF_', sPort2];
+                        csThermalInterfaces{iIF} = ['CDRA', num2str(iCDRA),'_ThermalIF_', sPort2];
                         thermal.branch(this, [sName,'.', sPort1], {sConductorName1, sConductorName2, sConductorName3}, csThermalInterfaces{iIF}, [sName, '_CabinConduction_Cell_', num2str(iCell)]);
                         
-                        thermal.branch(this.oParent, csThermalInterfaces{iIF}, {}, [oCabinPhase.oStore.sName,'.', sPort2], [sName, '_CabinConduction_Cell_', num2str(iCell)]);
+                        thermal.branch(this.oParent, csThermalInterfaces{iIF}, {}, [oCabinPhase.oStore.sName,'.', sPort2], ['CDRA', num2str(iCDRA),'_', sName, '_CabinConduction_Cell_', num2str(iCell)]);
                         
                         iIF = iIF + 1;
                         

@@ -92,6 +92,15 @@ classdef branch < solver.matter.base.branch
             
             this.setTimeStep(this.fTimeStep);
             
+            if fVolumetricFlowRate >= 0
+                oPhase = this.oBranch.coExmes{1}.oPhase;
+            else
+                oPhase = this.oBranch.coExmes{2}.oPhase;
+            end
+            % We have to recalculate the flowrate if the phase updates,
+            % because the density changes
+            oPhase.bind('update_post', @this.registerUpdate);
+            
             this.registerUpdate();
         end
         
@@ -175,11 +184,6 @@ classdef branch < solver.matter.base.branch
                 this.fTimeStep = inf;
 
                 this.setTimeStep(this.fTimeStep);
-            
-                % we have to reset the requested volumetric flowrate to
-                % empty now, otherwise setting a mass flow rate in a later
-                % tick would be ignored
-                this.fRequestedVolumetricFlowRate = [];
             end
             
             update@solver.matter.base.branch(this, this.fRequestedFlowRate);

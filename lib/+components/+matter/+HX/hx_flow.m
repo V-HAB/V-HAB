@@ -22,11 +22,11 @@ classdef hx_flow < matter.procs.f2f
         end
         
         function update(this)
-           this.oHXParent.hBindPostTickUpdate(); 
+           this.oBranch.oThermalBranch.setOutdated(); 
         end
         
         function updateThermal(this)
-           this.oHXParent.hBindPostTickUpdate(); 
+           this.oHXParent.update(); 
         end
         
         function fDeltaPressure = solverDeltas(this, fFlowRate)
@@ -35,7 +35,7 @@ classdef hx_flow < matter.procs.f2f
             
             % Updating the parent HX system, this will update both the
             % fDeltaPressure and fHeatFlow property of this processor.
-            this.oHXParent.hBindPostTickUpdate(); 
+            this.oBranch.oThermalBranch.setOutdated(); 
             
             % If the flow rate is non-zero we set the delta pressure
             % according to our property, otherwise it's just zero.
@@ -61,7 +61,7 @@ classdef hx_flow < matter.procs.f2f
             
             % Updating the parent HX system, this will update both the
             % fDeltaPressure and fHeatFlow property of this processor.
-            this.oHXParent.hBindPostTickUpdate();
+            this.oBranch.oThermalBranch.setOutdated(); 
 
         end
     end

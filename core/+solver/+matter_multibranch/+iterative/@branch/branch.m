@@ -415,7 +415,21 @@ classdef branch < base & event.source
             else
                 this.sSolverType = 'coefficient';
             end
-            
+            % through subsystems it is possible that two different
+            % multibranch solvers are combined. Therefore we check the
+            % branches added to this solver for flow phases and branches
+            % that are solved by a different multibranch solver. If we find
+            % this to be the case, we do not create a new multibranch
+            % solver, but instead add the branches which were supposed to
+            % be used for this multibranch solver and add them to other
+            % multibranch solver. The Solver properties therefore are only
+            % overwritten if the limitations are harsher or if the user
+            % specifically request these properties to be used.
+            [bFoundOtherSolver, oSolver] = this.findOtherMultiSolver(aoBranches);
+            if bFoundOtherSolver
+                this = oSolver;
+                return
+            end
             % Initializing a bunch of properties
             this.aoBranches                     = aoBranches;
             this.iBranches                      = length(this.aoBranches);
@@ -728,10 +742,39 @@ classdef branch < base & event.source
             this.fLastSetOutdated = this.oTimer.fTime;
         end
         
-    end
-    
-    
-    methods (Access = protected)
+        function addBranches(this, aoBranches)
+            % this function is used by another multibranch solver if it
+            % detects that two multibranch solvers are connected via a flow
+            % phase. It then adds its branches to the already existing
+            % multibranch solver, instead of creating a new solver.
+            iCurrentBranches = this.iBranches;
+            iNewBranches = length(aoBranches);
+            this.aoBranches(end+1:end+iNewBranches) = aoBranches;
+            
+            this.iBranches                      = length(this.aoBranches);
+            this.abCheckForChokedFlow           = false(this.iBranches,1);
+            this.abChokedBranches               = false(this.iBranches,1);
+            this.cafChokedBranchPressureDiffs   = cell(this.iBranches,1);
+            this.abChokedFlowCheckInitialized   = false(this.iBranches,1);
+            this.afPressureLastCheck            = zeros(this.iBranches,1);
+            this.afTemperatureLastCheck         = zeros(this.iBranches,1);
+            this.afAdiabaticIndex               = zeros(this.iBranches,1);
+            this.mrPartialMassLastCheck         = zeros(this.iBranches,this.aoBranches(1).oMT.iSubstances);
+            this.abOscillationCorrectedBranches = false(this.iBranches,1);
+            this.mbExternalBoundaryBranches     = zeros(this.iBranches,1);
+            
+            for iB = iCurrentBranches+1:this.iBranches 
+                this.chSetBranchFlowRate{iB} = this.aoBranches(iB).registerHandler(this);
+                
+                this.aoBranches(iB).bind('outdated', @this.registerUpdate);
+                
+                this.csBranchUUIDs{iB} = this.aoBranches(iB).sUUID;
+
+            end
+            
+            this.initialize();
+        end
+        
         function initialize(this)
             % Initialized variable pressure phases / branches
             
@@ -795,12 +838,43 @@ classdef branch < base & event.source
                 
             end
             
-            
             this.csVariablePressurePhases = fieldnames(this.toVariablePressurePhases);
             this.csObjUuidsToColIndex     = fieldnames(this.tiObjUuidsToColIndex);
             this.csBoundaryPhases         = fieldnames(this.toBoundaryPhases);
         end
         
+    end
+    
+    
+    methods (Access = protected)
+        function [bFoundOtherSolver, oSolver] = findOtherMultiSolver(~, aoBranches)
+            % This function is used to check if another multibranch solver
+            % is already added to a flow phase which is connected to this
+            % solver. If that is the case we add the branches intended for
+            % this solver to the other solver.
+            bFoundOtherSolver = false;
+            oSolver = [];
+            for iBranch = 1:length(aoBranches)
+                for iExme = 1:2
+                    oPhase = aoBranches(iBranch).coExmes{iExme}.oPhase;
+                    if ~oPhase.bFlow
+                        continue
+                    end
+                    for iPhaseExme = 1:oPhase.iProcsEXME
+                        if ~oPhase.coProcsEXME{iPhaseExme}.bFlowIsAProcP2P && ~isempty(oPhase.coProcsEXME{iPhaseExme}.oFlow.oBranch.oHandler)
+                            if isa(oPhase.coProcsEXME{iPhaseExme}.oFlow.oBranch.oHandler, 'solver.matter_multibranch.iterative.branch')
+                                oSolver =  oPhase.coProcsEXME{iPhaseExme}.oFlow.oBranch.oHandler;
+                                oSolver.addBranches(aoBranches);
+                                bFoundOtherSolver = true;
+                                return
+                            end
+                        end
+                    end
+                end
+                
+            end
+            
+        end
         function calculateTimeStep(this)
             %% time step limitation
             % Bound to a post tick level after the residual branches.

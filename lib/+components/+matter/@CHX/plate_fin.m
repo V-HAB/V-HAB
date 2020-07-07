@@ -91,8 +91,8 @@ iIncrementsCoolant  = miIncrements(2);
 
 %flow speed for the fluids calculated from the massflow with massflow =
 %volumeflow*rho = fw*fA*frho
-fFlowSpeed_Fluid1 = Fluid_1.fMassflow/(tCHX_Parameters.fHeight_1 * tCHX_Parameters.fBroadness *  tCHX_Parameters.iLayers    * Fluid_1.fDensity(1));
-fFlowSpeed_Fluid2 = Fluid_2.fMassflow/(tCHX_Parameters.fHeight_2 * tCHX_Parameters.fBroadness * (tCHX_Parameters.iLayers+1) * Fluid_2.fDensity(1));
+Fluid_1.fFlowSpeed_Fluid = Fluid_1.fMassflow/(tCHX_Parameters.fHeight_1 * tCHX_Parameters.fBroadness *  tCHX_Parameters.iLayers    * Fluid_1.fDensity(1));
+Fluid_2.fFlowSpeed_Fluid = (Fluid_2.fMassflow/ (tCHX_Parameters.iLayers+1)) /(tCHX_Parameters.fHeight_2 * (tCHX_Parameters.fLength / (tCHX_Parameters.iBaffles + 1)) * Fluid_2.fDensity(1));
                 
 %calculates the area of the heat exchanger fArea =
 %tCHX_Parameters.fBroadness*tCHX_Parameters.fLength;
@@ -103,13 +103,13 @@ fIncrementalArea        = fIncrementalLength * fIncrementalBroadness;
 
 %uses the function for convection along a plate to calculate the convection
 %coeffcients(for further information view function help)
-falpha_pipe = functions.calculateHeatTransferCoefficient.convectionPlate(tCHX_Parameters.fLength, fFlowSpeed_Fluid1,...
-                Fluid_1.fDynamic_Viscosity, Fluid_1.fDensity,...
-                Fluid_1.fThermal_Conductivity, Fluid_1.fSpecificHeatCapacity);
-falpha_o = functions.calculateHeatTransferCoefficient.convectionPlate(tCHX_Parameters.fBroadness, fFlowSpeed_Fluid2,...
-                Fluid_2.fDynamic_Viscosity, Fluid_2.fDensity,...
-                Fluid_2.fThermal_Conductivity, Fluid_2.fSpecificHeatCapacity);
+tCHX_Parameters.fHydraulicDiameter          = 4*(tCHX_Parameters.fHeight_1 * tCHX_Parameters.fFinBroadness_1)/(2 * tCHX_Parameters.fHeight_1 + 2 * tCHX_Parameters.fFinBroadness_1);     % Hydraulic diameter [m]
 
+[falpha_pipe, tCHX_Parameters.tDimensionlessQuantitiesGas] = functions.calculateHeatTransferCoefficient.convectionFlatGap(tCHX_Parameters.fHeight_1 * 2, tCHX_Parameters.fLength, Fluid_1.fFlowSpeed_Fluid,...
+                Fluid_1.fDynamic_Viscosity, Fluid_1.fDensity, Fluid_1.fThermal_Conductivity, Fluid_1.fSpecificHeatCapacity, 1);
+[falpha_o, tCHX_Parameters.tDimensionlessQuantitiesCoolant] = functions.calculateHeatTransferCoefficient.convectionFlatGap(tCHX_Parameters.fHeight_2 * 2, tCHX_Parameters.fBroadness, Fluid_2.fFlowSpeed_Fluid,...
+                Fluid_2.fDynamic_Viscosity, Fluid_2.fDensity, Fluid_2.fThermal_Conductivity, Fluid_2.fSpecificHeatCapacity, 1);
+            
 %uses the function for thermal resisitvity to calculate the resistance from
 %heat conduction (for further information view function help)
 fR_lambda_Incremental = functions.calculateHeatTransferCoefficient.conductionResistance(fThermalConductivitySolid, 2, fIncrementalArea,...
@@ -118,11 +118,11 @@ fR_lambda_Incremental = functions.calculateHeatTransferCoefficient.conductionRes
 %calculation of pressure loss for both fluids:
 fDelta_P_1 = functions.calculateDeltaPressure.Pipe(((4*tCHX_Parameters.fBroadness*tCHX_Parameters.fHeight_1)/...
                 (2*tCHX_Parameters.fBroadness+2*tCHX_Parameters.fHeight_1)) , tCHX_Parameters.fLength,...
-                fFlowSpeed_Fluid1, Fluid_1.fDynamic_Viscosity,...
+                Fluid_1.fFlowSpeed_Fluid, Fluid_1.fDynamic_Viscosity,...
                 Fluid_1.fDensity, 0);
 fDelta_P_2 = functions.calculateDeltaPressure.Pipe(((4*tCHX_Parameters.fBroadness*tCHX_Parameters.fHeight_1)/...
                 (2*tCHX_Parameters.fBroadness+2*tCHX_Parameters.fHeight_2)) , (tCHX_Parameters.iBaffles+1) * tCHX_Parameters.fBroadness,...
-                fFlowSpeed_Fluid2, Fluid_2.fDynamic_Viscosity,...
+                Fluid_2.fFlowSpeed_Fluid, Fluid_2.fDynamic_Viscosity,...
                 Fluid_2.fDensity, 1);
 
 %calculates the thermal resistance from convection in the pipes
@@ -205,7 +205,6 @@ else
     tCHX_Parameters.fFinThickness               = tCHX_Parameters.fFinThickness;
     tCHX_Parameters.fThermalConductivitySolid   = fThermalConductivitySolid;
     tCHX_Parameters.fPressureGas                = Fluid_1.oFlow.fPressure;
-    tCHX_Parameters.fHydraulicDiameter          = 4*(tCHX_Parameters.fHeight_1 * tCHX_Parameters.fFinBroadness_1)/(2 * tCHX_Parameters.fHeight_1 + 2 * tCHX_Parameters.fFinBroadness_1);     % Hydraulic diameter [m]
     tCHX_Parameters.fCharacteristicLength       = tCHX_Parameters.fLength;
     tCHX_Parameters.arPartialMassesGas          = Fluid_1.oFlow.arPartialMass;
 
@@ -213,7 +212,7 @@ else
     
     fOutlet_Temp_1 = sum(sum(mOutlet_Temp_1(:,iIncrementsCoolant,tCHX_Parameters.iBaffles+1,:))) / (iIncrementsAir * tCHX_Parameters.iLayers);
     fOutlet_Temp_2 = sum(sum(mOutlet_Temp_2(1,:,1,:))) / (iIncrementsCoolant * (tCHX_Parameters.iLayers + 1));
-    fCondensateFlow = 0;
+    fPreviousCondensateFlow = oCHX.oP2P.fFlowRate;
 
     % new input parameter for the FinConfig function.
     tFinInput.fFinBroadness_1       = tCHX_Parameters.fFinBroadness_1;        % broadness of the channel that is created between fins
@@ -233,7 +232,7 @@ else
     % configuration, we do not know the correct temperature values to use
     % initially. Therefore, an iterative calculation is required to
     % calculate it
-    while fError > 1e-2 && iCounter < 50
+    while fError > oCHX.rMaxError && iCounter < oCHX.iMaxIterations
         
         iCounter = iCounter + 1;
         
@@ -384,12 +383,12 @@ else
                         
                         tCHX_Parameters.fTemperatureCoolant = fInlet_fTemperatureCoolant_up;
                         
-                        if abs(fTemperatureGasLastMatterProps - tCHX_Parameters.fTemperatureGas) > 2
-                            tCHX_Parameters = RecalculateMatterProperties(oMT, tCHX_Parameters, 1);
+                        if abs(fTemperatureGasLastMatterProps - tCHX_Parameters.fTemperatureGas) > oCHX.fTemperatureChangeForMatterPropRecalc
+                            tCHX_Parameters = RecalculateMatterProperties(oMT, tCHX_Parameters, 1, Fluid_1);
                             fTemperatureGasLastMatterProps     = tCHX_Parameters.fTemperatureGas;
                         end
-                        if abs(fTemperatureCoolantLastMatterProps - tCHX_Parameters.fTemperatureCoolant) > 2
-                            tCHX_Parameters = RecalculateMatterProperties(oMT, tCHX_Parameters, 2);
+                        if abs(fTemperatureCoolantLastMatterProps - tCHX_Parameters.fTemperatureCoolant) > oCHX.fTemperatureChangeForMatterPropRecalc
+                            tCHX_Parameters = RecalculateMatterProperties(oMT, tCHX_Parameters, 2, Fluid_2);
                             fTemperatureCoolantLastMatterProps = tCHX_Parameters.fTemperatureCoolant;
                         end
                         
@@ -427,7 +426,8 @@ else
                         fAverageCoolantOutTemperature = ((fInlet_fTemperatureCoolant_down + fInlet_fTemperatureCoolant_up)/2) + ((fHeatFlowDown + fHeatFlowUp)    / (2 * tCHX_Parameters.fMassFlowCoolant * tCHX_Parameters.fSpecificHeatCapacityCoolant));
                         fMinimumMolarFractionOut = oCHX.hVaporPressureInterpolation(fAverageCoolantOutTemperature) / tCHX_Parameters.fPressureGas;
                         
-                        fCondensateFlow = fCondensatFlowRateUp  + fCondensateFlowRateDown;
+                        fCondensateHeatFlow = fHeatFlowCondensateUp + fHeatFlowCondensateDown;
+                        fCondensateFlow     = fCondensatFlowRateUp  + fCondensateFlowRateDown;
                         if fMinimumMolarFractionOut > fMolarFractionOut
                             fWaterFlowOut = fMinimumMolarFractionOut * oMT.afMolarMass(oMT.tiN2I.H2O) * (tCHX_Parameters.fMassFlowGas / Fluid_1.oFlow.fMolarMass);
                             fCondensateFlow = fCurrentWaterFlow - fWaterFlowOut;
@@ -459,8 +459,6 @@ else
                                 if fMaximumHeatFlowCondensateEvaporisation < 0
                                     fMaximumHeatFlowCondensateEvaporisation = 0;
                                     fHeatFlowGas = fMaximumHeatFlowGas;
-                                    fHeatFlowDown = 0.5 * fMaximumHeatFlowGas;
-                                    fHeatFlowUp = fHeatFlowDown;
                                 end
                             end
                             
@@ -468,15 +466,11 @@ else
                             if fCondensateFlow < fMaximumVaporizationFlow
                                 fCondensateFlow = fMaximumVaporizationFlow;
                                 fHeatFlowGas = fMaximumHeatFlowCondensateEvaporisation;
+                                fCondensateHeatFlow = fCondensateFlow * oCHX.mPhaseChangeEnthalpy(oCHX.oMT.tiN2I.(tCHX_Parameters.Vapor));
                             end
+                            fHeatFlowDown = 0.5 * fHeatFlowGas;
+                            fHeatFlowUp = fHeatFlowDown;
                         end
-                        
-                        mHeatFlow(iAirIncrement,iCoolantIncrement,iBaffle,iLayer)       = fHeatFlowUp + fHeatFlowDown;
-                        
-                        mCondensateFlowRate(iAirIncrement,iCoolantIncrement,iBaffle,iLayer) = fCondensateFlow;
-                        mCondensateHeatFlow(iAirIncrement,iCoolantIncrement,iBaffle,iLayer) = fHeatFlowCondensateUp + fHeatFlowCondensateDown;
-
-                        mMassFlowFilmOut(iAirIncrement,iCoolantIncrement,iBaffle,iLayer)    = tCHX_Parameters.fMassFlowFilm + mCondensateFlowRate(iAirIncrement,iCoolantIncrement,iBaffle,iLayer);
                         
                         mOutlet_Temp_1(iAirIncrement,iCoolantIncrement,iBaffle,iLayer)      = tCHX_Parameters.fTemperatureGas	- (fHeatFlowGas     / (tOutputs.fMassFlowGas            * tCHX_Parameters.fSpecificHeatCapacityGas));
                        
@@ -490,6 +484,13 @@ else
                             fHeatFlowUp = (fHeatFlowGas + fCondensateHeatFlow) / 2;
                             fHeatFlowDown = (fHeatFlowGas + fCondensateHeatFlow) / 2;
                         end
+                        
+                        mHeatFlow(iAirIncrement,iCoolantIncrement,iBaffle,iLayer)           = fHeatFlowUp + fHeatFlowDown;
+                        
+                        mCondensateFlowRate(iAirIncrement,iCoolantIncrement,iBaffle,iLayer) = fCondensateFlow;
+                        mCondensateHeatFlow(iAirIncrement,iCoolantIncrement,iBaffle,iLayer) = fCondensateHeatFlow;
+
+                        mMassFlowFilmOut(iAirIncrement,iCoolantIncrement,iBaffle,iLayer)    = tCHX_Parameters.fMassFlowFilm + mCondensateFlowRate(iAirIncrement,iCoolantIncrement,iBaffle,iLayer);
                         
                         if iLayer ~= 1
                             mOutlet_Temp_2(iAirIncrement,iCoolantIncrement,iBaffle,iLayer)	= mOutlet_Temp_2(iAirIncrement,iCoolantIncrement,iBaffle,iLayer) 	+ (fHeatFlowDown    / (tCHX_Parameters.fMassFlowCoolant * tCHX_Parameters.fSpecificHeatCapacityCoolant));
@@ -525,13 +526,14 @@ else
         
         fPreviousOutletTemp1 = fOutlet_Temp_1;
         fPreviousOutletTemp2 = fOutlet_Temp_2;
-        fPreviousCondensateFlow = fCondensateFlow;
         
         fOutlet_Temp_1 = sum(sum(mOutlet_Temp_1(:,iIncrementsCoolant,tCHX_Parameters.iBaffles+1,:))) / (iIncrementsAir * tCHX_Parameters.iLayers);
         fOutlet_Temp_2 = sum(sum(mOutlet_Temp_2(1,:,1,:))) / (iIncrementsCoolant * (tCHX_Parameters.iLayers + 1));
         fCondensateFlow = sum(sum(sum(sum(mCondensateFlowRate))));
         
         fError = max([abs(fOutlet_Temp_1 - fPreviousOutletTemp1), abs(fOutlet_Temp_2 - fPreviousOutletTemp2), abs(fCondensateFlow - fPreviousCondensateFlow) * 3600]);
+        
+        fPreviousCondensateFlow = fCondensateFlow;
         mfError(iCounter) = fError;
     end
 end
@@ -542,44 +544,45 @@ oCHX.fTotalHeatFlow = sum(sum(sum(sum(mHeatFlow))));
 % Outcomment this code and run it to get the data formatted into 2D for
 % each layer, which makes plotting easier. Note that the coolant flow
 % follows the baffles!
-iLayer = 2;
-mOutletTemp1_2D         = zeros(iIncrementsAir, iIncrementsCoolant *tCHX_Parameters.iBaffles+1);
-mOutletTemp2_2D         = zeros(iIncrementsAir, iIncrementsCoolant *tCHX_Parameters.iBaffles+1);
-mCondensateFlowRate_2D  = zeros(iIncrementsAir, iIncrementsCoolant *tCHX_Parameters.iBaffles+1);
-mMassFlowFilmOut_2D     = zeros(iIncrementsAir, iIncrementsCoolant *tCHX_Parameters.iBaffles+1);
-for iAir = 1:iIncrementsAir
-    for iCoolant = 1:iIncrementsCoolant
-        for iBaffle = 1:tCHX_Parameters.iBaffles+1
-            
-            iCoolBaff = (iBaffle - 1) * iIncrementsCoolant + iCoolant;
-            mOutletTemp1_2D(iAir, iCoolBaff)        = mOutlet_Temp_1(iAir, iCoolant, iBaffle, iLayer);
-            mOutletTemp2_2D(iAir, iCoolBaff)        = mOutlet_Temp_2(iAir, iCoolant, iBaffle, iLayer);
-            mCondensateFlowRate_2D(iAir, iCoolBaff) = mCondensateFlowRate(iAir, iCoolant, iBaffle, iLayer);
-            mMassFlowFilmOut_2D(iAir, iCoolBaff)    = mMassFlowFilmOut(iAir, iCoolant, iBaffle, iLayer);
-        end
-    end
-end
-fHeatFlow           = sum(sum(sum(sum(mHeatFlow))));
-fCondensateFlow     = sum(sum(sum(sum(mCondensateFlowRate))));
-fHeatFlowAir        = (Fluid_1.fEntry_Temperature - fOutlet_Temp_1) * tCHX_Parameters.fSpecificHeatCapacityGas      * Fluid_1.fMassflow;
-fHeatFlowCoolant    = (Fluid_2.fEntry_Temperature - fOutlet_Temp_2) * tCHX_Parameters.fSpecificHeatCapacityCoolant  * Fluid_2.fMassflow;
-fHeatFlowCondensate = oCHX.mPhaseChangeEnthalpy(oCHX.oMT.tiN2I.H2O) * fCondensateFlow;
-
-
-fPressureH2O = Fluid_1.oFlow.afPartialPressure(oCHX.oMT.tiN2I.H2O);
-fVaporPressure =  oCHX.hVaporPressureInterpolation(Fluid_2.fEntry_Temperature);
-fMaximumCondensateFlow = (fPressureH2O - fVaporPressure) * (Fluid_1.fMassflow / tCHX_Parameters.fDensityGas) / (Fluid_2.fEntry_Temperature * oCHX.oMT.Const.fUniversalGas / oCHX.oMT.afMolarMass(oCHX.oMT.tiN2I.H2O));
-    
-fWaterFlowInitial   =  Fluid_1.oFlow.arPartialMass(oCHX.oMT.tiN2I.H2O) * Fluid_1.fMassflow;
-fWaterFlowRemaining =  fWaterFlowInitial - fCondensateFlow;
+% iLayer = 2;
+% mOutletTemp1_2D         = zeros(iIncrementsAir, iIncrementsCoolant *tCHX_Parameters.iBaffles+1);
+% mOutletTemp2_2D         = zeros(iIncrementsAir, iIncrementsCoolant *tCHX_Parameters.iBaffles+1);
+% mCondensateFlowRate_2D  = zeros(iIncrementsAir, iIncrementsCoolant *tCHX_Parameters.iBaffles+1);
+% mMassFlowFilmOut_2D     = zeros(iIncrementsAir, iIncrementsCoolant *tCHX_Parameters.iBaffles+1);
+% mHeatFlow_2D            = zeros(iIncrementsAir, iIncrementsCoolant *tCHX_Parameters.iBaffles+1);
+% for iAir = 1:iIncrementsAir
+%     for iCoolant = 1:iIncrementsCoolant
+%         for iBaffle = 1:tCHX_Parameters.iBaffles+1
+%             
+%             iCoolBaff = (iBaffle - 1) * iIncrementsCoolant + iCoolant;
+%             mOutletTemp1_2D(iAir, iCoolBaff)        = mOutlet_Temp_1(iAir, iCoolant, iBaffle, iLayer);
+%             mOutletTemp2_2D(iAir, iCoolBaff)        = mOutlet_Temp_2(iAir, iCoolant, iBaffle, iLayer);
+%             mCondensateFlowRate_2D(iAir, iCoolBaff) = mCondensateFlowRate(iAir, iCoolant, iBaffle, iLayer);
+%             mMassFlowFilmOut_2D(iAir, iCoolBaff)    = mMassFlowFilmOut(iAir, iCoolant, iBaffle, iLayer);
+%             mHeatFlow_2D(iAir, iCoolBaff)           = mHeatFlow(iAir, iCoolant, iBaffle, iLayer);
+%         end
+%     end
+% end
+% fHeatFlow           = sum(sum(sum(sum(mHeatFlow))));
+% fCondensateFlow     = sum(sum(sum(sum(mCondensateFlowRate))));
+% fHeatFlowAir        = (Fluid_1.fEntry_Temperature - fOutlet_Temp_1) * tCHX_Parameters.fSpecificHeatCapacityGas      * Fluid_1.fMassflow;
+% fHeatFlowCoolant    = (Fluid_2.fEntry_Temperature - fOutlet_Temp_2) * tCHX_Parameters.fSpecificHeatCapacityCoolant  * Fluid_2.fMassflow;
+% fHeatFlowCondensate = oCHX.mPhaseChangeEnthalpy(oCHX.oMT.tiN2I.H2O) * fCondensateFlow;
+% 
+% fPressureH2O = Fluid_1.oFlow.afPartialPressure(oCHX.oMT.tiN2I.H2O);
+% fVaporPressure =  oCHX.hVaporPressureInterpolation(Fluid_2.fEntry_Temperature);
+% fMaximumCondensateFlow = (fPressureH2O - fVaporPressure) * (Fluid_1.fMassflow / tCHX_Parameters.fDensityGas) / (Fluid_2.fEntry_Temperature * oCHX.oMT.Const.fUniversalGas / oCHX.oMT.afMolarMass(oCHX.oMT.tiN2I.H2O));
+%     
+% fWaterFlowInitial   =  Fluid_1.oFlow.arPartialMass(oCHX.oMT.tiN2I.H2O) * Fluid_1.fMassflow;
+% fWaterFlowRemaining =  fWaterFlowInitial - fCondensateFlow;
 
 oCHX.afCondensateMassFlow(oCHX.oMT.tiN2I.(tCHX_Parameters.Vapor)) = sum(sum(sum(sum(mCondensateFlowRate))));
 
 % We store the calculate coolant flows, to use them as the initialization
 % parameter for the next calculation of the CHX
-oCHX.txCHX_Parameters.mOutlet_Temp_1 = mOutlet_Temp_1;
-oCHX.txCHX_Parameters.mOutlet_Temp_2 = mOutlet_Temp_2;
-oCHX.txCHX_Parameters.mCondensateFlowRate = mCondensateFlowRate;
+oCHX.txCHX_Parameters.mOutlet_Temp_1        = mOutlet_Temp_1;
+oCHX.txCHX_Parameters.mOutlet_Temp_2        = mOutlet_Temp_2;
+oCHX.txCHX_Parameters.mCondensateFlowRate   = mCondensateFlowRate;
 
 % If you encounter any of these keyboards the CHX calculation went wrong at
 % some point

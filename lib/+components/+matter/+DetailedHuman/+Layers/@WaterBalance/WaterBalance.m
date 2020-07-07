@@ -281,7 +281,7 @@ classdef WaterBalance < vsys
             tTimeStepProperties.rMaxChange = inf;
             arMaxChange = zeros(1,this.oMT.iSubstances);
             tTimeStepProperties.arMaxChange = arMaxChange;
-            tTimeStepProperties.fMassErrorLimit = 0;
+            tTimeStepProperties.fMassErrorLimit = 1e-12;
             this.toStores.WaterBalance.toPhases.Bladder.setTimeStepProperties(tTimeStepProperties);
             
             this.setThermalSolvers();

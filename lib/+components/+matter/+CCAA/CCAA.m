@@ -241,8 +241,9 @@ classdef CCAA < vsys
             % Conductivity of the Heat exchanger solid material (W/m K)
             Conductivity = 205;
             % Number of incremental heat exchangers used in the calculation
-            % of the CHX
-            miIncrements = [10,5];
+            % of the CHX. For e.g. [10,5] the results of the verification
+            % in protoflight test 5 differ siginificantly
+            miIncrements = [14,7];
             % Defines when the CHX should be recalculated: 
             fTempChangeToRecalc = 1;        % If any inlet temperature changes by more than 1 K
             fPercentChangeToRecalc = 0.05;  % If any inlet flowrate or composition changes by more than 5%
@@ -283,7 +284,7 @@ classdef CCAA < vsys
             matter.branch(this, 'TCCV.Port_Out_1',                  {'CCAA_CHX_1'},         'CHX.Flow_In',              'TCCV_CHX');
             matter.branch(this, 'CHX.Flow_Out_Gas',                 {'Pipe_CHX'},           'Mixing.CHX_Air_In',        'CHX_Cabin');
             matter.branch(this, 'TCCV.Port_Out_2',                  {'Pipe_TCCV'},          'Mixing.Bypass_In',       	'TCCV_Cabin');
-            matter.branch(this, 'Mixing.CCAA_Out',                  {'Pipe_Out'},           'CCAA_Air_Out',              'CCAA_Air_Out');
+            matter.branch(this, 'Mixing.CCAA_Out',                  {'Pipe_Out'},           'CCAA_Air_Out',             'CCAA_Air_Out');
             matter.branch(this, 'CHX.Flow_Out_Liquid',              {},                     'CCAA_CHX_Condensate_Out',  'Condensate_Out');      % Creating the water flowpath out of this subsystem
             matter.branch(this, 'CoolantStore.Flow_In_Coolant',     {'CCAA_CHX_2'},         'CCAA_CoolantIn',           'Coolant_In');
             matter.branch(this, 'CoolantStore.Flow_Out_Coolant',    {'Pipe_Coolant_Out'},  	'CCAA_CoolantOut',          'Coolant_Out');
@@ -305,11 +306,11 @@ classdef CCAA < vsys
             createSolverStructure@vsys(this);
             % Creating the flowpath into this subsystem
             solver.matter.manual.branch(this.toBranches.CCAA_In_FromCabin);
-            solver.matter.manual.branch(this.toBranches.TCCV_Cabin);
+            solver.matter.manual.branch(this.toBranches.TCCV_CHX);
             solver.matter.manual.branch(this.toBranches.Condensate_Out);
             solver.matter.manual.branch(this.toBranches.Coolant_In);
             
-            aoMultiSolverBranches = [this.toBranches.TCCV_CHX, this.toBranches.CHX_Cabin, this.toBranches.CCAA_Air_Out, this.toBranches.Coolant_Out];
+            aoMultiSolverBranches = [this.toBranches.TCCV_Cabin, this.toBranches.CHX_Cabin, this.toBranches.CCAA_Air_Out, this.toBranches.Coolant_Out];
             solver.matter_multibranch.iterative.branch(aoMultiSolverBranches, 'complex');
             
             if ~isempty(this.sCDRA)
@@ -325,8 +326,8 @@ classdef CCAA < vsys
                 
                 this.toBranches.CCAA_In_FromCabin.oHandler.setVolumetricFlowRate(-this.tFixValues.fVolumetricAirFlowRate);
                 
-                fTCCV_To_Cabin_FlowRate = (1 - fFlowPercentageCHX) * this.tFixValues.fVolumetricAirFlowRate; 
-                this.toBranches.TCCV_Cabin.oHandler.setVolumetricFlowRate(fTCCV_To_Cabin_FlowRate);
+                fTCCV_To_CHX_FlowRate = fFlowPercentageCHX * this.tFixValues.fVolumetricAirFlowRate; 
+                this.toBranches.TCCV_CHX.oHandler.setVolumetricFlowRate(fTCCV_To_CHX_FlowRate);
                 
                 this.toBranches.Coolant_In.oHandler.setFlowRate(-this.tFixValues.fCoolantFlowRate);
                 
@@ -357,10 +358,9 @@ classdef CCAA < vsys
                 % percentage of flow entering the CHX
                 fFlowPercentageCHX = this.Interpolation(fNew_TCCV_Angle);
                 % Gets the two flow rates exiting the TCCV
-                fTCCV_To_Cabin_FlowRate = (1 - fFlowPercentageCHX) * (fInFlow+fInFlow2);
+                fCHX_FlowRate = fFlowPercentageCHX * (fInFlow+fInFlow2);
 
-                this.toBranches.TCCV_Cabin.oHandler.setFlowRate(fTCCV_To_Cabin_FlowRate);
-
+                this.toBranches.TCCV_CHX.oHandler.setFlowRate(fCHX_FlowRate);
                 if this.bActive == 1
                     %% Setting of initial flow rates
                     this.toBranches.Coolant_In.oHandler.setFlowRate(-this.fCoolantFlowRate);
@@ -468,9 +468,9 @@ classdef CCAA < vsys
             % percentage of flow entering the CHX
             fFlowPercentageCHX = this.Interpolation(fNew_TCCV_Angle);
             % Gets the two flow rates exiting the TCCV
-            fTCCV_To_Cabin_FlowRate = (1 - fFlowPercentageCHX) * (fInFlow+fInFlow2);
+            fCHX_FlowRate = fFlowPercentageCHX * (fInFlow+fInFlow2);
 
-            this.toBranches.TCCV_Cabin.oHandler.setFlowRate(fTCCV_To_Cabin_FlowRate);
+            this.toBranches.TCCV_CHX.oHandler.setFlowRate(fCHX_FlowRate);
         end
         
         function setActive(this, bActive)
@@ -582,16 +582,14 @@ classdef CCAA < vsys
                 % percentage of flow entering the CHX
                 fFlowPercentageCHX = this.Interpolation(fNew_TCCV_Angle);
                 % Gets the two flow rates exiting the TCCV
-                fTCCV_To_Cabin_FlowRate = (1 - fFlowPercentageCHX) * (fInFlow+fInFlow2);
-
-                this.toBranches.TCCV_Cabin.oHandler.setFlowRate(fTCCV_To_Cabin_FlowRate);
-
-                fTCCV_To_CHX_FlowRate = (fInFlow+fInFlow2) - fTCCV_To_Cabin_FlowRate;
+                fCHX_FlowRate = fFlowPercentageCHX * (fInFlow+fInFlow2);
+                this.toBranches.TCCV_CHX.oHandler.setFlowRate(fCHX_FlowRate);
+                
                 if ~isempty(this.sCDRA)
-                    if fTCCV_To_CHX_FlowRate >= this.fCDRA_FlowRate
+                    if fCHX_FlowRate >= this.fCDRA_FlowRate
                         this.toBranches.CHX_CDRA.oHandler.setFlowRate(this.fCDRA_FlowRate);
                     else
-                        this.toBranches.CHX_CDRA.oHandler.setFlowRate(fTCCV_To_CHX_FlowRate);
+                        this.toBranches.CHX_CDRA.oHandler.setFlowRate(fCHX_FlowRate);
                     end
                 end
             end

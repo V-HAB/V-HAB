@@ -76,7 +76,13 @@ classdef CHX < vsys
 % cabin because of F2Fs procs! That is actually not an error in the code,
 % but a realistic result of the higher total gas pressure in the CHX.
 
-    properties 
+        
+    properties  (SetAccess = public, GetAccess = public)
+        % Reference to the phase to phase processor which performs the
+        % actual phase change of the condensate
+        oP2P;
+    end
+    properties  (SetAccess = protected, GetAccess = public)
         % flow to flow processors for fluid 1 and 2 to set outlet temp and
         % pressure
         oF2F_1; 
@@ -137,10 +143,6 @@ classdef CHX < vsys
         % change energy and temperature difference combined)
         fTotalHeatFlow = 0;
         
-        % Reference to the phase to phase processor which performs the
-        % actual phase change of the condensate
-        oP2P;
-        
         % Here the user can specify by how much [K] the temperature has to
         % change before the CHX is recalculated
         fTempChangeToRecalc = 0.5;
@@ -150,6 +152,23 @@ classdef CHX < vsys
         % recalculated
         fPercentChangeToRecalc = 0.05;
         
+        % This property defines the temperature difference between each
+        % step of the calculateLocalHeatFlow function to find the correct
+        % local heat flow. For smaller values more steps must be calculated
+        % but more accurate results are possible
+        fSearchStepTemperatureDifference = 1; % [K]
+        
+        % This property defines the temperature difference within the CHX
+        % after which the matter properties like the specific heat capacity
+        % are updated
+        fTemperatureChangeForMatterPropRecalc = 10; % [K]
+        
+        % This property defines the maximum number of search steps between
+        % the coolant and gas temperature for the calculateLocalHeatFlow
+        % function. If e.g. the value is 100 and the temperatures are 274 K
+        % and 400 K the search steps would be set to ((400 - 274) / 100) K
+        iMaximumNumberOfSearchSteps = 100;
+        
         % This is a struct the different types of CHX can use to store
         % variables that are required persistently
         txCHX_Parameters;
@@ -157,6 +176,16 @@ classdef CHX < vsys
         hVaporPressureInterpolation;
         
         hBindPostTickUpdate;
+        
+        %% Iterative Properties
+        % These values are only relevant for iterative calculated CHX like
+        % cross counter flow or counter flow CHX:
+        % rMaxError specifies the maximum error in outlet temperatures or
+        % condensate flows per hour for the CHX
+        rMaxError = 1e-2;
+        % iMaxIterations limits the maximum number of iterations calculated
+        % before the calculation is aborted.
+        iMaxIterations = 50;
     end
     
     methods
@@ -215,13 +244,81 @@ classdef CHX < vsys
             this.oF2F_1 = components.matter.HX.hx_flow(this, this.oParent, [sName,'_1']);
             this.oF2F_2 = components.matter.HX.hx_flow(this, this.oParent, [sName,'_2']);
             
-            this.hBindPostTickUpdate = this.oTimer.registerPostTick(@this.update, 'thermal' , 'pre_solver');
-            
             % Since the gridded Interpolant function is faster if we use a
             % smaller grid, we initialize it with values realistic for the
             % CHX to speed up the calculation instead of using the matter
             % table function
             afTemperature = 273:333;
+            this.defineVaporPressureInterpolation(afTemperature);
+        end
+        
+        function setNumericProperties(this, tProperties)
+            %% setNumericProperties
+            % This function can be used to overwrite the numeric properties
+            % of the CHX. The possible inputs are:
+            %
+            % fTempChangeToRecalc:  Here the user can specify by how much
+            %                       [K] the temperature has to change
+            %                       before the CHX is recalculated
+            %
+            % fPercentChangeToRecalc: This value decides how much any value
+            %                         (composition of air, pressure, etc.)
+            %                         has to change in percent before the
+            %                         CHX is recalculated
+            %
+            % fSearchStepTemperatureDifference: This property defines the
+            %       temperature difference between each step of the
+            %       calculateLocalHeatFlow function to find the correct
+            %       local heat flow. For smaller values more steps must be
+            %       calculated but more accurate results are possible
+            %
+            % iMaximumNumberOfSearchSteps: This property defines the
+            %       maximum number of search steps between the coolant and
+            %       gas temperature for the calculateLocalHeatFlow
+            %       function. If e.g. the value is 100 and the temperatures
+            %       are 274 K and 400 K the search steps would be set to
+            %       ((400 - 274) / 100) K
+            %
+            % fTemperatureChangeForMatterPropRecalc: This property defines
+            %       the temperature difference within the CHX after which
+            %       the matter properties like the specific heat capacity
+            %       are updated
+            %
+            % rMaxError: specifies the maximum error in outlet temperatures
+            %            or condensate flows per hour for the CHX for 
+            %            iterativly calculated CHX
+            %
+            % iMaxIterations: limits the maximum number of iterations
+            %                 calculated before the calculation is aborted.
+            csPossibleFieldNames = {'fTempChangeToRecalc', 'fPercentChangeToRecalc', 'fSearchStepTemperatureDifference', 'iMaximumNumberOfSearchSteps', 'fTemperatureChangeForMatterPropRecalc', 'rMaxError', 'iMaxIterations'};
+            
+            csFieldNames = fieldnames(tProperties);
+            for iProp = 1:length(csFieldNames)
+                sField = csFieldNames{iProp};
+                
+                if ~any(strcmp(sField, csPossibleFieldNames))
+                    error('VHAB:CHX:UnknownNumericProperty', ['The function setNumericProperties was provided the unknown input parameter: ', sField, ' please view the help of the function for possible input parameters.']);
+                end
+
+                % checks the type of the input to ensure that the
+                % correct type is used.
+                xProperty = tProperties.(sField);
+
+                if ~isfloat(xProperty)
+                    error('VHAB:CHX:UnknownNumericProperty', ['The ', sField,' value provided to the setTimeStepProperties function is not defined correctly as it is not a (scalar, or vector of) float.']);
+                end
+                
+                this.(sField) = xProperty;
+            end
+        end
+        
+        
+        function createMatterStructure(this)
+            createMatterStructure@vsys(this);
+        end
+        
+        function defineVaporPressureInterpolation(this, afTemperature)
+            
             afVaporPressure = zeros(1,length(afTemperature));
             for iTemperature = 1:length(afTemperature)
                 afVaporPressure(iTemperature) = this.oMT.calculateVaporPressure(afTemperature(iTemperature), 'H2O');
@@ -230,12 +327,6 @@ classdef CHX < vsys
             this.hVaporPressureInterpolation = griddedInterpolant(afTemperature, afVaporPressure,'linear','none');
         
         end
-        
-        function createMatterStructure(this)
-            createMatterStructure@vsys(this);
-        end
-        
-        
         
         function ThermalUpdate(this)
             this.update();

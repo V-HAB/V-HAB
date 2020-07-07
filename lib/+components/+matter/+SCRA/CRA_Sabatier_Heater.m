@@ -7,19 +7,13 @@ classdef CRA_Sabatier_Heater < matter.procs.f2f
     %not work for another system without any changes.
 
     properties (SetAccess = protected, GetAccess = public)
-        fHydrDiam = -1;         % Hydraulic diameter negative to indicate pressure rise
-        fHydrLength = 0;        % This just has to be there because of parent class and solver, value is irrelevant
         fDeltaTemp = 0;        % Temperature difference created by the component in [K]
         fDeltaPress = 0;        % Pressure difference created by the component in [Pa]
-        bActive = true;         % Must be true so the update function is called from the branch solver
-        oSystem;
-        
     end
     
     methods
-        function this = CRA_Sabatier_Heater(oMT, sName, oSystem)
-            this@matter.procs.f2f(oMT, sName);
-            this.oSystem = oSystem;
+        function this = CRA_Sabatier_Heater(oContainer, sName)
+            this@matter.procs.f2f(oContainer, sName);
             
             this.supportSolver('manual', true, @this.updateManualSolver);
         end
@@ -47,14 +41,14 @@ classdef CRA_Sabatier_Heater < matter.procs.f2f
             end
             
             %the heat flow produced by the sabatier reactor
-            fHeatFlowProducedSabatier = this.oSystem.toChildren.SCRA_Node3.toStores.CRA_Sabatier.aoPhases(1,1).toManips.substance.fHeatFlowProduced;
+            fHeatFlowProducedSabatier = this.oContainer.toStores.CRA_Sabatier.aoPhases(1,1).toManips.substance.fHeatFlowProduced;
             %the heat flow required by the sabatier to maintain its
             %temperature. The difference between the produced heat flow and
             %the one that is required to keep the temperature constant is
             %the heat flow that the coolant air flow has to remove.
-            fHeatFlowUpkeepSabatier = this.oSystem.toChildren.SCRA_Node3.toStores.CRA_Sabatier.aoPhases(1,1).oCapacity.toHeatSources.Sabatier_Constant_Temperature.fHeatFlow;
+            fHeatFlowUpkeepSabatier = this.oContainer.toStores.CRA_Sabatier.aoPhases(1,1).oCapacity.toHeatSources.Sabatier_Constant_Temperature.fHeatFlow;
             %the heat flow required to cool down sabatier 2 to 250°C
-            fHeatFlowSabatierCooling = this.oSystem.toChildren.SCRA_Node3.toStores.CRA_Sabatier_2.aoPhases(1,1).oCapacity.toHeatSources.Sabatier2_Constant_Temperature.fHeatFlow;
+            fHeatFlowSabatierCooling = this.oContainer.toStores.CRA_Sabatier_2.aoPhases(1,1).oCapacity.toHeatSources.Sabatier2_Constant_Temperature.fHeatFlow;
             
             %the heat flow that has to go into the cooling air to achieve a
             %constant temperature for both sabatier reactors

@@ -428,7 +428,7 @@ classdef Digestion < vsys
             this.toStores.Digestion.toPhases.Rectum.setTimeStepProperties(tTimeStepProperties);
             
             tTimeStepProperties = struct();
-            tTimeStepProperties.fMassErrorLimit = 0;
+            tTimeStepProperties.fMassErrorLimit = 1e-12;
             this.toStores.Digestion.toPhases.Stomach.setTimeStepProperties(tTimeStepProperties);
             
             this.setThermalSolvers();

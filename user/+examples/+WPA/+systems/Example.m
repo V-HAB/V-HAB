@@ -20,6 +20,9 @@ classdef Example < vsys
             matter.store(this, 'ProductWater',   1500);
             matter.store(this, 'Node_3',     1000000);      %gas part 
             
+            matter.store(this, 'WPA_WasteWater_Inlet', 1e-6);
+            oWPA_WasteWater_Inlet = this.toStores.WPA_WasteWater_Inlet.createPhase( 'liquid', 'flow', 'WPA_WasteWater_Inlet', 1e-6, struct('H2O', 1), 293, 1e5);
+            
             %% phases
             % Watermodel
             % pressure between 5.2e4 and 1.5e5- using 1e5
@@ -53,7 +56,9 @@ classdef Example < vsys
             
             oProductWater = this.toStores.ProductWater.createPhase( 'mixture',      'Water', 'liquid',        this.toStores.ProductWater.fVolume, struct('H2O', 1),  293, 1e5);
             
-            matter.branch(this, 'Inlet',        {}, oWasteWater);
+            matter.branch(this, oWasteWater, 	{}, oWPA_WasteWater_Inlet, 'WasteWaterToWPA');
+            
+            matter.branch(this, 'Inlet',        {}, oWPA_WasteWater_Inlet);
             matter.branch(this, 'Outlet',       {}, oProductWater);
             matter.branch(this, 'AirInlet',     {}, oAtmosphere);
             matter.branch(this, 'AirOutlet',    {}, oAtmosphere);
@@ -67,7 +72,10 @@ classdef Example < vsys
             % We initially fill the WPA with 70% of its waste water
             % capacity so that it quickly starts processing water
             fInitialWasteWaterFill = 0.7 * 150 * 0.453592;
-            this.toChildren.WPA.toBranches.Inlet.oHandler.setMassTransfer(-fInitialWasteWaterFill, 300)
+            solver.matter.manual.branch(this.toBranches.WasteWaterToWPA);
+            this.toBranches.WasteWaterToWPA.oHandler.setMassTransfer(fInitialWasteWaterFill, 300);
+            
+            this.setThermalSolvers();
         end
     end
     
@@ -75,9 +83,9 @@ classdef Example < vsys
         function exec(this, ~)
             
             exec@vsys(this);
-            if this.oTimer.fTime > 300 && this.toChildren.WPA.toBranches.Inlet.oHandler.fFlowRate == 0
+            if this.oTimer.fTime > 300 && this.toBranches.WasteWaterToWPA.fFlowRate == 0
                 % Inlet flow represents about 86.4 kg of waste water per day
-                this.toChildren.WPA.toBranches.Inlet.oHandler.setFlowRate(-0.001);
+                this.toBranches.WasteWaterToWPA.oHandler.setFlowRate(0.001);
             end
             
             % This code synchronizes everything once per hour

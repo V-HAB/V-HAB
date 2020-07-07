@@ -8,6 +8,8 @@ classdef flow < matter.flow
         fPressureLastHeatCapacityUpdate;
         fTemperatureLastHeatCapacityUpdate;
         arPartialMassLastHeatCapacityUpdate;
+        
+        fSpecificHeatCapacityP2P = 0;
     end
     
     methods
@@ -133,7 +135,7 @@ classdef flow < matter.flow
             
             % If the flow rate is zero, 
             if this.fFlowRate == 0
-                this.fSpecificHeatCapacity = 0;
+                this.fSpecificHeatCapacityP2P = 0;
                 return;
             end
             
@@ -161,7 +163,7 @@ classdef flow < matter.flow
                 
                 afMass = this.oMT.resolveCompoundMass(afMass, this.oIn.oPhase.arCompoundMass);
                 
-                this.fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(oExme.oPhase.sType, afMass, this.fTemperature, afPartialPressures);
+                this.fSpecificHeatCapacityP2P = this.oMT.calculateSpecificHeatCapacity(oExme.oPhase.sType, afMass, this.fTemperature, afPartialPressures);
                 
                 this.fPressureLastHeatCapacityUpdate     = this.fPressure;
                 this.fTemperatureLastHeatCapacityUpdate  = this.fTemperature;
