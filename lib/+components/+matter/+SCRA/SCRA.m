@@ -230,20 +230,25 @@ classdef SCRA < vsys
             
             csStoreNames = fieldnames(this.toStores);
             for iStore = 1:length(csStoreNames)
-                for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
-                    oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
-                    
-                    arMaxChange = zeros(1,this.oMT.iSubstances);
-                    arMaxChange(this.oMT.tiN2I.Ar) = 0.75;
-                    arMaxChange(this.oMT.tiN2I.O2) = 0.75;
-                    arMaxChange(this.oMT.tiN2I.N2) = 0.75;
-                    arMaxChange(this.oMT.tiN2I.H2) = 1;
-                    arMaxChange(this.oMT.tiN2I.H2O) = 0.5;
-                    arMaxChange(this.oMT.tiN2I.CO2) = 1;
-                    arMaxChange(this.oMT.tiN2I.CH4) = 0.75;
-                    tTimeStepProperties.arMaxChange = arMaxChange;
-                    
-                    oPhase.setTimeStepProperties(tTimeStepProperties);
+                if strcmp(csStoreNames{iStore}, 'CRA_Accumulator')
+                    tTimeStepProperties.rMaxChange = 0.2;
+                    this.toStores.(csStoreNames{iStore}).toPhases.CO2.setTimeStepProperties(tTimeStepProperties);
+                else
+                    for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
+                        oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
+
+                        arMaxChange = zeros(1,this.oMT.iSubstances);
+                        arMaxChange(this.oMT.tiN2I.Ar) = 0.75;
+                        arMaxChange(this.oMT.tiN2I.O2) = 0.75;
+                        arMaxChange(this.oMT.tiN2I.N2) = 0.75;
+                        arMaxChange(this.oMT.tiN2I.H2) = 1;
+                        arMaxChange(this.oMT.tiN2I.H2O) = 0.5;
+                        arMaxChange(this.oMT.tiN2I.CO2) = 1;
+                        arMaxChange(this.oMT.tiN2I.CH4) = 0.75;
+                        tTimeStepProperties.arMaxChange = arMaxChange;
+
+                        oPhase.setTimeStepProperties(tTimeStepProperties);
+                    end
                 end
             end
             
