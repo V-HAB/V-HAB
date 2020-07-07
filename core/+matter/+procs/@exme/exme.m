@@ -301,6 +301,14 @@ classdef exme < base
             % to prevent confusion, empty the new phase property
             this.oNewPhase = [];
             
+            if isa(this.oFlow.oBranch.oHandler, 'solver.matter_multibranch.iterative.branch')
+                % Since the multi branch solver stores the UUIDs of the
+                % phases to create the network, we have to recreate that
+                % network, if an exme with a multibranch solver is
+                % reconnected.
+                this.oFlow.oBranch.oHandler.initialize();
+            end
+            
         end
     end
 end

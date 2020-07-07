@@ -148,7 +148,7 @@ classdef exme < base
             % check if we are reconnecting a thermal branch which models
             % the heat transfer from a mass branch. If that is the case,
             % ensure that this function is called from the matter exme!
-            if isa(this.oBranch.coConductors{1}, 'thermal.procs.conductors.fluidic') && ~bMatterExmeCaller
+            if ~isa(this.oBranch.oHandler, 'solver.thermal.manual.branch') && isa(this.oBranch.coConductors{1}, 'thermal.procs.conductors.fluidic') && ~bMatterExmeCaller
                 error(['reconnecting a thermal exme which models mass bound energy transfer must be done through the matter exme! Occured while reconnecting exme', this.sName])
             end
         end
