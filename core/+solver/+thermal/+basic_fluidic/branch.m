@@ -175,7 +175,7 @@ classdef branch < solver.thermal.base.branch
                     % thermal energy
                     afF2F_HeatFlows(iFlow + iFlowProcShifter) = oMatterObject.aoFlowProcs(iFlow + iFlowProcShifter).fHeatFlow;
 
-                    afTemperatures(iFlow) = afTemperatures(iFlow - iDirection) + afF2F_HeatFlows(iFlow + iFlowProcShifter) * fResistance;
+                    afTemperatures(iFlow) = afTemperatures(iFlow - iDirection) + afF2F_HeatFlows(iFlow + iFlowProcShifter) * afResistances(iFlow + iFlowProcShifter);
 
                     oMatterObject.aoFlows(iFlow).setTemperature(afTemperatures(iFlow))
 

@@ -13,7 +13,6 @@ classdef flow < base
         % Temperature of this flow object
         fTemperature = 293;   % [K]
         
-        fSpecificHeatCapacity = 0;       % [J/K/kg]
         fMolarMass            = 0;       % [kg/mol]
         
         % Only recalculated when setData was executed and requested again!
@@ -50,6 +49,8 @@ classdef flow < base
         % References to the processors connected to the flow (exme || f2f)
         oIn;
         oOut;
+        % Number of the flow inside its branch
+        iFlow;
         
         % Sealed?
         bSealed = false;
@@ -70,6 +71,7 @@ classdef flow < base
     properties (Dependent)
         % Partial pressures of the matter of the flow
         afPartialPressure;  % [Pa]
+        fSpecificHeatCapacity ;   % [J/K/kg]
     end
     
     properties (SetAccess = private, GetAccess = private)
@@ -93,8 +95,13 @@ classdef flow < base
                 
                 if isa(oCreator,'matter.branch')
                     this.oBranch = oCreator;
+                    if isa(oCreator,'components.matter.DetailedHuman.components.P2P_Branch')
+                        this.iFlow = 0;
+                    end
                 elseif isa(oCreator,'matter.store')
                     this.oStore  = oCreator;
+                    
+                    this.iFlow = 0;
                 end
                 
                 % Initialize the mass fractions array with zeros.
@@ -228,6 +235,48 @@ classdef flow < base
         function afPartialPressure = get.afPartialPressure(this)
             afPartialPressure = this.oMT.calculatePartialPressures(this);
         end
+        
+        function fSpecificHeatCapacity = get.fSpecificHeatCapacity(this)
+            try
+                if this.iFlow == 0
+                    fSpecificHeatCapacity = this.fSpecificHeatCapacityP2P;
+                else
+                    if this.fFlowRate >= 0
+                        iConductor = this.iFlow - 1;
+                    else
+                        iConductor = this.iFlow + 1;
+                    end
+                    if iConductor < 1
+                        iConductor = 1;
+                    elseif iConductor > this.oBranch.oThermalBranch.iConductors
+                        iConductor = this.oBranch.oThermalBranch.iConductors;
+                    end
+                    fSpecificHeatCapacity = this.oBranch.oThermalBranch.coConductors{iConductor}.fSpecificHeatCapacity;
+                end
+            catch oErr
+                if isempty(this.oBranch) || isempty(this.oBranch.oThermalBranch)
+                    fSpecificHeatCapacity = 0;
+                elseif isempty(this.iFlow)
+                    this.iFlow = find(this.oBranch.aoFlows == this);
+                    
+                    if this.fFlowRate >= 0
+                        iConductor = this.iFlow - 1;
+                    else
+                        iConductor = this.iFlow + 1;
+                    end
+                    if iConductor < 1
+                        iConductor = 1;
+                    elseif iConductor > this.oBranch.oThermalBranch.iConductors
+                        iConductor = this.oBranch.oThermalBranch.iConductors;
+                    end
+                    fSpecificHeatCapacity = this.oBranch.oThermalBranch.coConductors{iConductor}.fSpecificHeatCapacity;
+                    
+                else
+                    rethrow(oErr)
+                end
+            end
+        end
+        
     end
     
     
@@ -436,9 +485,12 @@ classdef flow < base
                    oExme.oPhase.registerMassupdate();
                 end
                 
+                if oExme.oPhase.bFlow
+                    oExme.oPhase.updatePartials();
+                end
+                
                 arPhasePartialMass         = oExme.oPhase.arPartialMass;
                 fPhaseMolarMass            = oExme.oPhase.fMolarMass;
-                fPhaseSpecificHeatCapacity = oExme.oPhase.oCapacity.fSpecificHeatCapacity;
                 arFlowCompoundMass         = oExme.oPhase.arCompoundMass;
 
                 % This can occur for example if a flow phase is used, which
@@ -449,25 +501,11 @@ classdef flow < base
                     fFlowRate = 0;
                 end
                 
-                % If a phase was empty in one of the previous time steps
-                % and has had mass added to it, the specific heat capacity
-                % may not have yet been calculated, because the phase has
-                % not been updated. If the phase does have mass but zero
-                % heat capacity, we force an update of this value here. 
-                if fPhaseSpecificHeatCapacity == 0 && oExme.oPhase.fMass ~= 0
-                    %TODO move the following warning to a lower level debug
-                    %output once this is implemented
-                    % aoFlows(1).warn('setData', 'Updating specific heat capacity for phase %s %s.', oExme.oPhase.oStore.sName, oExme.oPhase.sName);
-                    oExme.oPhase.oCapacity.updateSpecificHeatCapacity();
-                    fPhaseSpecificHeatCapacity = oExme.oPhase.oCapacity.fSpecificHeatCapacity;
-                end
-                
             % If no exme is provided, those values will not be changed (see
             % above, in case of e.g. a closed valve within the branch).
             else
                 arPhasePartialMass         = 0;
                 fPhaseMolarMass            = 0;
-                fPhaseSpecificHeatCapacity = 0;
                 afPressures                = zeros(1, length(afPressures));
             end
             
@@ -517,8 +555,6 @@ classdef flow < base
                     oFlow.arPartialMass         = arPhasePartialMass;
                     oFlow.fMolarMass            = fPhaseMolarMass;
                     oFlow.arCompoundMass        = arFlowCompoundMass;
-                    
-                    oFlow.fSpecificHeatCapacity = fPhaseSpecificHeatCapacity;
                 end
                 
                 

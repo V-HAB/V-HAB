@@ -7,7 +7,7 @@ classdef fluidic < thermal.procs.conductor
         
         % Specific heat capacity of the matter flow through the matter
         % processor associated with this conductor.
-        fSpecificHeatCapacity;
+        fSpecificHeatCapacity = 0;
         
         % Reference to the matter object whose thermal energy transport
         % should be modelled

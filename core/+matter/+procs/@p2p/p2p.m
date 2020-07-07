@@ -14,6 +14,8 @@ classdef (Abstract) p2p < matter.flow & event.source
         % used to model the heat transfer of this P2P
         oThermalBranch;
         
+        fSpecificHeatCapacityP2P;
+        
         % The following three properties capture the pressure, temperature
         % and partial mass state of the flow through this p2p. This is done
         % in an effort to reduce the calls to calculateSpecificHeatCapacity
@@ -380,7 +382,7 @@ classdef (Abstract) p2p < matter.flow & event.source
             
             % If the flow rate is zero, 
             if this.fFlowRate == 0
-                this.fSpecificHeatCapacity = 0;
+                this.fSpecificHeatCapacityP2P = 0;
                 return;
             end
             
@@ -408,7 +410,7 @@ classdef (Abstract) p2p < matter.flow & event.source
                 
                 afMass = this.oMT.resolveCompoundMass(afMass, this.oIn.oPhase.arCompoundMass);
                 
-                this.fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity('mixture', afMass, this.fTemperature, afPartialPressures);
+                this.fSpecificHeatCapacityP2P = this.oMT.calculateSpecificHeatCapacity('mixture', afMass, this.fTemperature, afPartialPressures);
                 
                 this.fPressureLastHeatCapacityUpdate     = this.fPressure;
                 this.fTemperatureLastHeatCapacityUpdate  = this.fTemperature;
