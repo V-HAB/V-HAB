@@ -67,7 +67,7 @@ elseif fRe == 0
 %values of Reynolds and Prandtlnumber as well as some key data to simplify
 %debugging for the user    
 else
-    fprintf(' either the Reynolds or the Prandtl number are out of bounds. \n Reynolds is valid for Re < 10^6. The value is %d \n Prandtl is valid between 0.6 and 10^3. The value is %d \n the flow speed is: %d \n the kinematic viscosity is %d', fRe, fPr, fFlowSpeed, fKin_Visc_m);
+    fprintf(' either the Reynolds or the Prandtl number are out of bounds. \n Reynolds is valid for Re < 10^6. The value is %d \n Prandtl is valid between 0.6 and 10^3. The value is %d \n \n the kinematic viscosity is %d', fRe, fPr, fKin_Visc_m);
     error('no possible equation was found in convection_pipe, either Reynolds number or Prandtl number out of boundaries')
 end
 end

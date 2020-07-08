@@ -149,6 +149,7 @@ classdef SCRA < vsys
             components.matter.pipe(this, 'Pipe_011', fPipelength, fPipeDiameter, fFrictionFactor);
             
             components.matter.SCRA.CRA_Vacuum_Outlet(this, 'VacuumOutlet');
+            components.matter.SCRA.CRA_H2_Regulator(this,  'CRA_H2_Regulator');
             
             components.matter.valve(this, 'SabatierValve', 0);
             components.matter.valve(this, 'VentValve', 0);
@@ -159,7 +160,7 @@ classdef SCRA < vsys
             components.matter.SCRA.CRA_Sabatier_Heater(this, 'CRA_SabatierHeater');
             
             %Finally the flowpaths between all components
-            matter.branch(this, oH2,                        {'Pipe_001'},                                       'SCRA_H2_In',           'CRA_H2_In');
+            matter.branch(this, oH2,                        {'Pipe_001', 'CRA_H2_Regulator'},                 	'SCRA_H2_In',           'CRA_H2_In');
             matter.branch(this, oAccumulatorCO2,            {'Pipe_002'},                                       'SCRA_CO2_In',          'CRA_CO2_In');
             matter.branch(this, oAccumulatorCO2,            {'Pipe_003'},                                       oCRA_SabatierPhase, 	'Accumulator_To_CRA');
             
@@ -219,7 +220,7 @@ classdef SCRA < vsys
                                      this.toBranches.CRA_ProductstoWaterRecbranch,...
                                      this.toBranches.CRA_DryGastoVent];
             
-            tSolverProperties.fMaxError = 1e-5;
+            tSolverProperties.fMaxError = 1e-2;
             tSolverProperties.iMaxIterations = 1000;
             tSolverProperties.fMinimumTimeStep = 1;
             oSolver = solver.matter_multibranch.iterative.branch(aoMultiSolverBranches, 'complex');

@@ -164,6 +164,9 @@ classdef timer < base
         % stored here
         aiNumberOfPostTickLevel;
         
+        % The current overall time step in seconds
+        fTimeStep = 0;
+        
     end
     
     properties (SetAccess = protected, GetAccess = public)
@@ -532,6 +535,7 @@ classdef timer < base
                 fThisStep = this.fMinimumTimeStep;
             end
             
+            this.fTimeStep = fThisStep;
             % Set new time
             this.fTime = this.fTime + fThisStep;
             this.iTick = this.iTick + 1;

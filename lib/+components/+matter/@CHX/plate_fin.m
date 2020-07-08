@@ -404,6 +404,11 @@ else
                         tCHX_Parameters.iFinCoolant     = fFinFlipCoolant;
                         tCHX_Parameters.fTemperatureCoolant = fInlet_fTemperatureCoolant_down;
 
+                        if fInitialWaterFlowPerCell + fCondensatFlowRateUp < 0
+                            fCondensatFlowRateUp  = - fInitialWaterFlowPerCell;
+                            fHeatFlowCondensateUp =   fCondensatFlowRateUp * oCHX.mPhaseChangeEnthalpy(oCHX.oMT.tiN2I.(tCHX_Parameters.Vapor));
+                            fHeatFlowUp           = fHeatFlowGasUp + fHeatFlowCondensateUp;
+                        end
                         fCurrentRemainingWaterFlow = fCurrentWaterFlow - fCondensatFlowRateUp;
                         if fCurrentRemainingWaterFlow < 0
                             fCurrentRemainingWaterFlow = 0;
@@ -421,6 +426,12 @@ else
                         fCondensateFlowRateDown = tOutputs.fCondensateMassFlow;
                         fHeatFlowCondensateDown = tOutputs.fHeatFlowCondensate;
                         fHeatFlowGasDown        = tOutputs.fGasHeatFlow;
+                        
+                        if fInitialWaterFlowPerCell + fCondensateFlowRateDown < 0
+                            fCondensateFlowRateDown  = - fInitialWaterFlowPerCell;
+                            fHeatFlowCondensateDown =   fCondensateFlowRateDown * oCHX.mPhaseChangeEnthalpy(oCHX.oMT.tiN2I.(tCHX_Parameters.Vapor));
+                            fHeatFlowDown           = fHeatFlowGasDown + fHeatFlowCondensateDown;
+                        end
                         
                         fMolarFractionOut = ((fCurrentWaterFlow - (fCondensatFlowRateUp + fCondensateFlowRateDown))/ oMT.afMolarMass(oMT.tiN2I.H2O)) / (tCHX_Parameters.fMassFlowGas / Fluid_1.oFlow.fMolarMass);
                         fAverageCoolantOutTemperature = ((fInlet_fTemperatureCoolant_down + fInlet_fTemperatureCoolant_up)/2) + ((fHeatFlowDown + fHeatFlowUp)    / (2 * tCHX_Parameters.fMassFlowCoolant * tCHX_Parameters.fSpecificHeatCapacityCoolant));
