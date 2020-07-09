@@ -168,6 +168,7 @@ classdef FuelCell < vsys
             tSolverProperties.iMaxIterations = 500;
             tSolverProperties.fMinimumTimeStep = 1;
             tSolverProperties.iIterationsBetweenP2PUpdate = 200;
+            tSolverProperties.bSolveOnlyFlowRates = true;
             
             aoMultiSolverBranches = [this.toBranches.H2_Inlet;...
                                      this.toBranches.H2_to_Outlet;...

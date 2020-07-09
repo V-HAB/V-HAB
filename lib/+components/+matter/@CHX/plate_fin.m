@@ -206,9 +206,9 @@ else
     tCHX_Parameters.fThermalConductivitySolid   = fThermalConductivitySolid;
     tCHX_Parameters.fPressureGas                = Fluid_1.oFlow.fPressure;
     tCHX_Parameters.fCharacteristicLength       = tCHX_Parameters.fLength;
-    tCHX_Parameters.arPartialMassesGas          = Fluid_1.oFlow.arPartialMass;
+    tCHX_Parameters.arPartialMassesGas          = Fluid_1.arPartialMass;
 
-    fInitialWaterFlowPerCell = Fluid_1.oFlow.arPartialMass(oMT.tiN2I.H2O) * tCHX_Parameters.fMassFlowGas;
+    fInitialWaterFlowPerCell = Fluid_1.arPartialMass(oMT.tiN2I.H2O) * tCHX_Parameters.fMassFlowGas;
     
     fOutlet_Temp_1 = sum(sum(mOutlet_Temp_1(:,iIncrementsCoolant,tCHX_Parameters.iBaffles+1,:))) / (iIncrementsAir * tCHX_Parameters.iLayers);
     fOutlet_Temp_2 = sum(sum(mOutlet_Temp_2(1,:,1,:))) / (iIncrementsCoolant * (tCHX_Parameters.iLayers + 1));
@@ -378,7 +378,7 @@ else
                         if fInitialWaterFlowPerCell == 0
                             tCHX_Parameters.arPartialMassesGas(oMT.tiN2I.H2O) = 0;
                         else
-                            tCHX_Parameters.arPartialMassesGas(oMT.tiN2I.H2O) = (fCurrentWaterFlow/fInitialWaterFlowPerCell) * Fluid_1.oFlow.arPartialMass(oMT.tiN2I.H2O);
+                            tCHX_Parameters.arPartialMassesGas(oMT.tiN2I.H2O) = (fCurrentWaterFlow/fInitialWaterFlowPerCell) * Fluid_1.arPartialMass(oMT.tiN2I.H2O);
                         end
                         
                         tCHX_Parameters.fTemperatureCoolant = fInlet_fTemperatureCoolant_up;
@@ -416,7 +416,7 @@ else
                         if fInitialWaterFlowPerCell == 0
                             tCHX_Parameters.arPartialMassesGas(oMT.tiN2I.H2O) = 0;
                         else
-                            tCHX_Parameters.arPartialMassesGas(oMT.tiN2I.H2O) = (fCurrentRemainingWaterFlow/fInitialWaterFlowPerCell) * Fluid_1.oFlow.arPartialMass(oMT.tiN2I.H2O);
+                            tCHX_Parameters.arPartialMassesGas(oMT.tiN2I.H2O) = (fCurrentRemainingWaterFlow/fInitialWaterFlowPerCell) * Fluid_1.arPartialMass(oMT.tiN2I.H2O);
                         end
                         tCHX_Parameters.fMolarFractionVapor	= (fCurrentRemainingWaterFlow/ oMT.afMolarMass(oMT.tiN2I.H2O)) / (tCHX_Parameters.fMassFlowGas / Fluid_1.oFlow.fMolarMass);
                         tCHX_Parameters.fMassFlowFilm       = tCHX_Parameters.fMassFlowFilm + fCondensatFlowRateUp;
@@ -584,7 +584,7 @@ oCHX.fTotalHeatFlow = sum(sum(sum(sum(mHeatFlow))));
 % fVaporPressure =  oCHX.hVaporPressureInterpolation(Fluid_2.fEntry_Temperature);
 % fMaximumCondensateFlow = (fPressureH2O - fVaporPressure) * (Fluid_1.fMassflow / tCHX_Parameters.fDensityGas) / (Fluid_2.fEntry_Temperature * oCHX.oMT.Const.fUniversalGas / oCHX.oMT.afMolarMass(oCHX.oMT.tiN2I.H2O));
 %     
-% fWaterFlowInitial   =  Fluid_1.oFlow.arPartialMass(oCHX.oMT.tiN2I.H2O) * Fluid_1.fMassflow;
+% fWaterFlowInitial   =  Fluid_1.arPartialMass(oCHX.oMT.tiN2I.H2O) * Fluid_1.fMassflow;
 % fWaterFlowRemaining =  fWaterFlowInitial - fCondensateFlow;
 
 oCHX.afCondensateMassFlow(oCHX.oMT.tiN2I.(tCHX_Parameters.Vapor)) = sum(sum(sum(sum(mCondensateFlowRate))));

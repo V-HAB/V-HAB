@@ -367,6 +367,12 @@ classdef CCAA < vsys
                 end
             end
             
+            tProperties.fSearchStepTemperatureDifference    = 2;
+            tProperties.iMaximumNumberOfSearchSteps         = 30;
+            tProperties.rMaxError                           = 0.2;
+            
+            this.toChildren.CCAA_CHX.setNumericProperties(tProperties);
+            
             % Set time step properties
             csStoreNames = fieldnames(this.toStores);
             for iStore = 1:length(csStoreNames)

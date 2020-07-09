@@ -261,20 +261,8 @@ function update(this)
         % in flow direction
         iStartZeroSumEquations = length(afBoundaryConditions) - length(this.csVariablePressurePhases) + 1 + iRemovedZeroSumEquations;
         
-        % Solve
-        %hT = tic();
-        warning('off','all');
         
-        % this is the acutal solving of the matrix system:
-        % aafPhasePressuresAndFlowRates * afResults = afBoundaryConditions
-        % Where afResults contains gas flow node pressures and
-        % branch flowrates
-        afResults = mfPhasePressuresAndFlowRates \ afBoundaryConditions;
-        
-        warning('on','all');
-        
-        bSolveOnlyFlowrates = false;
-        if any(isnan(afResults))
+        if this.bSolveOnlyFlowRates
             % It is possible that the user defined a loop of flow
             % phases which start and end at the same normal phase. In
             % that case the pressures cannot be calculated, resulting
@@ -287,7 +275,6 @@ function update(this)
             afResults = mfPhasePressuresAndFlowRates(iStartZeroSumEquations:end,:) \ afBoundaryConditions(iStartZeroSumEquations:end);
             warning('on','all');
             
-            bSolveOnlyFlowrates = true;
             % TBD: decide if we need a better way to get the pressures in
             % this case. E.g. find out which boundary phase affects which
             % branches and set these pressures for the flow phases
@@ -302,6 +289,22 @@ function update(this)
             if any(isnan(afResults))
                 this.throw('solver', 'NaNs in the Multi-Branch Solver Results!');
             end
+        else
+            % Solve
+            %hT = tic();
+            warning('off','all');
+
+            % this is the acutal solving of the matrix system:
+            % aafPhasePressuresAndFlowRates * afResults = afBoundaryConditions
+            % Where afResults contains gas flow node pressures and
+            % branch flowrates
+            afResults = mfPhasePressuresAndFlowRates \ afBoundaryConditions;
+
+            warning('on','all');
+        end
+        
+        if any(isnan(this.afFlowRates))
+            error('NaN Values occured in the multi branch solver. This can occur, e.g. if a flowrate boundary condition from a manual solver is used, but valves block all possible flow paths!')
         end
         
         toPhasesWithNegativePressures = struct();
@@ -337,7 +340,7 @@ function update(this)
                     end
                 end
             elseif strcmp(oObj.sObjectType, 'phase')
-                if bSolveOnlyFlowrates
+                if this.bSolveOnlyFlowRates
                     oObj.setPressure(fAverageBoundaryPressure);
                 else
                     if afResults(iColumn) < 0
@@ -503,6 +506,7 @@ function update(this)
     
     this.bBranchOscillationSuppressionActive = false;
     
+        
     %% Setting of final results to afFlowRates
     % during the iteration it is necessary to adapt the results for the
     % next iteration so that the solver can converge. However after it has

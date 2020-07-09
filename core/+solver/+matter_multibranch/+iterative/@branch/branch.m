@@ -306,6 +306,12 @@ classdef branch < base & event.source
         % have 0 kg/s flowrate
         fMinPressureDiff = 10; % Pa
         
+        % This boolean can be turned on, if you want the multi branch
+        % solver to solve only the flowrates for its branches. In that case
+        % it uses the average boundary phase pressure to calculate the
+        % pressure for the flow phases
+        bSolveOnlyFlowRates = false;
+        
         tBoundaryConnection;
         
         % Last values of caclulated flow rates.
@@ -515,11 +521,15 @@ classdef branch < base & event.source
             %                   used to just set the flow rate to the mean
             %                   value of the last 500 iterations. 
             %
+            % bSolveOnlyFlowRates: This can be turned on to allow the
+            %                      solver to only solve flowrates and
+            %                      not calculate the flow pressures
+            %
             % In order to define these provide a struct with the fieldnames
             % as described here to this function for the values that you
             % want to set
             
-            csPossibleFieldNames = {'fMaxError', 'iMaxIterations', 'iIterationsBetweenP2PUpdate', 'fMinimumTimeStep', 'fMinPressureDiff', 'bOscillationSuppression'};
+            csPossibleFieldNames = {'fMaxError', 'iMaxIterations', 'iIterationsBetweenP2PUpdate', 'fMinimumTimeStep', 'fMinPressureDiff', 'bOscillationSuppression', 'bSolveOnlyFlowRates'};
             
             % Gets the fieldnames of the struct to easier loop through them
             csFieldNames = fieldnames(tSolverProperties);
@@ -539,8 +549,14 @@ classdef branch < base & event.source
                 % correct type is used.
                 xProperty = tSolverProperties.(sField);
 
-                if ~isfloat(xProperty)
-                    error('VHAB:MatterMultiBranch:IncorrectParameter',['The ', sField,' value provided to the setSolverProperties function is not defined correctly as it is not a (scalar, or vector of) float']);
+                if strcmp(sField, 'bSolveOnlyFlowRates')
+                    if ~islogical(xProperty) || length(xProperty) ~= 1
+                        error('VHAB:MatterMultiBranch:IncorrectParameter',['The ', sField,' value provided to the setSolverProperties function is not defined correctly as it is not a scalar boolean']);
+                    end
+                else
+                    if ~isfloat(xProperty)
+                        error('VHAB:MatterMultiBranch:IncorrectParameter',['The ', sField,' value provided to the setSolverProperties function is not defined correctly as it is not a (scalar, or vector of) float']);
+                    end
                 end
                 
                 this.(sField) = tSolverProperties.(sField);

@@ -331,7 +331,7 @@ classdef CHX < vsys
         function ThermalUpdate(this)
             this.update();
         end
-        function update(this)
+        function update(this, afPartialInFlowsGas)
             
             % We skip the very first update because some of the flow rates
             % are still zero. It is not allowed to stop the update even if
@@ -358,14 +358,32 @@ classdef CHX < vsys
             end
             
             %gets the values from the flows required for the HX
-            fMassFlow_1 = abs(oFlows_1.fFlowRate);
+            if nargin > 1
+                fMassFlow_1            = sum(afPartialInFlowsGas);
+                Fluid_1 = struct();
+                Fluid_1.arPartialMass  = afPartialInFlowsGas ./ fMassFlow_1;
+                afCurrentMolsIn        = (afPartialInFlowsGas ./ this.oMT.afMolarMass);
+                arFractions            = afCurrentMolsIn ./ sum(afCurrentMolsIn);
+                if fMassFlow_1 >= 0
+                    iExme = 1;
+                else
+                    iExme = 2;
+                end
+                afPP                   = arFractions .*  oFlows_1.oBranch.coExmes{iExme}.getExMeProperties; 
+                bMultiSolverCall       = true;
+            else
+                fMassFlow_1 = abs(oFlows_1.fFlowRate);
+                Fluid_1 = struct();
+                Fluid_1.arPartialMass  = oFlows_1.arPartialMass;
+                bMultiSolverCall       = false;
+            end
             fMassFlow_2 = abs(oFlows_2.fFlowRate);
             fEntryTemp_1 = oFlows_1.fTemperature;
             fEntryTemp_2 = oFlows_2.fTemperature;
             
             %If nothing flows on one side of the HX it just assumes that
             %nothing happens
-            if (fMassFlow_1 == 0) || (fMassFlow_2 == 0)
+            if (fMassFlow_1 < 1e-12) || (fMassFlow_2 < 1e-12)
                 
                 this.oF2F_1.setOutFlow(0,0);
                 this.oF2F_2.setOutFlow(0,0);
@@ -380,26 +398,36 @@ classdef CHX < vsys
                 (abs(1 - (fMassFlow_1 / this.fMassFlow_Old_1))                      > this.fPercentChangeToRecalc)      ||...  	%if mass flow changes by more than X%
                 (abs(fEntryTemp_2 - this.fEntryTemp_Old_2)                          > this.fTempChangeToRecalc)         ||...  	%if entry temp changed by more than X°
                 (abs(1 - (fMassFlow_2 / this.fMassFlow_Old_2))                      > this.fPercentChangeToRecalc)      ||... 	%if mass flow changes by more than X%
-                (max(abs(1 - (oFlows_1.arPartialMass ./ this.arPartialMass1Old)))   > this.fPercentChangeToRecalc)      ||...  	%if composition of mass flow changed by more than X%
+                (max(abs(1 - (Fluid_1.arPartialMass ./ this.arPartialMass1Old)))    > this.fPercentChangeToRecalc)      ||...  	%if composition of mass flow changed by more than X%
                 (max(abs(1 - (oFlows_2.arPartialMass ./ this.arPartialMass2Old)))   > this.fPercentChangeToRecalc)      ||... 	%if composition of mass flow changed by more than X%
                 (abs(1 - (oFlows_1.fPressure / this.fOldPressureFlow1))             > 3 * this.fPercentChangeToRecalc)  ||...	%if Pressure changed by more than X%
                 (abs(1 - (oFlows_2.fPressure / this.fOldPressureFlow2))             > 3 * this.fPercentChangeToRecalc)          %if Pressure changed by more than X%
                 
                 fDensity_1 = oFlows_1.getDensity();
                 fDensity_2 = oFlows_2.getDensity();
-                
-                fCp_1 = oFlows_1.fSpecificHeatCapacity;
+                if bMultiSolverCall
+                    fCp_1 = this.oMT.calculateSpecificHeatCapacity('mixture', Fluid_1.arPartialMass, fEntryTemp_1, afPP);
+                else
+                    fCp_1 = oFlows_1.fSpecificHeatCapacity;
+                end
                 fCp_2 = oFlows_2.fSpecificHeatCapacity;
                 
-                fDynVisc_1 = oFlows_1.getDynamicViscosity();
-                fConductivity_1 = oFlows_1.oMT.calculateThermalConductivity(oFlows_1);
+                if bMultiSolverCall
+                    fDynVisc_1 =  this.oMT.calculateDynamicViscosity('mixture', Fluid_1.arPartialMass, fEntryTemp_1, afPP);
+                else
+                    fDynVisc_1 = oFlows_1.getDynamicViscosity();
+                end
+                if bMultiSolverCall
+                    fConductivity_1 =  this.oMT.calculateThermalConductivity('mixture', Fluid_1.arPartialMass, fEntryTemp_1, afPP);
+                else
+                    fConductivity_1 = oFlows_1.oMT.calculateThermalConductivity(oFlows_1);
+                end
                 
                 fDynVisc_2 = oFlows_2.getDynamicViscosity();
                 fConductivity_2 = oFlows_1.oMT.calculateThermalConductivity(oFlows_2);
             
                 %sets the structs for the two fluids according to the
                 %definition from HX_main
-                Fluid_1 = struct();
                 Fluid_1.fMassflow                = fMassFlow_1;
                 Fluid_1.fEntry_Temperature       = fEntryTemp_1;
                 Fluid_1.fDynamic_Viscosity       = fDynVisc_1;
@@ -434,14 +462,14 @@ classdef CHX < vsys
                 this.fEntryTemp_Old_2    = fEntryTemp_2;
                 this.fMassFlow_Old_1     = fMassFlow_1;
                 this.fMassFlow_Old_2     = fMassFlow_2;
-                this.arPartialMass1Old   = oFlows_1.arPartialMass;
+                this.arPartialMass1Old   = Fluid_1.arPartialMass;
                 this.arPartialMass2Old   = oFlows_2.arPartialMass;
                 this.fOldPressureFlow1   = oFlows_1.fPressure;
                 this.fOldPressureFlow2   = oFlows_2.fPressure;
                 
                 % Calculating the heat flows for both hx_flow objects
-                fHeatFlow_1 = fMassFlow_1 * fCp_1 * (fTempOut_1 - fEntryTemp_1);
-                fHeatFlow_2 = fMassFlow_2 * fCp_2 * (fTempOut_2 - fEntryTemp_2);
+                fHeatFlow_1 = -(this.fTotalHeatFlow - this.fTotalCondensateHeatFlow);
+                fHeatFlow_2 = this.fTotalHeatFlow;
                 
                 % uses the function defined in flowcomps.hx_flow to set the
                 % outlet values
@@ -453,35 +481,43 @@ classdef CHX < vsys
                 if this.iFirst_Iteration == 1
                     this.iFirst_Iteration = int8(0);
                 end
-                %tells the ascociated p2p proc to update
-                try
-                    this.oP2P.calculateFlowRate();
-                catch oErr
-                    %the condensing heat exchanger requires a CHX_p2p proc
-                    %to work properly. Otherwise it will calculate the
-                    %phase change but it would not actually happen. To add
-                    %the p2p proc correctly add it as object to your CHX
-                    %object. So if you define the CHX like this in your sytem:
-                    %
-                    %oCHX = components.matter.CHX(this, 'HeatExchanger',...
-                    %    Geometry, sHX_type, iIncrements, Conductivity);
-                    %
-                    %you can use the oCHX object variable to set the oP2P
-                    %property of it later on. (Because the p2p proc also
-                    %needs the CHX object as input it is not possible to
-                    %add the p2p proc directly at the definition of the
-                    %CHX)
-                    %
-                    %Then you can add the p2p proc while you define it by
-                    %setting:
-                    %oCHX.oP2P =  components.matter.HX.CHX_p2p(oStore,...
-                    %                   sName, sPhaseIn, sPhaseOut, oCHX)
-                    if isempty(this.oP2P)
-                        error('the CHX only works with an additional CHX_p2p proc that should be set as property for the CHX (see comment at this error for more information)')
-                    else
-                        rethrow(oErr)
-                    end
-                end
+                
+                % Note we do not update the P2P directly here, this is
+                % handled by the components. If we update the P2P here, it
+                % could lead to issues e.g. if the CHX is updated in the
+                % thermal post tick, thus changing the flowrates for the
+                % mass domain. In this case we wait till the P2P updates
+                % anyway.
+                
+%                 %tells the ascociated p2p proc to update
+%                 try
+%                     this.oP2P.calculateFlowRate();
+%                 catch oErr
+%                     %the condensing heat exchanger requires a CHX_p2p proc
+%                     %to work properly. Otherwise it will calculate the
+%                     %phase change but it would not actually happen. To add
+%                     %the p2p proc correctly add it as object to your CHX
+%                     %object. So if you define the CHX like this in your sytem:
+%                     %
+%                     %oCHX = components.matter.CHX(this, 'HeatExchanger',...
+%                     %    Geometry, sHX_type, iIncrements, Conductivity);
+%                     %
+%                     %you can use the oCHX object variable to set the oP2P
+%                     %property of it later on. (Because the p2p proc also
+%                     %needs the CHX object as input it is not possible to
+%                     %add the p2p proc directly at the definition of the
+%                     %CHX)
+%                     %
+%                     %Then you can add the p2p proc while you define it by
+%                     %setting:
+%                     %oCHX.oP2P =  components.matter.HX.CHX_p2p(oStore,...
+%                     %                   sName, sPhaseIn, sPhaseOut, oCHX)
+%                     if isempty(this.oP2P)
+%                         error('the CHX only works with an additional CHX_p2p proc that should be set as property for the CHX (see comment at this error for more information)')
+%                     else
+%                         rethrow(oErr)
+%                     end
+%                 end
                 this.fLastExecution = this.oTimer.fTime;
             end
         end
