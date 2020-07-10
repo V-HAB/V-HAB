@@ -231,24 +231,6 @@ for iStore = 1:length(tCurrentSystem.Stores)
                 end
             end
             
-            %% Create heatsources
-
-            for iHeatSource = 1:length(tPhase.HeatSource)
-                tHeatSource = tPhase.HeatSource{iHeatSource};
-                
-                fprintf(sSystemFile, '\n');
-                
-                if isempty(tHeatSource.label)
-                    tHeatSource.label = [tPhase.label, '_HeatSource_', num2str(iHeatSource)];
-                end
-                
-                if strcmp(tHeatSource.sHeatSourceType, 'components.thermal.heatsources.ConstantTemperature')
-                    fprintf(sSystemFile, ['oHeatSource = ', tHeatSource.sHeatSourceType, '(''', tHeatSource.label,''');\n']);
-                else
-                    fprintf(sSystemFile, ['oHeatSource = ', tHeatSource.sHeatSourceType, '(''', tHeatSource.label,''', ', tHeatSource.fHeatFlow,');\n']);
-                end
-                fprintf(sSystemFile, ['this.toStores.', tStore.label,'.toPhases.', tPhase.label,'.oCapacity.addHeatSource(oHeatSource);\n']);
-            end
         end
     end
     

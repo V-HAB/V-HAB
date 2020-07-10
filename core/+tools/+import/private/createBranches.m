@@ -78,10 +78,9 @@ for iSubsystemType = 1:length(csSystems)
         % The CCAA has a variable number of outputs
         if strcmp(sSubsystemType, 'CCAA')
             if isempty(tSubsystem.sCDRA)
-                tInterfaces.CCAA = {'Air_In', 'CHX_Air_Out', 'Bypass_Air_Out', 'Condensate_Out', 'Coolant_In', 'Coolant_Out'};
+                tInterfaces.CCAA = {'Air_In', 'Air_Out', 'Condensate_Out', 'Coolant_In', 'Coolant_Out'};
             else
-                
-                tInterfaces.CCAA = {'Air_In', 'CHX_Air_Out', 'Bypass_Air_Out', 'Condensate_Out', 'Coolant_In', 'Coolant_Out', 'CDRA_Air_Out'};
+                tInterfaces.CCAA = {'Air_In', 'Air_Out', 'Condensate_Out', 'Coolant_In', 'Coolant_Out', 'CDRA_Air_Out'};
             end
         end
         
@@ -121,7 +120,10 @@ for iSubsystemType = 1:length(csSystems)
             else
                  for iOutput = 1:length(tSubsystem.Output)
                     tOutput = tSubsystem.Output{iOutput};
-                    if ~isempty(regexp(tOutput.label, sInterface, 'once'))
+                    % now check if the label is represented accuratly
+                    % to prevent Air_Out and XX_Air_Out to be added
+                    % twice
+                    if strcmp(tOutput.label, sInterface)
                         csInterface{end+1} = ['''', tSubsystem.label, '_', tOutput.label, '_Out'''];
                     end
                  end

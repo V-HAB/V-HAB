@@ -78,16 +78,16 @@ for iSystem = 1:length(tVHAB_Objects.System)
     
     fprintf(sSystemFile, '\n');
     
-    for iSCRA = 1:length(tCurrentSystem.SCRA)
-        tSCRA = tCurrentSystem.SCRA{iSCRA};
-        fprintf(sSystemFile, ['             components.matter.SCRA.SCRA(this, ''', tSCRA.label, ''', ',tSCRA.fTimeStep,', ', tSCRA.fCoolantTemperature, ');\n']);
+    for iCDRA = 1:length(tCurrentSystem.CDRA)
+        tCDRA = tCurrentSystem.CDRA{iCDRA};
+        fprintf(sSystemFile, ['             components.matter.CDRA.CDRA(this, ''', tCDRA.label, ''', []);\n']);
     end
     
     fprintf(sSystemFile, '\n');
     
-    for iCDRA = 1:length(tCurrentSystem.CDRA)
-        tCDRA = tCurrentSystem.CDRA{iCDRA};
-        fprintf(sSystemFile, ['             components.matter.CDRA.CDRA(this, ''', tCDRA.label, ''', []);\n']);
+    for iSCRA = 1:length(tCurrentSystem.SCRA)
+        tSCRA = tCurrentSystem.SCRA{iSCRA};
+        fprintf(sSystemFile, ['             components.matter.SCRA.SCRA(this, ''', tSCRA.label, ''', ',tSCRA.fTimeStep,', ', tSCRA.fCoolantTemperature, ');\n']);
     end
     
     fprintf(sSystemFile, '\n');
@@ -150,7 +150,7 @@ for iSystem = 1:length(tVHAB_Objects.System)
     createBranches(tCurrentSystem, tVHAB_Objects, csSystems, sSystemFile);
     
     %% Create Thermal Structure
-    % TO DO
+    createThermalStructure(tCurrentSystem, csPhases, sSystemFile);
     
     %% Create Solver Structure
     tCurrentSystem = createSolverStructure(tCurrentSystem, csPhases, sSystemFile);
