@@ -100,9 +100,18 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
                     % flow
                     fFlowRate = this.fInitializationFlowRate;
 
-                    % Negative pressure difference? Negative guess!
-                    if oBranch.coExmes{1}.oPhase.fPressure < oBranch.coExmes{2}.oPhase.fPressure
-                        fFlowRate = -1 * fFlowRate;
+                    % check for a check valve
+                    if any([oBranch.aoFlowProcs.bCheckValve])
+                        % if one is present use the open condition for the
+                        % check valve for the guess
+                        if oBranch.aoFlowProcs([oBranch.aoFlowProcs.bCheckValve]).bReversed
+                            fFlowRate = -1 * fFlowRate;
+                        end
+                    else
+                        % Negative pressure difference? Negative guess!
+                        if oBranch.coExmes{1}.oPhase.fPressure < oBranch.coExmes{2}.oPhase.fPressure
+                            fFlowRate = -1 * fFlowRate;
+                        end
                     end
                 end
 

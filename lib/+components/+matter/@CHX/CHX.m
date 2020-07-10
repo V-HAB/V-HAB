@@ -392,9 +392,14 @@ classdef CHX < vsys
                 return
             end
             
+            fNewOutletTemperatureFluid1 = -(this.fTotalHeatFlow - this.fTotalCondensateHeatFlow) / (fMassFlow_1 * oFlows_1.fSpecificHeatCapacity) + fEntryTemp_1;
+            fNewOutletTemperatureFluid2 = this.fTotalHeatFlow / (fMassFlow_2 * oFlows_2.fSpecificHeatCapacity) + fEntryTemp_2;
+            
             %if query to see if the CHX has to be recalculated
             if  this.iFirst_Iteration == 1 ||...                                                                            %if it is the first iteration
                 (abs(fEntryTemp_1 - this.fEntryTemp_Old_1)                          > this.fTempChangeToRecalc)         ||...	%if entry temp changed by more than X°
+                (abs(fNewOutletTemperatureFluid1 - this.fTempOut_Fluid1)      	    > this.fTempChangeToRecalc)         ||...	%if the new outlet temperature without recalculation would exceed the allowed temperature change
+                (abs(fNewOutletTemperatureFluid2 - this.fTempOut_Fluid2)        	> this.fTempChangeToRecalc)         ||...	%if the new outlet temperature without recalculation would exceed the allowed temperature change
                 (abs(1 - (fMassFlow_1 / this.fMassFlow_Old_1))                      > this.fPercentChangeToRecalc)      ||...  	%if mass flow changes by more than X%
                 (abs(fEntryTemp_2 - this.fEntryTemp_Old_2)                          > this.fTempChangeToRecalc)         ||...  	%if entry temp changed by more than X°
                 (abs(1 - (fMassFlow_2 / this.fMassFlow_Old_2))                      > this.fPercentChangeToRecalc)      ||... 	%if mass flow changes by more than X%

@@ -17,7 +17,6 @@ classdef checkvalve < matter.procs.f2f
         % If false, no flow at all (returns inf as pressure drop)
         bReversed = false;
         
-        bCheckValve = true;
         bOpen = true;
     end
     
@@ -28,6 +27,8 @@ classdef checkvalve < matter.procs.f2f
             %   bValveOpen - if closed, inf pressure drop - no flow!
             
             this@matter.procs.f2f(oContainer, sName);
+            
+            this.bCheckValve = true;
             
             if nargin >= 3 && ~isempty(bReversed) && islogical(bReversed)
                 this.bReversed = bReversed;

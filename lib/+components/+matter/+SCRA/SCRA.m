@@ -100,7 +100,7 @@ classdef SCRA < vsys
             % of the CHX
             miIncrements = [6,3];
             % Defines when the CHX should be recalculated: 
-            fTempChangeToRecalc = 5;        % If any inlet temperature changes by more than 1 K
+            fTempChangeToRecalc = 4;       % If any inlet temperature changes by more than 1 K
             fPercentChangeToRecalc = 0.1;  % If any inlet flowrate or composition changes by more than 5%
             
             % defines the heat exchanged object using the previously created properties
@@ -156,7 +156,7 @@ classdef SCRA < vsys
             components.matter.valve(this, 'VentValve', 0);
             % In this case we use a normal valve, like a check valve
             components.matter.valve(this, 'Checkvalve', 0);
-%             components.matter.checkvalve(this, 'VacuumCheckvalve');
+            components.matter.checkvalve(this, 'VacuumCheckvalve');
             
             components.matter.SCRA.CRA_Sabatier_Heater(this, 'CRA_SabatierHeater');
             
@@ -167,7 +167,7 @@ classdef SCRA < vsys
             
             matter.branch(this, oCRA_SabatierPhase,         {'Pipe_004', 'SabatierValve2'},                     oCRA_SabatierPhase_2, 	'Sabatier1to2');
             matter.branch(this, oCRA_SabatierPhase_2,       {'Pipe_005', 'CRA_SabatierCHX_1', 'Checkvalve'},	oCRA_WaterRecGasPhase,	'CRA_ProductstoWaterRecbranch');
-            matter.branch(this, oCRA_WaterRecGasPhase,      {'Pipe_006', 'VacuumOutlet'},  	'SCRA_DryGas_Out',   	'CRA_DryGastoVent');
+            matter.branch(this, oCRA_WaterRecGasPhase,      {'Pipe_006', 'VacuumOutlet', 'VacuumCheckvalve'},  	'SCRA_DryGas_Out',   	'CRA_DryGastoVent');
             matter.branch(this, oCRA_WaterRecLiquidPhase,	{'Pipe_007'},                                       'SCRA_Condensate_Out',	'CRA_RecWaterOut');
             matter.branch(this, oCRA_CHXPhase,              {'Pipe_008'},                                       'SCRA_CoolantIn',     	'CRA_CoolantLoopIn');
             % As can be seen in the Schematic of the SCRA (Figure 3 in
@@ -315,7 +315,9 @@ classdef SCRA < vsys
             % assuming we have to increase the pressure from 0.01 bar to 1
             % bar in a two stage compression
             this.fCurrentPowerConsumption = fCO2FlowRate * oInFlow.fSpecificHeatCapacity * 293 * (((1e5 / 1e4)^1.289 - 1) + ((1e4 / 1e3)^1.289 - 1));
-            
+           if this.fCurrentPowerConsumption > 1500
+               this.fCurrentPowerConsumption = 1500;
+           end
         end
     end
 end

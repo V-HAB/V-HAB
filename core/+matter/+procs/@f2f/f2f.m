@@ -51,6 +51,8 @@ classdef f2f < base & matlab.mixin.Heterogeneous
         % property is false
         bActive = false;
         
+        bCheckValve = false;
+        
         % This property is used to check if the implemented class of F2F
         % has the function updateThermal, and is therefore considered
         % thermally active.

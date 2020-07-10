@@ -303,7 +303,7 @@ function update(this)
             warning('on','all');
         end
         
-        if any(isnan(this.afFlowRates))
+        if any(isnan(afResults))
             error('NaN Values occured in the multi branch solver. This can occur, e.g. if a flowrate boundary condition from a manual solver is used, but valves block all possible flow paths!')
         end
         
