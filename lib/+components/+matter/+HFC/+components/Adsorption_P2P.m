@@ -168,8 +168,8 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             
             fLumenMassFlowRate = sum(afInsideInFlowRates);  % [kg/s]
             if fLumenMassFlowRate < 1e-7
-                fLumenMassFlowRate = 0;     % [kg/s]
-                fLumenVelocity = 0;         % [m/s]
+%                 fLumenMassFlowRate = 0;     % [kg/s]
+%                 fLumenVelocity = 0;         % [m/s]
                 this.fLumenResidenceTime = 0;    % [s/cell]
             else
                 fLumenFlowRate = fLumenMassFlowRate / fLumenDensity;    % [m^3/s]
@@ -197,7 +197,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             %% mass transfer coefficient calculation
             this.tGeometry.mfMassTransferCoefficient = zeros(1,this.oMT.iSubstances);
             fMolarVolumeCO2_NBP = 33.3;     % [cm^3/mol] NBP = normal boiling point (Morgan 2005)
-            fMolarVolumeH2O_NBP = 18.798;   % [cm^3/mol]
+%             fMolarVolumeH2O_NBP = 18.798;   % [cm^3/mol]
             fNullDiffusivityCO2 = 1E-4 * 2.66E-3 / (fShellViscosity^0.66 * fMolarVolumeCO2_NBP^1.04);   % [m^2/s]
             fDiffusionEnergy = 30.74;       % [kJ/mol] for BMIMAc
             % fDiffusionEnergy = 27.91 [kJ/mol] for EMIMAc
@@ -298,7 +298,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             afShellFlowMolsPerVolume = afShellFlowMols ./ fShellVolume;             % [mol/m^3-tick]
             
             %% Calculating Absorption and Desorption Flow Rates of Substances
-            [fWaterEQPressure, rWaterEQMolFractionInGas] = components.matter.HFC.functions.calculateWaterILEquilibrium(this.oLumen.oPhase, this.oShell.oPhase);            
+            [fWaterEQPressure, ~] = components.matter.HFC.functions.calculateWaterILEquilibrium(this.oLumen.oPhase, this.oShell.oPhase);            
             [fEquilibriumCO2Pressure, this.fHenrysConstant] = components.matter.HFC.functions.calculateILEquilibriumImproved(this.oLumen.oPhase, this.oShell.oPhase, this.tEquilibriumCurveFits, fShellDensity);
             % if fWaterEQPressure is lower than the current ppH2O in the
             % gas phase, then H2O will absorb into the IL from the gas
@@ -385,7 +385,6 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                         if fAdsorptionFlowRate ~= 0
                             arPartialsAdsorption(mfFlowRatesAdsorption~=0)  = abs(mfFlowRatesAdsorption(mfFlowRatesAdsorption~=0)./sum(mfFlowRatesAdsorption));
                         end
-                        mfFlowRatesAdsorption = fAdsorptionFlowRate .* arPartialsAdsorption;
                         
                     else
                         % NOTE: Without a robust desorption model, this section
@@ -398,7 +397,6 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                         if fDesorptionFlowRate ~= 0
                             arPartialsDesorption(mfFlowRatesDesorption~=0)  = abs(mfFlowRatesDesorption(mfFlowRatesDesorption~=0)./sum(mfFlowRatesDesorption));
                         end
-                        mfFlowRatesDesorption = fDesorptionFlowRate .* arPartialsDesorption;
                     end
                 else
                     % if shell is full of CO2, can only desorb
@@ -409,7 +407,6 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                         if fAdsorptionFlowRate ~= 0
                             arPartialsAdsorption(mfFlowRatesAdsorption~=0)  = abs(mfFlowRatesAdsorption(mfFlowRatesAdsorption~=0)./sum(mfFlowRatesAdsorption));
                         end
-                        mfFlowRatesAdsorption = fAdsorptionFlowRate .* arPartialsAdsorption;
                     else
                         % desorber function (Tube 2)
                         % then the Shell CO2 IS desorbed into the Lumen
@@ -418,7 +415,6 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                         if fDesorptionFlowRate ~= 0
                             arPartialsDesorption(mfFlowRatesDesorption~=0)  = abs(mfFlowRatesDesorption(mfFlowRatesDesorption~=0)./sum(mfFlowRatesDesorption));
                         end
-                        mfFlowRatesDesorption = fDesorptionFlowRate .* arPartialsDesorption;
                     end
                 end
                 

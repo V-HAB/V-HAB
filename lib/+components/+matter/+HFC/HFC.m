@@ -172,7 +172,6 @@ classdef HFC < vsys
                 this.tAtmosphere.fTemperature, ...                          % fTemperature: Temperature of matter in phase
                 this.tAtmosphere.fPressure);                                % fPressure: Pressure of matter in phase
 
-            fTypeIL = 0;    % initialization
             % check to see which IL is being used, [BMIM][Ac] or [EMIM][Ac]
             if oReservoir.arPartialMass(this.oMT.tiN2I.BMIMAc) > 0 && oReservoir.arPartialMass(this.oMT.tiN2I.EMIMAc) == 0
                 fTypeIL = 1;
@@ -374,10 +373,7 @@ classdef HFC < vsys
                     % This loop creates the internal branches and pressure
                     % drops between the branches (though pressure drops are
                     % not known exactly from experiments).
-                    if iCell == 1
-                        components.matter.HFC.components.Filter_F2F(this, [sName,'_Flow_FrictionProc_',num2str(iCell)], this.tGeometry.Fiber.mfFrictionFactor(iCell));
-                        components.matter.HFC.components.Filter_F2F(this, [sName,'_Filter_FrictionProc_',num2str(iCell)], this.tGeometry.Tube.mfFrictionFactor(iCell));
-                    elseif iCell ~= 1
+                    if iCell > 1
                         % branch between the current and the previous cell
                         % for the FLOW flow nodes
                         components.matter.HFC.components.Filter_F2F(this, [sName,'_Flow_FrictionProc_',num2str(iCell)], this.tGeometry.Fiber.mfFrictionFactor(iCell));
@@ -428,7 +424,7 @@ classdef HFC < vsys
             this.tMassNetwork.InterfaceBranches.(sBranchName) = oBranch;
             
             sBranchName = 'IL_Recirculation';
-            oBranch = matter.branch(this, ['Tube_1.Filter_Outflow_',num2str(iCellNumber)], {'Pipe_IL_Recirculation'}, ['Tube_2.Filter_Inflow_1'], sBranchName);
+            oBranch = matter.branch(this, ['Tube_1.Filter_Outflow_',num2str(iCellNumber)], {'Pipe_IL_Recirculation'}, 'Tube_2.Filter_Inflow_1', sBranchName);
             this.tMassNetwork.InterfaceBranches.(sBranchName) = oBranch;
                         
             sBranchName = 'Reservoir_IL_Out';
@@ -439,6 +435,7 @@ classdef HFC < vsys
             this.tEstimate.afMassTransferCoefficientExperimental = zeros(1051,1);
             yCO2Up = this.oParent.tTestData.afUpCO2 ./ 1000000; % ppm to ratio conversion
             yCO2Dn = this.oParent.tTestData.afDnCO2 ./ 1000000; % ppm to ratio conversion
+            fVolumetricFlowRate = zeros(length(yCO2Up),1);
             for ii = 1:length(yCO2Up)
                 if ii < 365
                     % bypass flow mode of the experiment
@@ -500,10 +497,10 @@ classdef HFC < vsys
             % Find the manually set branches and remove them from the
             % multibranch solver object
             abMultiBranches = ~(this.aoBranches == this.toBranches.HFC_Air_In_1);
-            iIndex = find(this.aoBranches == this.toBranches.Reservoir_IL_Out);
-            iIndex2 = find(this.aoBranches == this.toBranches.VacuumSupply);
-            abMultiBranches(iIndex) = false;
-            abMultiBranches(iIndex2) = false;
+            abIndex = this.aoBranches == this.toBranches.Reservoir_IL_Out;
+            abIndex2 = this.aoBranches == this.toBranches.VacuumSupply;
+            abMultiBranches(abIndex) = false;
+            abMultiBranches(abIndex2) = false;
             aoMultiSolverBranches = this.aoBranches(abMultiBranches);
             
             % Set all other branches to the complex multibranch solver
