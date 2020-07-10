@@ -37,7 +37,7 @@ classdef SCRA < vsys
             matter.store(this, 'CRA_Accumulator', fVolumeCRA_Accumulator);
             % pressure ranges for the accumulator are also provided in the
             % paper, here initialized to 6 bar
-            oAccumulatorCO2	= this.toStores.CRA_Accumulator.createPhase( 'gas',   'CO2', fVolumeCRA_Accumulator, struct('CO2', 6e5), 293, 0);
+            oAccumulatorCO2	= this.toStores.CRA_Accumulator.createPhase( 'gas',   'CO2', fVolumeCRA_Accumulator, struct('CO2', 1e5), 293, 0);
             
             matter.store(this, 'CRA_H2_In', 1e-6);
             oH2	= this.toStores.CRA_H2_In.createPhase( 'gas', 'flow', 'H2', 1e-6, struct('H2', 1e5), 293, 0);
@@ -231,6 +231,7 @@ classdef SCRA < vsys
             oSolver = solver.matter_multibranch.iterative.branch(aoMultiSolverBranches, 'complex');
             oSolver.setSolverProperties(tSolverProperties);
             
+            this.setMaxIdealGasLawPressure(10e5);
             
             this.setThermalSolvers();
             

@@ -131,11 +131,11 @@ classdef gas < matter.phase
             
             % Check for volume not empty, when called from constructor
             if ~isempty(this.fVolume)
+                this.fDensity = this.fMass / this.fVolume;
+                
                 this.fMassToPressure = this.calculatePressureCoefficient();
                 
                 this.afPP               = this.oMT.calculatePartialPressures(this);
-                this.fDensity = this.fMass / this.fVolume;
-                
                 
                 % Function rRelHumidity calculates the relative humidity of
                 % the gas by using the MAGNUS Formula(validity: 
