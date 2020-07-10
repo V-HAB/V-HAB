@@ -26,19 +26,15 @@ classdef setup < simulation.infrastructure
             
             % Creating the 'Example' system as a child of the root system
             % of this simulation. 
-            hojo.ILCO2.systems.Example(this.oSimulationContainer, 'Example');          
+            examples.HFC.systems.Example(this.oSimulationContainer, 'Example');          
             
-            % Check which computer I'm on
-            sUserName = getenv('username');
-            if strcmp(sUserName,'ASUS')
-                [afUpTime, ~]  = hojo.ILCO2.importCO2file('C:\Users\ASUS\Documents\STEPS2\user\+hojo\+ILCO2\+data\April-04-2017-upstrm2.csv',3,1220);
-                [afDnTime, ~]  = hojo.ILCO2.importCO2file('C:\Users\ASUS\Documents\STEPS2\user\+hojo\+ILCO2\+data\April-04-2017-dwnstrm2.csv',3,1217);
-            else
-            % Determine maximum simulation time for X-HAB data validation
-                [afUpTime, ~]  = hojo.ILCO2.importCO2file('C:\Users\ge52qut\VHAB\STEPS\user\+hojo\+ILCO2\+data\April-04-2017-upstrm2.csv',3,1220);
-                [afDnTime, ~]  = hojo.ILCO2.importCO2file('C:\Users\ge52qut\VHAB\STEPS\user\+hojo\+ILCO2\+data\April-04-2017-dwnstrm2.csv',3,1217);
-            end
+            % Load experimental data from the X-Hab 2017 project
+            sFileID = strrep('+examples/+HFC/+data/April-04-2017-upstrm2.csv','/',filesep);
+            [afUpTime, afUpCO2]  = examples.HFC.importCO2file(sFileID,3,1220);
+            sFileID = strrep('+examples/+HFC/+data/April-04-2017-dwnstrm2.csv','/',filesep);
+            [afDnTime, afDnCO2] = examples.HFC.importCO2file(sFileID,3,1217);
             
+            % remove the pre-test setup data points
             afUpTime(1:106) = [];
             afDnTime(1:102) = [];
             
@@ -59,16 +55,17 @@ classdef setup < simulation.infrastructure
             % the logger object.
             oLogger = this.toMonitors.oLogger;
 
-            % Adding the tank temperatures to the log
+            % Input and output CO2 partial pressure in the stores
             oLogger.addValue('Example.toStores.Aether.toPhases.Air', 'afPP(this.oMT.tiN2I.CO2)', 'Pa', 'Partial Pressure CO2 IN');
             oLogger.addValue('Example.toStores.Exhaust.toPhases.Air', 'afPP(this.oMT.tiN2I.CO2)', 'Pa', 'Partial Pressure CO2 OUT');
   
+            % Input and output CO2 & H2O partial pressure in the flows    
             oLogger.addValue('Example.toChildren.HFC.toBranches.HFC_Air_In_1.aoFlows(1,1)', 'afPartialPressure(this.oMT.tiN2I.CO2)', 'Pa', 'Partial Pressure CO2 IN FLOW');
             oLogger.addValue('Example.toChildren.HFC.toBranches.HFC_Air_Out_1.aoFlows(1,1)', 'afPartialPressure(this.oMT.tiN2I.CO2)', 'Pa', 'Partial Pressure CO2 OUT FLOW');
-            oLogger.addValue('Example.toChildren.HFC.toBranches.HFC_Air_In_1.aoFlows(1,1)', 'afPartialPressure(this.oMT.tiN2I.H2O)', 'Pa', 'Partial Pressure H2O IN FLOW');
-            oLogger.addValue('Example.toChildren.HFC.toBranches.HFC_Air_Out_1.aoFlows(1,1)', 'afPartialPressure(this.oMT.tiN2I.H2O)', 'Pa', 'Partial Pressure H2O OUT FLOW');
+%             oLogger.addValue('Example.toChildren.HFC.toBranches.HFC_Air_In_1.aoFlows(1,1)', 'afPartialPressure(this.oMT.tiN2I.H2O)', 'Pa', 'Partial Pressure H2O IN FLOW');
+%             oLogger.addValue('Example.toChildren.HFC.toBranches.HFC_Air_Out_1.aoFlows(1,1)', 'afPartialPressure(this.oMT.tiN2I.H2O)', 'Pa', 'Partial Pressure H2O OUT FLOW');
                         
-            % ionic liquid loggers for CO2 and H2O
+            % ionic liquid loggers for CO2 and H2O (as well as IL)
             oLogger.addValue('Example.toChildren.HFC.toBranches.Reservoir_IL_Out.aoFlows(1,1)',     'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'Partial Mass CO2 in IL OUT FLOW');
             oLogger.addValue('Example.toChildren.HFC.toBranches.IL_Recirculation.aoFlows(1,1)',     'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'Partial Mass CO2 in IL RECIRC FLOW');
             oLogger.addValue('Example.toChildren.HFC.toBranches.Reservoir_IL_Return.aoFlows(1,1)',  'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'Partial Mass CO2 in IL RETURN FLOW');
@@ -85,6 +82,7 @@ classdef setup < simulation.infrastructure
             oLogger.addValue('Example.toChildren.HFC.toStores.Reservoir.toPhases.IonicLiquid', 'this.fMass * this.arPartialMass(this.oMT.tiN2I.BMIMAc)', 'kg', 'IL Mass in IL in Reservoir');
             
             % logger for vacuum flow removal
+            % TODO: this is not reporting the correct values
             oLogger.addValue('Example.toChildren.HFC.toBranches.VacuumSupply.aoFlows(1,1)', 'afPartialPressure(this.oMT.tiN2I.CO2)', 'Pa', 'Partial Pressure CO2 IN VACUUM');
             oLogger.addValue('Example.toChildren.HFC.toBranches.VacuumRemoval.aoFlows(1,1)', 'afPartialPressure(this.oMT.tiN2I.CO2)', 'Pa', 'Partial Pressure CO2 OUT VACUUM')
             oLogger.addValue('Example.toStores.VacuumSupply.toPhases.vacuum', 'afMassChange(this.oMT.tiN2I.CO2)', 'kg', 'Cumulative Mass of provided CO2 in VACUUM Supply');
@@ -96,8 +94,6 @@ classdef setup < simulation.infrastructure
             oLogger.addValue('Example.toChildren.HFC.toStores.Tube_1.toProcsP2P.AdsorptionProcessor_1', 'tGeometry.mfMassTransferCoefficient(this.oMT.tiN2I.CO2)', 'm/s', 'Mass transfer coefficient of CO2');
             oLogger.addValue('Example.toChildren.HFC.toStores.Tube_1.toProcsP2P.AdsorptionProcessor_1', 'fHenrysConstant', 'Pa', 'Henrys Constant');
             oLogger.addValue('Example', 'fEstimatedMassTransferCoefficient', 'm/s', 'Experimental mass transfer coefficient of CO2');
-            oLogger.addValue('Example.toChildren.HFC.toStores.Tube_1.toProcsP2P.AdsorptionProcessor_1', 'fKlTimesHd', 'm/s', 'HenrysConstant_times_Kliquid');
-            oLogger.addValue('Example.toChildren.HFC.toStores.Tube_1.toProcsP2P.AdsorptionProcessor_1', 'fEA', 's', 'Enhancement Factor');
             
             % Adding the branch flow rate to the log
 %             oLogger.addValue('Example.toBranches.Branch', 'fFlowRate', 'kg/s', 'Branch Flow Rate');
@@ -115,10 +111,11 @@ classdef setup < simulation.infrastructure
             % contains the two temperatures, the second contains the two
             % pressures and the third contains the branch flow rate. 
             coPlots{1,1} = oPlotter.definePlot({'"Partial Pressure CO2 IN"', '"Partial Pressure CO2 OUT"'}, 'Partial Pressures CO2');
-            coPlots{1,2} = oPlotter.definePlot({'"Partial Pressure CO2 IN FLOW"', '"Partial Pressure CO2 OUT FLOW"', '"Partial Pressure H2O IN FLOW"', '"Partial Pressure H2O OUT FLOW"'}, 'Partial Pressures CO2 and H2O FLOW');
+%             coPlots{1,2} = oPlotter.definePlot({'"Partial Pressure CO2 IN FLOW"', '"Partial Pressure CO2 OUT FLOW"', '"Partial Pressure H2O IN FLOW"', '"Partial Pressure H2O OUT FLOW"'}, 'Partial Pressures CO2 and H2O FLOW');
+            coPlots{1,2} = oPlotter.definePlot({'"Partial Pressure CO2 IN FLOW"', '"Partial Pressure CO2 OUT FLOW"'}, 'Partial Pressures CO2 in FLOW');
             
             coPlots2{1,1} = oPlotter.definePlot({'"Residence Time"'}, 'Residence Time');
-            coPlots2{1,2} = oPlotter.definePlot({'"Mass transfer coefficient of CO2"','"Experimental mass transfer coefficient of CO2"', '"HenrysConstant_times_Kliquid"','"Henrys Constant"'}, 'Mass transfer coefficient of CO2');            
+            coPlots2{1,2} = oPlotter.definePlot({'"Mass transfer coefficient of CO2"','"Experimental mass transfer coefficient of CO2"', '"Henrys Constant"'}, 'Mass transfer coefficient of CO2');            
             coPlots2{1,3} = oPlotter.definePlot({'"Henrys Constant"'}, 'Henrys Constant');
             
             coPlots3{1,1} = oPlotter.definePlot({'"Partial Mass CO2 in IL OUT FLOW"'} , 'CO2 in IL from Reservoir');
@@ -136,9 +133,9 @@ classdef setup < simulation.infrastructure
             coPlots4{1,3} = oPlotter.definePlot({'"IL Mass in IL in Reservoir"'}, 'IL Mass in IL in Reservoir');
             
             coPlots5{1,1} = oPlotter.definePlot({'"Partial Pressure CO2 IN VACUUM"', '"Partial Pressure CO2 OUT VACUUM"'}, 'Partial Pressures CO2 Flow in VACUUM');
-            coPlots5{1,2} = oPlotter.definePlot({'"Partial Pressure CO2 in VACUUM Supply"', '"Partial Pressure CO2 in VACUUM Removal"'}, 'Partial Pressure CO2 Phase in VACUUM');
+            coPlots5{1,2} = oPlotter.definePlot({'"Cumulative Mass of provided CO2 in VACUUM Supply"', '"Cumulative Mass of collected CO2 in VACUUM Removal"'}, 'Cumulative Mass of collected CO2 in VACUUM');
             
-            coPlots6{1,1} = oPlotter.definePlot({'"Experimental mass transfer coefficient of CO2"','"Henrys Constant"','"Mass transfer coefficient of CO2"','"HenrysConstant_times_Kliquid"','"Enhancement Factor"'}, 'Mass Transfor Factors');
+            coPlots6{1,1} = oPlotter.definePlot({'"Experimental mass transfer coefficient of CO2"','"Henrys Constant"','"Mass transfer coefficient of CO2"'}, 'Mass Transfor Factors');
             
             % Creating a figure containing the three plots. By passing in a
             % struct with the 'bTimePlot' field set to true, we create an
@@ -157,6 +154,17 @@ classdef setup < simulation.infrastructure
             
         end
         
+%         NOTE: select the figure with CO2 input and output data, then
+%         copy + paste these last two lines to add the experimental
+%         data to the plot of input and output CO2. oLastSimObj must be
+%         created before these values can be plotted.
+%
+%         pCO2Up = oLastSimObj.oSimulationContainer.toChildren.Example.tTestData.afUpCO2./1000000 .* 84100;
+%         pCO2Dn = oLastSimObj.oSimulationContainer.toChildren.Example.tTestData.afDnCO2./1000000 .* 84100;
+%         hold on
+%         plot(oLastSimObj.oSimulationContainer.toChildren.Example.tTestData.afTime,pCO2Up,'r',oLastSimObj.oSimulationContainer.toChildren.Example.tTestData.afTime,pCO2Dn,'k')
+%         legend('SIM Partial Pressure CO2 IN FLOW [Pa]','SIM Partial Pressure CO2 OUT FLOW [Pa]', 'EXP Partial Pressure CO2 IN FLOW [Pa]', 'EXP Partial Pressure CO2 OUT FLOW [Pa]');
+%         hold off
     end
     
 end
