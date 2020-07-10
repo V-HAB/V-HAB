@@ -152,6 +152,7 @@ classdef SCRA < vsys
             components.matter.SCRA.CRA_H2_Regulator(this,  'CRA_H2_Regulator');
             
             components.matter.valve(this, 'SabatierValve', 0);
+            components.matter.valve(this, 'SabatierValve2', 0);
             components.matter.valve(this, 'VentValve', 0);
             % In this case we use a normal valve, like a check valve
             components.matter.valve(this, 'Checkvalve', 0);
@@ -164,7 +165,7 @@ classdef SCRA < vsys
             matter.branch(this, oAccumulatorCO2,            {'Pipe_002'},                                       'SCRA_CO2_In',          'CRA_CO2_In');
             matter.branch(this, oAccumulatorCO2,            {'Pipe_003'},                                       oCRA_SabatierPhase, 	'Accumulator_To_CRA');
             
-            matter.branch(this, oCRA_SabatierPhase,         {'Pipe_004'},                                       oCRA_SabatierPhase_2, 	'Sabatier1to2');
+            matter.branch(this, oCRA_SabatierPhase,         {'Pipe_004', 'SabatierValve2'},                     oCRA_SabatierPhase_2, 	'Sabatier1to2');
             matter.branch(this, oCRA_SabatierPhase_2,       {'Pipe_005', 'CRA_SabatierCHX_1', 'Checkvalve'},	oCRA_WaterRecGasPhase,	'CRA_ProductstoWaterRecbranch');
             matter.branch(this, oCRA_WaterRecGasPhase,      {'Pipe_006', 'VacuumOutlet'},  	'SCRA_DryGas_Out',   	'CRA_DryGastoVent');
             matter.branch(this, oCRA_WaterRecLiquidPhase,	{'Pipe_007'},                                       'SCRA_Condensate_Out',	'CRA_RecWaterOut');
@@ -211,10 +212,15 @@ classdef SCRA < vsys
             this.toBranches.CRA_CoolantLoopIn.oHandler.setFlowRate(-0.2);
             this.toBranches.CRA_CoolantLoopOut.oHandler.setFlowRate(0.2);
             
+            % The CO2 Inlet branch is seperated from the other branches in
+            % SCRA via the accumulator. It is also a multisolver branch
+            % because e.g. the CDRA supplies the CO2 and then adds only
+            % this branch to its solver
+            oSolver = solver.matter_multibranch.iterative.branch(this.toBranches.CRA_CO2_In, 'complex');
+            
             aoMultiSolverBranches = [this.toBranches.CRA_H2_In,...
                                      this.toBranches.H2_to_Sabatier,...
                                      this.toBranches.H2_to_Vent,...
-                                     this.toBranches.CRA_CO2_In,...
                                      this.toBranches.Sabatier1to2,...
                                      this.toBranches.CRA_ProductstoWaterRecbranch,...
                                      this.toBranches.CRA_DryGastoVent];
@@ -276,6 +282,7 @@ classdef SCRA < vsys
             % through the sabatier reactors in case no CO2 is available
             this.toProcsF2F.VentValve.setOpen(      false);
             this.toProcsF2F.SabatierValve.setOpen(  true);
+            this.toProcsF2F.SabatierValve2.setOpen( true);
             this.toProcsF2F.Checkvalve.setOpen(     true);
                 
             fAccumulatorPressure = this.toStores.CRA_Accumulator.toPhases.CO2.fPressure;
@@ -287,6 +294,7 @@ classdef SCRA < vsys
                 fCO2FlowRate = 0;
                 this.toProcsF2F.VentValve.setOpen(      true);
                 this.toProcsF2F.SabatierValve.setOpen(  false);
+                this.toProcsF2F.SabatierValve2.setOpen( false);
                 this.toProcsF2F.Checkvalve.setOpen(     false);
             elseif fAccumulatorPressure > 1.2e5 && fAccumulatorPressure < 2e5 && this.toBranches.Accumulator_To_CRA.fFlowRate == 0
                 % If it was turned off, remain off until we reach 2 bar
@@ -294,6 +302,7 @@ classdef SCRA < vsys
                 fCO2FlowRate = 0;
                 this.toProcsF2F.VentValve.setOpen(      true);
                 this.toProcsF2F.SabatierValve.setOpen(  false);
+                this.toProcsF2F.SabatierValve2.setOpen( false);
                 this.toProcsF2F.Checkvalve.setOpen(     false);
             end
             this.toBranches.Accumulator_To_CRA.oHandler.setFlowRate(fCO2FlowRate);
