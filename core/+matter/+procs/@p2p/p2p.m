@@ -296,7 +296,7 @@ classdef (Abstract) p2p < matter.flow & event.source
         % massupdate which triggers recalculations for the P2Ps. To prevent
         % these cases from accidentially performing invalid operations,
         % this access restriction is necessary.
-        function setMatterProperties(this, fFlowRate, arPartialMass, fTemperature, fPressure)
+        function setMatterProperties(this, fFlowRate, arPartialMass, fTemperature, fPressure, arCompoundMass)
             %% setMatterProperties
             % is the function used by the update function to actually set
             % the new partial mass flow rates of the P2P
@@ -339,7 +339,7 @@ classdef (Abstract) p2p < matter.flow & event.source
             else
                 this.arPartialMass = arPartialMass;
             end
-            
+
             % Checking for the presence of the fTemperature input argument
             if nargin > 3
                 bNoTemperature = isempty(fTemperature);
@@ -374,6 +374,17 @@ classdef (Abstract) p2p < matter.flow & event.source
                 this.fPressure = fPressure;
             end
                 
+            if nargin > 5
+                this.arCompoundMass    = arCompoundMass;
+            else
+                if this.fFlowRate >= 0
+                    oPhase = this.oIn.oPhase;
+                else
+                    oPhase = this.oOut.oPhase;
+                end
+                this.arCompoundMass    = oPhase.arCompoundMass;
+            end
+            
             % Connected phases have to do a massupdate before we set the
             % new flow rate - so the mass for the LAST time step, with the
             % old flow rate, is actually moved from tank to tank.

@@ -1021,7 +1021,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % the composition, as it does not change the current
                 % composition of the compound mass in this phase
                 afCurrentMass = this.afMass + afTotalOuts;
-
+                afCurrentMass(afCurrentMass < 0) = 0;
                 % Now using the mass without the outflown matter (as that has
                 % the same composition as the matter in the phase) we add the
                 % inflowing mass with the corresponding compound composition to
@@ -1035,6 +1035,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                                           afTotalIns'    .* this.arInFlowCompoundMass; % plus the total added compound masses from exmes
                 end
                 afNewCompoundMasses = sum(mfNewCompoundMasses, 2);
+                % Masses that became negative are set to 0
+                afNewCompoundMasses(afNewCompoundMasses < 0)    = 0;
+                mfNewCompoundMasses(afNewCompoundMasses < 0, :) = 0;
 
                 this.arCompoundMass = mfNewCompoundMasses ./ afNewCompoundMasses;
                 this.arCompoundMass(afNewCompoundMasses == 0, :) = 0;

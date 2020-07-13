@@ -140,6 +140,13 @@ classdef exme < base
             % oNewPhase: The phase object to which the exme should be
             %            connected afterwards
             
+            % If someone reconnects the exme to the current phase nothing
+            % has to be changed (note without this check it would be
+            % possible for the exme to belong to no phase at all
+            if this.oPhase == oNewPhase
+                return
+            end
+            
             % Bin the new phase to the property, will be set in post tick
             % function reconnectExMePostTick
             this.oNewPhase = oNewPhase;

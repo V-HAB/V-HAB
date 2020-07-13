@@ -295,7 +295,11 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                         
                         fDesorptionHeatFlow = -sum((mfFlowRatesDesorption ./ this.oMT.afMolarMass) .* this.mfAbsorptionEnthalpy);
                         
-                        fMaximumDesorptionHeatFlow = this.oIn.oPhase.oCapacity.fSpecificHeatCapacity * sum(this.afPartialInFlows) * (this.oIn.oPhase.fTemperature - 274);
+                        % since the matter calculation crashes if the
+                        % temperature goes below 273.1 K cause water would
+                        % freeze there, we limit the desorption
+                        % heat flow
+                        fMaximumDesorptionHeatFlow = this.oIn.oPhase.oCapacity.fSpecificHeatCapacity * sum(this.afPartialInFlows) * (this.oIn.oPhase.fTemperature - 275.5);
                         if fMaximumDesorptionHeatFlow < 0
                             fMaximumDesorptionHeatFlow = 0;
                         end

@@ -37,7 +37,7 @@ classdef SCRA < vsys
             matter.store(this, 'CRA_Accumulator', fVolumeCRA_Accumulator);
             % pressure ranges for the accumulator are also provided in the
             % paper, here initialized to 6 bar
-            oAccumulatorCO2	= this.toStores.CRA_Accumulator.createPhase( 'gas',   'CO2', fVolumeCRA_Accumulator, struct('CO2', 1e5), 293, 0);
+            oAccumulatorCO2	= this.toStores.CRA_Accumulator.createPhase( 'gas',   'CO2', fVolumeCRA_Accumulator, struct('CO2', 7e5), 293, 0);
             
             matter.store(this, 'CRA_H2_In', 1e-6);
             oH2	= this.toStores.CRA_H2_In.createPhase( 'gas', 'flow', 'H2', 1e-6, struct('H2', 1e5), 293, 0);
@@ -147,13 +147,14 @@ classdef SCRA < vsys
             components.matter.pipe(this, 'Pipe_009', fPipelength, fPipeDiameter, fFrictionFactor);
             components.matter.pipe(this, 'Pipe_010', fPipelength, fPipeDiameter, fFrictionFactor);
             components.matter.pipe(this, 'Pipe_011', fPipelength, fPipeDiameter, fFrictionFactor);
+            components.matter.pipe(this, 'Pipe_012', fPipelength, fPipeDiameter, fFrictionFactor);
             
             components.matter.SCRA.CRA_Vacuum_Outlet(this, 'VacuumOutlet');
             components.matter.SCRA.CRA_H2_Regulator(this,  'CRA_H2_Regulator');
             
             components.matter.valve(this, 'SabatierValve', 0);
             components.matter.valve(this, 'SabatierValve2', 0);
-            components.matter.valve(this, 'VentValve', 0);
+            components.matter.valve(this, 'VentValveH2', 0);
             % In this case we use a normal valve, like a check valve
             components.matter.valve(this, 'Checkvalve', 0);
             components.matter.checkvalve(this, 'VacuumCheckvalve');
@@ -180,7 +181,8 @@ classdef SCRA < vsys
             matter.branch(this, oCRA_CHXPhase,              {'Pipe_009', 'CRA_SabatierCHX_2', 'CRA_SabatierHeater'},	'SCRA_CoolantOut',    	'CRA_CoolantLoopOut');
             
             matter.branch(this, oH2,                        {'Pipe_010', 'SabatierValve'},                    	oCRA_SabatierPhase, 	'H2_to_Sabatier');
-            matter.branch(this, oH2,                        {'Pipe_011', 'VentValve'},                          oCRA_WaterRecGasPhase, 	'H2_to_Vent');
+            matter.branch(this, oH2,                        {'Pipe_011', 'VentValveH2'},                    	oCRA_WaterRecGasPhase, 	'H2_to_Vent');
+            matter.branch(this, oAccumulatorCO2,            {'Pipe_012'},                                       oCRA_WaterRecGasPhase, 	'CO2_to_Vent');
             
         end
         
@@ -208,6 +210,7 @@ classdef SCRA < vsys
             solver.matter.manual.branch(this.toBranches.Accumulator_To_CRA);
             solver.matter.manual.branch(this.toBranches.CRA_CoolantLoopIn);
             solver.matter.manual.branch(this.toBranches.CRA_CoolantLoopOut);
+            solver.matter.manual.branch(this.toBranches.CO2_to_Vent);
             
             this.toBranches.CRA_CoolantLoopIn.oHandler.setFlowRate(-0.2);
             this.toBranches.CRA_CoolantLoopOut.oHandler.setFlowRate(0.2);
@@ -227,6 +230,7 @@ classdef SCRA < vsys
             
             tSolverProperties.fMaxError = 1e-2;
             tSolverProperties.iMaxIterations = 1000;
+            tSolverProperties.iIterationsBetweenP2PUpdate = 20;
             tSolverProperties.fMinimumTimeStep = 1;
             oSolver = solver.matter_multibranch.iterative.branch(aoMultiSolverBranches, 'complex');
             oSolver.setSolverProperties(tSolverProperties);
@@ -281,19 +285,23 @@ classdef SCRA < vsys
             fCO2FlowRate = -((this.toBranches.CRA_H2_In.fFlowRate / this.oMT.afMolarMass(this.oMT.tiN2I.H2)) ./ 3.5) * this.oMT.afMolarMass(this.oMT.tiN2I.CO2);
             % Through setting the valve, H2 is vented without passing
             % through the sabatier reactors in case no CO2 is available
-            this.toProcsF2F.VentValve.setOpen(      false);
+            this.toProcsF2F.VentValveH2.setOpen(   	false);
             this.toProcsF2F.SabatierValve.setOpen(  true);
             this.toProcsF2F.SabatierValve2.setOpen( true);
             this.toProcsF2F.Checkvalve.setOpen(     true);
                 
             fAccumulatorPressure = this.toStores.CRA_Accumulator.toPhases.CO2.fPressure;
-            if this.toStores.CRA_Accumulator.toPhases.CO2.fPressure > 8.2e5
+            if this.toStores.CRA_Accumulator.toPhases.CO2.fPressure > 7.2e5
                 if fCO2FlowRate <= this.toBranches.CRA_CO2_In.fFlowRate
                     fCO2FlowRate = 1.1 * this.toBranches.CRA_CO2_In.fFlowRate;
                 end
+                if this.toStores.CRA_Accumulator.toPhases.CO2.fPressure > 8e5
+                    fMassToVent = 0.2 * this.toStores.CRA_Accumulator.toPhases.CO2.fMass;
+                    this.toBranches.CO2_to_Vent.oHandler.setMassTransfer(fMassToVent, 60);
+                end
             elseif fAccumulatorPressure < 1.2e5
                 fCO2FlowRate = 0;
-                this.toProcsF2F.VentValve.setOpen(      true);
+                this.toProcsF2F.VentValveH2.setOpen(  	true);
                 this.toProcsF2F.SabatierValve.setOpen(  false);
                 this.toProcsF2F.SabatierValve2.setOpen( false);
                 this.toProcsF2F.Checkvalve.setOpen(     false);
@@ -301,7 +309,7 @@ classdef SCRA < vsys
                 % If it was turned off, remain off until we reach 2 bar
                 % again
                 fCO2FlowRate = 0;
-                this.toProcsF2F.VentValve.setOpen(      true);
+                this.toProcsF2F.VentValveH2.setOpen(   	true);
                 this.toProcsF2F.SabatierValve.setOpen(  false);
                 this.toProcsF2F.SabatierValve2.setOpen( false);
                 this.toProcsF2F.Checkvalve.setOpen(     false);

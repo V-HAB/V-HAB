@@ -286,7 +286,11 @@ classdef Human < vsys
             tfMassesUrine = struct('Urine', 1.6); 
             fVolumeUrine = 0.1;
             
-            tfMassesStomach = struct(); 
+            % We add some tissue to the stomach phase, which just models
+            % the thermal capacity, otherwise the temperature would spike
+            % around because the phase completly empties and we do not
+            % limit its timestep
+            tfMassesStomach = struct('Human_Tissue', 2); 
             fVolumeStomach = 0.1;
             
             % for fat, proteins and carbohydrates the human initially has 7
@@ -479,7 +483,7 @@ classdef Human < vsys
         function exec(this, ~)
             exec@vsys(this);
             
-            this.fLastExec = this.oTimer.fTime;
+            fTimeSinceLastExec = this.oTimer.fTime - this.fLastExec;
             
             %% Restroom
             % kept simple, similar to drinking, whenever the bladder
@@ -687,7 +691,7 @@ classdef Human < vsys
             % this equation calculates the additional energy demand the
             % human has because of exercising
             if this.iState == 2 || this.iState == 3
-                this.fAdditionalFoodEnergyDemand = this.fAdditionalFoodEnergyDemand + ((this.fOxygenDemand - this.fOxygenDemandNominal) * this.fTimeStep * this.fCaloricValueOxygen);
+                this.fAdditionalFoodEnergyDemand = this.fAdditionalFoodEnergyDemand + ((this.fOxygenDemand - this.fOxygenDemandNominal) * fTimeSinceLastExec * this.fCaloricValueOxygen);
             end
             
             % Feces composition is assumed to 50% protein, 25%
@@ -709,7 +713,7 @@ classdef Human < vsys
             
             % the mass for the feces production also has to be replenished
             % by food --> added as additional energy demand
-            this.fAdditionalFoodEnergyDemand = this.fAdditionalFoodEnergyDemand + fEnergyEquivalenFecesTotal * this.fTimeStep;
+            this.fAdditionalFoodEnergyDemand = this.fAdditionalFoodEnergyDemand + fEnergyEquivalenFecesTotal * fTimeSinceLastExec;
             
             % Previously the energy for the feces was also considered here,
             % but that results in a higher mass consumption for these
@@ -836,7 +840,14 @@ classdef Human < vsys
             %% Other stuff
             % sets the airflowrate into the human to a value that ~4% of
             % the Oxygen in the air is consumed
-            this.toBranches.Air_In.oHandler.setFlowRate(- (this.fOxygenDemand/0.04)/this.toBranches.Air_In.coExmes{2}.oPhase.arPartialMass(this.oMT.tiN2I.O2));
+            if this.toBranches.Air_In.coExmes{2}.oPhase.afPP(this.oMT.tiN2I.O2) < 1.6e4
+                warning(['Human ', this.sName, ' in Cabin ' this.toBranches.Air_In.coExmes{2}.oPhase.oStore.sName, ' is suffocating!'])
+            end
+            fAirFlowRate = - (this.fOxygenDemand/0.04)/this.toBranches.Air_In.coExmes{2}.oPhase.arPartialMass(this.oMT.tiN2I.O2);
+            this.toBranches.Air_In.oHandler.setFlowRate(fAirFlowRate);
+            
+            
+            this.fLastExec = this.oTimer.fTime;
         end
     end
 end

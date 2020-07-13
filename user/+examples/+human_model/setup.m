@@ -100,11 +100,11 @@ classdef setup < simulation.infrastructure
             
             oLog.addValue('Example:c:Human_1.toBranches.Potable_Water_In.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',    	'kg/s',    'Potable Water Consumption');
             
-            oLog.addValue('Example:c:Human_1.toBranches.Urine_Out.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',               'kg/s',    'Urine H2O Outflow');
-            oLog.addValue('Example:c:Human_1.toBranches.Urine_Out.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C2H6O2N2)',          'kg/s',    'Urine Solids Outflow');
+            oLog.addValue('Example:c:Human_1.toBranches.Urine_Out.aoFlows(1)', 'this.fFlowRate * this.arCompoundMass(this.oMT.tiN2I.Urine, this.oMT.tiN2I.H2O)',               'kg/s',    'Urine H2O Outflow');
+            oLog.addValue('Example:c:Human_1.toBranches.Urine_Out.aoFlows(1)', 'this.fFlowRate * this.arCompoundMass(this.oMT.tiN2I.Urine, this.oMT.tiN2I.C2H6O2N2)',          'kg/s',    'Urine Solids Outflow');
             
-            oLog.addValue('Example:c:Human_1.toBranches.Feces_Out.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',               'kg/s',    'Feces H2O Outflow');
-            oLog.addValue('Example:c:Human_1.toBranches.Feces_Out.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C42H69O13N5)',       'kg/s',    'Feces Solids Outflow');
+            oLog.addValue('Example:c:Human_1.toBranches.Feces_Out.aoFlows(1)', 'this.fFlowRate * this.arCompoundMass(this.oMT.tiN2I.Feces, this.oMT.tiN2I.H2O)',               'kg/s',    'Feces H2O Outflow');
+            oLog.addValue('Example:c:Human_1.toBranches.Feces_Out.aoFlows(1)', 'this.fFlowRate * this.arCompoundMass(this.oMT.tiN2I.Feces, this.oMT.tiN2I.C42H69O13N5)',       'kg/s',    'Feces Solids Outflow');
             
             % Inlet flow log values are negative because of branch direction
             % Therefore Outlet + Inlet gives positive values for produced
@@ -266,12 +266,12 @@ classdef setup < simulation.infrastructure
             hold off
             
             % Average Daily consumptions and productions
-            fAverageO2          = afConsumedO2Mass(end) / (oLogger.afTime(end) / (24*3600));
-            fAverageCO2         = afGeneratedCO2Mass(end) / (oLogger.afTime(end) / (24*3600));
-            fAverageHumidity    = afGeneratedH2OMass(end) / (oLogger.afTime(end) / (24*3600));
-            fAveragePotableWater = afConsumedWater(end) / (oLogger.afTime(end) / (24*3600));
-            fAverageUrine       = (afProducedUrineWater(end) + afProducedUrineSolids(end)) / (oLogger.afTime(end) / (24*3600));
-            fAverageFeces       = (afProducedFecesWater(end) + afProducedFecesSolids(end)) / (oLogger.afTime(end) / (24*3600));
+            fAverageO2           = afConsumedO2Mass(end)                                    / (oLogger.afTime(end) / (24*3600)) / this.oSimulationContainer.toChildren.Example.toChildren.Human_1.iNumberOfHumans;
+            fAverageCO2          = afGeneratedCO2Mass(end)                                  / (oLogger.afTime(end) / (24*3600)) / this.oSimulationContainer.toChildren.Example.toChildren.Human_1.iNumberOfHumans;
+            fAverageHumidity     = afGeneratedH2OMass(end)                                  / (oLogger.afTime(end) / (24*3600)) / this.oSimulationContainer.toChildren.Example.toChildren.Human_1.iNumberOfHumans;
+            fAveragePotableWater = afConsumedWater(end)                                     / (oLogger.afTime(end) / (24*3600)) / this.oSimulationContainer.toChildren.Example.toChildren.Human_1.iNumberOfHumans;
+            fAverageUrine        = (afProducedUrineWater(end) + afProducedUrineSolids(end)) / (oLogger.afTime(end) / (24*3600)) / this.oSimulationContainer.toChildren.Example.toChildren.Human_1.iNumberOfHumans;
+            fAverageFeces        = (afProducedFecesWater(end) + afProducedFecesSolids(end)) / (oLogger.afTime(end) / (24*3600)) / this.oSimulationContainer.toChildren.Example.toChildren.Human_1.iNumberOfHumans;
             
             disp(['Average daily O2 consumption:        ', num2str(fAverageO2), ' kg    BVAD value is 0.816 kg'])
             disp(['Average daily Water consumption:     ', num2str(fAveragePotableWater), ' kg  BVAD value is 2.5 kg'])

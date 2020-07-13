@@ -39,6 +39,11 @@ classdef Example < vsys
             tMealTimes.Lunch = 6*3600;
             tMealTimes.Dinner = 15*3600;
             
+            % Each simplified human model can be used to model multiple
+            % humans, this value is used to decide how many humans per
+            % modelled crew member are simulated
+            iHumansPerModeledCrewMember = 6;
+            
             for iCrewMember = 1:this.iNumberOfCrewMembers
                 
                 iEvent = 1;
@@ -87,7 +92,7 @@ classdef Example < vsys
                 txCrewPlaner.ctEvents = ctEvents(:, iCrewMember);
                 txCrewPlaner.tMealTimes = tMealTimes;
                 
-                components.matter.Human(this, ['Human_', num2str(iCrewMember)], true, 40, 82, 1.829, txCrewPlaner);
+                components.matter.Human(this, ['Human_', num2str(iCrewMember)], true, 40, 82, 1.829, txCrewPlaner, iHumansPerModeledCrewMember);
                 
                 clear txCrewPlaner;
             end
@@ -107,13 +112,7 @@ classdef Example < vsys
             
             fAmbientTemperature = 295;
             
-            % uses the custom air helper to generate an air phase with a
-            % defined co2 level and relative humidity
-            fCO2Percent = 0.0062;
-            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.Cabin, 48, struct('CO2', fCO2Percent),  fAmbientTemperature, 0.4, 1e5);
-               
-            % Adding a phase to the store 'Cabin', 48 m^3 air
-            oCabinPhase = matter.phases.gas(this.toStores.Cabin, 'CabinAir', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
+            oCabinPhase = this.toStores.Cabin.createPhase(  'gas',   'boundary', 'CabinAir',   48, struct('N2', 8e4, 'O2', 2e4, 'CO2', 500), fAmbientTemperature, 0.4);
             
             % Creates a store for the potable water reserve
             % Potable Water Store

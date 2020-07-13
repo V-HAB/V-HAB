@@ -33,6 +33,7 @@ classdef CHX_p2p < matter.procs.p2ps.flow & event.source
             if nargin > 1
                 afPartialInFlows = sum((afInFlowRates .* aarInPartials),1);
                 this.oCHX.update(abs(afPartialInFlows));
+                this.update();
             else
                 this.update();
             end

@@ -137,7 +137,12 @@ classdef exme < base
             if nargin < 3
                 bMatterExmeCaller = false;
             end
-            
+            % If someone reconnects the exme to the current phase nothing
+            % has to be changed (note without this check it would be
+            % possible for the exme to belong to no system at all
+            if oNewCapacity == this.oCapacity
+                return
+            end
             % Bind the new capacity to the property, will be set in post
             % tick function reconnectExMePostTick
             this.oNewCapacity = oNewCapacity;
