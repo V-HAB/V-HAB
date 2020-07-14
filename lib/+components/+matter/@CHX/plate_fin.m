@@ -134,6 +134,9 @@ fR_alpha_o_Incremental = 1/(fIncrementalArea * falpha_o);
 %calculates the heat exchange coefficient
 fIncrementalU = 1/(fIncrementalArea * (fR_alpha_o_Incremental + fR_alpha_i_Incremental + fR_lambda_Incremental));
 
+fInletSpecificHeatCapacityGas       = Fluid_1.fSpecificHeatCapacity;
+fInletSpecificHeatCapacityCoolant   = Fluid_2.fSpecificHeatCapacity;
+
 %% New Code for Condensating Heat Exchanger
 %
 %In order to calculate the condensation in the heat exchanger it is
@@ -151,8 +154,9 @@ if ~isfield(oCHX.txCHX_Parameters, 'mOutlet_Temp_2')
     oCHX.txCHX_Parameters.mCondensateFlowRate   = zeros(iIncrementsAir, iIncrementsCoolant,tCHX_Parameters.iBaffles+1,tCHX_Parameters.iLayers); 
 end
 
-mCondensateHeatFlow = zeros(iIncrementsAir, iIncrementsCoolant, tCHX_Parameters.iBaffles+1, tCHX_Parameters.iLayers);
-mHeatFlow           = zeros(iIncrementsAir, iIncrementsCoolant, tCHX_Parameters.iBaffles+1, tCHX_Parameters.iLayers);
+mCondensateHeatFlow = zeros(iIncrementsAir, iIncrementsCoolant, tCHX_Parameters.iBaffles+1, tCHX_Parameters.iLayers); %#ok
+mHeatFlow           = zeros(iIncrementsAir, iIncrementsCoolant, tCHX_Parameters.iBaffles+1, tCHX_Parameters.iLayers); %#ok
+
 %If heat exchange coefficient U is zero there can be no heat transfer
 %between the two fluids
 if fIncrementalU == 0
@@ -549,8 +553,14 @@ else
     end
 end
 
-oCHX.fTotalCondensateHeatFlow = sum(sum(sum(sum(mCondensateHeatFlow))));
-oCHX.fTotalHeatFlow = sum(sum(sum(sum(mHeatFlow))));
+% Since the CHX does recalculate the specific heat capacity, the sums of
+% the heat flows does not necessarily result in the same temperature change
+% for the flows in V-HAB, which do not use discretization and are
+% calculated using the input specific heat capacity. Since the discretized
+% solution is more accurate, we use the inlet specific heat capacities to
+% calculate the heat flows based on the outlet temperatures:
+oCHX.fTotalHeatFlow             =                       (fOutlet_Temp_2 - Fluid_2.fEntry_Temperature) * fInletSpecificHeatCapacityCoolant  * Fluid_2.fMassflow;
+oCHX.fTotalCondensateHeatFlow   = oCHX.fTotalHeatFlow - (Fluid_1.fEntry_Temperature - fOutlet_Temp_1) * fInletSpecificHeatCapacityGas      * Fluid_1.fMassflow;
 
 % Outcomment this code and run it to get the data formatted into 2D for
 % each layer, which makes plotting easier. Note that the coolant flow

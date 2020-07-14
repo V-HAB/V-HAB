@@ -395,6 +395,8 @@ classdef CHX < vsys
             fNewOutletTemperatureFluid1 = -(this.fTotalHeatFlow - this.fTotalCondensateHeatFlow) / (fMassFlow_1 * oFlows_1.fSpecificHeatCapacity) + fEntryTemp_1;
             fNewOutletTemperatureFluid2 = this.fTotalHeatFlow / (fMassFlow_2 * oFlows_2.fSpecificHeatCapacity) + fEntryTemp_2;
             
+            afFlowsRates1 = Fluid_1.arPartialMass * fMassFlow_1;
+            
             %if query to see if the CHX has to be recalculated
             if  this.iFirst_Iteration == 1 ||...                                                                            %if it is the first iteration
                 (abs(fEntryTemp_1 - this.fEntryTemp_Old_1)                          > this.fTempChangeToRecalc)         ||...	%if entry temp changed by more than X°
@@ -406,7 +408,8 @@ classdef CHX < vsys
                 (max(abs(1 - (Fluid_1.arPartialMass ./ this.arPartialMass1Old)))    > this.fPercentChangeToRecalc)      ||...  	%if composition of mass flow changed by more than X%
                 (max(abs(1 - (oFlows_2.arPartialMass ./ this.arPartialMass2Old)))   > this.fPercentChangeToRecalc)      ||... 	%if composition of mass flow changed by more than X%
                 (abs(1 - (oFlows_1.fPressure / this.fOldPressureFlow1))             > 3 * this.fPercentChangeToRecalc)  ||...	%if Pressure changed by more than X%
-                (abs(1 - (oFlows_2.fPressure / this.fOldPressureFlow2))             > 3 * this.fPercentChangeToRecalc)          %if Pressure changed by more than X%
+                (abs(1 - (oFlows_2.fPressure / this.fOldPressureFlow2))             > 3 * this.fPercentChangeToRecalc)  ||...   %if Pressure changed by more than X%
+                (any(this.afCondensateMassFlow > afFlowsRates1))                                                                %if the condensate flow of any substance is larger than its inflowrate 
                 
                 fDensity_1 = oFlows_1.getDensity();
                 fDensity_2 = oFlows_2.getDensity();
