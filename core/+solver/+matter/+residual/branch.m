@@ -76,6 +76,7 @@ classdef branch < solver.matter.base.branch
         function setActive(this, bActive)
             this.bActive = bActive;
             this.setPositiveFlowDirection(this.bPositiveFlowDirection);
+            this.registerUpdate();
         end
         
         
@@ -85,7 +86,7 @@ classdef branch < solver.matter.base.branch
             % mass constant (with the flowrate specified here) for negative
             % ones it will allow a mass decrease.
             this.fAllowedFlowRate = fFlowRate;
-            this.update();
+            this.registerUpdate();
         end
     end
     
@@ -153,6 +154,9 @@ classdef branch < solver.matter.base.branch
             if ~this.bActive
                 this.fRequestedFlowRate = 0;
                 this.updateFlowProcs();
+                if this.oBranch.fFlowRate ~= 0
+                    update@solver.matter.base.branch(this, this.fRequestedFlowRate);
+                end
                 return
             end
             
