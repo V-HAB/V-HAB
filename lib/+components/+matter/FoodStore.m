@@ -72,24 +72,22 @@ classdef FoodStore < matter.store
             if nargin > 4
                 % In this case we only calculate the energy value for
                 % the specified composition and with the composition
-                % provided
-                csFoodForTransfer = this.oMT.csI2N(arComposition ~= 0);
-
-                afFoodEnergyContent = zeros(1, this.oMT.iSubstances);
-                for iFood = 1:length(csFoodForTransfer)
-                    afFoodComponentMass = this.toPhases.Food.tfCompoundMass.(csFoodForTransfer{iFood});
-                    afFoodNutritionEnergy = afFoodComponentMass .* this.oMT.afNutritionalEnergy;
-                    fFoodNutritionalEnergy = sum(afFoodNutritionEnergy);
-
-                    afFoodEnergyContent(this.oMT.tiN2I.(csFoodForTransfer{iFood})) = fFoodNutritionalEnergy / sum(afFoodComponentMass);
-                end
-
-                % by multiplying the afFoodEnergyContent vector (which
-                % is in J/kg for the desired food stuffs) with the
-                % arComposition vector and summing it up we receive the
-                % nutritional energy in J/kg for the desired food
-                % composition
-                fNutritionalEnergy = sum(afFoodEnergyContent .* arComposition);
+                % provided. To do so, we first have to split up the food
+                % mass into its components to be able to calculate the
+                % nutritional value
+                afResolvedFoodMass = this.oMT.resolveCompoundMass(arComposition, this.toPhases.Food.arCompoundMass);
+                
+                % by multiplying the afNutritionalEnergy vector (which is
+                % in J/kg for the desired food stuffs) with the
+                % afResolvedFoodMass vector and summing it up we receive
+                % the nutritional energy in J/kg for the desired food
+                % composition (the result is in J/kg since we used the
+                % composition vector, which sums up to one, and therefore
+                % the total mass of afResolvedFoodMass is 1 kg, by then
+                % multiplying each component with the nutritional energy of
+                % the component, we get the total nutritional energy for 1
+                % kg)
+                fNutritionalEnergy = sum(afResolvedFoodMass .* this.oMT.afNutritionalEnergy);
 
                 % Now we simply calculate the total mass required by
                 % dividing the required energy with this value
