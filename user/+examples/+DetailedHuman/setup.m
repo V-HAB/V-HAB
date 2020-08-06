@@ -47,6 +47,11 @@ classdef setup < simulation.infrastructure
                 oLog.addValue(['Example.toBranches.', csBranches{iBranch}],             'fFlowRate',    'kg/s', [csBranches{iBranch}, ' Flowrate']);
             end
             
+            oLog.addValue('Example:s:Cabin.toPhases.CabinAir',	'this.afPP(this.oMT.tiN2I.CO2)', 	'Pa',   'Partial Pressure CO2 Cabin');
+            oLog.addValue('Example:s:Cabin2.toPhases.CabinAir',	'this.afPP(this.oMT.tiN2I.CO2)', 	'Pa',   'Partial Pressure CO2 Cabin2');
+            
+            oLog.addValue('Example:s:Cabin.toPhases.CabinAir',	'rRelHumidity', 	'-',   'Relative Humidity Cabin');
+            oLog.addValue('Example:s:Cabin2.toPhases.CabinAir',	'rRelHumidity', 	'-',   'Relative Humidity Cabin2');
             %% Parent System Logging
             csFecesComponents = {'H2O', 'DietaryFiber', 'C6H12O6', 'C51H98O6', 'C3H7NO2', 'Naplus'};
             for iComponent = 1:length(csFecesComponents)
@@ -370,6 +375,9 @@ classdef setup < simulation.infrastructure
             coPlot{2,1} = oPlotter.definePlot(csUrineMass, 'Urine Composition', tPlotOptions);
            
             coPlot{1,2} = oPlotter.definePlot({'"Ingested Water Flow Rate"', '"Respiration Water Flow Rate"', '"Perspiration Water Flow Rate"', '"Urine Flow Rate"'}, 'Human Water Flows', tPlotOptions);
+            
+            coPlot{2,2} = oPlotter.definePlot({'"Partial Pressure CO2 Cabin"', '"Partial Pressure CO2 Cabin2"'}, 'Cabin CO2', tPlotOptions);
+            coPlot{3,1} = oPlotter.definePlot({'"Relative Humidity Cabin"', '"Relative Humidity Cabin2"'}, 'Cabin Relative Humidity', tPlotOptions);
             
             oPlotter.defineFigure(coPlot,  'General Plots');
             

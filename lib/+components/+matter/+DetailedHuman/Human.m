@@ -242,6 +242,7 @@ classdef Human < vsys
             % system to reconnect the other interfaces as well!
             this.toBranches.Air_In.coExmes{2}.reconnectExMe(oNewCabinPhase);
             this.toBranches.Air_Out.coExmes{2}.reconnectExMe(oNewCabinPhase);
+            this.toBranches.PerspirationWaterTransfer.coExmes{2}.reconnectExMe(oNewCabinPhase);
             
             this.toThermalBranches.SensibleHeatOutput.coExmes{2}.reconnectExMe(oNewCabinPhase.oCapacity);
         end

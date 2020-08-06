@@ -3,6 +3,8 @@ classdef Example < vsys
     
     properties (SetAccess = protected, GetAccess = public)
         iNumberOfCrewMembers;
+        
+        bHumanMoved = false;
     end
     
     methods
@@ -97,21 +99,29 @@ classdef Example < vsys
             
             % Creates the cabin store that contains the main habitat
             % atmosphere
-            matter.store(this, 'Cabin', 48);
+            matter.store(this, 'Cabin', 50);
             
             fAmbientTemperature = 295;
+            fDensityH2O = this.oMT.calculateDensity('liquid', struct('H2O', 1), fAmbientTemperature, 101325);
             
-            % Adding a phase to the store 'Cabin', 48 m^3 air#
-            oCabinPhase = this.toStores.Cabin.createPhase(  'gas', 'boundary',   'CabinAir',  48, struct('N2', 8e4, 'O2', 2e4, 'CO2', 500),          fAmbientTemperature,          0.5);
-%             oHeatSource = components.thermal.heatsources.ConstantTemperature('Cabin_Constant_Temperature');
-%             oCabinPhase.oCapacity.addHeatSource(oHeatSource);
+            % Adding a phase to the store 'Cabin', 48 m^3 air
+            oCabinPhase         = this.toStores.Cabin.createPhase(  'gas',   'CabinAir',  48, struct('N2', 8e4, 'O2', 2e4, 'CO2', 500),  	fAmbientTemperature,          0.5);
+            oCondensatePhase    = matter.phases.liquid(this.toStores.Cabin, 'Condensate', struct('H2O', fDensityH2O * 0.5 * 1),             fAmbientTemperature, 101325);
+            oCO2                = this.toStores.Cabin.createPhase( 'gas',   'CO2',  1, struct('CO2', 1e5),          fAmbientTemperature,          0);
+            
+            matter.store(this, 'Cabin2', 50);
+            oCabinPhase2        = this.toStores.Cabin2.createPhase( 'gas',   'CabinAir',  48, struct('N2', 8e4, 'O2', 2e4, 'CO2', 500),  	fAmbientTemperature,          0.5);
+            oCondensatePhase2   = matter.phases.liquid(this.toStores.Cabin2, 'Condensate', struct('H2O', fDensityH2O * 0.5 * 1),            fAmbientTemperature, 101325);
+            oCO2_2              = this.toStores.Cabin2.createPhase( 'gas',   'CO2',  1, struct('CO2', 1e5),          fAmbientTemperature,          0);
+            
+            matter.store(this, 'O2', 100);
+            oO2 = this.toStores.O2.createPhase( 'gas',   'O2',  100, struct('O2', 200e5),          fAmbientTemperature,          0);
             
             % Creates a store for the potable water reserve
             % Potable Water Store
             fWaterStorageVolume = 10;
             matter.store(this, 'PotableWaterStorage', fWaterStorageVolume);
             
-            fDensityH2O = this.oMT.calculateDensity('liquid', struct('H2O', 1), fAmbientTemperature, 101325);
             % fWaterMol  = fWaterMass / this.oMT.afMolarMass(this.oMT.tiN2I.H2O);
             
             % Concentration of Sodium in ISS potable water
@@ -139,6 +149,27 @@ classdef Example < vsys
             tfFood = struct('Food', 100, 'Carrots', 10);
             oFoodStore = components.matter.FoodStore(this, 'FoodStore', 100, tfFood);
             
+            matter.branch(this, oO2, {}, oCabinPhase,   'O2_to_Cabin');
+            matter.branch(this, oO2, {}, oCabinPhase2,  'O2_to_Cabin2');
+            
+            oCondensateP2P = components.matter.P2Ps.ManualP2P( this.toStores.Cabin,  'Condensate',  oCabinPhase,  oCondensatePhase);
+            components.matter.P2Ps.ManualP2P( this.toStores.Cabin2,  'Condensate', oCabinPhase2, oCondensatePhase2);
+            
+            oCO2P2P = components.matter.P2Ps.ManualP2P( this.toStores.Cabin,  'CO2',  oCabinPhase,  oCO2);
+            components.matter.P2Ps.ManualP2P( this.toStores.Cabin2,  'CO2', oCabinPhase2, oCO2_2);
+            
+            afCondensateFlow = zeros(1, this.oMT.iSubstances);
+            % Using the BVAD value of 1.9 kf of Perspiration and
+            % Respiration water to keep the atmosphere about constant in
+            % humidity
+            afCondensateFlow(this.oMT.tiN2I.H2O) = this.iNumberOfCrewMembers * 1.5 / (24 * 3600);
+            oCondensateP2P.setFlowRate(afCondensateFlow)
+            
+            afCO2Flow = zeros(1, this.oMT.iSubstances);
+            % Using the BVAD value of 1.04 kg of CO2 to keep the atmosphere
+            % about constant
+            afCO2Flow(this.oMT.tiN2I.CO2) = this.iNumberOfCrewMembers * 1.04 / (24 * 3600);
+            oCO2P2P.setFlowRate(afCO2Flow)
             
             for iHuman = 1:this.iNumberOfCrewMembers
                 % Add Exmes for each human
@@ -187,10 +218,21 @@ classdef Example < vsys
                 this.toChildren.(['Human_',         num2str(iHuman)]).setThermalIF(...
                                 ['SensibleHeatOutput_Human_',    num2str(iHuman)]);
             end
+            
+            oHeatSource = components.thermal.heatsources.ConstantTemperature('Cabin_Constant_Temperature');
+            this.toStores.Cabin.toPhases.CabinAir.oCapacity.addHeatSource(oHeatSource);
+            
+            oHeatSource = components.thermal.heatsources.ConstantTemperature('Cabin2_Constant_Temperature');
+            this.toStores.Cabin2.toPhases.CabinAir.oCapacity.addHeatSource(oHeatSource);
         end
         
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
+            
+            solver.matter.manual.branch(this.toBranches.O2_to_Cabin);
+            solver.matter.manual.branch(this.toBranches.O2_to_Cabin2);
+            
+            this.toBranches.O2_to_Cabin.oHandler.setFlowRate(0.816/(24*3600));
             
             % set a fixed time step for the phases where the change rates
             % are not of interest
@@ -210,6 +252,28 @@ classdef Example < vsys
             % exec(ute) function for this system
             % Here it only calls its parent's exec function
             exec@vsys(this);
+            
+            if this.oTimer.fTime > 3*24*3600 && ~this.bHumanMoved
+                
+                for iCrewMember = 1:this.iNumberOfCrewMembers
+                    this.toChildren.(['Human_', num2str(iCrewMember)]).moveHuman(this.toStores.Cabin2.toPhases.CabinAir)
+                end
+                
+                this.toBranches.O2_to_Cabin.oHandler.setFlowRate(0);
+                this.toBranches.O2_to_Cabin2.oHandler.setFlowRate(0.816/(24*3600));
+                
+                afCondensateFlow = zeros(1, this.oMT.iSubstances);
+                this.toStores.Cabin.toProcsP2P.Condensate.setFlowRate(afCondensateFlow);
+                
+                afCondensateFlow(this.oMT.tiN2I.H2O) = this.iNumberOfCrewMembers * 1.5 / (24 * 3600);
+                this.toStores.Cabin2.toProcsP2P.Condensate.setFlowRate(afCondensateFlow);
+
+                afCO2Flow = zeros(1, this.oMT.iSubstances);
+                this.toStores.Cabin.toProcsP2P.CO2.setFlowRate(afCO2Flow);
+                afCO2Flow(this.oMT.tiN2I.CO2) = this.iNumberOfCrewMembers * 1.04 / (24 * 3600);
+                this.toStores.Cabin2.toProcsP2P.CO2.setFlowRate(afCO2Flow)
+            
+            end
             
             this.oTimer.synchronizeCallBacks();
         end
