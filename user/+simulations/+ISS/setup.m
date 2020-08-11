@@ -50,6 +50,14 @@ classdef setup < simulation.infrastructure
             trBaseCompositionFeces.DietaryFiber = 0.2424;
             this.oSimulationContainer.oMT.defineCompoundMass(this, 'Feces', trBaseCompositionFeces)
             
+            trBaseCompositionBrine.H2O      = 0.8;
+            trBaseCompositionBrine.C2H6O2N2 = 0.2;
+            this.oSimulationContainer.oMT.defineCompoundMass(this, 'Brine', trBaseCompositionBrine);
+            
+            trBaseCompositionBrine.H2O      = 0.44;
+            trBaseCompositionBrine.C2H6O2N2 = 0.56;
+            this.oSimulationContainer.oMT.defineCompoundMass(this, 'ConcentratedBrine', trBaseCompositionBrine);
+            
             %% Creating the root object
             fFixedTS = 180;
             
@@ -138,7 +146,7 @@ classdef setup < simulation.infrastructure
             
             %% WPA Logging
             oLog.addValue('ISS_ARS_MultiStore:c:WPA.toStores.WasteWater.toPhases.Water',            'fMass',        'kg',   'WPA Waste Water');
-            oLog.addValue('ISS_ARS_MultiStore:c:WPA.toBranches.Inlet',                              'fFlowRate',    'kg/s', 'WPA Waster Water Inflow');
+            oLog.addValue('ISS_ARS_MultiStore:c:WPA.toBranches.Inlet',                              'fFlowRate',    'kg/s', 'WPA Waste Water Inflow');
             oLog.addValue('ISS_ARS_MultiStore:c:WPA.toBranches.Check_to_WasteWater',                'fFlowRate',    'kg/s', 'WPA Water Reflow after Check');
             oLog.addValue('ISS_ARS_MultiStore:c:WPA.toBranches.Outlet',                             'fFlowRate',    'kg/s', 'WPA Potable Water Outflow');
             oLog.addValue('ISS_ARS_MultiStore:c:WPA.toBranches.Outlet.aoFlowProcs',                 'fPPM',         'ppm',  'WPA PPM Outlet');
@@ -146,6 +154,21 @@ classdef setup < simulation.infrastructure
             
             oLog.addValue('ISS_ARS_MultiStore:c:WPA.toStores.Rack_Air.toPhases.Water.toManips.substance',  	'this.afFlowRates(this.oMT.tiN2I.O2)',         'kg/s',    'WPA O2 Consumption');
             oLog.addValue('ISS_ARS_MultiStore:c:WPA.toStores.Rack_Air.toPhases.Water.toManips.substance',  	'this.afFlowRates(this.oMT.tiN2I.CO2)',        'kg/s',    'WPA CO2 Production');
+            
+            %% UPA + BPA Logging
+            oLog.addValue('ISS_ARS_MultiStore.toChildren.UPA.toBranches.Outlet',                    'fFlowRate',	'kg/s', 'UPA Water Flow');
+            oLog.addValue('ISS_ARS_MultiStore.toChildren.UPA.toBranches.BrineOutlet',               'fFlowRate',	'kg/s', 'UPA Brine Flow');
+            oLog.addValue('ISS_ARS_MultiStore.toChildren.UPA.toStores.WSTA.toPhases.Urine',         'fMass',        'kg',   'UPA WSTA Mass');
+            oLog.addValue('ISS_ARS_MultiStore.toChildren.UPA.toStores.ARTFA.toPhases.Brine',        'fMass',        'kg',   'UPA ARTFA Mass');
+            
+            oLog.addValue('ISS_ARS_MultiStore.toChildren.BPA.toStores.Bladder.toProcsP2P.WaterP2P',                             'fFlowRate',	'kg/s', 'BPA Water Flow');
+            oLog.addValue('ISS_ARS_MultiStore.toChildren.BPA.toStores.Bladder.toPhases.Brine',                                  'fMass',        'kg',   'BPA Bladder Mass');
+            oLog.addValue('ISS_ARS_MultiStore.toChildren.BPA.toStores.ConcentratedBrineDisposal.toPhases.ConcentratedBrine',  	'fMass',        'kg',   'BPA Concentrated Brine Mass');
+            
+            
+            oLog.addVirtualValue('cumsum("UPA Water Flow"    .* "Timestep")', 'kg', 'UPA Produced Water');
+            oLog.addVirtualValue('cumsum("UPA Brine Flow"    .* "Timestep")', 'kg', 'UPA Produced Brine');
+            oLog.addVirtualValue('cumsum("BPA Water Flow"    .* "Timestep")', 'kg', 'BPA Produced Water');
             
             %% Mass and Temperature logging for all phases (can be usefull for debugging)
 %             oISS_ARS_MultiStore = this.oSimulationContainer.toChildren.ISS_ARS_MultiStore;
@@ -389,7 +412,7 @@ classdef setup < simulation.infrastructure
             coPlots{1,1} = oPlotter.definePlot({'"WSS Water"'},                     'Potable Water',  	tPlotOptions);
             coPlots{1,2} = oPlotter.definePlot({'"WPA Waste Water"'},               'Waste Water',  	tPlotOptions);
             coPlots{2,1} = oPlotter.definePlot({'"Food Mass"'},                     'Food',             tPlotOptions);
-            coPlots{2,2} = oPlotter.definePlot({'"Feces Mass"', '"Urine Mass"'}, 	'Waste',            tPlotOptions);
+            coPlots{2,2} = oPlotter.definePlot({'"Feces Mass"', '"Urine Mass"', '"UPA WSTA Mass"', '"UPA ARTFA Mass"', '"BPA Bladder Mass"', '"BPA Concentrated Brine Mass"'}, 	'Waste',            tPlotOptions);
             
             oPlotter.defineFigure(coPlots,         'Tank Masses',          tFigureOptions);
             
@@ -426,16 +449,18 @@ classdef setup < simulation.infrastructure
             
             oPlotter.defineFigure(coPlots,         'Sabatier',          tFigureOptions);
             
-            %% WPA
-            csWPAFlowRates     = {'"WPA Waster Water Inflow"', '"WPA Water Reflow after Check"', '"WPA Potable Water Outflow"'};
+            %% WPA, UPA + BPA
+            csWPAFlowRates     = {'"WPA Waste Water Inflow"', '"WPA Water Reflow after Check"', '"WPA Potable Water Outflow"'};
             csWPAReactorFlows  = {'"WPA O2 Consumption"', '"WPA CO2 Production"'};
             coPlots = cell.empty();
-            coPlots{1,1} = oPlotter.definePlot({'"WPA Waste Water"'},                    'WPA Waste Water Mass',  	tPlotOptions);
-            coPlots{1,2} = oPlotter.definePlot(csWPAFlowRates,                           'WPA Flow Rates',          tPlotOptions);
-            coPlots{2,1} = oPlotter.definePlot(csWPAReactorFlows,                        'WPA Reactor Flow Rates',  tPlotOptions);
-            coPlots{2,2} = oPlotter.definePlot({'"WPA PPM Outlet"', '"WPA TOC Outlet"'}, 'WPA Water Quality',       tPlotOptions);
+            coPlots{1,1} = oPlotter.definePlot({'"WPA Waste Water"'},                               'WPA Waste Water Mass',  	tPlotOptions);
+            coPlots{1,2} = oPlotter.definePlot(csWPAFlowRates,                                      'WPA Flow Rates',           tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot(csWPAReactorFlows,                                   'WPA Reactor Flow Rates',   tPlotOptions);
+            coPlots{2,2} = oPlotter.definePlot({'"WPA PPM Outlet"', '"WPA TOC Outlet"'},            'WPA Water Quality',        tPlotOptions);
+            coPlots{3,1} = oPlotter.definePlot({'"UPA Produced Water"', '"UPA Produced Brine"'},    'UPA',                      tPlotOptions);
+            coPlots{3,2} = oPlotter.definePlot({'"BPA Produced Water"'},                            'BPA',                      tPlotOptions);
             
-            oPlotter.defineFigure(coPlots,         'WPA',          tFigureOptions);
+            oPlotter.defineFigure(coPlots,         'WPA, UPA + BPA',          tFigureOptions);
             
             %% Plotting for ACLS
             if this.oSimulationContainer.toChildren.ISS_ARS_MultiStore.tbCases.ACLS

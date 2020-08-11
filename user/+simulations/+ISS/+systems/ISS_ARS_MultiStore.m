@@ -173,6 +173,12 @@ classdef ISS_ARS_MultiStore < vsys
             % Adding the WPA
             components.matter.WPA.WPA(this,             'WPA');
             
+            % Adding UPA
+            components.matter.UPA.UPA(this,             'UPA');
+            
+            % Adding BPA
+            components.matter.BPA.BPA(this,             'BPA');
+            
             if this.tbCases.ACLS
                 
                 %in http://www.nasa.gov/pdf/473486main_iss_atcs_overview.pdf
@@ -657,12 +663,36 @@ classdef ISS_ARS_MultiStore < vsys
             end
             
             % WPA
-            matter.branch(this, 'Inlet',        {}, oWPA_WasteWater_Inlet);
-            matter.branch(this, 'Outlet',       {}, oWSS);
-            matter.branch(this, 'AirInlet',     {}, oUSLab);
-            matter.branch(this, 'AirOutlet',    {}, oUSLab);
+            matter.branch(this, 'InletWPA',        {}, oWPA_WasteWater_Inlet);
+            matter.branch(this, 'OutletWPA',       {}, oWSS);
+            matter.branch(this, 'AirInletWPA',     {}, oUSLab);
+            matter.branch(this, 'AirOutletWPA',    {}, oUSLab);
             
-            this.toChildren.WPA.setIfFlows('Inlet', 'Outlet', 'AirInlet', 'AirOutlet');
+            this.toChildren.WPA.setIfFlows('InletWPA', 'OutletWPA', 'AirInletWPA', 'AirOutletWPA');
+            
+            % Waste Management
+            % Creates a store for the urine
+            matter.store(this, 'UrineStorage', 0.1);
+            oUrinePhase = matter.phases.mixture(this.toStores.UrineStorage, 'Urine', 'liquid', struct('Urine', 1.6), 295, 101325); 
+            
+            % Creates a store for the feces storage            
+            matter.store(this, 'FecesStorage', 10);
+            oFecesPhase = matter.phases.mixture(this.toStores.FecesStorage, 'Feces', 'solid', struct('Feces', 0.132), 295, 101325); 
+            
+            matter.store(this, 'BrineStorage', 0.1);
+            oBrinePhase = matter.phases.mixture(this.toStores.BrineStorage, 'Brine', 'liquid', struct('Brine', 0.01), 295, 101325); 
+            
+            % UPA
+            matter.branch(this, 'InletUPA',        {}, oUrinePhase);
+            matter.branch(this, 'OutletUPA',       {}, oWPA_WasteWater_Inlet);
+            matter.branch(this, 'BrineOutletUPA',  {}, oBrinePhase);
+            this.toChildren.UPA.setIfFlows('InletUPA', 'OutletUPA', 'BrineOutletUPA');
+            
+            % BPA
+            matter.branch(this, 'BrineInletBPA',    {}, oBrinePhase);
+            matter.branch(this, 'AirInletBPA',    	{}, oNode3);
+            matter.branch(this, 'AirOutletBPA',     {}, oNode3);
+            this.toChildren.BPA.setIfFlows('BrineInletBPA', 'AirInletBPA', 'AirOutletBPA');
             
             %%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -672,16 +702,6 @@ classdef ISS_ARS_MultiStore < vsys
             % Adds a food store to the system
             tfFood = struct('Food', 1000);
             oFoodStore = components.matter.FoodStore(this, 'FoodStore', 100, tfFood);
-            
-            % TO DO: replace with the real systems and add UPA and BPA to
-            % the ISS
-            % Creates a store for the urine
-            matter.store(this, 'UrineStorage', 10);
-            oUrinePhase = matter.phases.mixture(this.toStores.UrineStorage, 'Urine', 'liquid', struct('Urine', 1.6), 295, 101325); 
-            
-            % Creates a store for the feces storage            
-            matter.store(this, 'FecesStorage', 10);
-            oFecesPhase = matter.phases.mixture(this.toStores.FecesStorage, 'Feces', 'solid', struct('Feces', 0.132), 295, 101325); 
             
             oPotableWaterPhase = oWSS;
             if this.tbCases.IronRing1 || this.tbCases.IronRing2
@@ -1143,6 +1163,11 @@ classdef ISS_ARS_MultiStore < vsys
                     end
                 end
             end
+            tTimeStepProperties = struct();
+            tTimeStepProperties.rMaxChange = inf;
+            tTimeStepProperties.fMaxStep = this.fTimeStep;
+
+            this.toStores.BrineStorage.toPhases.Brine.setTimeStepProperties(tTimeStepProperties);
         end
     end
     
@@ -1198,6 +1223,12 @@ classdef ISS_ARS_MultiStore < vsys
                     this.toSolverBranches.O2Buffer.setFlowRate(0);
                 end
             end
+            
+            % BPA flowrate
+            if this.toStores.BrineStorage.toPhases.Brine.fMass > this.toChildren.BPA.fActivationFillBPA + 0.01 && ~this.toChildren.BPA.toBranches.BrineInlet.oHandlerbMassTransferActive
+                this.toChildren.BPA.toBranches.BrineInlet.oHandler.setMassTransfer(this.toStores.BrineStorage.toPhases.Brine.fMass - 0.01, 300);
+            end
+            
             
             this.oTimer.synchronizeCallBacks();
             
