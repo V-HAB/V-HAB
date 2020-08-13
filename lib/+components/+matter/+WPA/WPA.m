@@ -26,6 +26,9 @@ classdef WPA < vsys
         
         abContaminants;                            % Ionic contaminant array
         bCurrentlyProcessingWater = false;         % Boolean variable to decide whether water is currently beeing processed
+        
+        % Power usage in Standby from "Status of the Regenerative ECLSS Water Recovery System", D. Layne Carter, ICES-2009-2352
+        fPower = 133 + 94 + 14; % [W]
     end
     methods
         function this = WPA(oParent, sName)
@@ -251,6 +254,9 @@ classdef WPA < vsys
                 afFlowRates = zeros(1, this.oMT.iSubstances);
                 afFlowRates(this.oMT.tiN2I.O2) = 0.001e-3;
                 this.toStores.Rack_Air.toProcsP2P.ReactorOxygen_P2P.setFlowRate(afFlowRates);
+                
+                % Power usage while recycling from "Status of the Regenerative ECLSS Water Recovery System", D. Layne Carter, ICES-2009-2352
+                this.fPower = 320 + 94 + 14; % [W]
             else
                 afFlowRates = zeros(1, this.oMT.iSubstances);
                 this.toStores.Rack_Air.toProcsP2P.ReactorOxygen_P2P.setFlowRate(afFlowRates);
@@ -258,6 +264,9 @@ classdef WPA < vsys
                 % While the WPA is off, we check the fill state of the tank
                 % at the specified intervall
                 this.setTimeStep(this.fCheckFillStateIntervall)
+                
+                % Power usage in Standby from "Status of the Regenerative ECLSS Water Recovery System", D. Layne Carter, ICES-2009-2352
+                this.fPower = 133 + 94 + 14;
             end
         end
     end

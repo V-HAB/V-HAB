@@ -139,6 +139,11 @@ classdef UPA < vsys
 
             this.toStores.ARTFA.toPhases.Brine.setTimeStepProperties(tTimeStepProperties);
                     
+            tTimeStepProperties = struct();
+            tTimeStepProperties.rMaxChange = 0.05;
+            tTimeStepProperties.fMaxStep = this.fTimeStep;
+            this.toStores.WSTA.toPhases.Urine.setTimeStepProperties(tTimeStepProperties);
+                    
             this.setThermalSolvers();
         end
         

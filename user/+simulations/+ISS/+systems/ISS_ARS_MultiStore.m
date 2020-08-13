@@ -1168,6 +1168,12 @@ classdef ISS_ARS_MultiStore < vsys
             tTimeStepProperties.fMaxStep = this.fTimeStep;
 
             this.toStores.BrineStorage.toPhases.Brine.setTimeStepProperties(tTimeStepProperties);
+            
+            tTimeStepProperties = struct();
+            tTimeStepProperties.rMaxChange = inf;
+            tTimeStepProperties.fMaxStep = this.fTimeStep;
+
+            this.toStores.FecesStorage.toPhases.Feces.setTimeStepProperties(tTimeStepProperties);
         end
     end
     
