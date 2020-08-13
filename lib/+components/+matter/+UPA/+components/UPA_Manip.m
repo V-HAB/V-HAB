@@ -65,7 +65,13 @@ classdef UPA_Manip < matter.manips.substance.stationary
                 afWaterP2PFlows = zeros(1, this.oPhase.oMT.iSubstances);
                 afWaterP2PFlows(tiN2I.H2O) = afPartialFlows(tiN2I.H2O);
                 this.oPhase.oStore.toProcsP2P.WaterP2P.setFlowRate(afWaterP2PFlows);
+                
+                this.oPhase.oStore.oContainer.toBranches.Outlet.oHandler.setFlowRate(afPartialFlows(tiN2I.H2O));
             else
+                this.oPhase.oStore.toProcsP2P.BrineP2P.setFlowRate(zeros(1, this.oPhase.oMT.iSubstances));
+                this.oPhase.oStore.toProcsP2P.WaterP2P.setFlowRate(zeros(1, this.oPhase.oMT.iSubstances));
+                this.oPhase.oStore.oContainer.toBranches.Outlet.oHandler.setFlowRate(0);
+                
                 update@matter.manips.substance(this, afPartialFlows);
             end
         end

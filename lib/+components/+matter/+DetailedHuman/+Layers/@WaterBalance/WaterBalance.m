@@ -237,6 +237,7 @@ classdef WaterBalance < vsys
             this.toStores.WaterBalance.toPhases.InterstitialFluid.bind(     'update_post', @this.bindInternalUpdate);
             this.toStores.WaterBalance.toPhases.IntracellularFluid.bind(    'update_post', @this.bindInternalUpdate);
             this.toStores.WaterBalance.toPhases.Kidney.bind(                'update_post', @this.bindInternalUpdate);
+            this.toStores.WaterBalance.toPhases.Bladder.bind(               'update_post', @this.bindInternalUpdate);
         end
         
         

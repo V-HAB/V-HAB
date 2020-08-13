@@ -52,8 +52,8 @@ classdef UPA < vsys
     
     methods
         function this = UPA(oParent, sName)
-            % Set the initial time step to 30 s
-            this@vsys(oParent, sName, 30);
+            % Set the initial time step to 60 s
+            this@vsys(oParent, sName, 60);
             
             eval(this.oRoot.oCfgParams.configCode(this));
             
@@ -71,7 +71,7 @@ classdef UPA < vsys
             % Creating the WSTA (Wastewater Storage Tank Assembly)
             
             matter.store(this, 'WSTA', this.fWSTACapacity / 998);
-            matter.phases.mixture(this.toStores.WSTA,           'Urine', 'liquid', struct('Urine', this.fTankCapacityNotProcessed), 293, 1e5);
+            matter.phases.mixture(this.toStores.WSTA,           'Urine', 'liquid', struct('Urine', this.fUPAActivationFill + 0.1), 293, 1e5);
             
             % Creating the ARTFA (Advanced Recycle Filter Tank Assembly)
             matter.store(this, 'ARTFA', this.fARTFACapacity / 998);
@@ -120,6 +120,7 @@ classdef UPA < vsys
             % transfer for it to flow into the UPA, because of the way
             % interface branches are defined
             solver.matter.residual.branch(this.toBranches.Inlet);
+            this.toBranches.Inlet.oHandler.setPositiveFlowDirection(false);
             % Mass can be taken out of the WPA by using this branch, here a
             % positive flowrate will result in mass leaving the WPA!
             solver.matter.manual.branch(this.toBranches.Outlet);
@@ -127,8 +128,17 @@ classdef UPA < vsys
             solver.matter.manual.branch(this.toBranches.BrineOutlet);
             
             solver.matter.manual.branch(this.toBranches.WSTA_to_DA);
-            solver.matter.manual.branch(this.toBranches.DA_to_ARTFA);
+            solver.matter.residual.branch(this.toBranches.DA_to_ARTFA);
             
+            % The ARTFA mass change is not limited. Since it is only filled
+            % and then emptied via mass change and the changes in between
+            % are not relevant to the system
+            tTimeStepProperties = struct();
+            tTimeStepProperties.rMaxChange = inf;
+            tTimeStepProperties.fMaxStep = this.fTimeStep;
+
+            this.toStores.ARTFA.toPhases.Brine.setTimeStepProperties(tTimeStepProperties);
+                    
             this.setThermalSolvers();
         end
         
@@ -170,8 +180,6 @@ classdef UPA < vsys
                         fTimeToProcess = fMassToProcess / this.fBaseFlowRate;
                         this.fProcessingFinishTime = this.oTimer.fTime + fTimeToProcess;
                         this.toBranches.WSTA_to_DA.oHandler.setMassTransfer(fMassToProcess, fTimeToProcess);
-                        this.toBranches.DA_to_ARTFA.oHandler.setMassTransfer(fMassToProcess, fTimeToProcess);
-                        this.toBranches.Outlet.oHandler.setMassTransfer(    fMassToProcess, fTimeToProcess);
                         this.fPower = 315; % [W]
                     end
                 end

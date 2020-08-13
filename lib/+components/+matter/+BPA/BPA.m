@@ -38,8 +38,8 @@ classdef BPA < vsys
     
     methods
         function this = BPA(oParent, sName)
-            % Set the initial time step to 30 s
-            this@vsys(oParent, sName, 30);
+            % Set the initial time step to 60 s
+            this@vsys(oParent, sName, 60);
             
             eval(this.oRoot.oCfgParams.configCode(this));
             
@@ -123,15 +123,33 @@ classdef BPA < vsys
             if (this.toStores.Bladder.toPhases.Brine.fMass >= this.fActivationFillBPA)
                 this.bProcessing = true;
                 this.fProcessingFinishTime = inf;
+                
+                % During processing the brine bladder mass change is
+                % limited
+                tTimeStepProperties = struct();
+                tTimeStepProperties.rMaxChange = 1e-3;
+                tTimeStepProperties.fMaxStep = 20;
+
+                this.toStores.Bladder.toPhases.Brine.setTimeStepProperties(tTimeStepProperties);
             end
             
             if (this.bProcessing == true)
                 if this.oTimer.fTime >= this.fProcessingFinishTime
                     this.toStores.Bladder.toPhases.Brine.toManips.substance.setActive(false);
                     this.bProcessing = false;
+                    
+                    % While BPA is not processing the mass in the brine
+                    % bladder phase can change by as much as it likes
+                    tTimeStepProperties = struct();
+                    tTimeStepProperties.rMaxChange = inf;
+                    tTimeStepProperties.fMaxStep = this.fTimeStep;
+
+                    this.toStores.Bladder.toPhases.Brine.setTimeStepProperties(tTimeStepProperties);
+                    
                 elseif(this.toStores.Bladder.toPhases.Brine.fMass >= 0.01)
                     this.toStores.Bladder.toPhases.Brine.toManips.substance.setActive(true);
                     this.fProcessingFinishTime = this.oTimer.fTime + this.fProcessingTime;
+                    
                 end
             end
             
