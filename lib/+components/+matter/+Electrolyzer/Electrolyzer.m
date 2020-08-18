@@ -80,9 +80,9 @@ classdef Electrolyzer < vsys
             oH2         = this.toStores.Electrolyzer.createPhase(  'gas',    'flow',    'H2_Channel',       0.05, struct('H2', 1e5),  fInitialTemperature, 0.8);
             oO2         = this.toStores.Electrolyzer.createPhase(  'gas',    'flow',    'O2_Channel',       0.05, struct('O2', 1e5),  fInitialTemperature, 0.8);
             
-            oWater      = this.toStores.Electrolyzer.createPhase(  'liquid',            'ProductWater',     0.1, struct('H2O', 1),  fInitialTemperature, 1e5);
+            oWater      = this.toStores.Electrolyzer.createPhase(  'liquid',            'ProductWater',     0.0001, struct('H2O', 1),  fInitialTemperature, 1e5);
             
-            oCooling    = this.toStores.Electrolyzer.createPhase(  'liquid', 'flow', 	'CoolingSystem',    0.1, struct('H2O', 1),  340, 1e5);
+            oCooling    = this.toStores.Electrolyzer.createPhase(  'liquid', 'flow', 	'CoolingSystem',    0.0001, struct('H2O', 1),  340, 1e5);
             
             % pipes
             components.matter.pipe(this, 'Pipe_H2_Out',         1.5, 0.003);
@@ -149,10 +149,9 @@ classdef Electrolyzer < vsys
             
             
             oWaterInlet = solver.matter.residual.branch(this.toBranches.Water_Inlet);
-            oWaterInlet.setPositiveFlowDirection(false);
             
             solver.matter.manual.branch(this.toBranches.Cooling_Inlet);
-            solver.matter.residual.branch(this.toBranches.Cooling_Outlet);
+            solver.matter.manual.branch(this.toBranches.Cooling_Outlet);
             
             csStores = fieldnames(this.toStores);
             % sets numerical properties for the phases of CDRA
@@ -266,6 +265,7 @@ classdef Electrolyzer < vsys
             fCoolantFlow = fHeatFlow / (this.toBranches.Cooling_Inlet.coExmes{2}.oPhase.oCapacity.fSpecificHeatCapacity * 5);
             
             this.toBranches.Cooling_Inlet.oHandler.setFlowRate(-fCoolantFlow);
+            this.toBranches.Cooling_Outlet.oHandler.setFlowRate(fCoolantFlow);
         end
         
         function setPower(this, fPower)

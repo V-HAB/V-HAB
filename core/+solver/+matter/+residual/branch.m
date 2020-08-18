@@ -14,7 +14,6 @@ classdef branch < solver.matter.base.branch
         
         bMultipleResidualSolvers = false;
         aoAdjacentResidualSolver;
-        fResidualFlowRatePrev = 0;
         
         fRequestedFlowRate = 0;
         
@@ -186,15 +185,21 @@ classdef branch < solver.matter.base.branch
             end
             fResidualFlowRate = sum(mfFlowRateExme);
             
-            if fResidualFlowRate > this.fAllowedFlowRate
-                this.fRequestedFlowRate = (fResidualFlowRate - this.fAllowedFlowRate) * iDir;
+            if this.fAllowedFlowRate ~= 0
+                if fResidualFlowRate > this.fAllowedFlowRate
+                    this.fRequestedFlowRate = (fResidualFlowRate - this.fAllowedFlowRate) * iDir;
+                elseif sign(fResidualFlowRate) ~= sign(this.fAllowedFlowRate)
+                    this.fRequestedFlowRate = fResidualFlowRate * iDir;
+                else
+                    this.fRequestedFlowRate = 0;
+                end
             else
-                this.fRequestedFlowRate = 0;
+                this.fRequestedFlowRate = fResidualFlowRate * iDir;
             end
             
             %fprintf('%i\t(%.7fs)\tBranch %s Residual Solver - set Flow Rate %f\n', this.oBranch.oTimer.iTick, this.oBranch.oTimer.fTime, this.oBranch.sName, this.fRequestedFlowRate);
                 
-            if (this.fRequestedFlowRate ~= this.fResidualFlowRatePrev)
+            if (this.fRequestedFlowRate ~= this.oBranch.fFlowRate)
                 update@solver.matter.base.branch(this, this.fRequestedFlowRate);
                 this.updateFlowProcs();
                 this.fLastUpdateTime = this.oBranch.oTimer.fTime;
@@ -229,8 +234,6 @@ classdef branch < solver.matter.base.branch
             if this.oBranch.coExmes{iOtherExme}.oPhase.bFlow
                 this.oBranch.coExmes{iOtherExme}.oPhase.updatePartials();
             end
-            
-            this.fResidualFlowRatePrev = this.fRequestedFlowRate;
         end
         
         function updateFlowProcs(this,~)
