@@ -27,6 +27,8 @@ classdef branch < solver.thermal.base.branch
             % phase to phase
             this@solver.thermal.base.branch(oBranch, 'fluidic');
             
+            this.bFluidicSolver = true;
+            
             % Check if the connected matter reference is a branch or a P2P
             % and bind the update of the branch to the corresponding
             % trigger which indicates that the mass flow rate is 

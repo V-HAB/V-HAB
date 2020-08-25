@@ -68,7 +68,7 @@ classdef flow < thermal.capacity
                 % represent a matter based mass transfer, and therefore
                 % we can use this to calculate the overall heat
                 % capacity flow entering the phase
-                if isa(this.aoExmes(iExme).oBranch.oHandler, 'solver.thermal.basic_fluidic.branch')
+                if this.aoExmes(iExme).oBranch.oHandler.bFluidicSolver
                     % Now we need to find out in which direction the
                     % branch is connected. Positive is from left to
                     % right. In this case we are looking at the coExmes

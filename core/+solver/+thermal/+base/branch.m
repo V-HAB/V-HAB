@@ -63,6 +63,8 @@ classdef branch < base & event.source
         % See matter.branch, bTriggerSetFlowRate, for more!
         bTriggerUpdateCallbackBound = false;
         bTriggerRegisterUpdateCallbackBound = false;
+        
+        bFluidicSolver = false;
     end
     
     

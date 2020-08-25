@@ -844,7 +844,12 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Checking for NaNs. It is necessary to do this here so the
             % origin of NaNs can be found easily during debugging.
             if any(isnan(afTotalInOuts))
-                error('VHAB:Phase:ExMeFlowRateIsNaN', 'Error in phase ''%s''. The flow rate of EXME ''%s'' is NaN.', this.sName, this.coProcsEXME{isnan(afTotalInOuts)}.sName);
+                for iI = 1:this.iProcsEXME
+                    if any(isnan(mfTotalFlows(iI,:)))
+                        disp(['Error in phase ', this.sName, '. The flow rate of EXME ', this.coProcsEXME{iI}.sName, ' is NaN.']);
+                    end
+                end
+                error('VHAB:Phase:ExMeFlowRateIsNaN', 'Error in phase ''%s''. The flow rate of EXME ''%s'' is NaN.', this.sName, this.coProcsEXME{iI}.sName);
             end
         end
         
