@@ -92,8 +92,8 @@ classdef Electrolyzer < vsys
             components.matter.pipe(this, 'Pipe_Cooling_Out',    1.5, 0.003);
             
             % valves
-            components.matter.valve(this,'Valve_H2', false);
-            components.matter.valve(this,'Valve_O2', false);
+            components.matter.valve(this,'Valve_H2', true);
+            components.matter.valve(this,'Valve_O2', true);
             
             % branches
             matter.branch(this, oH2,        {'Valve_H2', 'Pipe_H2_Out'},  	'H2_Outlet',         'H2_Outlet');
@@ -270,6 +270,22 @@ classdef Electrolyzer < vsys
         
         function setPower(this, fPower)
             this.fPower = fPower;
+            
+            if this.fPower > 0
+                if ~this.toProcsF2F.Valve_H2.bOpen
+                    this.toProcsF2F.Valve_H2.setOpen(true);
+                end
+                if ~this.toProcsF2F.Valve_O2.bOpen
+                    this.toProcsF2F.Valve_O2.setOpen(true);
+                end
+            elseif this.fPower == 0
+                if this.toProcsF2F.Valve_H2.bOpen
+                    this.toProcsF2F.Valve_H2.setOpen(false);
+                end
+                if this.toProcsF2F.Valve_O2.bOpen
+                    this.toProcsF2F.Valve_O2.setOpen(false);
+                end
+            end
             
             this.calculate_voltage();
         end

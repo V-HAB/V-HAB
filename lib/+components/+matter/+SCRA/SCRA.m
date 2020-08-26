@@ -52,21 +52,28 @@ classdef SCRA < vsys
             
             fVolumeCRA_Sabatier = 0.1;
             matter.store(this, 'CRA_Sabatier', fVolumeCRA_Sabatier);
-            oCRA_SabatierPhase	= this.toStores.CRA_Sabatier.createPhase( 'gas', 'flow', 'CRA_Sabatierphase', fVolumeCRA_Sabatier, struct('CO2', fPartialPressureCO2, 'H2', fPartialPressureH2, 'CH4', fPartialPressureCH4, 'H2O', fPartialPressureH2O), 866.15, 0);
+            % The reactor temperature for SCRA can also be found in
+            % "Integrated Test and Evaluation of a 4-Bed Molecular Sieve
+            % (4BMS) Carbon Dioxide Removal System (CDRA), Mechanical
+            % Compressor Engineering Development Unit (EDU), and Sabatier
+            % Engineering Development Unit (EDU)", Knox et. al., 2005 ICES
+            % 2005-01-2864.
+            % While the heaters are mentioned to keep the reactor at 300°F
+            % (422 K), the reactor hot zone temperature in the figures is
+            % shown to be around 1000°F (811 K)
+            oCRA_SabatierPhase	= this.toStores.CRA_Sabatier.createPhase( 'gas', 'flow', 'CRA_Sabatierphase', fVolumeCRA_Sabatier, struct('CO2', fPartialPressureCO2, 'H2', fPartialPressureH2, 'CH4', fPartialPressureCH4, 'H2O', fPartialPressureH2O), 811, 0);
             
-            %substance manipulator that changes educts to products based on
-            %the chemical reaction and the current masses in the reactor.
-            %Also calculates the generated heat flow from this reaction
-            components.matter.SCRA.CRA_Sabatier_manip_proc('CRA_Sabatier_proc', oCRA_SabatierPhase, 0.95);
-            %The second Sabatier reactor does not react anything since the
-            %data that used for the model was for the overall reaction. In
-            %reality the second sabatier reactor is cooled down to a lower
-            %temperature to react remaining H2 and CO2 and achieve a higher
-            %efficiency. The lowered temperature for the Sabatier is
-            %modeled to give the CHX the correct inlet temperature.
-            fVolumeCRA_Sabatier = 0.01;
-            matter.store(this, 'CRA_Sabatier_2', fVolumeCRA_Sabatier);
-            oCRA_SabatierPhase_2	= this.toStores.CRA_Sabatier_2.createPhase( 'gas', 'flow', 'CRA_Sabatierphase_2', fVolumeCRA_Sabatier, struct('CO2', fPartialPressureCO2, 'H2', fPartialPressureH2, 'CH4', fPartialPressureCH4, 'H2O', fPartialPressureH2O), 390.15, 0);
+            % substance manipulator that changes educts to products based on
+            % the chemical reaction and the current masses in the reactor.
+            % Also calculates the generated heat flow from this reaction
+            % according to "Integrated Test and Evaluation of a 4-Bed Molecular
+            % Sieve (4BMS) Carbon Dioxide Removal System (CDRA), Mechanical
+            % Compressor Engineering Development Unit (EDU), and Sabatier
+            % Engineering Development Unit (EDU)", Knox et. al., 2005 ICES
+            % 2005-01-2864 Table 5 the conversion efficiency is between 87%
+            % and 93% with most test points resulting in 88% efficiency.
+            % Therefore, this value is used here
+            components.matter.SCRA.CRA_Sabatier_manip_proc('CRA_Sabatier_proc', oCRA_SabatierPhase, 0.88);
             
             %The actual CHX that is used is unknown and therefore this
             %simply uses a heat exchanger with somewhat realistic values.
@@ -120,7 +127,7 @@ classdef SCRA < vsys
             oCRA_WaterRecLiquidPhase = this.toStores.CRA_WaterRec.createPhase(	'liquid', 'RecoveredWater', 0.5 * fVolumeCRA_WaterRec, struct('H2O', 1), 293, 1e5);
             
             fVolumeGasWaterRec = fVolumeCRA_WaterRec - oCRA_WaterRecLiquidPhase.fVolume;
-            oCRA_WaterRecGasPhase	= this.toStores.CRA_WaterRec.createPhase( 'gas', 'flow', 'WRecgas', fVolumeGasWaterRec, struct('CO2', fPartialPressureCO2, 'H2', fPartialPressureH2, 'CH4', fPartialPressureCH4, 'H2O', fPartialPressureH2O), 420.15, 0);
+            oCRA_WaterRecGasPhase	= this.toStores.CRA_WaterRec.createPhase( 'gas', 'flow', 'WRecgas', fVolumeGasWaterRec, struct('CO2', fPartialPressureCO2, 'H2', fPartialPressureH2, 'CH4', fPartialPressureCH4, 'H2O', fPartialPressureH2O), 280, 0);
             
             % adds the P2P proc for the CHX that takes care of the actual
             % phase change
@@ -147,13 +154,11 @@ classdef SCRA < vsys
             components.matter.pipe(this, 'Pipe_009', fPipelength, fPipeDiameter, fFrictionFactor);
             components.matter.pipe(this, 'Pipe_010', fPipelength, fPipeDiameter, fFrictionFactor);
             components.matter.pipe(this, 'Pipe_011', fPipelength, fPipeDiameter, fFrictionFactor);
-            components.matter.pipe(this, 'Pipe_012', fPipelength, fPipeDiameter, fFrictionFactor);
             
             components.matter.SCRA.CRA_Vacuum_Outlet(this, 'VacuumOutlet');
-            components.matter.SCRA.CRA_H2_Regulator(this,  'CRA_H2_Regulator');
+            components.matter.SimplePressureRegulator(this, 'CRA_H2_Regulator', 1.5e5);
             
             components.matter.valve(this, 'SabatierValve', 0);
-            components.matter.valve(this, 'SabatierValve2', 0);
             components.matter.valve(this, 'VentValveH2', 0);
             % In this case we use a normal valve, like a check valve
             components.matter.valve(this, 'Checkvalve', 0);
@@ -166,11 +171,10 @@ classdef SCRA < vsys
             matter.branch(this, oAccumulatorCO2,            {'Pipe_002'},                                       'SCRA_CO2_In',          'CRA_CO2_In');
             matter.branch(this, oAccumulatorCO2,            {'Pipe_003'},                                       oCRA_SabatierPhase, 	'Accumulator_To_CRA');
             
-            matter.branch(this, oCRA_SabatierPhase,         {'Pipe_004', 'SabatierValve2'},                     oCRA_SabatierPhase_2, 	'Sabatier1to2');
-            matter.branch(this, oCRA_SabatierPhase_2,       {'Pipe_005', 'CRA_SabatierCHX_1', 'Checkvalve'},	oCRA_WaterRecGasPhase,	'CRA_ProductstoWaterRecbranch');
-            matter.branch(this, oCRA_WaterRecGasPhase,      {'Pipe_006', 'VacuumOutlet', 'VacuumCheckvalve'},  	'SCRA_DryGas_Out',   	'CRA_DryGastoVent');
-            matter.branch(this, oCRA_WaterRecLiquidPhase,	{'Pipe_007'},                                       'SCRA_Condensate_Out',	'CRA_RecWaterOut');
-            matter.branch(this, oCRA_CHXPhase,              {'Pipe_008'},                                       'SCRA_CoolantIn',     	'CRA_CoolantLoopIn');
+            matter.branch(this, oCRA_SabatierPhase,         {'Pipe_004', 'CRA_SabatierCHX_1', 'Checkvalve'},	oCRA_WaterRecGasPhase,	'CRA_ProductstoWaterRecbranch');
+            matter.branch(this, oCRA_WaterRecGasPhase,      {'Pipe_005', 'VacuumOutlet', 'VacuumCheckvalve'},  	'SCRA_DryGas_Out',   	'CRA_DryGastoVent');
+            matter.branch(this, oCRA_WaterRecLiquidPhase,	{'Pipe_006'},                                       'SCRA_Condensate_Out',	'CRA_RecWaterOut');
+            matter.branch(this, oCRA_CHXPhase,              {'Pipe_007'},                                       'SCRA_CoolantIn',     	'CRA_CoolantLoopIn');
             % As can be seen in the Schematic of the SCRA (Figure 3 in
             % "Integrated Test and Evaluation of a 4-Bed Molecular Sieve
             % (4BMS) Carbon Dioxide Removal System (CDRA), Mechanical
@@ -178,11 +182,11 @@ classdef SCRA < vsys
             % Engineering Development Unit (EDU)", Knox et. al.
             % ICES-2005-01-2864. The heat from the sabatier reaction also
             % enter the coolant flow after the CHX:
-            matter.branch(this, oCRA_CHXPhase,              {'Pipe_009', 'CRA_SabatierCHX_2', 'CRA_SabatierHeater'},	'SCRA_CoolantOut',    	'CRA_CoolantLoopOut');
+            matter.branch(this, oCRA_CHXPhase,              {'Pipe_008', 'CRA_SabatierCHX_2', 'CRA_SabatierHeater'},	'SCRA_CoolantOut',    	'CRA_CoolantLoopOut');
             
-            matter.branch(this, oH2,                        {'Pipe_010', 'SabatierValve'},                    	oCRA_SabatierPhase, 	'H2_to_Sabatier');
-            matter.branch(this, oH2,                        {'Pipe_011', 'VentValveH2'},                    	oCRA_WaterRecGasPhase, 	'H2_to_Vent');
-            matter.branch(this, oAccumulatorCO2,            {'Pipe_012'},                                       oCRA_WaterRecGasPhase, 	'CO2_to_Vent');
+            matter.branch(this, oH2,                        {'Pipe_009', 'SabatierValve'},                    	oCRA_SabatierPhase, 	'H2_to_Sabatier');
+            matter.branch(this, oH2,                        {'Pipe_010', 'VentValveH2'},                    	oCRA_WaterRecGasPhase, 	'H2_to_Vent');
+            matter.branch(this, oAccumulatorCO2,            {'Pipe_011'},                                       oCRA_WaterRecGasPhase, 	'CO2_to_Vent');
             
         end
         
@@ -193,13 +197,6 @@ classdef SCRA < vsys
             
             oHeatSource = components.thermal.heatsources.ConstantTemperature('Sabatier_Constant_Temperature');
             this.toStores.CRA_Sabatier.toPhases.CRA_Sabatierphase.oCapacity.addHeatSource(oHeatSource);
-            
-            oHeatSource = components.thermal.heatsources.ConstantTemperature('Sabatier2_Constant_Temperature');
-            this.toStores.CRA_Sabatier_2.toPhases.CRA_Sabatierphase_2.oCapacity.addHeatSource(oHeatSource);
-            
-            oHeatSource = components.thermal.heatsources.ConstantTemperature('WaterRecovery_Constant_Temperature');
-            this.toStores.CRA_WaterRec.toPhases.WRecgas.oCapacity.addHeatSource(oHeatSource);
-            
         end
         
         function createSolverStructure(this)
@@ -224,7 +221,6 @@ classdef SCRA < vsys
             aoMultiSolverBranches = [this.toBranches.CRA_H2_In,...
                                      this.toBranches.H2_to_Sabatier,...
                                      this.toBranches.H2_to_Vent,...
-                                     this.toBranches.Sabatier1to2,...
                                      this.toBranches.CRA_ProductstoWaterRecbranch,...
                                      this.toBranches.CRA_DryGastoVent];
             
@@ -287,7 +283,6 @@ classdef SCRA < vsys
             % through the sabatier reactors in case no CO2 is available
             this.toProcsF2F.VentValveH2.setOpen(   	false);
             this.toProcsF2F.SabatierValve.setOpen(  true);
-            this.toProcsF2F.SabatierValve2.setOpen( true);
             this.toProcsF2F.Checkvalve.setOpen(     true);
                 
             fAccumulatorPressure = this.toStores.CRA_Accumulator.toPhases.CO2.fPressure;
@@ -303,7 +298,6 @@ classdef SCRA < vsys
                 fCO2FlowRate = 0;
                 this.toProcsF2F.VentValveH2.setOpen(  	true);
                 this.toProcsF2F.SabatierValve.setOpen(  false);
-                this.toProcsF2F.SabatierValve2.setOpen( false);
                 this.toProcsF2F.Checkvalve.setOpen(     false);
             elseif fAccumulatorPressure > 1.2e5 && fAccumulatorPressure < 2e5 && this.toBranches.Accumulator_To_CRA.fFlowRate == 0
                 % If it was turned off, remain off until we reach 2 bar
@@ -311,7 +305,6 @@ classdef SCRA < vsys
                 fCO2FlowRate = 0;
                 this.toProcsF2F.VentValveH2.setOpen(   	true);
                 this.toProcsF2F.SabatierValve.setOpen(  false);
-                this.toProcsF2F.SabatierValve2.setOpen( false);
                 this.toProcsF2F.Checkvalve.setOpen(     false);
             end
             this.toBranches.Accumulator_To_CRA.oHandler.setFlowRate(fCO2FlowRate);

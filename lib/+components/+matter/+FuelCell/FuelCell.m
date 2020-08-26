@@ -80,11 +80,13 @@ classdef FuelCell < vsys
             % different parts of the fuel cell. The store is therefore
             % split into different phases, to represent the different
             % components (H2 Channel, O2 Channel, Membrane, Cooling System)
-            matter.store(this, 'FuelCell', 0.5);
+            matter.store(this, 'FuelCell', 0.3 + 0.1 + 0.05 + 4e-6);
             
-            oH2 =       this.toStores.FuelCell.createPhase(  'gas',     'flow', 'H2_Channel',   0.025, struct('H2', 1e5),  fInitialTemperature, 0.8);
-            oH2_Out =   this.toStores.FuelCell.createPhase(  'gas',     'flow', 'H2_Outlet',    0.025, struct('H2', 1e5),  fInitialTemperature, 0.8);
-            oO2 =       this.toStores.FuelCell.createPhase(  'gas',     'flow', 'O2_Channel',   0.05, struct('O2', 1e5),  fInitialTemperature, 0.8);
+            oH2      = 	this.toStores.FuelCell.createPhase(  'gas',     'flow', 'H2_Channel',   1e-6,   struct('H2', 3e5),	fInitialTemperature, 0.8);
+            oH2_Out  =  this.toStores.FuelCell.createPhase(  'gas',     'flow', 'H2_Outlet',    1e-6,   struct('H2', 3e5),	fInitialTemperature, 0.8);
+            oH2_Loop =  this.toStores.FuelCell.createPhase(  'gas'            , 'H2_Loop',      0.025,  struct('H2', 3e5),	fInitialTemperature, 0.8);
+            oO2      = 	this.toStores.FuelCell.createPhase(  'gas',     'flow', 'O2_Channel',   1e-6,   struct('O2', 3e5),	fInitialTemperature, 0.8);
+            oO2_Loop = 	this.toStores.FuelCell.createPhase(  'gas'            , 'O2_Loop',      0.025,  struct('O2', 3e5),	fInitialTemperature, 0.8);
             
             oMembrane = this.toStores.FuelCell.createPhase(  'gas',             'Membrane',     0.3, struct('O2', 0.5e5, 'H2', 0.5e5),  fInitialTemperature, 0.8);
             
@@ -94,43 +96,27 @@ classdef FuelCell < vsys
             oO2_Dryer       = this.toStores.O2_WaterSeperation.createPhase(  'gas', 'flow', 'O2',   1e-6, struct('O2', 1e5),  fInitialTemperature, 0.8);
             oRecoveredWater = this.toStores.O2_WaterSeperation.createPhase(  'liquid',      'Water',   0.01, struct('H2O', 1),  fInitialTemperature, 1e5);
             
-            components.matter.FuelCell.components.Dryer(this.toStores.O2_WaterSeperation, 'Dryer', oO2_Dryer, oRecoveredWater, 0.9, 'H2O');
-            
             % pipes
-            components.matter.pipe(this, 'Pipe_H2_In',          1.5, 0.003);
-            components.matter.pipe(this, 'Pipe_H2_Out',         1.5, 0.003);
-            components.matter.pipe(this, 'Pipe_O2_In',          1.5, 0.003);
-            components.matter.pipe(this, 'Pipe_O2_Out',         1.5, 0.003);
-            components.matter.pipe(this, 'Pipe_Cooling_In',     1.5, 0.003);
-            components.matter.pipe(this, 'Pipe_Cooling_Out',    1.5, 0.003);
-            
-            % valves
-            components.matter.valve(this,'Valve_H2', false);
-            components.matter.valve(this,'Valve_O2', false);
-            
-            components.matter.checkvalve(this,'Checkvalve_H2', false);
-            components.matter.checkvalve(this,'Checkvalve_O2', false);
-            
+            components.matter.pipe(this, 'Pipe_H2_Loop',        1.5, 0.03);
+            components.matter.pipe(this, 'Pipe_O2_Loop',        1.5, 0.03);
             % fans
-            components.matter.fan_simple(this, 'H2_Compressor', 2e5, false);
-            components.matter.fan_simple(this, 'O2_Compressor', 2e5, false);
+            components.matter.fan_simple(this, 'H2_Compressor', 0.5e5, false);
+            components.matter.fan_simple(this, 'O2_Compressor', 0.5e5, false);
             
-            % Internal Branches
-            matter.branch(this, oH2,                {'H2_Compressor'},                          oH2_Out,            'H2_to_Outlet');
-            matter.branch(this, oO2,                {'O2_Compressor'},                          oO2_Dryer,          'O2_to_Dryer');
+            matter.branch(this, oH2_Loop,        	{},              	'H2_Inlet',         'H2_Inlet');
+            matter.branch(this, oH2_Out,          	{'Pipe_H2_Loop'},	oH2_Loop,         	'H2_Outlet');
+            matter.branch(this, oH2_Loop,         	{},             	oH2,                'H2_Loop');
+            matter.branch(this, oH2,                {'H2_Compressor'},	oH2_Out,            'H2_to_Outlet');
             
-            % Interfaces branches
-            matter.branch(this, oH2,                {'Valve_H2', 'Pipe_H2_In'},                 'H2_Inlet',         'H2_Inlet');
-            matter.branch(this, oH2_Out,          	{'Pipe_H2_Out', 'Checkvalve_H2'},           'H2_Outlet',        'H2_Outlet');
+            matter.branch(this, oO2_Loop,        	{},              	'O2_Inlet',         'O2_Inlet');
+            matter.branch(this, oO2_Dryer,          {'Pipe_O2_Loop'},	oO2_Loop,           'O2_Outlet');
+            matter.branch(this, oO2_Loop,           {},             	oO2,                'O2_Loop');
+            matter.branch(this, oO2,                {'O2_Compressor'},	oO2_Dryer,          'O2_to_Dryer');
+           
+            matter.branch(this, oCooling,           {},                 'Cooling_Inlet',  	'Cooling_Inlet');
+            matter.branch(this, oCooling,           {},                 'Cooling_Outlet',	'Cooling_Outlet');
             
-            matter.branch(this, oO2,                {'Valve_O2', 'Pipe_O2_In'},                 'O2_Inlet',     'O2_Inlet');
-            matter.branch(this, oO2_Dryer,          {'Pipe_O2_Out', 'Checkvalve_O2'},         	'O2_Outlet',        'O2_Outlet');
-            
-            
-            matter.branch(this, oCooling,           {'Pipe_Cooling_In'},                        'Cooling_Inlet',  	'Cooling_Inlet');
-            matter.branch(this, oCooling,           {'Pipe_Cooling_Out'},                       'Cooling_Outlet',	'Cooling_Outlet');
-            
-            matter.branch(this, oRecoveredWater,  	{},                                         'Water_Outlet',     'Water_Outlet');
+            matter.branch(this, oRecoveredWater,  	{},                 'Water_Outlet',     'Water_Outlet');
             
             % adding the fuel cell reaction manip
             components.matter.FuelCell.components.FuelCellReaction('FuelCellReaction', oMembrane);
@@ -138,16 +124,15 @@ classdef FuelCell < vsys
             components.matter.P2Ps.ManualP2P(this.toStores.FuelCell, 'H2_to_Membrane',  oH2,        oMembrane);
             components.matter.P2Ps.ManualP2P(this.toStores.FuelCell, 'O2_to_Membrane',  oO2,        oMembrane);
             components.matter.P2Ps.ManualP2P(this.toStores.FuelCell, 'Membrane_to_O2',  oMembrane,  oO2);
+            components.matter.P2Ps.ManualP2P(this.toStores.O2_WaterSeperation, 'Dryer',           oO2_Dryer,  oRecoveredWater);
         end
         
-        function setIfFlows(this, H2_Inlet, H2_Outlet, O2_Inlet, O2_Outlet, Cooling_Inlet, Cooling_Outlet, Water_Outlet)
+        function setIfFlows(this, H2_Inlet, O2_Inlet, Cooling_Inlet, Cooling_Outlet, Water_Outlet)
             % This function connects the system and subsystem level branches with each other. It
             % uses the connectIF function provided by the matter.container class
             
             this.connectIF('H2_Inlet',          H2_Inlet);
-            this.connectIF('H2_Outlet',         H2_Outlet);
             this.connectIF('O2_Inlet',          O2_Inlet);
-            this.connectIF('O2_Outlet',         O2_Outlet);
             this.connectIF('Cooling_Inlet',     Cooling_Inlet);
             this.connectIF('Cooling_Outlet',    Cooling_Outlet);
             this.connectIF('Water_Outlet',      Water_Outlet);
@@ -159,30 +144,38 @@ classdef FuelCell < vsys
             oFuelCellHeatSource = thermal.heatsource('FuelCell_HeatSource', 0);
             this.toStores.FuelCell.toPhases.CoolingSystem.oCapacity.addHeatSource(oFuelCellHeatSource);
 
+            oCTHeatSource = components.thermal.heatsources.ConstantTemperature('H2_HeatSource');
+            this.toStores.FuelCell.toPhases.H2_Loop.oCapacity.addHeatSource(oCTHeatSource);
+            
+            oCTHeatSource = components.thermal.heatsources.ConstantTemperature('O2_HeatSource');
+            this.toStores.FuelCell.toPhases.O2_Loop.oCapacity.addHeatSource(oCTHeatSource);
         end
         
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
             
             tSolverProperties.fMaxError = 1e-6;
-            tSolverProperties.iMaxIterations = 500;
+            tSolverProperties.iMaxIterations = 1000;
             tSolverProperties.fMinimumTimeStep = 1;
             tSolverProperties.iIterationsBetweenP2PUpdate = 200;
-            tSolverProperties.bSolveOnlyFlowRates = true;
             
-            aoMultiSolverBranches = [this.toBranches.H2_Inlet;...
+            aoMultiSolverBranches = [this.toBranches.H2_Outlet;...
                                      this.toBranches.H2_to_Outlet;...
-                                     this.toBranches.H2_Outlet;...
-                                     this.toBranches.O2_Inlet;...
                                      this.toBranches.O2_to_Dryer;...
                                      this.toBranches.O2_Outlet];
-            
+        
             oSolver = solver.matter_multibranch.iterative.branch(aoMultiSolverBranches, 'complex');
             oSolver.setSolverProperties(tSolverProperties);
             
+            solver.matter.manual.branch(this.toBranches.H2_Loop);
+            solver.matter.manual.branch(this.toBranches.O2_Loop);
+            this.toBranches.H2_Loop.oHandler.setFlowRate(0.1);
+            this.toBranches.O2_Loop.oHandler.setFlowRate(0.1);
+            solver.matter.manual.branch(this.toBranches.H2_Inlet);
+            solver.matter.manual.branch(this.toBranches.O2_Inlet);
             
             solver.matter.manual.branch(this.toBranches.Cooling_Inlet);
-            solver.matter.residual.branch(this.toBranches.Cooling_Outlet);
+            solver.matter.manual.branch(this.toBranches.Cooling_Outlet);
             
             solver.matter.residual.branch(this.toBranches.Water_Outlet);
             
@@ -214,8 +207,8 @@ classdef FuelCell < vsys
             
             fMaxCurrent = this.fMaxCurrentDensity * this.fMembraneArea;
             
-            fCurrentH2InletFlow = abs(this.toBranches.H2_Inlet.fFlowRate * this.toBranches.H2_Inlet.aoFlows(1).arPartialMass(this.oMT.tiN2I.H2));
-            fCurrentO2InletFlow = abs(this.toBranches.O2_Inlet.fFlowRate * this.toBranches.O2_Inlet.aoFlows(1).arPartialMass(this.oMT.tiN2I.O2));
+            fCurrentH2InletFlow = abs(this.toBranches.H2_to_Outlet.fFlowRate * this.toBranches.H2_to_Outlet.aoFlows(1).arPartialMass(this.oMT.tiN2I.H2));
+            fCurrentO2InletFlow = abs(this.toBranches.O2_to_Dryer.fFlowRate  * this.toBranches.O2_to_Dryer.aoFlows(1).arPartialMass(this.oMT.tiN2I.O2));
             
             fMolarFlowH2 = this.rMaxReactingH2 * fCurrentH2InletFlow / this.oMT.afMolarMass(this.oMT.tiN2I.H2);
             fMolarFlowO2 = this.rMaxReactingO2 * fCurrentO2InletFlow / this.oMT.afMolarMass(this.oMT.tiN2I.O2);
@@ -302,10 +295,27 @@ classdef FuelCell < vsys
             fCoolantFlow = fHeatFlow / (this.toBranches.Cooling_Inlet.coExmes{2}.oPhase.oCapacity.fSpecificHeatCapacity * 5);
             
             this.toBranches.Cooling_Inlet.oHandler.setFlowRate(-fCoolantFlow);
+            this.toBranches.Cooling_Outlet.oHandler.setFlowRate(fCoolantFlow);
         end
         
         function setPower(this, fPower)
             this.fPower = fPower;
+            
+            if this.fPower == 0
+                if this.toProcsF2F.H2_Compressor.bTurnedOn
+                    this.toProcsF2F.H2_Compressor.switchOff();
+                end
+                if this.toProcsF2F.O2_Compressor.bTurnedOn
+                    this.toProcsF2F.O2_Compressor.switchOff();
+                end
+            elseif this.fPower > 0
+                if ~this.toProcsF2F.H2_Compressor.bTurnedOn
+                    this.toProcsF2F.H2_Compressor.switchOn();
+                end
+                if ~this.toProcsF2F.O2_Compressor.bTurnedOn
+                    this.toProcsF2F.O2_Compressor.switchOn();
+                end
+            end
             
             this.calculate_voltage();
         end

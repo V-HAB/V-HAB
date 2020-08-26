@@ -70,11 +70,7 @@ classdef RFCS < vsys
             
             %% Fuel Cell Connections
             matter.branch(this, 'FuelCell_H2_Inlet',            {},                             oH2);
-            matter.branch(this, 'FuelCell_H2_Outlet',       	{},                             oH2);
-            
             matter.branch(this, 'FuelCell_O2_Inlet',            {},                             oO2);
-            matter.branch(this, 'FuelCell_O2_Outlet',           {},                             oO2);
-            
             matter.branch(this, 'FuelCell_Water_Outlet',    	{},                             oWater);
             
             matter.branch(this, 'FuelCell_Cooling_Inlet',       {},                             oCooling);
@@ -88,7 +84,7 @@ classdef RFCS < vsys
             matter.branch(this, 'Electrolyzer_Cooling_Inlet',   {},                             oCooling);
             matter.branch(this, 'Electrolyzer_Coooling_Outlet',	{},                             oCooling);
             
-            this.toChildren.FuelCell.setIfFlows('FuelCell_H2_Inlet', 'FuelCell_H2_Outlet', 'FuelCell_O2_Inlet', 'FuelCell_O2_Outlet', 'FuelCell_Cooling_Inlet', 'FuelCell_Cooling_Outlet', 'FuelCell_Water_Outlet')
+            this.toChildren.FuelCell.setIfFlows('FuelCell_H2_Inlet', 'FuelCell_O2_Inlet', 'FuelCell_Cooling_Inlet', 'FuelCell_Cooling_Outlet', 'FuelCell_Water_Outlet')
             this.toChildren.Electrolyzer.setIfFlows('Electrolyzer_H2_Outlet', 'Electrolyzer_O2_Outlet', 'Electrolyzer_Water_Inlet', 'Electrolyzer_Cooling_Inlet', 'Electrolyzer_Coooling_Outlet')
         end
         
@@ -154,52 +150,9 @@ classdef RFCS < vsys
                 this.toChildren.Electrolyzer.setPower(fSetPower);
                 this.toChildren.FuelCell.setPower(0);
                 
-                this.toChildren.Electrolyzer.toBranches.Cooling_Inlet.oHandler.setFlowRate(-0.1);
-                this.toChildren.FuelCell.toBranches.Cooling_Inlet.oHandler.setFlowRate(0);
-                
-                if ~this.toChildren.Electrolyzer.toProcsF2F.Valve_H2.bOpen
-                    this.toChildren.Electrolyzer.toProcsF2F.Valve_H2.setOpen(true);
-                end
-                if ~this.toChildren.Electrolyzer.toProcsF2F.Valve_O2.bOpen
-                    this.toChildren.Electrolyzer.toProcsF2F.Valve_O2.setOpen(true);
-                end
-                
-                if this.toChildren.FuelCell.toProcsF2F.Valve_H2.bOpen
-                    this.toChildren.FuelCell.toProcsF2F.H2_Compressor.switchOff();
-                    this.toChildren.FuelCell.toProcsF2F.Valve_H2.setOpen(false);
-                end
-                if this.toChildren.FuelCell.toProcsF2F.Valve_O2.bOpen
-                    this.toChildren.FuelCell.toProcsF2F.O2_Compressor.switchOff();
-                    this.toChildren.FuelCell.toProcsF2F.Valve_O2.setOpen(false);
-                end
-                
             else
                 this.toChildren.Electrolyzer.setPower(0);
                 this.toChildren.FuelCell.setPower(-fAvailablePower);
-                
-                this.toChildren.Electrolyzer.toBranches.Cooling_Inlet.oHandler.setFlowRate(0);
-                this.toChildren.FuelCell.toBranches.Cooling_Inlet.oHandler.setFlowRate(-0.1);
-                
-                if this.toChildren.Electrolyzer.toProcsF2F.Valve_H2.bOpen
-                    this.toChildren.Electrolyzer.toProcsF2F.Valve_H2.setOpen(false);
-                end
-                if this.toChildren.Electrolyzer.toProcsF2F.Valve_O2.bOpen
-                    this.toChildren.Electrolyzer.toProcsF2F.Valve_O2.setOpen(false);
-                end
-            end
-            
-            % Already start supplying the fuel cell with hydrogen and
-            % oxygen before it is required. No electricity is generated
-            % beforehand because the electric circuit is not yet closed
-            if fAvailablePower < 50
-                if ~this.toChildren.FuelCell.toProcsF2F.Valve_H2.bOpen
-                    this.toChildren.FuelCell.toProcsF2F.H2_Compressor.switchOn();
-                    this.toChildren.FuelCell.toProcsF2F.Valve_H2.setOpen(true);
-                end
-                if ~this.toChildren.FuelCell.toProcsF2F.Valve_O2.bOpen
-                    this.toChildren.FuelCell.toProcsF2F.O2_Compressor.switchOn();
-                    this.toChildren.FuelCell.toProcsF2F.Valve_O2.setOpen(true);
-                end
             end
             
             % The target temperature for the electrolyzer and fuel cell is
@@ -213,6 +166,7 @@ classdef RFCS < vsys
                 this.toBranches.Radiator_Cooling.oHandler.setFlowRate(0);
             end
             
+            this.oTimer.synchronizeCallBacks();
         end
     end
 end

@@ -47,12 +47,10 @@ classdef CRA_Sabatier_Heater < matter.procs.f2f
             %the one that is required to keep the temperature constant is
             %the heat flow that the coolant air flow has to remove.
             fHeatFlowUpkeepSabatier = this.oContainer.toStores.CRA_Sabatier.aoPhases(1,1).oCapacity.toHeatSources.Sabatier_Constant_Temperature.fHeatFlow;
-            %the heat flow required to cool down sabatier 2 to 250°C
-            fHeatFlowSabatierCooling = this.oContainer.toStores.CRA_Sabatier_2.aoPhases(1,1).oCapacity.toHeatSources.Sabatier2_Constant_Temperature.fHeatFlow;
             
             %the heat flow that has to go into the cooling air to achieve a
             %constant temperature for both sabatier reactors
-            this.fHeatFlow = fHeatFlowProducedSabatier-abs(fHeatFlowUpkeepSabatier)+abs(fHeatFlowSabatierCooling);
+            this.fHeatFlow = fHeatFlowProducedSabatier - fHeatFlowUpkeepSabatier;
             
             fTemperatureOut = (this.fHeatFlow/(inFlow.fFlowRate*inFlow.fSpecificHeatCapacity))+inFlow.fTemperature;
             
