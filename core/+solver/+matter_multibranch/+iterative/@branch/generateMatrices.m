@@ -25,6 +25,7 @@ function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatri
     
     aafPhasePressuresAndFlowRates = zeros(iMatrixHeight, iMatrixHeight);
     afBoundaryConditions          = zeros(iMatrixHeight, 1);
+    this.miColIndexToBranchID     = zeros(1, iMatrixHeight);
     
     iRow = 0;
     
@@ -94,6 +95,8 @@ function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatri
         fFrSum = 0;
         iAdded = 0;
         
+        this.tiObjUuidsToRowIndex.(oP.sUUID) = iRow;
+        
         miBranches = zeros(oP.iProcsEXME,1);
         
         bExternalBranch = false;
@@ -123,6 +126,8 @@ function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatri
                 miBranches(iB) = find(this.aoBranches == oB);
                 
                 iCol = this.tiObjUuidsToColIndex.(oB.sUUID);
+                
+                this.miColIndexToBranchID(iCol) = miBranches(iB);
                 
                 aafPhasePressuresAndFlowRates(iRow, iCol) = iSign;
                 iAdded = iAdded + 1;

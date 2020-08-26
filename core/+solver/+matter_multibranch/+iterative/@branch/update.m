@@ -632,7 +632,64 @@ function update(this)
                 if this.abChokedBranches(iB) == true
                     afDeltaPressures = this.cafChokedBranchPressureDiffs{iB};
                 end
-
+                
+                if this.afFlowRates(iB) >= 0
+                    iExme = 2;
+                else
+                    iExme = 1;
+                end
+                if this.mbFlowP2P(iB, iExme)
+                    oPhase = this.aoBranches(iB).coExmes{iExme}.oPhase;
+                    [afInFlowRates, aarInPartials] = this.getPhaseInFlows(oPhase);
+                    afPartialInFlows = sum(afInFlowRates .* aarInPartials);
+                    
+                    afP2PFlowsAfter = zeros(1, this.oMT.iSubstances);
+                    afP2PFlowsBefore = zeros(1, this.oMT.iSubstances);
+                    for iP2P = 1:length(this.coFlowP2P{iB, iExme})
+                        afP2PFlows = this.ciFlowP2PSign{iB, iExme}{iP2P} * (this.coFlowP2P{iB, iExme}{iP2P}.fFlowRate * this.coFlowP2P{iB, iExme}{iP2P}.arPartialMass);
+                        
+                        afPhaseFlows = afPartialInFlows + afP2PFlows;
+                        abLimitFlows = afPhaseFlows < 0;
+                        if any(abLimitFlows)
+                            this.coFlowP2P{iB, iExme}{iP2P}.limitFlows(afPartialInFlows, abLimitFlows);
+                        end
+                        
+                        afP2PFlowsBefore = afP2PFlowsBefore + afP2PFlows;
+                        
+                        afP2PFlowsAfter = afP2PFlowsAfter + this.ciFlowP2PSign{iB, iExme}{iP2P} * (this.coFlowP2P{iB, iExme}{iP2P}.fFlowRate * this.coFlowP2P{iB, iExme}{iP2P}.arPartialMass);
+                    end
+                    
+                    mfZeroSum = mfFullPhasePressuresAndFlowRates(this.tiObjUuidsToRowIndex.(oPhase.sUUID),:);
+                    
+                    aiBranches = find(mfZeroSum ~= 0);
+                    
+                    aiBranches = aiBranches(aiBranches ~= this.tiObjUuidsToColIndex.(this.aoBranches(iB).sUUID));
+                    
+                    if ~isempty(aiBranches)
+                        iCurrentBranchSign = mfZeroSum(this.tiObjUuidsToColIndex.(this.aoBranches(iB).sUUID));
+                        
+                        iCurrentBranchSign = iCurrentBranchSign * sign(this.afFlowRates(iB));
+                        
+                        miOutflowBranches = zeros(length(aiBranches));
+                        for iOtherBranch = 1:length(aiBranches)
+                            iOtherSign = mfZeroSum(aiBranches(iOtherBranch)) * sign(this.afFlowRates(this.miColIndexToBranchID(aiBranches(iOtherBranch))));
+                            % If this is different, we found an outflowing
+                            % branch
+                            if iOtherSign ~= iCurrentBranchSign
+                                miOutflowBranches(iOtherBranch) = this.miColIndexToBranchID(aiBranches(iOtherBranch));
+                            end
+                        end
+                        miOutflowBranches(miOutflowBranches == 0) = [];
+                        
+                        fP2PFlowDiff = sum(afP2PFlowsAfter) - sum(afP2PFlowsBefore);
+                        fTotalOutFlow = sum(abs(this.afFlowRates(miOutflowBranches)));
+                        for iOutflow = 1:length(miOutflowBranches)
+                            this.afFlowRates(miOutflowBranches(iOutflow)) = this.afFlowRates(miOutflowBranches(iOutflow)) - (abs(this.afFlowRates(miOutflowBranches(iOutflow)) / fTotalOutFlow) * fP2PFlowDiff);
+                        end
+                    end
+                end
+                
+                
                 % Now we can call the setFlowRate callback.
                 this.chSetBranchFlowRate{iB}(this.afFlowRates(iB), afDeltaPressures);
             end

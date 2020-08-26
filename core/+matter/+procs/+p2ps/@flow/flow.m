@@ -61,6 +61,23 @@ classdef flow < matter.procs.p2p
                 end
             end
         end
+        
+        function limitFlows(this, afInFlows, abLimitFlows)
+            
+            afPartialFlows = this.fFlowRate * this.arPartialMass;
+            if this.fFlowRate >= 0
+                afPartialFlows(abLimitFlows) = afInFlows(abLimitFlows);
+            else
+                afPartialFlows(abLimitFlows) = - afInFlows(abLimitFlows);
+            end
+            fFlowRate = sum(afPartialFlows);
+            if fFlowRate ~= 0
+                arPartials = afPartialFlows ./ fFlowRate;
+            else
+                arPartials = zeros(1, this.oMT.iSubstances);
+            end
+            this.setMatterProperties(fFlowRate, arPartials);
+        end
     end
     
     methods (Abstract)

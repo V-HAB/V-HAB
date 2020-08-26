@@ -254,6 +254,8 @@ classdef branch < base & event.source
         % the according column in the solving matrix
         tiObjUuidsToColIndex;
         
+        tiObjUuidsToRowIndex;
+        
         % Cell variable that provides the corresponding object to a column
         % index number (each column represents either a gas flow node or a
         % branch)
@@ -322,6 +324,9 @@ classdef branch < base & event.source
         % row in the solution matrix
         miBranchIndexToRowID;
         
+        % This vector can be used to translate column ids to branch ids
+        miColIndexToBranchID;
+        
         % Integer that tells us how many branches are connected in a row.
         % These must be solved after each other to get the correct p2p
         % flows
@@ -372,6 +377,13 @@ classdef branch < base & event.source
         % properties or not. During the update those properties may change
         % between solver iterations.
         bUpdateInProgress = false;
+        
+        % This matrix contains a row for each branch and two columns (one
+        % for each exme) which contain a boolean to quickly decide whether
+        % the connected phase has a flow P2P connected to it
+        mbFlowP2P;
+        coFlowP2P;
+        ciFlowP2PSign;
     end
     
     properties (SetAccess = protected, GetAccess = public)
@@ -857,10 +869,30 @@ classdef branch < base & event.source
             this.csVariablePressurePhases = fieldnames(this.toVariablePressurePhases);
             this.csObjUuidsToColIndex     = fieldnames(this.tiObjUuidsToColIndex);
             this.csBoundaryPhases         = fieldnames(this.toBoundaryPhases);
+            
+            this.mbFlowP2P      = false(this.iBranches, 2);
+            this.coFlowP2P      = cell(this.iBranches, 2);
+            this.ciFlowP2PSign  = cell(this.iBranches, 2);
+            for iBranch = 1:this.iBranches
+                for iExme = 1:2
+                    oPhase = this.aoBranches(iBranch).coExmes{iExme}.oPhase;
+                    coCurrentFlowP2Ps    = cell(0);
+                    ciCurrentFlowP2PSign = cell(0);
+                    for iPhaseExme = 1:oPhase.iProcsEXME
+                        if oPhase.coProcsEXME{iPhaseExme}.bFlowIsAProcP2P
+                            if isa(oPhase.coProcsEXME{iPhaseExme}.oFlow, 'matter.procs.p2ps.flow')
+                                this.mbFlowP2P(iBranch, iExme)  = true;
+                                coCurrentFlowP2Ps{end+1}        = oPhase.coProcsEXME{iPhaseExme}.oFlow; %#ok
+                                ciCurrentFlowP2PSign{end+1}   	= oPhase.coProcsEXME{iPhaseExme}.iSign; %#ok
+                            end
+                        end
+                    end
+                    this.coFlowP2P{iBranch, iExme}      = coCurrentFlowP2Ps;
+                    this.ciFlowP2PSign{iBranch, iExme}  = ciCurrentFlowP2PSign;
+                end
+            end
         end
-        
     end
-    
     
     methods (Access = protected)
         function [bFoundOtherSolver, oSolver] = findOtherMultiSolver(~, aoBranches)
