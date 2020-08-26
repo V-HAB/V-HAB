@@ -456,7 +456,7 @@ classdef plotter < base
     
     
     methods (Static)
-        function sLabel = getLabel(poUnitsToLabels, tLogProps)
+        function sLabel = getLabel(poUnitsToLabels, tLogProps, bUseSIConventionForLabel)
             % This method returns a string containing one or more lables
             % for the axes of a plot. The input parameters are a map of
             % units to lables that is currently located in the logger class
@@ -472,8 +472,10 @@ classdef plotter < base
                 % linking units to lables and it is not empty, then we
                 % create a new entry in the labels cell that looks nice and
                 % has the format <Label> [<Unit>]
-                if poUnitsToLabels.isKey(tLogProps(iP).sUnit) && ~isempty(poUnitsToLabels(tLogProps(iP).sUnit))
+                if poUnitsToLabels.isKey(tLogProps(iP).sUnit) && ~isempty(poUnitsToLabels(tLogProps(iP).sUnit)) && ~bUseSIConventionForLabel
                     csLabels{iP} = [ poUnitsToLabels(tLogProps(iP).sUnit) ' [' tLogProps(iP).sUnit ']' ];
+                elseif poUnitsToLabels.isKey(tLogProps(iP).sUnit) && ~isempty(poUnitsToLabels(tLogProps(iP).sUnit)) && bUseSIConventionForLabel
+                    csLabels{iP} = [ poUnitsToLabels(tLogProps(iP).sUnit) ' / ' tLogProps(iP).sUnit ];
                 elseif strcmp(tLogProps(iP).sUnit,'-')
                     % The only exeption is the "no unit" unit '-'.
                     csLabels{iP} = '[-]';
@@ -522,7 +524,7 @@ classdef plotter < base
             iNumberOfUnits = length(csUniqueUnits);
         end
         
-        function generatePlot(oPlot, afTime, mfData, tLogProps, sLabelY, sTimeUnit)
+        function generatePlot(oPlot, afTime, mfData, tLogProps, sLabelY, sTimeUnit, bUseSIConventionForLabel)
             % This method generates the actual visible plots within the
             % current MATLAB axes object. The input parameters are used to
             % define some of the axes object's appearance. 
@@ -556,8 +558,12 @@ classdef plotter < base
             ylabel(sLabelY);
             
             % Setting the label of the x axis using the provided string to
-            % describe the unit of time we are using here. 
-            xlabel(['Time in ',sTimeUnit]);
+            % describe the unit of time we are using here.
+            if bUseSIConventionForLabel
+                xlabel(['Time / ',sTimeUnit]);
+            else
+                xlabel(['Time in ',sTimeUnit]);
+            end
         
         end
         

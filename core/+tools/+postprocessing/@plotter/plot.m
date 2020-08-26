@@ -228,6 +228,14 @@ for iFigure = 1:length(this.coFigures)
                 bAlternativeXAxis = false;
             end
             
+            % Checking if this is a plot with an alternate x axis instead
+            % of time
+            if isfield(tPlotOptions, 'bUseSIConventionForLabel')
+                bUseSIConventionForLabel = tPlotOptions.bUseSIConventionForLabel;
+            else
+                bUseSIConventionForLabel = true;
+            end
+            
             % We now have some combination of parameters. The default and
             % most commonly used is a plot of values over time
             % (bAlternativeXAxis == false) that have the same unit
@@ -240,7 +248,7 @@ for iFigure = 1:length(this.coFigures)
                 if isfield(tPlotOptions, 'YLabel')
                     sLabelY = tPlotOptions.YLabel;
                 else
-                    sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
+                    sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps, bUseSIConventionForLabel);
                 end
                 
                 % If the user selected to change the unit of time by which
@@ -249,7 +257,7 @@ for iFigure = 1:length(this.coFigures)
                 
                 % Now we can actually create the plot with all of the
                 % information we have gathered so far.
-                this.generatePlot(oPlot, afTime, mfData, tLogProps, sLabelY, sTimeUnit);
+                this.generatePlot(oPlot, afTime, mfData, tLogProps, sLabelY, sTimeUnit, bUseSIConventionForLabel);
                 
                 % Setting the title of the plot
                 title(oPlot, this.coFigures{iFigure}.coPlots{iRow, iColumn}.sTitle);
@@ -350,12 +358,12 @@ for iFigure = 1:length(this.coFigures)
                 if isfield(tPlotOptions, 'yLabel')
                     sLabelY = tPlotOptions.yLabel;
                 else
-                    sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
+                    sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps, bUseSIConventionForLabel);
                 end
                 
                 % Actually creating the plot with all of the information we
                 % have gathered so far.
-                this.generatePlot(oPlot, afTime, mfData, tLogProps, sLabelY, sTimeUnit);
+                this.generatePlot(oPlot, afTime, mfData, tLogProps, sLabelY, sTimeUnit, bUseSIConventionForLabel);
                 
                 % Setting the title of the plot
                 title(oPlot, this.coFigures{iFigure}.coPlots{iRow, iColumn}.sTitle);
@@ -375,7 +383,7 @@ for iFigure = 1:length(this.coFigures)
                     if isfield(tPlotOptions, 'yLabel')
                         sLabelY = tPlotOptions.yLabel;
                     else
-                        sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
+                        sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps, bUseSIConventionForLabel);
                     end
                     
                     % If the user selected to change the unit of time by which
@@ -400,14 +408,14 @@ for iFigure = 1:length(this.coFigures)
                 if isfield(tPlotOptions, 'yLabel')
                     sLabelY = tPlotOptions.yLabel;
                 else
-                    sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
+                    sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps, bUseSIConventionForLabel);
                 end
                 
                 % Getting the x axis data
                 [ afXData, ~, tXLogProps ] = oLogger.get(tPlotOptions.iAlternativeXAxisIndex, tPlotOptions.sIntervalMode, tPlotOptions.fInterval);
                 
                 % Getting the X label from the logger object
-                sLabelX = this.getLabel(oLogger.poUnitsToLabels, tXLogProps);
+                sLabelX = this.getLabel(oLogger.poUnitsToLabels, tXLogProps, bUseSIConventionForLabel);
                 
                 % Using a specialized version of the generatePlot() method
                 % we used for the left side, we can now create the plot.
