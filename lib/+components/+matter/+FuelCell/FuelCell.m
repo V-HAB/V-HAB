@@ -30,6 +30,9 @@ classdef FuelCell < vsys
         % reacted. For 1 all of the H2/O2 can be reacted
         rMaxReactingH2 = 0.5;
         rMaxReactingO2 = 0.5;
+        
+        fInitialH2;
+        fInitialO2;
     end
     
     
@@ -91,6 +94,9 @@ classdef FuelCell < vsys
             oMembrane = this.toStores.FuelCell.createPhase(  'gas',             'Membrane',     0.3, struct('O2', 0.5e5, 'H2', 0.5e5),  fInitialTemperature, 0.8);
             
             oCooling =  this.toStores.FuelCell.createPhase(  'liquid',  'flow',	'CoolingSystem',0.1, struct('H2O', 1),  340, 1e5);
+            
+            this.fInitialH2 = oH2_Loop.afMass(this.oMT.tiN2I.H2);
+            this.fInitialO2 = oO2_Loop.afMass(this.oMT.tiN2I.O2);
             
             matter.store(this, 'O2_WaterSeperation', 0.01 + 1e-6);
             oO2_Dryer       = this.toStores.O2_WaterSeperation.createPhase(  'gas', 'flow', 'O2',   1e-6, struct('O2', 1e5),  fInitialTemperature, 0.8);
@@ -207,21 +213,17 @@ classdef FuelCell < vsys
             
             fMaxCurrent = this.fMaxCurrentDensity * this.fMembraneArea;
             
-            fCurrentH2InletFlow = abs(this.toBranches.H2_to_Outlet.fFlowRate * this.toBranches.H2_to_Outlet.aoFlows(1).arPartialMass(this.oMT.tiN2I.H2));
-            fCurrentO2InletFlow = abs(this.toBranches.O2_to_Dryer.fFlowRate  * this.toBranches.O2_to_Dryer.aoFlows(1).arPartialMass(this.oMT.tiN2I.O2));
+            fMolarFlowH2 = this.iCells * ((this.fPower / this.fStackVoltage) / (2 * this.oMT.Const.fFaraday));
+            fMolarFlowO2 = 0.5 * fMolarFlowH2;
             
-            fMolarFlowH2 = this.rMaxReactingH2 * fCurrentH2InletFlow / this.oMT.afMolarMass(this.oMT.tiN2I.H2);
-            fMolarFlowO2 = this.rMaxReactingO2 * fCurrentO2InletFlow / this.oMT.afMolarMass(this.oMT.tiN2I.O2);
-            if fMolarFlowH2 > 2 * fMolarFlowO2
-                % In this case O2 limits the amount of H2 that can be
-                % reacted O2 + 2*H2 -> 2*H2O
-                fMolarFlowH2 = 2 * fMolarFlowO2;
-            end
-            fMaxCurrentH2 = (fMolarFlowH2 / this.iCells) * (2 * this.oMT.Const.fFaraday);
+            fH2InletFlow = fMolarFlowH2 * this.oMT.afMolarMass(this.oMT.tiN2I.H2);
+            fO2InletFlow = fMolarFlowO2 * this.oMT.afMolarMass(this.oMT.tiN2I.O2);
             
-            if fMaxCurrentH2 < fMaxCurrent
-                fMaxCurrent = fMaxCurrentH2;
-            end
+            fReplacementH2 = (this.fInitialH2 - this.toStores.FuelCell.toPhases.H2_Loop.afMass(this.oMT.tiN2I.H2)) / 900;
+            fReplacementO2 = (this.fInitialO2 - this.toStores.FuelCell.toPhases.O2_Loop.afMass(this.oMT.tiN2I.O2)) / 900;
+            
+            this.toBranches.H2_Inlet.oHandler.setFlowRate( - (fH2InletFlow + fReplacementH2));
+            this.toBranches.O2_Inlet.oHandler.setFlowRate( - (fO2InletFlow + fReplacementO2));
             
             this.fStackCurrent = this.fPower / this.fStackVoltage;
             
@@ -252,27 +254,42 @@ classdef FuelCell < vsys
             fPressure_O2 = this.toStores.FuelCell.toPhases.O2_Channel.afPP(this.oMT.tiN2I.O2);
             
             %calculate the static stack voltage
-            if this.fStackCurrent > 0
-                % TO DO: split equation up to make it easier to follow and
-                % add source for the calculation
-                % TO DO: Find reference for the 1.23 value, should be the
-                % potential for hydrogen in V, but that should also be
-                % adaptable or calculated based on oMT
-                fNewVoltage = this.iCells * (1.23 - fGibbsLinearization * (fTemperature - 298) +...
-                    this.oMT.Const.fUniversalGas * fTemperature / (2 * this.oMT.Const.fFaraday) *...
-                    log(fPressure_H2 * sqrt(fPressure_O2)) - this.oMT.Const.fUniversalGas * fTemperature / (2 * this.oMT.Const.fFaraday) /fActivationCoefficient*log(this.fStackCurrent/fChangeCurrent)-fMembraneResistance*this.fStackCurrent-this.oMT.Const.fUniversalGas* fTemperature /2/ this.oMT.Const.fFaraday /fDiffusionCoefficient*log(1+this.fStackCurrent/fMaxCurrent));
+            if this.oTimer.iTick > 5
+                if this.fStackCurrent > 0
+                    % TO DO: split equation up to make it easier to follow and
+                    % add source for the calculation
+                    % TO DO: Find reference for the 1.23 value, should be the
+                    % potential for hydrogen in V, but that should also be
+                    % adaptable or calculated based on oMT
+                    fNewVoltage = this.iCells * (1.23 - fGibbsLinearization * (fTemperature - 298) +...
+                        this.oMT.Const.fUniversalGas * fTemperature / (2 * this.oMT.Const.fFaraday) *...
+                        log(fPressure_H2 * sqrt(fPressure_O2)) - this.oMT.Const.fUniversalGas * fTemperature / (2 * this.oMT.Const.fFaraday) /fActivationCoefficient*log(this.fStackCurrent/fChangeCurrent)-fMembraneResistance*this.fStackCurrent-this.oMT.Const.fUniversalGas* fTemperature /2/ this.oMT.Const.fFaraday /fDiffusionCoefficient*log(1+this.fStackCurrent/fMaxCurrent));
+                else
+                    %another function for the case i==0 because of the log()
+                    fNewVoltage = this.iCells * (1.23-fGibbsLinearization*(fTemperature - 298)+ this.oMT.Const.fUniversalGas * fTemperature /2/ this.oMT.Const.fFaraday *log(fPressure_H2*sqrt(fPressure_O2)));
+                end
             else
-                %another function for the case i==0 because of the log()
-                fNewVoltage = this.iCells * (1.23-fGibbsLinearization*(fTemperature - 298)+ this.oMT.Const.fUniversalGas * fTemperature /2/ this.oMT.Const.fFaraday *log(fPressure_H2*sqrt(fPressure_O2)));
+                fNewVoltage = this.fStackVoltage;
             end
             
             %zero potential of the cell
             this.fStackZeroPotential = 1.23 - fGibbsLinearization*(fTemperature - 298)+ this.oMT.Const.fUniversalGas * fTemperature /2/ this.oMT.Const.fFaraday *log(fPressure_H2*sqrt(fPressure_O2));
             
             % the euler equation
-            if ~isempty(this.toStores.FuelCell.toPhases.Membrane.fTimeStep) && this.toStores.FuelCell.toPhases.Membrane.fTimeStep < 1
-                this.fStackVoltage = this.fStackVoltage + this.oPhase.fTimeStep * (fNewVoltage - this.fStackVoltage) * fTau;
-            end
+            % Currently the dynamic of this is neglected, as we use to
+            % large time steps for this anyway, we just use a step change
+%             fTimeStep =  2 / abs(fNewVoltage - this.fStackVoltage);
+%             if fTimeStep > 300 || abs(fNewVoltage - this.fStackVoltage) < 2
+%             	fTimeStep = 300;
+%             elseif fTimeStep < 1e-3
+%             	fTimeStep = 1e-3;
+%             end
+%             this.setTimeStep(fTimeStep);
+%             if abs(fNewVoltage - this.fStackVoltage) > 2
+%                 this.fStackVoltage = this.fStackVoltage + this.fTimeStep * (fNewVoltage - this.fStackVoltage) * fTau;
+%             end
+            
+            this.fStackVoltage = fNewVoltage;
             
             this.fStackCurrent = this.fPower / this.fStackVoltage;
             

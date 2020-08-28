@@ -41,13 +41,9 @@ classdef FuelCellReaction < matter.manips.substance.stationary
             afPartialFlowsH2(this.oMT.tiN2I.H2) = -afPartialFlows(this.oMT.tiN2I.H2);
             this.oPhase.oStore.toProcsP2P.H2_to_Membrane.setFlowRate(afPartialFlowsH2);
             
-            this.oPhase.oStore.oContainer.toBranches.H2_Inlet.oHandler.setFlowRate(afPartialFlows(this.oMT.tiN2I.H2));
-            
             afPartialFlowsO2 = zeros(1, this.oPhase.oMT.iSubstances);
             afPartialFlowsO2(this.oMT.tiN2I.O2) = -afPartialFlows(this.oMT.tiN2I.O2);
             this.oPhase.oStore.toProcsP2P.O2_to_Membrane.setFlowRate(afPartialFlowsO2);
-            
-            this.oPhase.oStore.oContainer.toBranches.O2_Inlet.oHandler.setFlowRate(afPartialFlows(this.oMT.tiN2I.O2));
             
             afPartialFlowsH2O = zeros(1, this.oPhase.oMT.iSubstances);
             afPartialFlowsH2O(this.oMT.tiN2I.H2O) = afPartialFlows(this.oMT.tiN2I.H2O);

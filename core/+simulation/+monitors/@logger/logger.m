@@ -510,6 +510,13 @@ classdef logger < simulation.monitor
                 return;
             end
             
+            % check if the dumped files were already loaded:
+            miLogValues = size(this.mfLog);
+            if miLogValues(1) > this.iPreAllocatedRows
+                fprintf('[Logger] dumped data files already loaded, aborting.\n');
+                return;
+            end
+            
             % Telling the user what's going on and providing a warning
             % regarding the continuation of simulations using the
             % oLastSimObj object that will be manipulated below. Every

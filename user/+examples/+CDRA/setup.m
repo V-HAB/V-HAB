@@ -426,8 +426,8 @@ classdef setup < simulation.infrastructure
             figure()
             plot(mfTestData(:,1), mfTestData(:,2));
             grid on
-            xlabel('Time in h');
-            ylabel('Partial Pressure CO_2 in Torr');
+            xlabel('Time / h');
+            ylabel('Partial Pressure CO_2 / Torr');
             hold on
             
             for iVirtualLog = 1:length(oLogger.tVirtualValues)

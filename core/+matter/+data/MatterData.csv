@@ -248,3 +248,5 @@ C3H6O;Aceton;liquid;;0;-1;0.00E+00;178;329;784;1320;;;;;;;;;;;% H. Kalka, ?The C
 H2O;Water;liquid;;0;0;1.00E-14;;;;;;;;;;;;;;;
 CO2;CarbonDioxide;gas;;0;0;4.40E-07;;;;;;;;;;;;;;;
 LunarRegolith;LunarRegolith;solid;1;0;0;0.00E+00;;;1450;800;;;1;;;;;;;;
+FeTiO3;Illmenite;solid;;0;0;0.00E+00;;;5000;800;;;1;;;;;;;;Heat Capacity and Thermal Conductivity from Regolith
+TiO2;Titandioxid;solid;;0;0;0.00E+00;;;4000;800;;;1;;;;;;;;Heat Capacity and Thermal Conductivity from Regolith
