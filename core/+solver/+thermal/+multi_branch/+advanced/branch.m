@@ -348,7 +348,9 @@ classdef branch < solver.thermal.multi_branch.basic.branch
         
         function update(this)
             % update the thermal solver
-            
+            if this.oTimer.fTime == this.fLastUpdate
+                return
+            end
             % The first step is to divide the connectivity matrix by the
             % resistances, so that the vector matrix operation of the
             % matrix times the temperatures results in the heat flows. We

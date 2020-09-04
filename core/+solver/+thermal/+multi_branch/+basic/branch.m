@@ -274,7 +274,7 @@ classdef branch < base & event.source
             this.abRadiationBranches = [this.aoBranches.bRadiative]';
             aoConductiveBranches = this.aoBranches(~this.abRadiationBranches);
             aoRadiativeBranches  = this.aoBranches(this.abRadiationBranches);
-            this.aoBranches = [aoConductiveBranches; aoRadiativeBranches];
+            this.aoBranches = [aoConductiveBranches, aoRadiativeBranches];
             this.abRadiationBranches = [this.aoBranches.bRadiative]';
             
             % Since the lower part of the mfConnectivityMatrix may contain
@@ -461,7 +461,11 @@ classdef branch < base & event.source
             %% Now we set the heat flows to the branches:
             for iBranch = 1:this.iBranches
                 oBranch = this.aoBranches(iBranch);
-                fHeatFlow = afHeatFlows(iBranch);
+                if oBranch.bActive
+                    fHeatFlow = afHeatFlows(iBranch);
+                else
+                    fHeatFlow = 0;
+                end
                 % set heat flows to exmes
                 oBranch.coExmes{1}.setHeatFlow(fHeatFlow);
                 oBranch.coExmes{2}.setHeatFlow(fHeatFlow);

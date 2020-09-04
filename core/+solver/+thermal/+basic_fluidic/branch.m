@@ -67,7 +67,6 @@ classdef branch < solver.thermal.base.branch
             % Get the temperature difference between the two capacities
             % which this branch connects
             oMatterObject = this.oBranch.coConductors{1}.oMatterObject;
-            fDeltaTemperature = this.oBranch.coExmes{1}.oCapacity.fTemperature - this.oBranch.coExmes{2}.oCapacity.fTemperature;
             
             % Currently for mass bound heat transfer it is not possible to
             % allow different conducitvities in the thermal branch, as that
@@ -77,12 +76,6 @@ classdef branch < solver.thermal.base.branch
             % storing mass. Therefore, the issue is solved by averaging the
             % resistance values in the branch
             fResistance = sum(afResistances) / this.oBranch.iConductors;
-            
-            % The (initial) heat flow is simply calculated by dividing the
-            % temperature difference with the resistance (this heat flow
-            % neglects the heat flow from F2F processors, which is handled
-            % hereafter)
-            fHeatFlow = fDeltaTemperature / fResistance;
             
             if this.bP2P
                 % In this case we have a p2p
@@ -191,10 +184,10 @@ classdef branch < solver.thermal.base.branch
             % side is handled by changing the total heat capacity. The
             % impact of the F2Fs heat flows is simply added to the
             % previously calculated heat flow
-            if iExme == 1
-                this.afSolverHeatFlow(iExme) = fHeatFlow - sum(afF2F_HeatFlows);
+            if iDirection == 1
+                this.afSolverHeatFlow(iExme) = (afTemperatures(end) - this.oBranch.coExmes{2}.oCapacity.fTemperature)   / afResistances(end);
             else
-                this.afSolverHeatFlow(iExme) = fHeatFlow + sum(afF2F_HeatFlows);
+                this.afSolverHeatFlow(iExme) = (this.oBranch.coExmes{1}.oCapacity.fTemperature - afTemperatures(1))     / afResistances(1);
             end
             
             % If the mass transfer is matter bound the heat flow is only

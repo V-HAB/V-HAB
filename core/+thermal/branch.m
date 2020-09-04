@@ -43,6 +43,10 @@ classdef branch < base.branch
         % parent system), store its index on the aoFlows here to make it
         % possible to remove those connections later!
         iIfConductors;
+        
+        % This property can be used to deactivate heat transfer via this
+        % branch
+        bActive = true;
     end
     
     methods
@@ -156,6 +160,11 @@ classdef branch < base.branch
                 this.bTriggersetHeatFlowCallbackBound = true;
             end
         end
+        
+        function setActive(this, bActive)
+            this.bActive = bActive;
+            this.setOutdated();
+        end
     end
     
     methods (Access = {?solver.thermal.base.branch, ?base.branch})
@@ -171,7 +180,7 @@ classdef branch < base.branch
             
             % Set the new heat flow
             this.fHeatFlow = fHeatFlow;
-            
+                
             % Set new temperature vector
             this.afTemperatures = afTemperatures;
             

@@ -439,7 +439,7 @@ classdef ISS_ARS_MultiStore < vsys
             
             %% Creating the 'Vacuum'
             matter.store(this, 'Vacuum', 100000); % CO2, H2 and CH4 to vacuum
-            oVacuum = this.toStores.PMM.createPhase(  'gas', 'boundary',  'Vacuum_Phase',   100000, struct('N2', 3), 3, 0);
+            oVacuum = this.toStores.Vacuum.createPhase(  'gas', 'boundary',  'Vacuum_Phase',   100000, struct('N2', 3), 3, 0);
             
             %% Creating other tanks
             % Creating the N2 tank

@@ -596,6 +596,14 @@ oCHX.fTotalCondensateHeatFlow   = oCHX.fTotalHeatFlow - (Fluid_1.fEntry_Temperat
 %     
 % fWaterFlowInitial   =  Fluid_1.arPartialMass(oCHX.oMT.tiN2I.H2O) * Fluid_1.fMassflow;
 % fWaterFlowRemaining =  fWaterFlowInitial - fCondensateFlow;
+% 
+% mesh(mOutletTemp1_2D)
+% hold on
+% mesh(mOutletTemp2_2D)
+% xlabel('x Cell Number')
+% ylabel('y Cell Number')
+% zlabel('Temperature / K')
+
 
 oCHX.afCondensateMassFlow(oCHX.oMT.tiN2I.(tCHX_Parameters.Vapor)) = sum(sum(sum(sum(mCondensateFlowRate))));
 

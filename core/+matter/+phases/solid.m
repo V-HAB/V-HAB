@@ -11,7 +11,7 @@ classdef solid < matter.phase
     end
 
     methods
-        function this = solid(oStore, sName, tfMasses, fTemperature)
+        function this = solid(oStore, sName, tfMasses, fTemperature, ~)
             %% solid class constructor
             % describes an ideally mixed volume of solid. Different from the
             % boundary and flow type phases the mass of this phase will

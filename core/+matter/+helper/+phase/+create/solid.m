@@ -50,7 +50,7 @@ end
 
 % Create cParams for a whole matter.phases.liquid standard phase. If user does
 % not want to use all of them, can just use
-cParams = { tfMass fTemperature};
+cParams = { tfMass fTemperature fPressure};
 
 % Default class - required for automatic construction of phase. Helper re-
 % turns the default phase that could be constructed with this set of params

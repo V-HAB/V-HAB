@@ -14,14 +14,27 @@ afPressureCoolant                   = oMT.calculatePartialPressures(tInput.oFlow
 
 %% Matter Properties of coolant
 if iFluid == 2
-    tInput.fDynamicViscosityFilm        = oMT.calculateDynamicViscosity('liquid', arVapor, fSurfaceTemperatureInitialization);	% Dynamic Visc Film [kg/(m*s)]
-    tInput.fDensityFilm                 = oMT.calculateDensity('liquid', arVapor, fSurfaceTemperatureInitialization);				% Density Film [kg/m^3]
-    tInput.fSpecificHeatCapacityFilm    = oMT.calculateSpecificHeatCapacity('liquid', arVapor, fSurfaceTemperatureInitialization);			% Specific Heat Capacity Film [J/(kg*K)]
-    tInput.fThermalConductivityFilm     = oMT.calculateThermalConductivity('liquid', arVapor, fSurfaceTemperatureInitialization);	% Thermal Conductivity Film [W/(m*K)]
-    tInput.fSpecificHeatCapacityCoolant = oMT.calculateSpecificHeatCapacity('liquid', afPressureCoolant, tInput.fTemperatureCoolant, afPressureCoolant);
-    if tInput.fDynamicViscosityFilm == 0
-        % Assume dynamic viscosity of water if we currently have no film,
-        % to prevent errors in the reynolds calculation
+    try
+        tInput.fDynamicViscosityFilm        = oMT.calculateDynamicViscosity('liquid', arVapor, fSurfaceTemperatureInitialization);	% Dynamic Visc Film [kg/(m*s)]
+        tInput.fDensityFilm                 = oMT.calculateDensity('liquid', arVapor, fSurfaceTemperatureInitialization);				% Density Film [kg/m^3]
+        tInput.fSpecificHeatCapacityFilm    = oMT.calculateSpecificHeatCapacity('liquid', arVapor, fSurfaceTemperatureInitialization);			% Specific Heat Capacity Film [J/(kg*K)]
+        tInput.fThermalConductivityFilm     = oMT.calculateThermalConductivity('liquid', arVapor, fSurfaceTemperatureInitialization);	% Thermal Conductivity Film [W/(m*K)]
+        tInput.fSpecificHeatCapacityCoolant = oMT.calculateSpecificHeatCapacity('liquid', afPressureCoolant, tInput.fTemperatureCoolant, afPressureCoolant);
+    
+        if tInput.fDynamicViscosityFilm == 0
+            % Assume dynamic viscosity of water if we currently have no film,
+            % to prevent errors in the reynolds calculation
+            tInput.fDynamicViscosityFilm        = 8.9e-4;
+            tInput.fDensityFilm                 = 998;
+            tInput.fSpecificHeatCapacityFilm    = 4184;
+            tInput.fThermalConductivityFilm     = 0.6;
+            tInput.fSpecificHeatCapacityCoolant = 4184;
+        end
+    catch
+        % If the matter calculation above fails, it means we currently have
+        % no film, because the matter values are not liquid. In that case
+        % we also assume the values of water for a potential film that
+        % might form
         tInput.fDynamicViscosityFilm        = 8.9e-4;
         tInput.fDensityFilm                 = 998;
         tInput.fSpecificHeatCapacityFilm    = 4184;
@@ -33,13 +46,26 @@ if iFluid == 2
             
 else
 %% Matter Properties of gas
-    tInput.fDensityGas                  = oMT.calculateDensity('gas', tInput.arPartialMassesGas, tInput.fTemperatureGas, afPartialPressures);
-    tInput.fDynamicViscosityGas         = oMT.calculateDynamicViscosity('gas', tInput.arPartialMassesGas, tInput.fTemperatureGas, afPartialPressures);
-    tInput.fKinematicViscosityGas       = tInput.fDynamicViscosityGas / tInput.fDensityGas;		% nu = eta/rho
-    tInput.fSpecificHeatCapacityGas     = oMT.calculateSpecificHeatCapacity('gas', tInput.arPartialMassesGas, tInput.fTemperatureGas, afPartialPressures);
-    tInput.fThermalConductivityGas      = oMT.calculateThermalConductivity('gas', tInput.arPartialMassesGas, tInput.fTemperatureGas, afPartialPressures);
-    tInput.fMolarFractionGas            = 1 - tInput.fMolarFractionVapor;		% Mole Fraction Inertgas [mol/mol]
-    
+    try
+        tInput.fDensityGas                  = oMT.calculateDensity('gas', tInput.arPartialMassesGas, tInput.fTemperatureGas, afPartialPressures);
+        tInput.fDynamicViscosityGas         = oMT.calculateDynamicViscosity('gas', tInput.arPartialMassesGas, tInput.fTemperatureGas, afPartialPressures);
+        tInput.fKinematicViscosityGas       = tInput.fDynamicViscosityGas / tInput.fDensityGas;		% nu = eta/rho
+        tInput.fSpecificHeatCapacityGas     = oMT.calculateSpecificHeatCapacity('gas', tInput.arPartialMassesGas, tInput.fTemperatureGas, afPartialPressures);
+        tInput.fThermalConductivityGas      = oMT.calculateThermalConductivity('gas', tInput.arPartialMassesGas, tInput.fTemperatureGas, afPartialPressures);
+        tInput.fMolarFractionGas            = 1 - tInput.fMolarFractionVapor;		% Mole Fraction Inertgas [mol/mol]
+    catch
+        % It is possible that the inlet flow of the CHX is already at
+        % condensing conditions, in which case the matter calculation using
+        % just gas values would fail (but it is quicker), so we try the gas
+        % values and in case they fail use mixture values to account for
+        % potential condensing conditions at the inlet
+        tInput.fDensityGas                  = oMT.calculateDensity('mixture', tInput.arPartialMassesGas, tInput.fTemperatureGas, afPartialPressures);
+        tInput.fDynamicViscosityGas         = oMT.calculateDynamicViscosity('mixture', tInput.arPartialMassesGas, tInput.fTemperatureGas, afPartialPressures);
+        tInput.fKinematicViscosityGas       = tInput.fDynamicViscosityGas / tInput.fDensityGas;		% nu = eta/rho
+        tInput.fSpecificHeatCapacityGas     = oMT.calculateSpecificHeatCapacity('mixture', tInput.arPartialMassesGas, tInput.fTemperatureGas, afPartialPressures);
+        tInput.fThermalConductivityGas      = oMT.calculateThermalConductivity('mixture', tInput.arPartialMassesGas, tInput.fTemperatureGas, afPartialPressures);
+        tInput.fMolarFractionGas            = 1 - tInput.fMolarFractionVapor;		% Mole Fraction Inertgas [mol/mol]
+    end
     DiffCoeff_Gas = Bin_diff_coeff(tInput.Vapor, tInput.Inertgas, tInput.fTemperatureGas, tInput.fPressureGas);
     
     [~, tInput.tDimensionlessQuantitiesGas] = functions.calculateHeatTransferCoefficient.convectionFlatGap(tInput.fHeight_1 * 2, tInput.fLength, tFluid.fFlowSpeed_Fluid,...

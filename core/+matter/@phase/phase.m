@@ -959,6 +959,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % their partial mass composition after the solvers are
                 % updated, which is after the initial mass updates)
                 this.setOutdatedTS();
+                this.setP2PsAndManipsOutdated();
                 return;
                 % Note that also setting branches outdated here would lead
                 % to infinite loops within the timer and is therefore not
