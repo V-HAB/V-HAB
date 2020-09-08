@@ -870,7 +870,7 @@ classdef WaterBalance < vsys
             
             % Currently not considered in the water balance is the
             % transepidermal water loss (the water lost through the skin)
-            this.toStores.WaterBalance.toPhases.Bladder.toManips.substance.setFlowRate(afManipulatorFlowRates, aarFlowsToCompound);
+            this.toStores.WaterBalance.toPhases.Bladder.toManips.substance.setFlowRate(afManipulatorFlowRates, aarFlowsToCompound, false);
             
             this.bInternalUpdateRegistered = false;
         end

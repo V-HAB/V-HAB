@@ -24,16 +24,18 @@ classdef ManualManipulator < matter.manips.substance.stationary
             this.aarManualFlowsToCompound = zeros(this.oPhase.oMT.iSubstances, this.oPhase.oMT.iSubstances);
         end
         
-        function setFlowRate(this, afFlowRates, aarFlowsToCompound)
+        function setFlowRate(this, afFlowRates, aarFlowsToCompound, bAutoAdjustFlowRates)
             % required input for the set flowrate function is a vector with
             % the length of oMT.iSubstances. The entries in the vector
             % correspond to substance flowrates with the substances beeing
             % specified by oMT.tiN2I, each entry represents a flowrate for
             % the respective substance in kg/s. The flowrates have to add up to 0! 
-            
+            if nargin < 4
+                bAutoAdjustFlowRates = false;
+            end
             %% for small errors this calculation will minimize the mass balance errors
             fError = sum(afFlowRates);
-            if fError < 1e-6
+            if fError < 1e-6 && bAutoAdjustFlowRates
                 fPositiveFlowRate = sum(afFlowRates(afFlowRates > 0));
                 fNegativeFlowRate = abs(sum(afFlowRates(afFlowRates < 0)));
                 
@@ -50,7 +52,7 @@ classdef ManualManipulator < matter.manips.substance.stationary
                     
                     afFlowRates(afFlowRates < 0) = afFlowRates(afFlowRates < 0) - fDifference .* arRatios;
                 end
-            else
+            elseif fError > 1e-6
             %% For larger errors the manipulator will throw an error
                 error('The Manual Manipulator was not provided with a flowrate vector that adds up to zero!')
             end
