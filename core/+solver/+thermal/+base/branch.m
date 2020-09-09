@@ -200,7 +200,7 @@ classdef branch < base & event.source
                     oIn = this.oBranch.coExmes{2}.oCapacity.oPhase;
                 end
 
-                if tools.round.prec(oIn.fMass, oIn.oStore.oTimer.iPrecision) == 0
+                if ~oIn.bFlow && tools.round.prec(oIn.fMass, oIn.oStore.oTimer.iPrecision) == 0
                     fHeatFlow = 0;
                     afTemperatures = zeros(1, this.oBranch.iConductors);
                 end

@@ -78,9 +78,9 @@ classdef Example < vsys
             % Adding the subsystem CDRA
             try
                 tInitialization = oParent.oCfgParams.ptConfigParams('tInitialization');
-                components.matter.CDRA.CDRA(this, 'CDRA', tAtmosphere, tInitialization);
+                components.matter.CDRA.CDRA(this, 'CDRA', tAtmosphere, tInitialization, 60);
             catch
-                components.matter.CDRA.CDRA(this, 'CDRA', tAtmosphere);
+                components.matter.CDRA.CDRA(this, 'CDRA', tAtmosphere, [], 60);
             end
             eval(this.oRoot.oCfgParams.configCode(this));
             
@@ -332,6 +332,32 @@ classdef Example < vsys
             
             tTimeStepProperties.rMaxChange = 0.5;
             this.toStores.CondensateStore.toPhases.Condensate_Phase.setTimeStepProperties(tTimeStepProperties);
+            
+            
+            csStores = fieldnames(this.toStores);
+            for iS = 1:length(csStores)
+                for iP = 1:length(this.toStores.(csStores{iS}).aoPhases)
+                    oPhase = this.toStores.(csStores{iS}).aoPhases(iP);
+                    tTimeStepProperties.fMaxStep = 300;
+                    tTimeStepProperties.rMaxChange = 0.05;
+
+                    oPhase.setTimeStepProperties(tTimeStepProperties);
+                    tTimeStepProperties = struct();
+                    tTimeStepProperties.fMaxStep = 300;
+                    oPhase.oCapacity.setTimeStepProperties(tTimeStepProperties);
+                end
+            end
+            tTimeStepProperties = struct();
+            tTimeStepProperties.rMaxChange = 0.5;
+            this.toStores.CondensateStore.toPhases.Condensate_Phase.setTimeStepProperties(tTimeStepProperties);
+            
+            
+            tTimeStepProperties = struct();
+            arMaxChange = zeros(1,this.oMT.iSubstances);
+            arMaxChange(this.oMT.tiN2I.H2O) = 0.05;
+            arMaxChange(this.oMT.tiN2I.CO2) = 0.05;
+            tTimeStepProperties.arMaxChange = arMaxChange;
+            this.toStores.Cabin.toPhases.CabinAir.setTimeStepProperties(tTimeStepProperties);
             
             %% Assign thermal solvers
             this.setThermalSolvers();

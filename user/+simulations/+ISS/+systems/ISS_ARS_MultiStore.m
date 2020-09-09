@@ -163,9 +163,9 @@ classdef ISS_ARS_MultiStore < vsys
             components.matter.CCAA.CCAA(this,           'CCAA_Columbus',    fFixedTS, fCoolantTemperature, tAtmosphere);
             
             % CDRAs
-            components.matter.CDRA.CDRA(this,           'CDRA_Node3',   tAtmosphere);
-            components.matter.CDRA.CDRA(this,           'CDRA_USLab',   tAtmosphere); 
-            components.matter.CDRA.CDRA(this,           'Vozdukh',      tAtmosphere);
+            components.matter.CDRA.CDRA(this,           'CDRA_Node3',   tAtmosphere, [], fFixedTS);
+            components.matter.CDRA.CDRA(this,           'CDRA_USLab',   tAtmosphere, [], fFixedTS); 
+            components.matter.CDRA.CDRA(this,           'Vozdukh',      tAtmosphere, [], fFixedTS);
             
             % SCRA
             components.matter.SCRA.SCRA(this,           'SCRA_Node3',   fFixedTS, fCoolantTemperature);

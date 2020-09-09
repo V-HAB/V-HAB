@@ -145,8 +145,13 @@ classdef OGA < vsys
                     arMaxChange(this.oMT.tiN2I.CO2) = 0.75;
                     arMaxChange(this.oMT.tiN2I.CH4) = 0.75;
                     tTimeStepProperties.arMaxChange = arMaxChange;
-                    
+                    tTimeStepProperties.fMaxStep = this.fTimeStep * 5;
+
                     oPhase.setTimeStepProperties(tTimeStepProperties);
+
+                    tTimeStepProperties = struct();
+                    tTimeStepProperties.fMaxStep = this.fTimeStep * 5;
+                    oPhase.oCapacity.setTimeStepProperties(tTimeStepProperties);
                 end
             end
             

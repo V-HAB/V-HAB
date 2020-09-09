@@ -103,6 +103,18 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
         % change is 1.47 K
         rMaxChange = 0.005; % [-]
         
+        % These two temperature values represent temperature limits up to
+        % which the time step can extended at maximum. E.g. without any
+        % other limits, if the temperature is currently 300 K and the lower
+        % limit is 275 K, the temperature change at most can be 25 K with
+        % the corresponding timestep
+        fMinimumTemperatureForTimeStep;
+        fMaximumTemperatureForTimeStep;
+        
+        % In case the user does not want to specify a percentage limit for
+        % the time step, this value can be used to define a K limit
+        fMaxTemperatureChange = inf;
+        
         % The minimal and maximal time step of the capacity:
         fMaxStep = 20;
         fMinStep = 1e-8;
@@ -552,12 +564,23 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
             %                 property is set all other time step properties
             %                 will be ignored and the set time step will be
             %                 used
+            %
+            % fMaxTemperatureChange:    Maximum allowed temperature change
+            %                           in K
+            % fMinimumTemperatureForTimeStep:   Minimum temperature up to
+            %                                   which the time step can
+            %                                   extend
+            % fMaximumTemperatureForTimeStep:   Maximum temperature up to
+            %                                   which the time step can
+            %                                   extend
+            
+        
             
             % In order to define these provide a struct with the fieldnames
             % as described here to this function for the values that you
             % want to set
             
-            csPossibleFieldNames = {'rMaxChange', 'fFixedTimeStep', 'fMaxStep', 'fMinStep'};
+            csPossibleFieldNames = {'rMaxChange', 'fFixedTimeStep', 'fMaxStep', 'fMinStep', 'fMaxTemperatureChange', 'fMinimumTemperatureForTimeStep', 'fMaximumTemperatureForTimeStep'};
             
             % Gets the fieldnames of the struct to easier loop through them
             csFieldNames = fieldnames(tTimeStepProperties);
@@ -742,9 +765,23 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
                             return
                         end
                         
-                        fNewStep = this.rMaxChange / rTemperatureChangePerSecond;
+                        fNewStepPercentage = this.rMaxChange / rTemperatureChangePerSecond;
+                        fNewStepTotal      = abs(this.fMaxTemperatureChange / fTemperatureChangePerSecond);
+                        fNewStepLowerLimit = inf;
+                        fNewStepUpperLimit = inf;
+                        if fTemperatureChangePerSecond < 0 && ~isempty(this.fMinimumTemperatureForTimeStep)
+                            fNewStepLowerLimit = (this.fTemperature - this.fMinimumTemperatureForTimeStep) / fTemperatureChangePerSecond;
+                            if fNewStepLowerLimit < 0
+                                fNewStepLowerLimit = inf;
+                            end
+                        elseif fTemperatureChangePerSecond > 0 && ~isempty(this.fMaximumTemperatureForTimeStep)
+                            fNewStepUpperLimit = (this.fMaximumTemperatureForTimeStep - this.fTemperature) / fTemperatureChangePerSecond;
+                            if fNewStepUpperLimit < 0
+                                fNewStepUpperLimit = inf;
+                            end
+                        end
                         
-                        fNewStep = min(fNewStep, fMaximumTimeStep);
+                        fNewStep = min([fNewStepPercentage, fNewStepTotal, fNewStepLowerLimit, fNewStepUpperLimit, fMaximumTimeStep]);
                         
                         if fNewStep < 0
                             if ~base.oDebug.bOff, this.out(3, 1, 'time-step-neg', 'Phase %s-%s-%s has neg. time step of %.16f', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, fNewStep }); end

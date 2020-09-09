@@ -200,11 +200,26 @@ classdef WPA < vsys
                     end
                 end
             end
+            
+            csStoreNames = fieldnames(this.toStores);
+            for iStore = 1:length(csStoreNames)
+                for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
+                    oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
+                    tTimeStepProperties.fMaxStep = this.fTimeStep * 5;
+
+                    oPhase.setTimeStepProperties(tTimeStepProperties);
+
+                    tTimeStepProperties = struct();
+                    tTimeStepProperties.fMaxStep = this.fTimeStep * 5;
+                    oPhase.oCapacity.setTimeStepProperties(tTimeStepProperties);
+                end
+            end
+            
             % We only have one non flow phase, the waste water phase. For
             % that we do not really care how fast things in it change,
             % therefore we set the Max Change to inf.
+            tTimeStepProperties = struct();
             tTimeStepProperties.rMaxChange = inf;
-            tTimeStepProperties.fMaxStep = this.fTimeStep;
 
             this.toStores.WasteWater.toPhases.Water.setTimeStepProperties(tTimeStepProperties);
             

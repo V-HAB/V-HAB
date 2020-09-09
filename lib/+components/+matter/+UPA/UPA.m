@@ -145,6 +145,20 @@ classdef UPA < vsys
             this.toStores.WSTA.toPhases.Urine.setTimeStepProperties(tTimeStepProperties);
                     
             this.setThermalSolvers();
+            
+            csStoreNames = fieldnames(this.toStores);
+            for iStore = 1:length(csStoreNames)
+                for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
+                    oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
+                    tTimeStepProperties.fMaxStep = this.fTimeStep * 5;
+
+                    oPhase.setTimeStepProperties(tTimeStepProperties);
+
+                    tTimeStepProperties = struct();
+                    tTimeStepProperties.fMaxStep = this.fTimeStep * 5;
+                    oPhase.oCapacity.setTimeStepProperties(tTimeStepProperties);
+                end
+            end
         end
         
         function setIfFlows(this, sInlet, sOutlet, sBrineOultet)

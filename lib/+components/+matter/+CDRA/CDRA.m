@@ -81,8 +81,11 @@ classdef CDRA < vsys
     end
     
     methods
-        function this = CDRA(oParent, sName, tAtmosphere, tInitializationOverwrite)
-            this@vsys(oParent, sName, 10);
+        function this = CDRA(oParent, sName, tAtmosphere, tInitializationOverwrite, fTimeStep)
+            if nargin < 5
+                fTimeStep = 60;
+            end
+            this@vsys(oParent, sName, fTimeStep);
             
             if isempty(tAtmosphere)
                 this.tAtmosphere.fTemperature = this.oMT.Standard.Temperature;
@@ -751,23 +754,31 @@ classdef CDRA < vsys
                 for iP = 1:length(this.toStores.(csStores{iS}).aoPhases)
                     oPhase = this.toStores.(csStores{iS}).aoPhases(iP);
                     if ~isempty(regexp(oPhase.sName, 'Absorber', 'once'))
+                        tTimeStepProperties = struct();
                         arMaxChange = zeros(1,this.oMT.iSubstances);
-                        arMaxChange(this.oMT.tiN2I.H2O) = 0.1;
-                        arMaxChange(this.oMT.tiN2I.CO2) = 0.1;
+                        arMaxChange(this.oMT.tiN2I.H2O) = 0.2;
+                        arMaxChange(this.oMT.tiN2I.CO2) = 0.2;
                         tTimeStepProperties.arMaxChange = arMaxChange;
                         tTimeStepProperties.rMaxChange = 0.1;
-                        tTimeStepProperties.fMaxStep = 60;
-                        tTimeStepProperties.fMinStep = 1;
+                        tTimeStepProperties.fMaxStep = this.fTimeStep * 5;
+                        tTimeStepProperties.fMinStep = this.fTimeStep * 0.5;
                         
                         oPhase.setTimeStepProperties(tTimeStepProperties);
                         
                         tTimeStepProperties = struct();
-                        tTimeStepProperties.rMaxChange = 0.01;
+                        tTimeStepProperties.fMaxStep = this.fTimeStep * 5;
+                        tTimeStepProperties.rMaxChange = 0.05;
+                        tTimeStepProperties.fMaxTemperatureChange = 5;
+                        tTimeStepProperties.fMinimumTemperatureForTimeStep = 275;
                         oPhase.oCapacity.setTimeStepProperties(tTimeStepProperties);
-                    else
+                        
                         % The absorber phase updates also trigger a solver
                         % update
                         oPhase.bind('update_post', @oSolver.registerUpdate);
+                    else
+                        tTimeStepProperties = struct();
+                        tTimeStepProperties.fMaxStep = this.fTimeStep * 5;
+                        oPhase.setTimeStepProperties(tTimeStepProperties);
                     end
                 end
             end

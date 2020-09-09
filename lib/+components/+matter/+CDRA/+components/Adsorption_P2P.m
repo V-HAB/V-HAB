@@ -210,10 +210,10 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 % dq/dt = k(q*-q)
                 % Here the solution to this differential equation is used:
                 % q(t + dt) = q* - (q* - q(t)) * exp( - k * dt)
-                % Here we assume that a fixed time step of 1 s is used (as it
+                % Here we assume that a fixed time step of the CDRA parent system is used (as it
                 % is diffcult to calculate the future correct V-HAB time step
                 % for this...
-                this.mfFlowRates = (mfEquilibriumLoading - (mfEquilibriumLoading - mfCurrentLoading) .* exp(- this.mfMassTransferCoefficient) - mfCurrentLoading);
+                this.mfFlowRates = (mfEquilibriumLoading - (mfEquilibriumLoading - mfCurrentLoading) .* exp(- this.mfMassTransferCoefficient * this.oStore.oContainer.fTimeStep) - mfCurrentLoading) ./ this.oStore.oContainer.fTimeStep;
 
                 %% Seperate the calculate flowrates into adsorption and desorption flowrates
                 mfFlowRatesAdsorption = zeros(1,this.oMT.iSubstances);
