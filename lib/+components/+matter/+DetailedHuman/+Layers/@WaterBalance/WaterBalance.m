@@ -96,7 +96,7 @@ classdef WaterBalance < vsys
         function this = WaterBalance(oParent, sName)
             this@vsys(oParent, sName, inf);
             
-            this.hBindPostTickInternalUpdate  = this.oTimer.registerPostTick(@this.updateInteralFlowrates,   'matter',        'post_phase_update');
+            this.hBindPostTickInternalUpdate  = this.oTimer.registerPostTick(@this.updateInteralFlowrates,   'matter',        'pre_solver');
         end
         
         
