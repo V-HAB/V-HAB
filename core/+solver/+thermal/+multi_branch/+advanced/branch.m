@@ -334,8 +334,8 @@ classdef branch < solver.thermal.multi_branch.basic.branch
             afLinearNodeTemperatures = afCurrentTemperatures(1:this.iFirstRadiativeCapacity-1);
             
             % Now we get the radiative node temperatures by multiplying the
-            % current temperatures with the radiative capacities matrix.
-            afRadiativeNodeTemperatures = this.mbRadiativeCapacities * afCurrentTemperatures;
+            % current temperatures with the radiative capacities boolean matrix.
+            afRadiativeNodeTemperatures = this.mbRadiativeCapacities * afCurrentTemperatures.^4;
             
             % To get the full temperature array we now concatenate the two
             % arrays we just produced.

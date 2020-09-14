@@ -251,3 +251,4 @@ LunarRegolith;LunarRegolith;solid;1;0;0;0.00E+00;;;1450;800;;;1;;;;;;;;
 FeTiO3;Illmenite;solid;;0;0;0.00E+00;;;5000;800;;;1;;;;;;;;Heat Capacity and Thermal Conductivity from Regolith
 TiO2;Titandioxid;solid;;0;0;0.00E+00;;;4000;800;;;1;;;;;;;;Heat Capacity and Thermal Conductivity from Regolith
 Aerogel;Aerogel;solid;0.06;0;0;0.00E+00;;;1.9;833;;;0.02;;;;;;;;
+Inconel;Inconel;solid;1;0;0;0.00E+00;;;8260;500;;;20;;;;;;;;https://www.vdm-metals.com/fileadmin/user_upload/Downloads/Data_Sheets/Datenblatt_VDM_Alloy_718.pdf

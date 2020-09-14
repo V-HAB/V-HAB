@@ -163,7 +163,9 @@ classdef flow < thermal.capacity
             this.setTemperature(fTemperatureNew);
             
             % check if we have to update the specific heat capacity
-            this.updateSpecificHeatCapacity();
+            if fOverallHeatCapacityFlow ~= 0
+                this.updateSpecificHeatCapacity();
+            end
             
             % Trigger branch solver updates in post tick for all branches
             this.setBranchesOutdated();
