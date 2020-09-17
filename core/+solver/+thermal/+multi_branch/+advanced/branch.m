@@ -149,6 +149,17 @@ classdef branch < solver.thermal.multi_branch.basic.branch
         % time step results.
         fExecutionTimeStep;
         
+        % Boolean to decide if external solvers are used or not
+        bExternalSolvers = false;
+        % This cell array has the same length as the unique capacities
+        % index and contains the non multi solver thermal branches for the
+        % corresponding capacity. The solver then handles the external
+        % branches like heat sources to the network capacity
+        coNonSolverBranches;
+        % cell which conaints the signs for the non solver branches in
+        % relation to their network capacities
+        ciNonSolverSigns;
+        
         % 
         hCalculateTemperatureChangeRate;
         
@@ -263,7 +274,7 @@ classdef branch < solver.thermal.multi_branch.basic.branch
                     % mbNonUniqueCapacities matrix to true.
                     this.mbNonUniqueCapacities(iLinearCapacities + iUniqueRadiativeNodeCounter, iLinearCapacities + iRadiativeCapacity) = true;
                 end
-                
+                this.aoBranches(1).oContainer.bind('ThermalSolverCheck_post', @this.findExternalSolvers);
             end
             
             % In the ODE function we need subset of the
@@ -305,11 +316,49 @@ classdef branch < solver.thermal.multi_branch.basic.branch
             this.hBindPostTickUpdate = @this.bindPostTickUpdate;
             
         end
+        
+        function findExternalSolvers(this, ~)
+            % For the capacities we also have to check if external non
+            % multi solver heat flow branches are connected to them.
+            % These will be handled like heat sources in the multi
+            % branch solver:
+            this.coNonSolverBranches = cell(this.iUniqueCapacities,1);
+            this.ciNonSolverSigns    = cell(this.iUniqueCapacities,1);
+            for iCapacity = 1:this.iUniqueCapacities
+                aoCapacityBranches = [this.aoUniqueCapacities(iCapacity).aoExmes.oBranch];
+                
+                mbExternalBranch = false(1,length(aoCapacityBranches));
+                for iBranch = 1:length(aoCapacityBranches)
+                    if aoCapacityBranches(iBranch).oHandler ~= this
+                        mbExternalBranch(iBranch) = true;
+                        this.bExternalSolvers = true;
+                    end
+                end
+                this.coNonSolverBranches{iCapacity} = {aoCapacityBranches(mbExternalBranch)};
+                
+                % Now we have to bind the update of this solver to the
+                % update of the external branches, to ensure the solver
+                % notices a heat flow change in the external solvers
+                coBranches = this.coNonSolverBranches{iCapacity};
+                ciSigns = cell(1, length(coBranches));
+                for iExternalBranch = 1:sum(mbExternalBranch)
+                    coBranches{iExternalBranch}.bind('outdated', @this.bindPostTickUpdate);
+                    
+                    if this.aoUniqueCapacities(iCapacity) == coBranches{iExternalBranch}.coExmes{1}.oCapacity
+                        ciSigns{iExternalBranch} = coBranches{iExternalBranch}.coExmes{1}.iSign;
+                    else
+                        ciSigns{iExternalBranch} = coBranches{iExternalBranch}.coExmes{2}.iSign;
+                    end
+                end
+                this.ciNonSolverSigns{iCapacity} = ciSigns;
+            end
+            
+        end
     end
     
     methods (Access = protected)
         
-        function bindPostTickUpdate(this)
+        function bindPostTickUpdate(this, ~)
             this.bPostTickUpdateNotBound = false;
             this.hActuallyBindPostTick();
         end
@@ -381,6 +430,15 @@ classdef branch < solver.thermal.multi_branch.basic.branch
             this.fExecutionTimeStep = fStepEndTime - fStepBeginTime;
             
             this.afSourceRateVector = [this.aoCapacities(~this.abNonUniqueCapacity).fTotalHeatSourceHeatFlow]';
+            
+            if this.bExternalSolvers
+                afExternalHeatFlows= zeros(this.iUniqueCapacities, 1);
+                for iCapacity = 1:this.iUniqueCapacities
+                    afExternalHeatFlows(iCapacity) = sum([this.ciNonSolverSigns{iCapacity}{:}] .* [this.coNonSolverBranches{iCapacity}{:}.fHeatFlow]);
+                end
+                this.afSourceRateVector = this.afSourceRateVector + afExternalHeatFlows;
+            end
+            
             this.afSourceRateVector = this.afSourceRateVector ./ [this.aoCapacities(~this.abNonUniqueCapacity).fTotalHeatCapacity]';
             
             [this.mfTimePoints, this.mfSolutionTemperatures] = ode45(this.hCalculateTemperatureChangeRate, [fStepBeginTime, fStepEndTime], this.afTemperatures, this.tOdeOptions);

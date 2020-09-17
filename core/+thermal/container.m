@@ -263,8 +263,8 @@ classdef container < sys
                            'createSolverStructure() method in ''%s''.'], ...
                            this.sName, this.aoThermalBranches(iBranch).sName, this.sName);
                 end
-                
             end
+            this.trigger('ThermalSolverCheck_post');
         end
         
         function createMatterCounterParts(this)
