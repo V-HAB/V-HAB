@@ -101,16 +101,16 @@ classdef Example < vsys
             % atmosphere
             matter.store(this, 'Cabin', 50);
             
-            fAmbientTemperature = 295;
+            fAmbientTemperature = 294.15;
             fDensityH2O = this.oMT.calculateDensity('liquid', struct('H2O', 1), fAmbientTemperature, 101325);
             
             % Adding a phase to the store 'Cabin', 48 m^3 air
-            oCabinPhase         = this.toStores.Cabin.createPhase(  'gas',   'CabinAir',  48, struct('N2', 8e4, 'O2', 2e4, 'CO2', 500),  	fAmbientTemperature,          0.5);
+            oCabinPhase         = this.toStores.Cabin.createPhase(  'gas', 'boundary',   'CabinAir',  48, struct('N2', 5.554e4, 'O2', 1.476e4, 'CO2', 40),  	fAmbientTemperature,          0.506);
             oCondensatePhase    = matter.phases.liquid(this.toStores.Cabin, 'Condensate', struct('H2O', fDensityH2O * 0.5 * 1),             fAmbientTemperature, 101325);
             oCO2                = this.toStores.Cabin.createPhase( 'gas',   'CO2',  1, struct('CO2', 1e5),          fAmbientTemperature,          0);
             
             matter.store(this, 'Cabin2', 50);
-            oCabinPhase2        = this.toStores.Cabin2.createPhase( 'gas',   'CabinAir',  48, struct('N2', 8e4, 'O2', 2e4, 'CO2', 500),  	fAmbientTemperature,          0.5);
+            oCabinPhase2        = this.toStores.Cabin2.createPhase( 'gas', 'boundary',   'CabinAir',  48, struct('N2', 5.554e4, 'O2', 1.476e4, 'CO2', 40),  	fAmbientTemperature,          0.506);
             oCondensatePhase2   = matter.phases.liquid(this.toStores.Cabin2, 'Condensate', struct('H2O', fDensityH2O * 0.5 * 1),            fAmbientTemperature, 101325);
             oCO2_2              = this.toStores.Cabin2.createPhase( 'gas',   'CO2',  1, struct('CO2', 1e5),          fAmbientTemperature,          0);
             

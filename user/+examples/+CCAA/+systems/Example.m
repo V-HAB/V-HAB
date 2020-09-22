@@ -21,7 +21,7 @@ classdef Example < vsys
     end
     
     methods
-        function this = Example(oParent, sName)
+        function this = Example(oParent, sName, tParameters)
             % Call parent constructor. Third parameter defined how often
             % the .exec() method of this subsystem is called. This can be
             % used to change the system state, e.g. close valves or switch
@@ -113,6 +113,8 @@ classdef Example < vsys
             	tFixValues.fVolumetricAirFlowRate       = tProtoTestSetpoints(iProtoflightTest).fVolumetricAirFlow;
                 tFixValues.fCoolantFlowRate             = tProtoTestSetpoints(iProtoflightTest).fCoolantFlow;
                 oCCAA.setFixValues(tFixValues);
+                
+                oCCAA.setParameterOverwrite(tParameters);
             end
             
             this.tProtoTestSetpoints = tProtoTestSetpoints;

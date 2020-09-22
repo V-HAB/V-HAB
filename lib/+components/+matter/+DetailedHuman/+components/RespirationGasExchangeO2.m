@@ -135,7 +135,8 @@ classdef RespirationGasExchangeO2 < matter.procs.p2ps.flow
 
                     afCurrentMolsIn     = (afPartialFlowsAir_Out./ this.oMT.afMolarMass);
                     arFractions         = afCurrentMolsIn ./ sum(afCurrentMolsIn);
-                    afPP_Out         	= arFractions .*  fGasPressure; 
+                    afPP_Out         	= arFractions .*  fGasPressure;
+                    afPP_Out(afPP_Out < 0) = 0;
 
                     [fConcentrationBloodO2_Out, fConcentrationBloodCO2_Out] = this.calculateBloodConcentrations(afPP_Out(this.oMT.tiN2I.O2), afPP_Out(this.oMT.tiN2I.CO2));
 

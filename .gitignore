@@ -29,3 +29,4 @@ main_*.m
 
 # Ignore Excel temporary files
 ~*
+*.log

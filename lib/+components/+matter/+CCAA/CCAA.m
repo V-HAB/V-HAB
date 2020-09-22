@@ -98,6 +98,8 @@ classdef CCAA < vsys
         % Wieland, 1998, page 104, where the CCAA fan power consumption is
         % mentioned to be 410 W
         fCurrentPowerConsumption = 410; % W
+        
+        tParameterOverwrite;
     end
     
     methods 
@@ -168,6 +170,10 @@ classdef CCAA < vsys
             this.interpolateEffectiveness = griddedInterpolant(X, Y, Z, aPermutedEffectiveness);
         end
         
+        function setParameterOverwrite(this, tParameters)
+            this.tParameterOverwrite = tParameters;
+        end
+        
         function createMatterStructure(this)
             createMatterStructure@vsys(this);
             
@@ -219,13 +225,21 @@ classdef CCAA < vsys
             % Some configurating variables
             sHX_type = 'plate_fin';       % Heat exchanger type
             % broadness of the heat exchange area in m
-            tGeometry.fBroadness        = 1;  
+            if isfield(this.tParameterOverwrite, 'fBroadness')
+                tGeometry.fBroadness 	= this.tParameterOverwrite.fBroadness; 
+            else
+                tGeometry.fBroadness 	= 0.23; 
+            end
+            % length of the heat exchanger in m
+            if isfield(this.tParameterOverwrite, 'fLength')
+                tGeometry.fLength    	= this.tParameterOverwrite.fLength; 
+            else
+                tGeometry.fLength     	= 0.23; 
+            end
             % Height of the channel for fluid 1 in m
             tGeometry.fHeight_1         = 0.002;
             % Height of the channel for fluid 2 in m
             tGeometry.fHeight_2         = 0.002;
-            % length of the heat exchanger in m
-            tGeometry.fLength           = 1;
             % thickness of the plate in m
             tGeometry.fThickness        = 0.0002;
             % number of layers stacked

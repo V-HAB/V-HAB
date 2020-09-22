@@ -118,9 +118,17 @@ classdef PlantCulture < vsys
                 this.fPlantTimeInit = 0;
             end
             
-            this.oTimer.setMinStep(1e-20);
-            
             this.txPlantParameters = components.matter.PlantModuleV2.plantparameters.importPlantParameters(txInput.sPlantSpecies);
+            
+            this.iEdibleBiomass = this.oMT.tiN2I.(this.txPlantParameters.sPlantSpecies);
+            this.iInedibleBiomass = this.oMT.tiN2I.([this.txPlantParameters.sPlantSpecies, 'Inedible']);
+            
+            trBaseCompositionEdible     = this.oMT.ttxMatter.(this.oMT.csI2N{this.iEdibleBiomass}).trBaseComposition;
+            trBaseCompositionInedible   = this.oMT.ttxMatter.(this.oMT.csI2N{this.iInedibleBiomass}).trBaseComposition;
+            
+            this.txPlantParameters.fFBWF_Edible     = trBaseCompositionEdible.H2O   * (1 - trBaseCompositionEdible.H2O)^-1;
+            this.txPlantParameters.fFBWF_Inedible 	= trBaseCompositionInedible.H2O * (1 - trBaseCompositionInedible.H2O)^-1;
+            
             this.txInput = txInput;
             
             % the flowrates set here are all used in the manipulator
@@ -262,10 +270,6 @@ classdef PlantCulture < vsys
                 % immediatly after the previous generation!)
                 this.txInput.mfSowTime = zeros(1,this.txInput.iConsecutiveGenerations);
             end
-            
-            
-            this.iEdibleBiomass = this.oMT.tiN2I.(this.txPlantParameters.sPlantSpecies);
-            this.iInedibleBiomass = this.oMT.tiN2I.([this.txPlantParameters.sPlantSpecies, 'Inedible']);
         end
         
         function createSolverStructure(this)
@@ -436,7 +440,7 @@ classdef PlantCulture < vsys
             fWaterConsumptionInedible = fTotalPlantBiomassWaterConsumption - fWaterConsumptionEdible;
             
             if fWaterConsumptionInedible < 0
-                error('In the plant module too much water is used for edible plant biomass production')
+                error('In the plant module too much water is used for inedible plant biomass production')
             end
             if fWaterConsumptionInedible - afPartialFlows(1, this.iInedibleBiomass) > 1e-6
                 error('In the plant module more water is consumed than biomass is created! This might be due to a mismatch between the defined water content for the edible plant biomass and the assumed edible biomass water content in the MEC model')

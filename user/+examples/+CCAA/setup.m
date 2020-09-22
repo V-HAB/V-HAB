@@ -20,14 +20,24 @@ classdef setup < simulation.infrastructure
             
             this@simulation.infrastructure('Example_CCAA', ptConfigParams, tSolverParams, ttMonitorConfig);
             
-            % Creating the root object
-            examples.CCAA.systems.Example(this.oSimulationContainer, 'Example');
-
             %% Simulation length
             % Stop when specific time in simulation is reached or after 
             % specific amount of ticks (bUseTime true/false).
             this.fSimTime = 10; % In seconds
             this.bUseTime = true;
+            
+            % Creating the root object
+            if isempty(ptConfigParams)
+                examples.CCAA.systems.Example(this.oSimulationContainer, 'Example', struct());
+            else
+                tParameters = ptConfigParams('tParameters');
+                examples.CCAA.systems.Example(this.oSimulationContainer, 'Example', tParameters);
+                if isfield(tParameters, 'iSimTicks')
+                    this.iSimTicks = tParameters.iSimTicks;
+                    this.bUseTime = false;
+                end
+            end
+            
         end
         
         function configureMonitors(this)
@@ -157,15 +167,15 @@ classdef setup < simulation.infrastructure
             legend('Simulation', 'Protoflight Test')
             hold off
             
-%             mfAirTemperatureDifference      = mfAirOutletTemperature(2,:)       - Data.ProtoflightTestData.AirOutletTemperature';
-%             mfCoolantTemperatureDifference  = mfCoolantOutletTemperature(2,:)   - Data.ProtoflightTestData.CoolantOutletTemperature';
-%             mfCondensateDifference          = mfCondensateFlow(2,:) * 3600      - Data.ProtoflightTestData.CondensateMassFlow';
-%             
-%             mfPercentageDifferenceAirTemperature = mfAirTemperatureDifference ./ (Data.ProtoflightTestData.AirOutletTemperature' - 273.15) * 100;
-%             
-%             disp(['The average difference in air outlet temperature is:         ', num2str(mean(mfAirTemperatureDifference), 2), ' K'])
-%             disp(['The average difference in coolant outlet temperature is:     ', num2str(mean(mfCoolantTemperatureDifference), 2), ' K'])
-%             disp(['The average difference in condensate is:                     ', num2str(mean(mfCondensateDifference), 2), ' kg/h'])
+            mfAirTemperatureDifference      = mfMixedAirOutletTemperature(4,:)       - Data.ProtoflightTestData.AirOutletTemperature';
+            mfCoolantTemperatureDifference  = mfCoolantOutletTemperature(4,:)   - Data.ProtoflightTestData.CoolantOutletTemperature';
+            mfCondensateDifference          = mfCondensateFlow(4,:) * 3600      - Data.ProtoflightTestData.CondensateMassFlow';
+            
+            mfPercentageDifferenceAirTemperature = mfAirTemperatureDifference ./ (Data.ProtoflightTestData.AirOutletTemperature' - 273.15) * 100;
+            
+            disp(['The average difference in air outlet temperature is:         ', num2str(mean(mfAirTemperatureDifference), 2), ' K'])
+            disp(['The average difference in coolant outlet temperature is:     ', num2str(mean(mfCoolantTemperatureDifference), 2), ' K'])
+            disp(['The average difference in condensate is:                     ', num2str(mean(mfCondensateDifference), 2), ' kg/h'])
         end
     end
 end
