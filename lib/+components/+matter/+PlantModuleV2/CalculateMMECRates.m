@@ -125,9 +125,9 @@ function [ oCulture ] ...
     % if T_E exceeded -> use total water fraction, if not only inedible
     % biomass is produced -> water fraction = 0.9 (BVAD 2015, table 4.98)
     if oCulture.fInternalTime >= (oCulture.txPlantParameters.fT_E * 86400)
-        fHWCGR = fHCGR * (1 - oCulture.txPlantParameters.fWBF_Total) ^-1;   % [kg m^-2 s-^1]
+        fHWCGR = fHCGR * (1 - oCulture.txPlantParameters.fWBF_Edible) ^-1;   % [kg m^-2 s-^1]
     else
-        fHWCGR = fHCGR * (1 - 0.9)^-1;                                      % [kg m^-2 s-^1]
+        fHWCGR = fHCGR * (1 - oCulture.txPlantParameters.fWBF_Inedible)^-1;	% [kg m^-2 s-^1]
     end
     
     % hourly oxygen production [g m^-2 h^-1]

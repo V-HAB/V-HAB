@@ -106,8 +106,8 @@ function [ oCulture ] =  PlantGrowth( oCulture, fSimTime)
                 % TODO: JUST GROWTH RATES! actual growth happens 
                 % inside the plant module exec() function
 
-                oCulture.tfBiomassGrowthRates.fGrowthRateEdible     = (oCulture.tfMMECRates.fCGR * oCulture.txInput.fGrowthArea * oCulture.txPlantParameters.fXFRT) * (oCulture.txPlantParameters.fFBWF_Edible + 1);
-                oCulture.tfBiomassGrowthRates.fGrowthRateInedible   = (oCulture.tfMMECRates.fCGR * oCulture.txInput.fGrowthArea * (1 - oCulture.txPlantParameters.fXFRT)) * (oCulture.txPlantParameters.fFBWF_Inedible + 1);
+                oCulture.tfBiomassGrowthRates.fGrowthRateEdible     = (oCulture.tfMMECRates.fCGR * oCulture.txInput.fGrowthArea *       oCulture.txPlantParameters.fXFRT)   * (oCulture.txPlantParameters.fFBWF_Edible + 1);
+                oCulture.tfBiomassGrowthRates.fGrowthRateInedible   = (oCulture.tfMMECRates.fCGR * oCulture.txInput.fGrowthArea * (1 -  oCulture.txPlantParameters.fXFRT))  * (oCulture.txPlantParameters.fFBWF_Inedible + 1);
 
                 % If tE is not exceeded yet, only inedible biomass is created 
                 % (and therefore contributes to the total crop biomass (TCB) solely)

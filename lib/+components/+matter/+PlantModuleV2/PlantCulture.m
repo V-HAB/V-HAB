@@ -126,6 +126,9 @@ classdef PlantCulture < vsys
             trBaseCompositionEdible     = this.oMT.ttxMatter.(this.oMT.csI2N{this.iEdibleBiomass}).trBaseComposition;
             trBaseCompositionInedible   = this.oMT.ttxMatter.(this.oMT.csI2N{this.iInedibleBiomass}).trBaseComposition;
             
+            this.txPlantParameters.fWBF_Edible      = trBaseCompositionEdible.H2O;
+            this.txPlantParameters.fWBF_Inedible    = trBaseCompositionInedible.H2O;
+            
             this.txPlantParameters.fFBWF_Edible     = trBaseCompositionEdible.H2O   * (1 - trBaseCompositionEdible.H2O)^-1;
             this.txPlantParameters.fFBWF_Inedible 	= trBaseCompositionInedible.H2O * (1 - trBaseCompositionInedible.H2O)^-1;
             
@@ -436,8 +439,60 @@ classdef PlantCulture < vsys
             trBaseCompositionInedible   = this.oMT.ttxMatter.(this.oMT.csI2N{this.iInedibleBiomass}).trBaseComposition;
             
             fTotalPlantBiomassWaterConsumption = -afPartialFlows(1, tiN2I.H2O);
-            fWaterConsumptionEdible = trBaseCompositionEdible.H2O * afPartialFlows(1, this.iEdibleBiomass);
-            fWaterConsumptionInedible = fTotalPlantBiomassWaterConsumption - fWaterConsumptionEdible;
+            
+            fWaterConsumptionEdible     = trBaseCompositionEdible.H2O   * afPartialFlows(1, this.iEdibleBiomass);
+            fWaterConsumptionInedible   = trBaseCompositionInedible.H2O * afPartialFlows(1, this.iInedibleBiomass);
+            
+            % Not all of the water is added as actual water content in the
+            % biomass, some water is actually transformed into biomass. To
+            % calculate the part of water that is necessary to create
+            % biomass, we calculate the required water flow for the dry
+            % crop growth rate:
+            fDryGrowthEdible    = (this.tfBiomassGrowthRates.fGrowthRateEdible      / (this.txPlantParameters.fFBWF_Edible + 1));
+            fDryGrowthInedible  =  this.tfBiomassGrowthRates.fGrowthRateInedible    / (this.txPlantParameters.fFBWF_Inedible + 1);
+            
+            % This water mass is not considered when calculating the water
+            % content of the biomass in the following, because it is not
+            % present as water in the plant but actually as biomass (e.g.
+            % CO2 + H2O -> C6H12O6 + O2 does consume water without the
+            % products containing water)
+            fWaterToBiomass     = this.tfGasExchangeRates.fO2ExchangeRate + this.tfGasExchangeRates.fCO2ExchangeRate +  fDryGrowthEdible + fDryGrowthInedible - this.fNutrientConsumptionRate;
+         
+            % The MEC model does not produce biomass with necessarily
+            % exactly the water content specified as base content.
+            % Therefore, we have to check what the difference is. Usually
+            % this difference will be handled in the inedible plant parts,
+            % but for some plants there are no inedible parts after an
+            % initial growth period (See BVAD table 4.119)
+            fWaterConsumptionDifference = fTotalPlantBiomassWaterConsumption - fWaterConsumptionEdible - fWaterConsumptionInedible - fWaterToBiomass;
+            
+            % Now we have to decide how to spread the water difference
+            % compared to the base values
+            if fWaterConsumptionDifference > 0
+                if fWaterConsumptionInedible > 2*fWaterConsumptionDifference
+                    % in this case we assume the water difference to occur
+                    % only in the inedible plant part
+                    fEdibleWaterDifference      = 0;
+                    fInedibleWaterDifference    = fWaterConsumptionDifference;
+                else
+                    % In this case we spread the water difference based on
+                    % the water consumption rates compared to the total
+                    % water consumption rate
+                    fEdibleWaterDifference      = fWaterConsumptionDifference *  fWaterConsumptionEdible    / (fWaterConsumptionEdible + fWaterConsumptionInedible);
+                    fInedibleWaterDifference    = fWaterConsumptionDifference *  fWaterConsumptionInedible  / (fWaterConsumptionEdible + fWaterConsumptionInedible);
+                end
+            else
+                if (fWaterConsumptionInedible + fWaterConsumptionDifference) < 0.5 * fWaterConsumptionInedible
+                    fEdibleWaterDifference      = fWaterConsumptionDifference *  fWaterConsumptionEdible    / (fWaterConsumptionEdible + fWaterConsumptionInedible);
+                    fInedibleWaterDifference    = fWaterConsumptionDifference *  fWaterConsumptionInedible  / (fWaterConsumptionEdible + fWaterConsumptionInedible);
+                else
+                    fEdibleWaterDifference      = 0;
+                    fInedibleWaterDifference    = fWaterConsumptionDifference;
+                end
+            end
+            
+            fWaterConsumptionEdible     = fWaterConsumptionEdible + fEdibleWaterDifference;
+            fWaterConsumptionInedible   = fWaterConsumptionInedible + fInedibleWaterDifference;
             
             if fWaterConsumptionInedible < 0
                 error('In the plant module too much water is used for inedible plant biomass production')
@@ -448,34 +503,43 @@ classdef PlantCulture < vsys
             
             aarManipCompoundMassRatios = zeros(this.oMT.iSubstances, this.oMT.iSubstances);
             
-            if fWaterConsumptionInedible > afPartialFlows(1, this.iInedibleBiomass)
-                % This should not occur permanently, and large cases of
-                % this are catched by the errors above. For cases where
-                % this occurs on a small scale, we can set the water
-                % content to 1
-                aarManipCompoundMassRatios(this.iInedibleBiomass, this.oMT.tiN2I.H2O)       = 1;
-            else
-                aarManipCompoundMassRatios(this.iInedibleBiomass, this.oMT.tiN2I.H2O)       = fWaterConsumptionInedible / afPartialFlows(1, this.iInedibleBiomass);
-            
-                csInedibleComposition = fieldnames(trBaseCompositionInedible);
-                % This calculation enables easy addition of other materials to
-                % the inedible biomass of each plant. It only requires the
-                % addition of that mass to the base composition struct
-                for iField = 1:length(csInedibleComposition)
-                    if strcmp(csInedibleComposition{iField}, 'H2O')
-                        continue
+            if afPartialFlows(1, this.iInedibleBiomass) > 0
+                if fWaterConsumptionInedible > afPartialFlows(1, this.iInedibleBiomass)
+                    % This should not occur permanently, and large cases of
+                    % this are catched by the errors above. For cases where
+                    % this occurs on a small scale, we can set the water
+                    % content to 1
+                    aarManipCompoundMassRatios(this.iInedibleBiomass, this.oMT.tiN2I.H2O)       = 1;
+                else
+                    aarManipCompoundMassRatios(this.iInedibleBiomass, this.oMT.tiN2I.H2O)       = fWaterConsumptionInedible / afPartialFlows(1, this.iInedibleBiomass);
+
+                    csInedibleComposition = fieldnames(trBaseCompositionInedible);
+                    % This calculation enables easy addition of other materials to
+                    % the inedible biomass of each plant. It only requires the
+                    % addition of that mass to the base composition struct
+                    for iField = 1:length(csInedibleComposition)
+                        if strcmp(csInedibleComposition{iField}, 'H2O')
+                            continue
+                        end
+                        rMassRatioWithoutWater = (trBaseCompositionInedible.(csInedibleComposition{iField}) / (1 - trBaseCompositionInedible.H2O));
+                        aarManipCompoundMassRatios(this.iInedibleBiomass, this.oMT.tiN2I.(csInedibleComposition{iField}))   = rMassRatioWithoutWater * (afPartialFlows(1, this.iInedibleBiomass) - fWaterConsumptionInedible) / afPartialFlows(1, this.iInedibleBiomass);
                     end
-                    rMassRatioWithoutWater = (trBaseCompositionInedible.(csInedibleComposition{iField}) / (1 - trBaseCompositionInedible.H2O));
-                    aarManipCompoundMassRatios(this.iInedibleBiomass, this.oMT.tiN2I.(csInedibleComposition{iField}))   = rMassRatioWithoutWater * (afPartialFlows(1, this.iInedibleBiomass) - fWaterConsumptionInedible) / afPartialFlows(1, this.iInedibleBiomass);
                 end
             end
             
-            csEdibleComposition = fieldnames(trBaseCompositionEdible);
-            % This calculation enables easy addition of other materials to
-            % the edible biomass of each plant. It only requires the
-            % addition of that mass to the base composition struct
-            for iField = 1:length(csEdibleComposition)
-                aarManipCompoundMassRatios(this.iEdibleBiomass, this.oMT.tiN2I.(csEdibleComposition{iField})) = trBaseCompositionEdible.(csEdibleComposition{iField});
+            if afPartialFlows(1, this.iEdibleBiomass) > 0
+                % This calculation enables easy addition of other materials to
+                % the edible biomass of each plant. It only requires the
+                % addition of that mass to the base composition struct
+                aarManipCompoundMassRatios(this.iEdibleBiomass, this.oMT.tiN2I.H2O)       = fWaterConsumptionEdible / afPartialFlows(1, this.iEdibleBiomass);
+                csEdibleComposition = fieldnames(trBaseCompositionEdible);
+                for iField = 1:length(csEdibleComposition)
+                    if strcmp(csEdibleComposition{iField}, 'H2O')
+                        continue
+                    end
+                    rMassRatioWithoutWater = (trBaseCompositionEdible.(csEdibleComposition{iField}) / (1 - trBaseCompositionEdible.H2O));
+                    aarManipCompoundMassRatios(this.iEdibleBiomass, this.oMT.tiN2I.(csEdibleComposition{iField}))   = rMassRatioWithoutWater * (afPartialFlows(1, this.iEdibleBiomass) - fWaterConsumptionEdible) / afPartialFlows(1, this.iEdibleBiomass);
+                end
             end
             
             this.toStores.Plant_Culture.toPhases.Balance.toManips.substance.setFlowRate(afPartialFlows, aarManipCompoundMassRatios);
