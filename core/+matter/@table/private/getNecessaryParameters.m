@@ -16,8 +16,7 @@ if length(varargin) == 1
         if varargin{1}.fMass == 0
             arPartialMass = zeros(1, this.iSubstances);
         else
-            afMass = this.resolveCompoundMass(varargin{1}.afMass, varargin{1}.arCompoundMass);
-            arPartialMass = afMass / varargin{1}.fMass;
+            arPartialMass = this.resolveCompoundMass(varargin{1}.arPartialMass, varargin{1}.arCompoundMass);
         end
         
     elseif strcmp(varargin{1}.sObjectType, 'flow')
