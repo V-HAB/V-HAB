@@ -68,6 +68,10 @@ classdef CDRA < vsys
         tInitializationOverwrite;
         
         fCurrentPowerConsumption = 0;
+        
+        % Array to store the branches that shall use the multi branch
+        % solver will be stored in
+        aoThermalMultiSolverBranches;
     end
     
     properties (SetAccess = protected, GetAccess = public)
@@ -443,6 +447,11 @@ classdef CDRA < vsys
                                 oFlowPhase =  matter.phases.flow.gas(this.toStores.(sName), ['Flow_',num2str(iCell)], tfMassesFlow,(fFlowVolume/iCellNumber), this.TargetTemperature);
                             end
                         end
+                        % The absorber material thermal handling uses a
+                        % multi branch solver to allow for larger time
+                        % steps
+                        oFilterPhase.makeThermalNetworkNode();
+                        
                         % An individual orption and desorption Exme and P2P is
                         % required because it is possible that a few substances are
                         % beeing desorbed at the same time as others are beeing
@@ -684,6 +693,9 @@ classdef CDRA < vsys
             mfConductivity(2) = this.oMT.ttxMatter.Sylobead_B125.ttxPhases.tSolid.ThermalConductivity;
             mfConductivity(3) = this.oMT.ttxMatter.Zeolite5A_RK38.ttxPhases.tSolid.ThermalConductivity;
             
+            iMultiSolverBranch = 1;
+            this.aoThermalMultiSolverBranches = thermal.branch.empty();
+            
             for iType = 1:3
                 
                 iCellNumber             = this.tGeometry.(csTypes{iType}).iCellNumber;
@@ -711,7 +723,7 @@ classdef CDRA < vsys
                         thermal.procs.exme(oAbsorberPhase.oCapacity,  ['Solid_InfiniteConductor_', num2str(iCell)]);
                         thermal.procs.exme(oFlowPhase.oCapacity,    ['Flow_InfiniteConductor_', num2str(iCell)]);
                         thermal.branch(this, [sName,'.Flow_InfiniteConductor_', num2str(iCell)], {}, [sName,'.Solid_InfiniteConductor_', num2str(iCell)], [sName, '_Infinite_Conductor', num2str(iCell)]);
-                                               
+                                            
                     end
                     
                     for iCell = 1:iCellNumber-1
@@ -726,7 +738,8 @@ classdef CDRA < vsys
                         sConductorName = [sName, '_Material_Conductor_', num2str(iCell), '_', num2str(iCell+1)];
                         thermal.procs.conductors.conductive(this, sConductorName, fMaterialResistivity);
                         
-                        thermal.branch(this, [sName,'.', sPort1], {sConductorName}, [sName,'.', sPort2], [sName, '_Conduction_Cell_', num2str(iCell), '_to_Cell_', num2str(iCell+1)]);
+                        this.aoThermalMultiSolverBranches(iMultiSolverBranch) = thermal.branch(this, [sName,'.', sPort1], {sConductorName}, [sName,'.', sPort2], [sName, '_Conduction_Cell_', num2str(iCell), '_to_Cell_', num2str(iCell+1)]);
+                        iMultiSolverBranch = iMultiSolverBranch + 1;
                     end
                 end
             end
@@ -747,6 +760,8 @@ classdef CDRA < vsys
             
             oSolver = solver.matter_multibranch.iterative.branch(this.aoBranches, 'complex');
             oSolver.setSolverProperties(tSolverProperties);
+            
+            solver.thermal.multi_branch.advanced.branch(this.aoThermalMultiSolverBranches, this.fTimeStep);
             
             csStores = fieldnames(this.toStores);
             % sets numerical properties for the phases of CDRA
@@ -799,6 +814,7 @@ classdef CDRA < vsys
                 this.toProcsF2F.Valve_5A_1_Vacuum.setOpen(false);
                 this.toProcsF2F.Valve_5A_2_Vacuum.setOpen(false);
             end
+            
             
             this.setThermalSolvers();
         end           

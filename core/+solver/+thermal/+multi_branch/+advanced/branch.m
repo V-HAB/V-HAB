@@ -274,8 +274,9 @@ classdef branch < solver.thermal.multi_branch.basic.branch
                     % mbNonUniqueCapacities matrix to true.
                     this.mbNonUniqueCapacities(iLinearCapacities + iUniqueRadiativeNodeCounter, iLinearCapacities + iRadiativeCapacity) = true;
                 end
-                this.aoBranches(1).oContainer.bind('ThermalSolverCheck_post', @this.findExternalSolvers);
             end
+            
+            this.aoBranches(1).oContainer.bind('ThermalSolverCheck_post', @this.findExternalSolvers);
             
             % In the ODE function we need subset of the
             % mbNonUniqueCapacities matrix in its transposed form. This
@@ -341,13 +342,14 @@ classdef branch < solver.thermal.multi_branch.basic.branch
                 % notices a heat flow change in the external solvers
                 coBranches = this.coNonSolverBranches{iCapacity};
                 ciSigns = cell(1, length(coBranches));
+                aoExternalBranches = coBranches{1};
                 for iExternalBranch = 1:sum(mbExternalBranch)
-                    coBranches{iExternalBranch}.bind('outdated', @this.bindPostTickUpdate);
+                    aoExternalBranches(iExternalBranch).bind('outdated', @this.bindPostTickUpdate);
                     
-                    if this.aoUniqueCapacities(iCapacity) == coBranches{iExternalBranch}.coExmes{1}.oCapacity
-                        ciSigns{iExternalBranch} = coBranches{iExternalBranch}.coExmes{1}.iSign;
+                    if this.aoUniqueCapacities(iCapacity) == aoExternalBranches(iExternalBranch).coExmes{1}.oCapacity
+                        ciSigns{iExternalBranch} = aoExternalBranches(iExternalBranch).coExmes{1}.iSign;
                     else
-                        ciSigns{iExternalBranch} = coBranches{iExternalBranch}.coExmes{2}.iSign;
+                        ciSigns{iExternalBranch} = aoExternalBranches(iExternalBranch).coExmes{2}.iSign;
                     end
                 end
                 this.ciNonSolverSigns{iCapacity} = ciSigns;
@@ -359,8 +361,10 @@ classdef branch < solver.thermal.multi_branch.basic.branch
     methods (Access = protected)
         
         function bindPostTickUpdate(this, ~)
-            this.bPostTickUpdateNotBound = false;
-            this.hActuallyBindPostTick();
+            if this.bPostTickUpdateNotBound
+                this.bPostTickUpdateNotBound = false;
+                this.hActuallyBindPostTick();
+            end
         end
         
         function mfTemperatureChangeRate = calculateTemperatureChangeRate(this, afCurrentTemperatures, ~)
@@ -398,6 +402,7 @@ classdef branch < solver.thermal.multi_branch.basic.branch
         function update(this)
             % update the thermal solver
             if this.oTimer.fTime == this.fLastUpdate
+                this.bPostTickUpdateNotBound = true;
                 return
             end
             % The first step is to divide the connectivity matrix by the
@@ -418,10 +423,12 @@ classdef branch < solver.thermal.multi_branch.basic.branch
                 % modelled through multiple branches!
                 afBranchResistances(iBranch) = sum(afResistances);
             end
-            
+            afBranchResistancesNoZeros = afBranchResistances;
+            afBranchResistancesNoZeros(afBranchResistancesNoZeros == 0) = 1;
             % Now we can simply use a vector matrix operation to get the
             % current conductivity matrix
-            mfConductivityMatrix = this.mfConnectivityMatrix ./ afBranchResistances;
+            mfConductivityMatrix = this.mfConnectivityMatrix ./ afBranchResistancesNoZeros;
+            mfConductivityMatrix(afBranchResistances == 0, :) = mfConductivityMatrix(afBranchResistances == 0, :) * 1e10;
             
             this.mfTemperatureChangeRateMatrix = this.mfTotalHeatCapacityMatrix * mfConductivityMatrix;
 

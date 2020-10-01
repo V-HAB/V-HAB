@@ -1,10 +1,9 @@
 function [afInFlowRates, aarInPartials] = getPhaseInFlows(this, oPhase)
 
 iNumberOfExMes = oPhase.iProcsEXME;
-iNumberOfP2Ps  = oPhase.iProcsP2P;
     
-afInFlowRates = zeros(iNumberOfExMes + iNumberOfP2Ps, 1);
-aarInPartials = zeros(iNumberOfExMes + iNumberOfP2Ps, this.oMT.iSubstances);
+afInFlowRates = zeros(iNumberOfExMes, 1);
+aarInPartials = zeros(iNumberOfExMes, this.oMT.iSubstances);
 
 for iExme = 1:iNumberOfExMes
     

@@ -59,7 +59,7 @@ classdef network < thermal.capacity
             % therefore, we update the fTotalHeatSourceHeatFlow property:
             afHeatSourceFlows = zeros(this.iHeatSources,1);
             for iI = 1:this.iHeatSources
-                afHeatSourceFlows(iI) = this.coHeatSource{iI}.fHeatFlow;
+                afHeatSourceFlows(iI) = this.coHeatSource{iI}.fRequestedHeatFlow;
             end
             
             this.fTotalHeatSourceHeatFlow = sum(afHeatSourceFlows);

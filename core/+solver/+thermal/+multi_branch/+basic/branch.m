@@ -409,6 +409,10 @@ classdef branch < base & event.source
             
             this.iCapacities = length(this.aoCapacities);
             
+            if isempty(this.iFirstRadiativeCapacity)
+                this.iFirstRadiativeCapacity = this.iCapacities+1;
+            end
+            
             % Register this solver as the solver for all thermal branches
             % inside the network and save the setHeatFlow function of each
             % branch in the chSetBranchHeatFlows property

@@ -171,7 +171,26 @@ classdef CCAA < vsys
         end
         
         function setParameterOverwrite(this, tParameters)
+            % setParameterOverwrite can be used to overwrite certain CCAA
+            % parameters to model an assumed larger/smaller CCAA with the
+            % same control logic as the normal CCAA. The input is a struct
+            % with the following possible inputs:
+            %
+            % fVolumetricFlowRate:  Volumetric air flow into the CCAA in m^3/s
+            % fCoolantFlowRate:     Coolant flowrate in kg/s
+            % fBroadness:           Broadness of CHX in m
+            % fLength:              Length of CHX in m
+            % fPipeDiameter:        Diameter of the pipes inside the CCAA in m
+            % miIncrements:         Number of increments in the numerical
+            %                       CHX calculation
             this.tParameterOverwrite = tParameters;
+            
+            if isfield(this.tParameterOverwrite, 'fVolumetricFlowRate')
+                this.fVolumetricFlowRate    = this.tParameterOverwrite.fVolumetricFlowRate;
+            end
+            if isfield(this.tParameterOverwrite, 'fCoolantFlowRate')
+                this.fCoolantFlowRate       = this.tParameterOverwrite.fCoolantFlowRate;
+            end
         end
         
         function createMatterStructure(this)
@@ -257,7 +276,11 @@ classdef CCAA < vsys
             % Number of incremental heat exchangers used in the calculation
             % of the CHX. For e.g. [10,5] the results of the verification
             % in protoflight test 5 differ siginificantly
-            miIncrements = [14,7];
+            if isfield(this.tParameterOverwrite, 'miIncrements')
+                miIncrements = this.tParameterOverwrite.miIncrements; 
+            else
+                miIncrements = [14,7];
+            end
             % Defines when the CHX should be recalculated: 
             fTempChangeToRecalc = 1;        % If any inlet temperature changes by more than 1 K
             fPercentChangeToRecalc = 0.05;  % If any inlet flowrate or composition changes by more than 5%
@@ -289,10 +312,15 @@ classdef CCAA < vsys
             %  Creating the flowpaths between the Components
             %  Creating the flowpath out of this subsystem ('store.exme', {'f2f-processor', 'f2f-processor'}, 'system level port name')
             
-            components.matter.pipe(this, 'Pipe_TCCV', 1, 0.1, 2e-3);
-            components.matter.pipe(this, 'Pipe_CHX', 1, 0.1, 2e-3);
-            components.matter.pipe(this, 'Pipe_Out', 1, 0.1, 2e-3);
-            components.matter.pipe(this, 'Pipe_Coolant_Out', 1, 0.1, 2e-3);
+            if isfield(this.tParameterOverwrite, 'fPipeDiameter')
+                fPipeDiameter = this.tParameterOverwrite.fPipeDiameter;
+            else
+                fPipeDiameter = 0.1;
+            end
+            components.matter.pipe(this, 'Pipe_TCCV',           1, fPipeDiameter, 2e-3);
+            components.matter.pipe(this, 'Pipe_CHX',            1, fPipeDiameter, 2e-3);
+            components.matter.pipe(this, 'Pipe_Out',            1, fPipeDiameter, 2e-3);
+            components.matter.pipe(this, 'Pipe_Coolant_Out',    1, fPipeDiameter, 2e-3);
             
             matter.branch(this, 'TCCV.Port_In',                     {},                     'CCAA_In',                  'CCAA_In_FromCabin');	% Creating the flowpath into this subsystem
             matter.branch(this, 'TCCV.Port_Out_1',                  {'CCAA_CHX_1'},         'CHX.Flow_In',              'TCCV_CHX');

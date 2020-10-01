@@ -210,6 +210,20 @@ function importNutrientData(this)
     ttxImportNutrientData.Food.Mass.Minerals.Zinc__Zn           = 11e-6     / 1.51;
     ttxImportNutrientData.Food.Mass.Minerals.Selenium__Se     	= 227.5e-9  / 1.51;
     
+    ttxImportNutrientData.Food.Mass.Vitamins.Vitamin_A          = 800e-9    / 1.51;
+    ttxImportNutrientData.Food.Mass.Vitamins.Vitamin_D          = 25e-9    	/ 1.51;
+    ttxImportNutrientData.Food.Mass.Vitamins.Vitamin_K          = 120e-9   	/ 1.51;
+    ttxImportNutrientData.Food.Mass.Vitamins.Vitamin_E          = 15e-6    	/ 1.51;
+    ttxImportNutrientData.Food.Mass.Vitamins.Vitamin_C          = 90e-6     / 1.51;
+    ttxImportNutrientData.Food.Mass.Vitamins.Vitamin_B_12       = 2.4e-9    / 1.51;
+    ttxImportNutrientData.Food.Mass.Vitamins.Vitamin_B_6        = 1.7e-6    / 1.51;
+    ttxImportNutrientData.Food.Mass.Vitamins.Thiamin            = 1.2e-9 * 0.33727    / 1.51; % value is given in micromol, therefore multiplied with molar mass
+    ttxImportNutrientData.Food.Mass.Vitamins.Riboflavin         = 1.3e-6    / 1.51;
+    ttxImportNutrientData.Food.Mass.Vitamins.Folate             = 400e-9    / 1.51;
+    ttxImportNutrientData.Food.Mass.Vitamins.Niacin             = 16e-6     / 1.51;
+    ttxImportNutrientData.Food.Mass.Vitamins.Biotin             = 30e-9     / 1.51;
+    ttxImportNutrientData.Food.Mass.Vitamins.Pantothenic_acid  	= 30e-6     / 1.51;
+    
     this.ttxNutrientData = ttxImportNutrientData;
     
     %% Create Compound Matter Data entries based on imported nutrient data!
@@ -242,6 +256,24 @@ function importNutrientData(this)
             % the second part of the split string is the element of the
             % mineral and can be used by V-HAB
             trBaseComposition.(csSplitString{2}) = ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Minerals.(csMinerals{iMineral});
+        end
+        
+        % unfortunatly it is not certain that all vitamin fields are always
+        % present and contain zero if they are not. Therefore, to only add
+        % which minerals are present we first check which are there
+        csVitamins = fieldnames(ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Vitamins);
+        % now we have to derive the V-HAB name for these minerals and add
+        % them to the struct
+        for iVitamin = 1:length(csVitamins)
+            % since a folate total value exists, we skip the partial folate
+            % values
+            if strcmp(csVitamins{iVitamin}, 'Folate__food') || strcmp(csVitamins{iVitamin}, 'Folate__DFE')
+                continue
+            end
+            csSplitString = strsplit(csVitamins{iVitamin}, '__');
+            % the second part of the split string is the element of the
+            % mineral and can be used by V-HAB
+            this.ttxNutrientData.(this.csEdibleSubstances{iJ}).trVitaminMass.(csSplitString{1}) = ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Vitamins.(csVitamins{iMineral});
         end
         
         trBaseComposition.DietaryFiber	= ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Fiber__total_dietary;
