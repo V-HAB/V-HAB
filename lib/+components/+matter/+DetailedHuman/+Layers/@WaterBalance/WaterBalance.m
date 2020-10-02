@@ -36,8 +36,16 @@ classdef WaterBalance < vsys
         fRemainingMinimumDailyWaterIntake = 2.5;
         fTimeInCurrentDay = 0;
         
+        fLastInternalUpdate = 0;
+        
         hBindPostTickInternalUpdate;
         bInternalUpdateRegistered = false;
+        hCalculateChangeRate;
+        
+        fCurrenStepDensityH2O;
+        
+        
+        tOdeOptions = odeset('RelTol', 1e-3, 'AbsTol', 1e-4);
     end
     
     properties (Constant)
@@ -97,6 +105,9 @@ classdef WaterBalance < vsys
             this@vsys(oParent, sName, inf);
             
             this.hBindPostTickInternalUpdate  = this.oTimer.registerPostTick(@this.updateInteralFlowrates,   'matter',        'pre_solver');
+            
+            % Define rate of change function for ODE solver.
+            this.hCalculateChangeRate = @(t, m) this.calculateChangeRate(m, t);
         end
         
         
@@ -262,16 +273,16 @@ classdef WaterBalance < vsys
                     
                     tTimeStepProperties.rMaxChange = 0.1;
                     
-                    arMaxChange = zeros(1,this.oMT.iSubstances);
-                    arMaxChange(this.oMT.tiN2I.Naplus)      = 1e-2;
-                    arMaxChange(this.oMT.tiN2I.Kplus)       = 1e-2;
-                    arMaxChange(this.oMT.tiN2I.Ca2plus)     = 1e-2;
-                    arMaxChange(this.oMT.tiN2I.Mg2plus)     = 1e-2;
-                    arMaxChange(this.oMT.tiN2I.Clminus)     = 1e-2;
-                    arMaxChange(this.oMT.tiN2I.HCO3)        = 1e-2;
-                    arMaxChange(this.oMT.tiN2I.HPO4)        = 1e-2;
-                    arMaxChange(this.oMT.tiN2I.H2O)         = 1e-2;
-                    tTimeStepProperties.arMaxChange = arMaxChange;
+%                     arMaxChange = zeros(1,this.oMT.iSubstances);
+%                     arMaxChange(this.oMT.tiN2I.Naplus)      = 1e-2;
+%                     arMaxChange(this.oMT.tiN2I.Kplus)       = 1e-2;
+%                     arMaxChange(this.oMT.tiN2I.Ca2plus)     = 1e-2;
+%                     arMaxChange(this.oMT.tiN2I.Mg2plus)     = 1e-2;
+%                     arMaxChange(this.oMT.tiN2I.Clminus)     = 1e-2;
+%                     arMaxChange(this.oMT.tiN2I.HCO3)        = 1e-2;
+%                     arMaxChange(this.oMT.tiN2I.HPO4)        = 1e-2;
+%                     arMaxChange(this.oMT.tiN2I.H2O)         = 1e-2;
+%                     tTimeStepProperties.arMaxChange = arMaxChange;
 
                     oPhase.setTimeStepProperties(tTimeStepProperties);
                 end
@@ -286,6 +297,10 @@ classdef WaterBalance < vsys
             this.toStores.WaterBalance.toPhases.Bladder.setTimeStepProperties(tTimeStepProperties);
             
             this.setThermalSolvers();
+        end
+        
+        function setOdeOptions(this, tOdeOptions)
+            this.tOdeOptions = tOdeOptions;
         end
     end
     
@@ -313,8 +328,12 @@ classdef WaterBalance < vsys
             fOsmolality = sum(afOsmoticCoefficients) / oPhase.afMass(this.oMT.tiN2I.H2O); % [mol / kg]
         end
         
-        function EndotheliumFlowRates(this, fDensityH2O)
+        function afPartialFlowRates = EndotheliumFlowRates(this, fDensityH2O, afCurrentBloodPlasmaMasses, afCurrentInterstitialFluidMasses)
             
+            if nargin < 3
+                afCurrentBloodPlasmaMasses   = this.toStores.WaterBalance.toPhases.BloodPlasma.afMass;
+                afCurrentInterstitialFluidMasses  = this.toStores.WaterBalance.toPhases.InterstitialFluid.afMass;
+            end
             % Equation 11-264
             fEndothelialExchangeArea = 777.77 * this.oParent.toChildren.Metabolic.rActivityLevel + 222.22;
             
@@ -333,11 +352,8 @@ classdef WaterBalance < vsys
             % the interstitial to the BloodPlasma fluid
             fFlowRateWater = fUltrafiltrationCoefficient * this.oMT.Const.fUniversalGas * this.oParent.fBodyCoreTemperature * (this.tfOsmolality.fBloodPlasmaOsmolality - this.tfOsmolality.fInterstitialFluidOsmolality) * fDensityH2O^2;
             
-            afCurrentBloodPlasmaMasses = this.toStores.WaterBalance.toPhases.BloodPlasma.afMass;
-            afCurrentInterstitialFluidMasses = this.toStores.WaterBalance.toPhases.InterstitialFluid.afMass;
-            
-            afBloodPlasmaSolventConcentrations                  =   this.toStores.WaterBalance.toPhases.BloodPlasma.afMass(this.aiSolvents)         ./ afCurrentBloodPlasmaMasses(this.oMT.tiN2I.H2O);
-            afInterstitialFluidSolventConcentrations            =   this.toStores.WaterBalance.toPhases.InterstitialFluid.afMass(this.aiSolvents)   ./ afCurrentInterstitialFluidMasses(this.oMT.tiN2I.H2O);
+            afBloodPlasmaSolventConcentrations                  =   afCurrentBloodPlasmaMasses(this.aiSolvents)         ./ afCurrentBloodPlasmaMasses(this.oMT.tiN2I.H2O);
+            afInterstitialFluidSolventConcentrations            =   afCurrentInterstitialFluidMasses(this.aiSolvents)   ./ afCurrentInterstitialFluidMasses(this.oMT.tiN2I.H2O);
             
 %             afInitialBloodPlasmaSolventConcentrations         	=   this.tfInitialMasses.BloodPlasma.afMass(this.aiSolvents)        ./ this.tfInitialMasses.BloodPlasma.afMass(this.oMT.tiN2I.H2O);
 %             afInitialInterstitialFluidSolventConcentrations     =   this.tfInitialMasses.InterstitialFluid.afMass(this.aiSolvents) 	./ this.tfInitialMasses.InterstitialFluid.afMass(this.oMT.tiN2I.H2O);
@@ -358,7 +374,7 @@ classdef WaterBalance < vsys
             % 11-269 and 11-270
             afBloodPlasmaMassDifference = this.tfInitialMasses.BloodPlasma.afMass - afCurrentBloodPlasmaMasses;
             
-            afCorrectionFlows = afBloodPlasmaMassDifference / 20;
+            afCorrectionFlows = afBloodPlasmaMassDifference / this.oParent.fTimeStep;
             fFlowRateWater = fFlowRateWater + afCorrectionFlows(this.oMT.tiN2I.H2O);
             
             % The solvent drag flowrate is defined in the same direction as
@@ -388,21 +404,14 @@ classdef WaterBalance < vsys
             afPartialFlowRates = zeros(1, this.oMT.iSubstances);
             afPartialFlowRates(this.aiSolvents)     = afFlowRatesSolventDrag + afFlowRatesDiffusion + afFlowRatesActiveTransport;
             afPartialFlowRates(this.oMT.tiN2I.H2O) 	= fFlowRateWater;
-            
-            afPartialFlowRatesPositive = afPartialFlowRates;
-            afPartialFlowRatesPositive(afPartialFlowRatesPositive < 0) = 0;
-            
-            afPartialFlowRatesNegative = afPartialFlowRates;
-            afPartialFlowRatesNegative(afPartialFlowRatesNegative > 0) = 0;
-            % Since the P2P is defined in the other directions, we set the
-            % flows to positive values
-            afPartialFlowRatesNegative = -1 .* afPartialFlowRatesNegative;
-            
-            this.toStores.WaterBalance.toProcsP2P.FluxThroughEndothelium.setFlowRate( 	afPartialFlowRatesPositive);
-            this.toStores.WaterBalance.toProcsP2P.ReFluxThroughEndothelium.setFlowRate(	afPartialFlowRatesNegative);
         end
         
-        function CellMembraneFlowRates(this, fDensityH2O)
+        function afPartialFlowRates = CellMembraneFlowRates(this, fDensityH2O, afCurrentInterstitialMasses, afCurrentIntracellularMasses)
+            
+            if nargin < 3
+                afCurrentInterstitialMasses     = this.toStores.WaterBalance.toPhases.InterstitialFluid.afMass;
+                afCurrentIntracellularMasses	= this.toStores.WaterBalance.toPhases.IntracellularFluid.afMass;
+            end
             
             % Equation 11-272
             % fUltrafiltrationCoefficient = this.oParent.toChildren.Metabolic.fBodyMass * this.fHydraulicConductivity * this.fCellMembraneExchangeArea; % [m^3 / (Pa s)]
@@ -430,11 +439,8 @@ classdef WaterBalance < vsys
             % the interstitial to the intracellular fluid
             fFlowRateWater = fUltrafiltrationCoefficient * this.oMT.Const.fUniversalGas * this.oParent.fBodyCoreTemperature * (this.tfOsmolality.fIntracellularFluidOsmolality - this.tfOsmolality.fInterstitialFluidOsmolality) * fDensityH2O^2;
             
-            afCurrentInterstitialMasses  = this.toStores.WaterBalance.toPhases.InterstitialFluid.afMass;
-            afCurrentIntracellularMasses = this.toStores.WaterBalance.toPhases.IntracellularFluid.afMass;
-            
-            afIntracellularFluidSolventConcentrations           =   this.toStores.WaterBalance.toPhases.IntracellularFluid.afMass(this.aiSolvents)	./ afCurrentIntracellularMasses(this.oMT.tiN2I.H2O);
-            afInterstitialFluidSolventConcentrations            =   this.toStores.WaterBalance.toPhases.InterstitialFluid.afMass(this.aiSolvents)   ./ afCurrentInterstitialMasses(this.oMT.tiN2I.H2O);
+            afIntracellularFluidSolventConcentrations           =   afCurrentIntracellularMasses(this.aiSolvents)	./ afCurrentIntracellularMasses(this.oMT.tiN2I.H2O);
+            afInterstitialFluidSolventConcentrations            =   afCurrentInterstitialMasses(this.aiSolvents) 	./ afCurrentInterstitialMasses(this.oMT.tiN2I.H2O);
             
             afInitialIntracellularFluidSolventConcentrations 	=   this.tfInitialMasses.IntracellularFluid.afMass(this.aiSolvents)	./ this.tfInitialMasses.IntracellularFluid.afMass (this.oMT.tiN2I.H2O);
             afInitialInterstitialFluidSolventConcentrations     =   this.tfInitialMasses.InterstitialFluid.afMass(this.aiSolvents) 	./ this.tfInitialMasses.InterstitialFluid.afMass (this.oMT.tiN2I.H2O);
@@ -515,18 +521,6 @@ classdef WaterBalance < vsys
             afPartialFlowRates = zeros(1, this.oMT.iSubstances);
             afPartialFlowRates(this.aiSolvents)     = afFlowRatesDiffusion + afFlowRatesActiveTransport + afFlowRatesSolventDrag;
             afPartialFlowRates(this.oMT.tiN2I.H2O) 	= fFlowRateWater;
-            
-            afPartialFlowRatesPositive = afPartialFlowRates;
-            afPartialFlowRatesPositive(afPartialFlowRatesPositive < 0) = 0;
-            
-            afPartialFlowRatesNegative = afPartialFlowRates;
-            afPartialFlowRatesNegative(afPartialFlowRatesNegative > 0) = 0;
-            % Since the P2P is defined in the other directions, we set the
-            % flows to positive values
-            afPartialFlowRatesNegative = -1 .* afPartialFlowRatesNegative;
-            
-            this.toStores.WaterBalance.toProcsP2P.FluxthroughCellMembranes.setFlowRate(    afPartialFlowRatesPositive);
-            this.toStores.WaterBalance.toProcsP2P.ReFluxthroughCellMembranes.setFlowRate(  afPartialFlowRatesNegative);
         end
         
         function [fWaterFlowToBladder, fNatriumFlowToBladder] = KidneyModel(this, fDensityH2O)
@@ -829,6 +823,26 @@ classdef WaterBalance < vsys
                 this.hBindPostTickInternalUpdate()
             end
         end
+        
+        function afMassChangeRate = calculateChangeRate(this, afMasses, ~)
+            
+            afMassBloodPlasma   = afMasses(1:this.oMT.iSubstances)';
+            afMassInterstitial  = afMasses(this.oMT.iSubstances + 1     : 2 * this.oMT.iSubstances)';
+            afMassIntracellular = afMasses(2 * this.oMT.iSubstances + 1 : 3 * this.oMT.iSubstances)';
+            
+            afPartialFlowRatesEndothelium   = this.EndotheliumFlowRates(this.fCurrenStepDensityH2O, afMassBloodPlasma, afMassInterstitial);
+            afPartialFlowRatesCellMembrane  = this.CellMembraneFlowRates(this.fCurrenStepDensityH2O, afMassInterstitial, afMassIntracellular);
+            
+            % In both cases a positive flow rate represents an outflow from
+            % the interstitial fluid and an inflow into the other fluid:
+            afMassChangeRateBloodPlasma   = afPartialFlowRatesEndothelium;
+            afMassChangeRateInterstitial  = - afPartialFlowRatesEndothelium - afPartialFlowRatesCellMembrane;
+            afMassChangeRateIntraCellular = afPartialFlowRatesCellMembrane;
+            
+            afMassChangeRate = [afMassChangeRateBloodPlasma'; afMassChangeRateInterstitial'; afMassChangeRateIntraCellular'];
+            
+        end
+        
         function updateInteralFlowrates(this, ~)
             % This function can be used to update only the Water layer
             % internal flowrates. It was implemented because the water
@@ -837,17 +851,59 @@ classdef WaterBalance < vsys
             % if any of the corresponding phases requires an update, not
             % within the human model time steps
             
-            fDensityH2O = this.oMT.calculateDensity('liquid', struct('H2O', 1), this.oParent.fBodyCoreTemperature, 1e5);
+            this.fCurrenStepDensityH2O = this.oMT.calculateDensity('liquid', struct('H2O', 1), this.oParent.fBodyCoreTemperature, 1e5);
             
             this.tfOsmolality.fBloodPlasmaOsmolality        = this.calculateOsmolality(this.toStores.WaterBalance.toPhases.BloodPlasma);
             this.tfOsmolality.fInterstitialFluidOsmolality  = this.calculateOsmolality(this.toStores.WaterBalance.toPhases.InterstitialFluid);
             this.tfOsmolality.fIntracellularFluidOsmolality = this.calculateOsmolality(this.toStores.WaterBalance.toPhases.IntracellularFluid);
             this.tfOsmolality.fKidneyOsmolality             = this.calculateOsmolality(this.toStores.WaterBalance.toPhases.Kidney);
             
-            this.EndotheliumFlowRates(fDensityH2O);
-            this.CellMembraneFlowRates(fDensityH2O);
+            fStepBeginTime = this.fLastInternalUpdate;
+            fStepEndTime   = this.oTimer.fTime;
             
-            [fWaterFlowToBladder, fNatriumFlowToBladder] = this.KidneyModel(fDensityH2O);
+            if fStepBeginTime ~= fStepEndTime
+                afInitialMasses = [this.toStores.WaterBalance.toPhases.BloodPlasma.afMass'; this.toStores.WaterBalance.toPhases.InterstitialFluid.afMass'; this.toStores.WaterBalance.toPhases.IntracellularFluid.afMass'];
+
+                [~, afSolutionMasses] = ode45(this.hCalculateChangeRate, [fStepBeginTime, fStepEndTime], afInitialMasses, this.tOdeOptions);
+
+                afSolutionMasses = afSolutionMasses(end,:)';
+                afMassBloodPlasma   = afSolutionMasses(1:this.oMT.iSubstances)';
+                % afMassInterstitial  = afSolutionMasses(this.oMT.iSubstances + 1     : 2 * this.oMT.iSubstances)';
+                afMassIntracellular = afSolutionMasses(2 * this.oMT.iSubstances + 1 : 3 * this.oMT.iSubstances)';
+
+                afFlowRatesEndothelium  = (afMassBloodPlasma   - this.toStores.WaterBalance.toPhases.BloodPlasma.afMass)        ./ (fStepEndTime - fStepBeginTime);
+                afFlowRatesCellMembrane = (afMassIntracellular - this.toStores.WaterBalance.toPhases.IntracellularFluid.afMass) ./ (fStepEndTime - fStepBeginTime);
+
+
+                afPartialFlowRatesPositive = afFlowRatesEndothelium;
+                afPartialFlowRatesPositive(afPartialFlowRatesPositive < 0) = 0;
+
+                afPartialFlowRatesNegative = afFlowRatesEndothelium;
+                afPartialFlowRatesNegative(afPartialFlowRatesNegative > 0) = 0;
+                % Since the P2P is defined in the other directions, we set the
+                % flows to positive values
+                afPartialFlowRatesNegative = -1 .* afPartialFlowRatesNegative;
+
+                this.toStores.WaterBalance.toProcsP2P.FluxThroughEndothelium.setFlowRate( 	afPartialFlowRatesPositive);
+                this.toStores.WaterBalance.toProcsP2P.ReFluxThroughEndothelium.setFlowRate(	afPartialFlowRatesNegative);
+
+                afPartialFlowRatesPositive = afFlowRatesCellMembrane;
+                afPartialFlowRatesPositive(afPartialFlowRatesPositive < 0) = 0;
+
+                afPartialFlowRatesNegative = afFlowRatesCellMembrane;
+                afPartialFlowRatesNegative(afPartialFlowRatesNegative > 0) = 0;
+                % Since the P2P is defined in the other directions, we set the
+                % flows to positive values
+                afPartialFlowRatesNegative = -1 .* afPartialFlowRatesNegative;
+
+                this.toStores.WaterBalance.toProcsP2P.FluxthroughCellMembranes.setFlowRate(    afPartialFlowRatesPositive);
+                this.toStores.WaterBalance.toProcsP2P.ReFluxthroughCellMembranes.setFlowRate(  afPartialFlowRatesNegative);
+                
+                this.fLastInternalUpdate = this.oTimer.fTime;
+            end
+            
+            
+            [fWaterFlowToBladder, fNatriumFlowToBladder] = this.KidneyModel(this.fCurrenStepDensityH2O);
             
             %% Urine conversion
             % since we want the human to output a compound mass called

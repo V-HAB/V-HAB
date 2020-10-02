@@ -370,11 +370,13 @@ classdef CHX < vsys
                     iExme = 2;
                 end
                 afPP                   = arFractions .*  oFlows_1.oBranch.coExmes{iExme}.getExMeProperties; 
+                Fluid_1.fPressure      = sum(afPP);
                 bMultiSolverCall       = true;
             else
                 fMassFlow_1 = abs(oFlows_1.fFlowRate);
                 Fluid_1 = struct();
                 Fluid_1.arPartialMass  = oFlows_1.arPartialMass;
+                Fluid_1.fPressure      = oFlows_1.fPressure;
                 bMultiSolverCall       = false;
             end
             fMassFlow_2 = abs(oFlows_2.fFlowRate);

@@ -208,7 +208,7 @@ else
     tCHX_Parameters.fThickness                  = tCHX_Parameters.fThickness;
     tCHX_Parameters.fFinThickness               = tCHX_Parameters.fFinThickness;
     tCHX_Parameters.fThermalConductivitySolid   = fThermalConductivitySolid;
-    tCHX_Parameters.fPressureGas                = Fluid_1.oFlow.fPressure;
+    tCHX_Parameters.fPressureGas                = Fluid_1.fPressure;
     tCHX_Parameters.fCharacteristicLength       = tCHX_Parameters.fLength;
     tCHX_Parameters.arPartialMassesGas          = Fluid_1.arPartialMass;
 
