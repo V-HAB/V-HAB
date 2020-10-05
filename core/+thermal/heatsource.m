@@ -55,6 +55,7 @@ classdef heatsource < base & event.source
             
             if nargin > 1
                 this.fHeatFlow = fHeatFlow;
+                this.fRequestedHeatFlow = fHeatFlow;
             end
             
         end
