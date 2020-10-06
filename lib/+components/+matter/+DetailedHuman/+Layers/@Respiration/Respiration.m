@@ -53,9 +53,16 @@ classdef Respiration < vsys
         
         fRespirationWaterOutput = 0; % [kg/s]
         
+        % Current total volumetric blood flow
+        fTotalVolumetricFlow_Blood = 0; % m^3/s
+        
         tfPartialPressure;
         
         fHumanTimeStep;
+        
+        tOdeOptions = odeset('RelTol', 1e-3, 'AbsTol', 1e-4);
+        
+        hCalculatePeripheralChemoreceptor;
     end
     
     properties (Constant)
@@ -180,6 +187,8 @@ classdef Respiration < vsys
             this.tfPartialPressure.Arteries.O2      = 0;
             this.tfPartialPressure.Arteries.CO2     = 0;
             
+            % Define rate of change function for ODE solver.
+            this.hCalculatePeripheralChemoreceptor = @(t, m) this.PeripheralChemoreceptor(m, t);
         end
         
         
@@ -549,7 +558,7 @@ classdef Respiration < vsys
             fNewVolumetricFlow_TissueBlood = this.fBaseVolumetricFlow_TissueBlood * (1 + this.fCardiacRho * this.fYco2)   +  fNewVolumetricBloodFlowFromActivity;
         end
         
-        function [fNewDeltaVentilationPeripheralChemorezeptor, fPeripheralChemorezeptorDelay] = PeripheralChemoreceptor(this, fTotalVolumetricFlow_Blood)
+        function [fNewDeltaVentilationPeripheralChemorezeptor, fPeripheralChemorezeptorDelay] = PeripheralChemoreceptor(this, fCurrentDeltaVentilationPeripheralChemorezeptor, fTime)
             %% Peripheral Chemoreceptor
             % This section models the peripheral chemoreceptor as
             % described in the dissertation from Markus Czupalla in section
@@ -563,7 +572,7 @@ classdef Respiration < vsys
             % equation A19 from "An integrated model of the human
             % ventilatory control system: the response to hypercapnia",
             % Ursino, M.; Magosso, E.; Avanzolini, G., 2001
-            fPeripheralChemorezeptorDelay = this.fKdp / fTotalVolumetricFlow_Blood;
+            fPeripheralChemorezeptorDelay = this.fKdp / this.fTotalVolumetricFlow_Blood;
             
             % The equation uses a delay, which means the discharge
             % frequency at a different time is required. The following
@@ -573,7 +582,7 @@ classdef Respiration < vsys
             
             % Now we calculate the time from which we want to know the
             % partial pressure of CO2 in the brain
-            fDelayedTime = this.oTimer.fTime - fPeripheralChemorezeptorDelay;
+            fDelayedTime = fTime - fPeripheralChemorezeptorDelay;
             
             % if that time is smaller than zero, we use the basal partial
             % pressure of the brain
@@ -621,11 +630,10 @@ classdef Respiration < vsys
             % equation with 60, which basically changes the time constant
             % fTauP to 1s. Here the implementation from the original source
             % is used
-            fNewDeltaVentilationPeripheralChemorezeptor = this.fDeltaVentilationPeripheralChemorezeptor + (...
-                                                          (this.fElapsedTime / this.fTauP) * (-this.fDeltaVentilationPeripheralChemorezeptor + this.fGp * ...
-                                                          (fDelayedPeriheralChemorezeptorDischargeFrequency - this.fBasalPeriheralChemorezeptorDischargeFrequency)));
+            fNewDeltaVentilationPeripheralChemorezeptor = (1 / this.fTauP) * (-fCurrentDeltaVentilationPeripheralChemorezeptor + this.fGp * ...
+                                                          (fDelayedPeriheralChemorezeptorDischargeFrequency - this.fBasalPeriheralChemorezeptorDischargeFrequency));
             
-            this.fDeltaVentilationPeripheralChemorezeptor = fNewDeltaVentilationPeripheralChemorezeptor;
+%             this.fDeltaVentilationPeripheralChemorezeptor = fNewDeltaVentilationPeripheralChemorezeptor;
         end
         
         function fNewPeriheralChemorezeptorDischargeFrequency = calculatePeripheralChemorezeptorDischargeFrequency(this, fPartialPressureO2_Arteries, fPartialPressureCO2_Arteries)
@@ -895,16 +903,28 @@ classdef Respiration < vsys
             % This section handles the calculation of the new volumetric
             % air flow rate. For this purpose the corresponding functions
             % to calculate the necessary parameters are called here
-            fTotalVolumetricFlow_Blood = fCurrentTotalBloodFlow / this.fBloodDensity;
-            fNewAlphaH                                  = this.CentralVentilationDepression( fPartialPressureO2_Brain);
-            [fNewDeltaVentilationCentralChemorezeptor,      ~] 	= this.CentralChemoreceptor(         fTotalVolumetricFlow_Blood);
-            [fNewDeltaVentilationPeripheralChemorezeptor,   ~]  = this.PeripheralChemoreceptor(      fTotalVolumetricFlow_Blood);
+            this.fTotalVolumetricFlow_Blood = fCurrentTotalBloodFlow / this.fBloodDensity;
+            fNewAlphaH                                          = this.CentralVentilationDepression( fPartialPressureO2_Brain);
+            [fNewDeltaVentilationCentralChemorezeptor,      ~] 	= this.CentralChemoreceptor(         this.fTotalVolumetricFlow_Blood);
+            
+            if this.fElapsedTime > 7
+                % The time constant for the peripheral chemorezeptor is 7s,
+                % if the time step becomes to large the calculation would
+                % become instable. To ensure this does not happen we use
+                % the ode solver for time steps exceeding the time constant
+                [~, afVentilationChangePeripheralChemorezeptor] = ode45(this.hCalculatePeripheralChemoreceptor, [this.fLastRespirationUpdate, this.oTimer.fTime], this.fDeltaVentilationPeripheralChemorezeptor, this.tOdeOptions);
+                
+                this.fDeltaVentilationPeripheralChemorezeptor = afVentilationChangePeripheralChemorezeptor(end);
+            else
+                [fNewDeltaVentilationPeripheralChemorezeptor,   ~]  = this.PeripheralChemoreceptor(      this.fDeltaVentilationPeripheralChemorezeptor, this.oTimer.fTime);
+                this.fDeltaVentilationPeripheralChemorezeptor = this.fDeltaVentilationPeripheralChemorezeptor + this.fElapsedTime * fNewDeltaVentilationPeripheralChemorezeptor;
+            end
             
             % Equation (11-51) from the dissertation by Markus Czupalla or 
             % A15 from "An integrated model of the human ventilatory
             % control system: the response to hypercapnia", Ursino, M.;
             % Magosso, E.; Avanzolini, G., 2001
-            fCurrentVolumetricFlow_Air = this.fBaseVolumetricFlow_Air + fNewAlphaH * fNewDeltaVentilationPeripheralChemorezeptor + fNewDeltaVentilationCentralChemorezeptor + fDeltaVentilationActivity;
+            fCurrentVolumetricFlow_Air = this.fBaseVolumetricFlow_Air + fNewAlphaH * this.fDeltaVentilationPeripheralChemorezeptor + fNewDeltaVentilationCentralChemorezeptor + fDeltaVentilationActivity;
             
             % According to A15 the value cannot become negative, but zero
             % (apneic phase)

@@ -234,6 +234,20 @@ classdef Example < vsys
             
             this.toBranches.O2_to_Cabin.oHandler.setFlowRate(0.816/(24*3600));
             
+            csStores = fieldnames(this.toStores);
+            for iS = 1:length(csStores)
+                for iP = 1:length(this.toStores.(csStores{iS}).aoPhases)
+                    oPhase = this.toStores.(csStores{iS}).aoPhases(iP);
+                    
+                    tTimeStepProperties = struct();
+                    
+                    tTimeStepProperties.fMaxStep = 60;
+                    oPhase.oCapacity.setTimeStepProperties(tTimeStepProperties);
+                    
+                    oPhase.setTimeStepProperties(tTimeStepProperties);
+                end
+            end
+            
             % set a fixed time step for the phases where the change rates
             % are not of interest
             tTimeStepProperties.fFixedTimeStep = this.fTimeStep;

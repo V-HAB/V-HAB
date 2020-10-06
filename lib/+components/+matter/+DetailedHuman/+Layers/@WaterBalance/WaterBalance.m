@@ -145,7 +145,7 @@ classdef WaterBalance < vsys
             
             oBloodPlasma                = this.toStores.WaterBalance.createPhase(	'liquid',   	'BloodPlasma',              this.fBloodPlasmaVolume,            tfBloodPlasmaInitialMasses,                  this.oParent.fBodyCoreTemperature, 1e5);
            
-            this.tfOsmolality.fBloodPlasmaOsmolality = this.calculateOsmolality(oBloodPlasma);
+            this.tfOsmolality.fBloodPlasmaOsmolality = this.calculateOsmolality(oBloodPlasma.afMass);
             
             %% Interstitial Fluid
             csFields = fieldnames(this.tfBaseConcentrations.InterstitialFluid);
@@ -160,7 +160,7 @@ classdef WaterBalance < vsys
             
             oInterstitialFluid          = this.toStores.WaterBalance.createPhase(	'liquid',       'InterstitialFluid',       this.fInterstitialFluidVolume,           tfInterstitialFluidInitialMasses,       this.oParent.fBodyCoreTemperature, 1e5);
            
-            this.tfOsmolality.fInterstitialFluidOsmolality = this.calculateOsmolality(oInterstitialFluid);
+            this.tfOsmolality.fInterstitialFluidOsmolality = this.calculateOsmolality(oInterstitialFluid.afMass);
             
             %% Intracellular Fluid
             csFields = fieldnames(this.tfBaseConcentrations.IntracellularFluid);
@@ -175,7 +175,7 @@ classdef WaterBalance < vsys
             
             oIntracellularFluid         = this.toStores.WaterBalance.createPhase(	'liquid',       'IntracellularFluid',       this.fIntracellularFluidVolume,         tfIntracellularFluidInitialMasses,      this.oParent.fBodyCoreTemperature, 1e5);
            
-            this.tfOsmolality.fIntracellularFluidOsmolality = this.calculateOsmolality(oIntracellularFluid);
+            this.tfOsmolality.fIntracellularFluidOsmolality = this.calculateOsmolality(oIntracellularFluid.afMass);
             
             %% Kidney
             csFields = fieldnames(this.tfBaseConcentrations.BloodPlasma);
@@ -186,7 +186,7 @@ classdef WaterBalance < vsys
             
             oKidney                     = this.toStores.WaterBalance.createPhase( 	'liquid',     	'Kidney',               	this.fKidneyVolume,                      tfBloodPlasmaInitialMasses,           	 this.oParent.fBodyCoreTemperature, 1e5);
            
-            this.tfOsmolality.fKidneyOsmolality = this.calculateOsmolality(oKidney);
+            this.tfOsmolality.fKidneyOsmolality = this.calculateOsmolality(oKidney.afMass);
             
             %% Bladder
             tfBladderInitialMasses      = struct( 'Urine',      0.02);
@@ -273,16 +273,16 @@ classdef WaterBalance < vsys
                     
                     tTimeStepProperties.rMaxChange = 0.1;
                     
-%                     arMaxChange = zeros(1,this.oMT.iSubstances);
-%                     arMaxChange(this.oMT.tiN2I.Naplus)      = 1e-2;
-%                     arMaxChange(this.oMT.tiN2I.Kplus)       = 1e-2;
-%                     arMaxChange(this.oMT.tiN2I.Ca2plus)     = 1e-2;
-%                     arMaxChange(this.oMT.tiN2I.Mg2plus)     = 1e-2;
-%                     arMaxChange(this.oMT.tiN2I.Clminus)     = 1e-2;
-%                     arMaxChange(this.oMT.tiN2I.HCO3)        = 1e-2;
-%                     arMaxChange(this.oMT.tiN2I.HPO4)        = 1e-2;
-%                     arMaxChange(this.oMT.tiN2I.H2O)         = 1e-2;
-%                     tTimeStepProperties.arMaxChange = arMaxChange;
+                    arMaxChange = zeros(1,this.oMT.iSubstances);
+                    arMaxChange(this.oMT.tiN2I.Naplus)      = 1e-1;
+                    arMaxChange(this.oMT.tiN2I.Kplus)       = 1e-1;
+                    arMaxChange(this.oMT.tiN2I.Ca2plus)     = 1e-1;
+                    arMaxChange(this.oMT.tiN2I.Mg2plus)     = 1e-1;
+                    arMaxChange(this.oMT.tiN2I.Clminus)     = 1e-1;
+                    arMaxChange(this.oMT.tiN2I.HCO3)        = 1e-1;
+                    arMaxChange(this.oMT.tiN2I.HPO4)        = 1e-1;
+                    arMaxChange(this.oMT.tiN2I.H2O)         = 1e-1;
+                    tTimeStepProperties.arMaxChange = arMaxChange;
 
                     oPhase.setTimeStepProperties(tTimeStepProperties);
                 end
@@ -314,18 +314,17 @@ classdef WaterBalance < vsys
             
         end
         
-        function fOsmolality = calculateOsmolality(this, oPhase)
+        function fOsmolality = calculateOsmolality(this, afMass)
             % This function calculates the current blood plasma osmolality
             % according to Equations 11-245 to 11-247 from the dissertation
             % of Markus Czupalla.
             % In the 0ld simulink model, this section is located in water ->
             % inner milieu --> blood plasma
-            afBloodPlasmaMasses = oPhase.afMass;
-            afBloodPlasmaMasses(this.oMT.aiCharge == 0) = 0;
+            afMassIons(this.oMT.aiCharge == 0) = 0;
             
-            afOsmoticCoefficients = afBloodPlasmaMasses ./ this.oMT.afMolarMass .* abs(this.oMT.aiCharge) .* this.fOsmoticCoefficient;
+            afOsmoticCoefficients = afMassIons ./ this.oMT.afMolarMass .* abs(this.oMT.aiCharge) .* this.fOsmoticCoefficient;
             
-            fOsmolality = sum(afOsmoticCoefficients) / oPhase.afMass(this.oMT.tiN2I.H2O); % [mol / kg]
+            fOsmolality = sum(afOsmoticCoefficients) / afMass(this.oMT.tiN2I.H2O); % [mol / kg]
         end
         
         function afPartialFlowRates = EndotheliumFlowRates(this, fDensityH2O, afCurrentBloodPlasmaMasses, afCurrentInterstitialFluidMasses)
@@ -830,6 +829,10 @@ classdef WaterBalance < vsys
             afMassInterstitial  = afMasses(this.oMT.iSubstances + 1     : 2 * this.oMT.iSubstances)';
             afMassIntracellular = afMasses(2 * this.oMT.iSubstances + 1 : 3 * this.oMT.iSubstances)';
             
+            this.tfOsmolality.fBloodPlasmaOsmolality        = this.calculateOsmolality(afMassBloodPlasma);
+            this.tfOsmolality.fInterstitialFluidOsmolality  = this.calculateOsmolality(afMassInterstitial);
+            this.tfOsmolality.fIntracellularFluidOsmolality = this.calculateOsmolality(afMassIntracellular);
+            
             afPartialFlowRatesEndothelium   = this.EndotheliumFlowRates(this.fCurrenStepDensityH2O, afMassBloodPlasma, afMassInterstitial);
             afPartialFlowRatesCellMembrane  = this.CellMembraneFlowRates(this.fCurrenStepDensityH2O, afMassInterstitial, afMassIntracellular);
             
@@ -853,55 +856,54 @@ classdef WaterBalance < vsys
             
             this.fCurrenStepDensityH2O = this.oMT.calculateDensity('liquid', struct('H2O', 1), this.oParent.fBodyCoreTemperature, 1e5);
             
-            this.tfOsmolality.fBloodPlasmaOsmolality        = this.calculateOsmolality(this.toStores.WaterBalance.toPhases.BloodPlasma);
-            this.tfOsmolality.fInterstitialFluidOsmolality  = this.calculateOsmolality(this.toStores.WaterBalance.toPhases.InterstitialFluid);
-            this.tfOsmolality.fIntracellularFluidOsmolality = this.calculateOsmolality(this.toStores.WaterBalance.toPhases.IntracellularFluid);
-            this.tfOsmolality.fKidneyOsmolality             = this.calculateOsmolality(this.toStores.WaterBalance.toPhases.Kidney);
+            this.tfOsmolality.fBloodPlasmaOsmolality        = this.calculateOsmolality(this.toStores.WaterBalance.toPhases.BloodPlasma.afMass);
+            this.tfOsmolality.fInterstitialFluidOsmolality  = this.calculateOsmolality(this.toStores.WaterBalance.toPhases.InterstitialFluid.afMass);
+            this.tfOsmolality.fIntracellularFluidOsmolality = this.calculateOsmolality(this.toStores.WaterBalance.toPhases.IntracellularFluid.afMass);
+            this.tfOsmolality.fKidneyOsmolality             = this.calculateOsmolality(this.toStores.WaterBalance.toPhases.Kidney.afMass);
             
             fStepBeginTime = this.fLastInternalUpdate;
             fStepEndTime   = this.oTimer.fTime;
             
-            if fStepBeginTime ~= fStepEndTime
+            if (fStepEndTime - fStepBeginTime) > 1
                 afInitialMasses = [this.toStores.WaterBalance.toPhases.BloodPlasma.afMass'; this.toStores.WaterBalance.toPhases.InterstitialFluid.afMass'; this.toStores.WaterBalance.toPhases.IntracellularFluid.afMass'];
 
-                [~, afSolutionMasses] = ode45(this.hCalculateChangeRate, [fStepBeginTime, fStepEndTime], afInitialMasses, this.tOdeOptions);
+                [~, afSolutionMassesOriginal] = ode45(this.hCalculateChangeRate, [fStepBeginTime, fStepEndTime], afInitialMasses, this.tOdeOptions);
 
-                afSolutionMasses = afSolutionMasses(end,:)';
+                afSolutionMasses = afSolutionMassesOriginal(end,:)';
                 afMassBloodPlasma   = afSolutionMasses(1:this.oMT.iSubstances)';
                 % afMassInterstitial  = afSolutionMasses(this.oMT.iSubstances + 1     : 2 * this.oMT.iSubstances)';
                 afMassIntracellular = afSolutionMasses(2 * this.oMT.iSubstances + 1 : 3 * this.oMT.iSubstances)';
 
                 afFlowRatesEndothelium  = (afMassBloodPlasma   - this.toStores.WaterBalance.toPhases.BloodPlasma.afMass)        ./ (fStepEndTime - fStepBeginTime);
                 afFlowRatesCellMembrane = (afMassIntracellular - this.toStores.WaterBalance.toPhases.IntracellularFluid.afMass) ./ (fStepEndTime - fStepBeginTime);
-
-
-                afPartialFlowRatesPositive = afFlowRatesEndothelium;
-                afPartialFlowRatesPositive(afPartialFlowRatesPositive < 0) = 0;
-
-                afPartialFlowRatesNegative = afFlowRatesEndothelium;
-                afPartialFlowRatesNegative(afPartialFlowRatesNegative > 0) = 0;
-                % Since the P2P is defined in the other directions, we set the
-                % flows to positive values
-                afPartialFlowRatesNegative = -1 .* afPartialFlowRatesNegative;
-
-                this.toStores.WaterBalance.toProcsP2P.FluxThroughEndothelium.setFlowRate( 	afPartialFlowRatesPositive);
-                this.toStores.WaterBalance.toProcsP2P.ReFluxThroughEndothelium.setFlowRate(	afPartialFlowRatesNegative);
-
-                afPartialFlowRatesPositive = afFlowRatesCellMembrane;
-                afPartialFlowRatesPositive(afPartialFlowRatesPositive < 0) = 0;
-
-                afPartialFlowRatesNegative = afFlowRatesCellMembrane;
-                afPartialFlowRatesNegative(afPartialFlowRatesNegative > 0) = 0;
-                % Since the P2P is defined in the other directions, we set the
-                % flows to positive values
-                afPartialFlowRatesNegative = -1 .* afPartialFlowRatesNegative;
-
-                this.toStores.WaterBalance.toProcsP2P.FluxthroughCellMembranes.setFlowRate(    afPartialFlowRatesPositive);
-                this.toStores.WaterBalance.toProcsP2P.ReFluxthroughCellMembranes.setFlowRate(  afPartialFlowRatesNegative);
-                
-                this.fLastInternalUpdate = this.oTimer.fTime;
+            else
+                afFlowRatesEndothelium  = this.EndotheliumFlowRates(    this.fCurrenStepDensityH2O, this.toStores.WaterBalance.toPhases.BloodPlasma.afMass, this.toStores.WaterBalance.toPhases.InterstitialFluid.afMass);
+                afFlowRatesCellMembrane = this.CellMembraneFlowRates( 	this.fCurrenStepDensityH2O, this.toStores.WaterBalance.toPhases.InterstitialFluid.afMass, this.toStores.WaterBalance.toPhases.IntracellularFluid.afMass);
             end
             
+            afPartialFlowRatesPositive = afFlowRatesEndothelium;
+            afPartialFlowRatesPositive(afPartialFlowRatesPositive < 0) = 0;
+            afPartialFlowRatesNegative = afFlowRatesEndothelium;
+            afPartialFlowRatesNegative(afPartialFlowRatesNegative > 0) = 0;
+            % Since the P2P is defined in the other directions, we set the
+            % flows to positive values
+            afPartialFlowRatesNegative = -1 .* afPartialFlowRatesNegative;
+
+            this.toStores.WaterBalance.toProcsP2P.FluxThroughEndothelium.setFlowRate( 	afPartialFlowRatesPositive);
+            this.toStores.WaterBalance.toProcsP2P.ReFluxThroughEndothelium.setFlowRate(	afPartialFlowRatesNegative);
+
+            afPartialFlowRatesPositive = afFlowRatesCellMembrane;
+            afPartialFlowRatesPositive(afPartialFlowRatesPositive < 0) = 0;
+            afPartialFlowRatesNegative = afFlowRatesCellMembrane;
+            afPartialFlowRatesNegative(afPartialFlowRatesNegative > 0) = 0;
+            % Since the P2P is defined in the other directions, we set the
+            % flows to positive values
+            afPartialFlowRatesNegative = -1 .* afPartialFlowRatesNegative;
+
+            this.toStores.WaterBalance.toProcsP2P.FluxthroughCellMembranes.setFlowRate(    afPartialFlowRatesPositive);
+            this.toStores.WaterBalance.toProcsP2P.ReFluxthroughCellMembranes.setFlowRate(  afPartialFlowRatesNegative);
+
+            this.fLastInternalUpdate = this.oTimer.fTime;
             
             [fWaterFlowToBladder, fNatriumFlowToBladder] = this.KidneyModel(this.fCurrenStepDensityH2O);
             
