@@ -369,7 +369,11 @@ classdef CHX < vsys
                 else
                     iExme = 2;
                 end
-                afPP                   = arFractions .*  oFlows_1.oBranch.coExmes{iExme}.getExMeProperties; 
+                fPressure = oFlows_1.oBranch.coExmes{iExme}.getExMeProperties;
+                if fPressure == 0
+                    fPressure = 100;
+                end
+                afPP                   = arFractions .*  fPressure; 
                 Fluid_1.fPressure      = sum(afPP);
                 bMultiSolverCall       = true;
             else
