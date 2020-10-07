@@ -12,9 +12,7 @@ classdef ConstantMassP2P < matter.procs.p2ps.stationary
         % TO DO: the case where two directions would have to be used at the
         % same time is not possible yet!
         iDirection; 
-        % warning for very small time steps the calculation might become
-        % unstable
-        fTimeStep = 60;
+        afFlowRates;
     end
     properties (SetAccess = protected, GetAccess = public)
         aiSubstances;
@@ -25,9 +23,12 @@ classdef ConstantMassP2P < matter.procs.p2ps.stationary
     end
     
     properties (SetAccess = private, GetAccess = protected)
-        % function handle registered at the timer object that allows this
-        % phase to set a time step, which is then enforced by the timer
-        setTimeStep;
+        
+        hBindPostTickInternalUpdate;
+        
+        bInternalUpdateRegistered = false;
+        
+        iPhaseExmeNumber;
     end
     
     methods
@@ -46,14 +47,25 @@ classdef ConstantMassP2P < matter.procs.p2ps.stationary
             
             this.iDirection = iDirection;
             
-            this.setTimeStep = this.oTimer.bind(@(~) this.registerUpdate(), 0, struct(...
-                'sMethod', 'update', ...
-                'sDescription', 'The .update method of a constant mass P2P', ...
-                'oSrcObj', this ...
-            ));
-        
-            % initialize the time step to inf
-            this.setTimeStep(this.fTimeStep, true);
+            this.hBindPostTickInternalUpdate  = this.oTimer.registerPostTick(@this.calculateFlowRates,   'matter',        'pre_multibranch_solver');
+            
+            if this.iDirection == 1
+                 this.oIn.oPhase.bind(	'massupdate_post', @this.bindInternalUpdate);
+            else
+                 this.oOut.oPhase.bind(	'massupdate_post', @this.bindInternalUpdate);
+            end
+            
+            if this.iDirection == 1
+                oPhase = this.oIn.oPhase;
+            else
+                oPhase = this.oOut.oPhase;
+            end
+            for iExme = 1:oPhase.iProcsEXME
+                if oPhase.coProcsEXME{iExme}.oFlow == this
+                    this.iPhaseExmeNumber = iExme;
+                end
+            end
+            
         end
         
         function setSubstances(this, csSubstances)
@@ -68,48 +80,56 @@ classdef ConstantMassP2P < matter.procs.p2ps.stationary
             this.afConstantMass = this.oIn.oPhase.afMass(this.aiSubstances);
         end
         
-        function setTimeStepProperties(this, fTimeStep)
-            this.fTimeStep = fTimeStep;
-            this.setTimeStep(this.fTimeStep);
+        function bindInternalUpdate(this, ~)
+            if ~this.bInternalUpdateRegistered
+                this.hBindPostTickInternalUpdate()
+                this.bInternalUpdateRegistered = true;
+            end
         end
     end
         
     methods (Access = protected)
-        function update(this)
+        function calculateFlowRates(this)
             
-            % calculate the difference between the current mass and the
-            % constant mass. The calculation results in a higher current
-            % mass to have a positive flowrate as outflows are defined as
-            % positive for the P2P!
-            afMassChange = zeros(1,this.oMT.iSubstances);
-            afMassChange(this.aiSubstances) =  this.oIn.oPhase.afMass(this.aiSubstances) - this.afConstantMass(this.aiSubstances);
-            
-            switch this.iDirection
-                case -1
-                    afMassChange(afMassChange > 0) = 0;
-                case 1
-                    afMassChange(afMassChange < 0) = 0;
+            if this.iDirection == 1
+                oPhase = this.oIn.oPhase;
+            else
+                oPhase = this.oOut.oPhase;
             end
-            % calculates the overall flowrate of the P2P and the partial
-            % mass ratios based on the partial mass flows for each
-            % substances. Warning for the case where one substance has a
-            % negative flowrate and another has a positive flowrate the
-            % calculation will not work correctly!
-            % TO DO: Mabye create a bidirectional p2p
-            afPartialFlowRates = afMassChange./this.fTimeStep;
-            fFlowRate = sum(afPartialFlowRates);
+            afCurrentFlowRates = zeros(1, this.oMT.iSubstances);
+            for iExme = 1:oPhase.iProcsEXME
+                if this.iPhaseExmeNumber ~= iExme
+                    afCurrentFlowRates = afCurrentFlowRates + oPhase.coProcsEXME{iExme}.iSign .* oPhase.coProcsEXME{iExme}.oFlow.fFlowRate .* oPhase.coProcsEXME{iExme}.oFlow.arPartialMass;
+                end
+            end
+            
+            this.afFlowRates = zeros(1, this.oMT.iSubstances);
+            this.afFlowRates(this.aiSubstances) = -afCurrentFlowRates(this.aiSubstances);
+            
+            % Connected phases have to do a massupdate before we set the
+            % new flow rate - so the mass for the LAST time step, with the
+            % old flow rate, is actually moved from tank to tank. In the
+            % massupdate the update for the P2P will be triggered, which is
+            % then executed in the post tick after the phase massupdates
+            if this.oIn.oPhase.fLastMassUpdate == this.oTimer.fTime && this.oOut.oPhase.fLastMassUpdate == this.oTimer.fTime
+                this.update();
+            else
+                this.oIn.oPhase.registerMassupdate();
+                this.oOut.oPhase.registerMassupdate();
+            end
+            
+            this.bInternalUpdateRegistered = false;
+        end
+        function update(this, ~) 
+            
+            fFlowRate = sum(this.afFlowRates);
             if fFlowRate == 0
                 arPartialFlowRates = zeros(1,this.oMT.iSubstances);
             else
-                arPartialFlowRates = afPartialFlowRates/fFlowRate;
+                arPartialFlowRates = this.afFlowRates/fFlowRate;
             end
             
-            % extract specified substance with desired flow rate
-            this.setMatterProperties(fFlowRate, arPartialFlowRates);
-            
-            this.fLastExec = this.oTimer.fTime;
-            
-            this.setTimeStep(this.fTimeStep, true);
+            update@matter.procs.p2p(this, fFlowRate, arPartialFlowRates);
         end
     end
 end
