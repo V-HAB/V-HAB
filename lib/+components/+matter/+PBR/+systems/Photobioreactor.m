@@ -309,8 +309,11 @@ classdef Photobioreactor < vsys
             %since residual solver does not work on this buffer phase, this
             %manual solver (parent to this) just uses the same flow rate as
             %its corresponding branch to the child sys (this to child)
-            this.toBranches.Urine_from_Cabin.oHandler.setFlowRate(this.toChildren.ChlorellaInMedia.toBranches.Urine_from_PBR.aoFlows.fFlowRate);
-            
+            if this.toStores.MediumMaintenance.toPhases.UrineSupplyBuffer.fMass < 0.3
+                if this.toBranches.Urine_from_Cabin.coExmes{2}.oPhase.fMass > 0.3 && ~this.toBranches.Urine_from_Cabin.oHandler.bMassTransferActive
+                    this.toBranches.Urine_from_Cabin.oHandler.setMassTransfer(-0.1, 60);
+                end
+            end
             %track how mcuh urine and water are consumed/produced. Not
             %equal, because urine is not just water!
             if this.fTimeStep>0

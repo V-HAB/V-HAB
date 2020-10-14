@@ -56,6 +56,22 @@ classdef GrowthMediumChanges < matter.manips.substance.stationary
             %% add flow rates from different functions
             this.afPartialFlowRatesFromFunctions =  afPartialFlowRatesFromReactions + this.afPartialFlowRatesFromPhotosynthesis; %[kg/s]
             
+            
+            %% If compound masses for urine are used, split it into its components
+            if any(this.oPhase.afMass(this.oMT.abCompound))
+                aiCompounds = find(this.oPhase.afMass(this.oMT.abCompound));
+                
+                afCompoundFlowRates = zeros(1, this.oMT.iSubstances);
+                for iCompound = 1:length(aiCompounds)
+                    afResolvedMass = this.oMT.resolveCompoundMass(this.oPhase.afMass(aiCompounds(iCompound)));
+                    
+                    afCompoundFlowRates(aiCompounds(iCompound)) = -this.oPhase.afMass(aiCompounds(iCompound)) / this.fTimeStep;
+                    
+                    afCompoundFlowRates = afCompoundFlowRates + (afResolvedMass ./ this.fTimeStep);
+                end
+                
+                this.afPartialFlowRatesFromFunctions = this.afPartialFlowRatesFromFunctions + afCompoundFlowRates;
+            end
             %% set flow rates to pass back
             
             % check if time step is larger than 0 (exclude first time

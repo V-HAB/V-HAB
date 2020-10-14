@@ -29,6 +29,8 @@ classdef ChlorellaInMedia < vsys
         %current phase density calculated here because needed by multiple
         %parts of sim. only needs to be calculated once in each iteration. 
         fCurrentGrowthMediumDensity     %[kg/m^3]
+        
+        oUrinePhase;
 
     end
     
@@ -184,6 +186,7 @@ classdef ChlorellaInMedia < vsys
             
             this.toBranches.Medium_to_Harvester.oHandler.setVolumetricFlowRate(this.oParent.fVolumetricFlowToHarvester); %equals to 25ml/min as referenced in tobias paper @IAC18
 
+            this.oUrinePhase = this.toBranches.Urine_from_PBR.coExmes{2}.oPhase;
             
             %% NO3, Urine, Phosphate and Water Supply
             solver.matter.manual.branch(this.toBranches.NO3_from_Maintenance);
@@ -281,7 +284,7 @@ classdef ChlorellaInMedia < vsys
                 if this.bNitrogenRefill == true
                     %check if enough urine is available without running into
                     %mass losses. if not, use no3 to refill.
-                    if this.oParent.oParent.toStores.UrineStorage.toPhases.Urine.fMass > 0.1
+                    if this.oUrinePhase.fMass > 0.1
                         %refill with urine as long as its available
                         this.toBranches.NO3_from_Maintenance.oHandler.setFlowRate(0);
                         this.toBranches.Urine_from_PBR.oHandler.setVolumetricFlowRate(-0.8*this.oParent.fVolumetricFlowToHarvester); %0.8 is used to make it smaller than the harvesting flow, to not cause any mass loss problems.
