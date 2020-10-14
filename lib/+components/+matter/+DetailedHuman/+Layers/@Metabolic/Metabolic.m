@@ -152,6 +152,8 @@ classdef Metabolic < vsys
         fUreaFlowRate = 0;
         
         fLastMetabolismUpdate = 0;
+        
+        fInitialProteinMassMetabolism;
     end
     
     
@@ -460,8 +462,10 @@ classdef Metabolic < vsys
             % case we have to input checks before they are catched!
             oMetabolism         = matter.phases.mixture(this.toStores.Metabolism, 	'Metabolism',       'liquid',    struct('C3H7NO2', 0.2, 'C51H98O6', 0.3, 'C6H12O6', 0.5), this.oParent.fBodyCoreTemperature, 1e5);
             
+            this.fInitialProteinMassMetabolism = oMetabolism.afMass(this.oMT.tiN2I.C3H7NO2);
+            
             %% manipulators
-            components.matter.Manips.ManualManipulator(this, 'MetabolismManipulator', oMetabolism);
+            components.matter.Manips.ManualManipulator(this, 'MetabolismManipulator', oMetabolism, true);
             
             %% P2Ps
             components.matter.P2Ps.ManualP2P(this.toStores.Metabolism, 'Metabolism_to_Liver',           oMetabolism, oLiver);
@@ -950,10 +954,215 @@ classdef Metabolic < vsys
             tfP2PFlowRates.fGlucoseToMuscle  = fGlucoseInputMassFlowMuscle   - fGlucoseConsumptionMassFlowMuscle;
             
             fUnusedMassFlowGlucose = fUnusedMassFlowGlucoseMuscle + fUnusedMassFlowGlucoseLiver;
-            if fUnusedMassFlowGlucose > 0
+            fUnusedMolarFlowGlucose = fUnusedMassFlowGlucose / this.oMT.afMolarMass(this.oMT.tiN2I.C6H12O6);
+            fUnusedMolarFlowGlucoseInitial = fUnusedMolarFlowGlucose;
+            
+            % If we also have proteins remaining, we can calculate the
+            % amount of fat synthesized from protein.
+            if fMolarFlowProteinsRemaining > 0
                 
-                fUnusedMolarFlowGlucose = fUnusedMassFlowGlucose / this.oMT.afMolarMass(this.oMT.tiN2I.C6H12O6);
+                tfMetabolicFlowsFatSynthesis.Protein = this.calculateFatSynthesisFromProteins(fMolarFlowProteinsRemaining);
                 
+                fUnusedMolarFlowGlucose = fUnusedMolarFlowGlucose - tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowGlucoseforFatSynthesis;
+                if fUnusedMolarFlowGlucose < 0
+                    % in this case the currently unused glucose is not
+                    % sufficient to generate the glycerol and the
+                    % intermediate metabolites of the fatty acid synthesis.
+                    % Since for this case proteins are remaining, no
+                    % glucose is consumed during the resting and aerobic
+                    % metabolic phases, since proteins are more difficult
+                    % to store for the body.
+                    % Since glucose is not beeing consumed in this case
+                    % anywhere, we cannot free some of it by consuming
+                    % less. Therefore, we adjust the metabolism to consume
+                    % more proteins than fat to generate the required ATP:
+                    fPotentialMolarFlowProteinToFat = fUnusedMolarFlowGlucoseInitial * (1 / this.tfMetabolicConversionFactors.Protein.rFatsynthesisCoefficientGlucose);
+                    
+                    fAdditionalMolarFlowProteinToMetabolism = fMolarFlowProteinsRemaining - fPotentialMolarFlowProteinToFat;
+                    
+                    fMolarFlowProteinsRemaining = fPotentialMolarFlowProteinToFat;
+                    
+                    tfMetabolicFlowsFatSynthesis.Protein = this.calculateFatSynthesisFromProteins(fMolarFlowProteinsRemaining);
+                    
+                    % Now adjust the metabolite usage for fat and proteins:
+                    fAdditionalOxygen   = fAdditionalMolarFlowProteinToMetabolism * (1 / this.tfMetabolicConversionFactors.rProteinMetabolism);
+                    fAdditionalATP      = fAdditionalOxygen * this.tfMetabolicConversionFactors.rProteinMetabolismATP;
+                    
+                    if fAdditionalATP > this.tfMetabolicFlowsRest.Fat.fMolarATPProduction
+                        fAdditionalATPfromProteinRest       = this.tfMetabolicFlowsRest.Fat.fMolarATPProduction;
+                        fAdditionalATPfromProteinActivity   = fAdditionalATP - fAdditionalATPfromProteinRest;
+                    else
+                        fAdditionalATPfromProteinRest       = fAdditionalATP;
+                        fAdditionalATPfromProteinActivity   = 0;
+                    end
+                    
+                    fAdditionalOxygen	= fAdditionalATPfromProteinRest * (1 / this.tfMetabolicConversionFactors.rProteinMetabolismATP);
+                    fAdditionalCO2      = fAdditionalOxygen             * this.tfMetabolicConversionFactors.rRespiratoryCoefficientProteins;
+                    fAdditionalH2O      = fAdditionalOxygen             * this.tfMetabolicConversionFactors.rProteinMetabolismH2O;
+                    fAdditionalUrea     = fAdditionalOxygen             * this.tfMetabolicConversionFactors.rProteinMetabolismUrea;
+                    fAdditionalProtein  = fAdditionalOxygen             * this.tfMetabolicConversionFactors.rProteinMetabolism;
+                    
+                    this.tfMetabolicFlowsRest.Protein.fMolarATPProduction       = fAdditionalATPfromProteinRest	+ this.tfMetabolicFlowsRest.Protein.fMolarATPProduction;
+                    this.tfMetabolicFlowsRest.Protein.fMolarCO2Production       = fAdditionalCO2                + this.tfMetabolicFlowsRest.Protein.fMolarCO2Production;
+                    this.tfMetabolicFlowsRest.Protein.fMolarH2OProduction       = fAdditionalH2O                + this.tfMetabolicFlowsRest.Protein.fMolarH2OProduction;
+                    this.tfMetabolicFlowsRest.Protein.fMolarOxygenConsumption   = fAdditionalOxygen             + this.tfMetabolicFlowsRest.Protein.fMolarOxygenConsumption;
+                    this.tfMetabolicFlowsRest.Protein.fMolarUreaProduction      = fAdditionalUrea               + this.tfMetabolicFlowsRest.Protein.fMolarUreaProduction;
+                    this.tfMetabolicFlowsRest.Protein.fMolarProteinConsumption  = fAdditionalProtein            + this.tfMetabolicFlowsRest.Protein.fMolarProteinConsumption;
+                    
+                    % In this case we calculate by how much we have to
+                    % lower the fat consumption metabolism to correpond
+                    % to the addiitional atp from proteins
+                    fReducedOxygen  = fAdditionalATPfromProteinRest * (1 / this.tfMetabolicConversionFactors.rATPCoefficientFat);
+                    fReducedFat     = fReducedOxygen * this.tfMetabolicConversionFactors.rCoefficientFat;
+                    fReducedH2O     = fReducedOxygen * this.tfMetabolicConversionFactors.rH2OCoefficientFat;
+                    fReducedCO2     = fReducedOxygen * this.tfMetabolicConversionFactors.rRespiratoryCoefficientFat;
+
+                    this.tfMetabolicFlowsRest.Fat.fMolarATPProduction       = - fAdditionalATPfromProteinRest   + this.tfMetabolicFlowsRest.Fat.fMolarATPProduction;
+                    this.tfMetabolicFlowsRest.Fat.fMolarCO2Production       = - fReducedCO2                     + this.tfMetabolicFlowsRest.Fat.fMolarCO2Production;
+                    this.tfMetabolicFlowsRest.Fat.fMolarFatConsumption      = - fReducedFat                     + this.tfMetabolicFlowsRest.Fat.fMolarFatConsumption;
+                    this.tfMetabolicFlowsRest.Fat.fMolarH2OProduction       = - fReducedH2O                     + this.tfMetabolicFlowsRest.Fat.fMolarH2OProduction;
+                    this.tfMetabolicFlowsRest.Fat.fMolarOxygenConsumption   = - fReducedOxygen                  + this.tfMetabolicFlowsRest.Fat.fMolarOxygenConsumption;
+                    
+                    % now adjust the overal flowrates for resting
+                    % metabolism
+                    this.tfMetabolicFlowsRest.fMolarATPProduction       = this.tfMetabolicFlowsRest.Fat.fMolarATPProduction     + this.tfMetabolicFlowsRest.Protein.fMolarATPProduction;
+                    this.tfMetabolicFlowsRest.fMolarCO2Production       = this.tfMetabolicFlowsRest.Fat.fMolarCO2Production     + this.tfMetabolicFlowsRest.Protein.fMolarCO2Production;
+                    this.tfMetabolicFlowsRest.fMolarH2OProduction       = this.tfMetabolicFlowsRest.Fat.fMolarH2OProduction     + this.tfMetabolicFlowsRest.Protein.fMolarH2OProduction;
+                    this.tfMetabolicFlowsRest.fMolarOxygenConsumption	= this.tfMetabolicFlowsRest.Fat.fMolarOxygenConsumption + this.tfMetabolicFlowsRest.Protein.fMolarOxygenConsumption;
+                    this.tfMetabolicFlowsRest.fMolarFatConsumption      = this.tfMetabolicFlowsRest.Fat.fMolarFatConsumption;
+                    this.tfMetabolicFlowsRest.fMolarProteinConsumption	= this.tfMetabolicFlowsRest.Protein.fMolarProteinConsumption;
+                    this.tfMetabolicFlowsRest.fMolarUreaProduction      = this.tfMetabolicFlowsRest.Protein.fMolarUreaProduction; 
+                    
+                    if fAdditionalATPfromProteinActivity ~= 0
+                        
+                        if fAdditionalATPfromProteinActivity > this.tfMetabolicFlowsAerobicActivity.Fat.fMolarATPProduction
+                            % Note that additional ATP from proteins can be
+                            % higher than the fat production of ATP, in this
+                            % case we reduce the amount of ATP produced by
+                            % proteins, which results in proteins beeing
+                            % stored in the metabolism phase, which usually
+                            % does not occur. These additional proteins
+                            % will then be consumed over time once the
+                            % conditions are better again
+                            fAdditionalATPfromProteinActivity = this.tfMetabolicFlowsAerobicActivity.Fat.fMolarATPProduction;
+                        end
+                        
+                        % Now adjust the metabolite usage for fat and proteins:
+                        fAdditionalOxygen	= fAdditionalATPfromProteinActivity * (1 / this.tfMetabolicConversionFactors.rProteinMetabolismATP);
+                        fAdditionalCO2      = fAdditionalOxygen                 * this.tfMetabolicConversionFactors.rRespiratoryCoefficientProteins;
+                        fAdditionalH2O      = fAdditionalOxygen                 * this.tfMetabolicConversionFactors.rProteinMetabolismH2O;
+                        fAdditionalUrea     = fAdditionalOxygen                 * this.tfMetabolicConversionFactors.rProteinMetabolismUrea;
+                        fAdditionalProtein  = fAdditionalOxygen                 * this.tfMetabolicConversionFactors.rProteinMetabolism;
+
+                        this.tfMetabolicFlowsAerobicActivity.Protein.fMolarATPProduction       = fAdditionalATPfromProteinActivity + this.tfMetabolicFlowsAerobicActivity.Protein.fMolarATPProduction;
+                        this.tfMetabolicFlowsAerobicActivity.Protein.fMolarCO2Production       = fAdditionalCO2                    + this.tfMetabolicFlowsAerobicActivity.Protein.fMolarCO2Production;
+                        this.tfMetabolicFlowsAerobicActivity.Protein.fMolarH2OProduction       = fAdditionalH2O                    + this.tfMetabolicFlowsAerobicActivity.Protein.fMolarH2OProduction;
+                        this.tfMetabolicFlowsAerobicActivity.Protein.fMolarOxygenConsumption   = fAdditionalOxygen                 + this.tfMetabolicFlowsAerobicActivity.Protein.fMolarOxygenConsumption;
+                        this.tfMetabolicFlowsAerobicActivity.Protein.fMolarUreaProduction      = fAdditionalUrea                   + this.tfMetabolicFlowsAerobicActivity.Protein.fMolarUreaProduction;
+                        this.tfMetabolicFlowsAerobicActivity.Protein.fMolarProteinConsumption  = fAdditionalProtein                + this.tfMetabolicFlowsAerobicActivity.Protein.fMolarProteinConsumption;
+
+                        fReducedOxygen  = fAdditionalATPfromProteinActivity * (1 / this.tfMetabolicConversionFactors.rATPCoefficientFat);
+                        fReducedFat     = fReducedOxygen * this.tfMetabolicConversionFactors.rCoefficientFat;
+                        fReducedH2O     = fReducedOxygen * this.tfMetabolicConversionFactors.rH2OCoefficientFat;
+                        fReducedCO2     = fReducedOxygen * this.tfMetabolicConversionFactors.rRespiratoryCoefficientFat;
+
+                        this.tfMetabolicFlowsAerobicActivity.Fat.fMolarATPProduction       = - fAdditionalATPfromProteinActivity   + this.tfMetabolicFlowsAerobicActivity.Fat.fMolarATPProduction;
+                        this.tfMetabolicFlowsAerobicActivity.Fat.fMolarCO2Production       = - fReducedCO2                         + this.tfMetabolicFlowsAerobicActivity.Fat.fMolarCO2Production;
+                        this.tfMetabolicFlowsAerobicActivity.Fat.fMolarFatConsumption      = - fReducedFat                         + this.tfMetabolicFlowsAerobicActivity.Fat.fMolarFatConsumption;
+                        this.tfMetabolicFlowsAerobicActivity.Fat.fMolarH2OProduction       = - fReducedH2O                         + this.tfMetabolicFlowsAerobicActivity.Fat.fMolarH2OProduction;
+                        this.tfMetabolicFlowsAerobicActivity.Fat.fMolarOxygenConsumption   = - fReducedOxygen                      + this.tfMetabolicFlowsAerobicActivity.Fat.fMolarOxygenConsumption;
+
+                        % now adjust the overal flowrates for resting
+                        % metabolism
+                        this.tfMetabolicFlowsAerobicActivity.fMolarATPProduction        = this.tfMetabolicFlowsAerobicActivity.Fat.fMolarATPProduction     + this.tfMetabolicFlowsAerobicActivity.Protein.fMolarATPProduction;
+                        this.tfMetabolicFlowsAerobicActivity.fMolarCO2Production        = this.tfMetabolicFlowsAerobicActivity.Fat.fMolarCO2Production     + this.tfMetabolicFlowsAerobicActivity.Protein.fMolarCO2Production;
+                        this.tfMetabolicFlowsAerobicActivity.fMolarH2OProduction        = this.tfMetabolicFlowsAerobicActivity.Fat.fMolarH2OProduction     + this.tfMetabolicFlowsAerobicActivity.Protein.fMolarH2OProduction;
+                        this.tfMetabolicFlowsAerobicActivity.fMolarOxygenConsumption    = this.tfMetabolicFlowsAerobicActivity.Fat.fMolarOxygenConsumption + this.tfMetabolicFlowsAerobicActivity.Protein.fMolarOxygenConsumption;
+                        this.tfMetabolicFlowsAerobicActivity.fMolarFatConsumption       = this.tfMetabolicFlowsAerobicActivity.Fat.fMolarFatConsumption;
+                        this.tfMetabolicFlowsAerobicActivity.fMolarProteinConsumption	= this.tfMetabolicFlowsAerobicActivity.Protein.fMolarProteinConsumption;
+                        this.tfMetabolicFlowsAerobicActivity.fMolarUreaProduction       = this.tfMetabolicFlowsAerobicActivity.Protein.fMolarUreaProduction;
+                    end
+                    % In this case we have no unused glucose for ATP
+                    % production or fatty acid storage
+                    fUnusedMolarFlowGlucose = 0;
+                end
+                
+                % Note that synthesizing fat from proteins requires ATP
+                fAddtionalOxygen    = - tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowATPforFatSynthesis * (1 / this.tfMetabolicConversionFactors.rATPCoefficientGlucose);
+                fAdditionalGlucose  = fAddtionalOxygen * this.tfMetabolicConversionFactors.rCoefficientGlucose;
+                
+                if fUnusedMolarFlowGlucose > fAdditionalGlucose
+                    % In this case the currently unused glucose can be used
+                    % to generate the required ATP for fat synthesis from
+                    % proteins
+                    fAddtionalCO2       = fAddtionalOxygen * this.tfMetabolicConversionFactors.rRespiratoryCoefficientGlucose;
+                    fAdditionalH2O      = fAddtionalOxygen * this.tfMetabolicConversionFactors.rH2OCoefficientGlucose;
+
+                    tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowO2forFatSynthesis        = fAddtionalOxygen      + tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowO2forFatSynthesis;
+                    tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowGlucoseforFatSynthesis   = fAdditionalGlucose    + tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowGlucoseforFatSynthesis;
+                    tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowCO2fromFatSynthesis      = fAddtionalCO2         + tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowCO2fromFatSynthesis;
+                    tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowH2OfromFatSynthesis      = fAdditionalH2O        + tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowH2OfromFatSynthesis;
+
+                    fUnusedMolarFlowGlucose = fUnusedMolarFlowGlucose - fAdditionalGlucose;
+                else
+                    % In this case the missing ATP must be generated by the
+                    % proteins, however, that also reduces the amount of
+                    % fat synthesized:
+                    fAddtionalOxygen    = fUnusedMolarFlowGlucose * (1 / this.tfMetabolicConversionFactors.rCoefficientGlucose);
+                    fAddtionalCO2       = fAddtionalOxygen * this.tfMetabolicConversionFactors.rRespiratoryCoefficientGlucose;
+                    fAdditionalH2O      = fAddtionalOxygen * this.tfMetabolicConversionFactors.rH2OCoefficientGlucose;
+                    fAdditionalATP      = fAddtionalOxygen * this.tfMetabolicConversionFactors.rATPCoefficientGlucose;
+                    
+                    tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowO2forFatSynthesis        = fAddtionalOxygen      + tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowO2forFatSynthesis;
+                    tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowGlucoseforFatSynthesis   = fAdditionalGlucose    + tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowGlucoseforFatSynthesis;
+                    tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowCO2fromFatSynthesis      = fAddtionalCO2         + tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowCO2fromFatSynthesis;
+                    tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowH2OfromFatSynthesis      = fAdditionalH2O        + tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowH2OfromFatSynthesis;
+
+                    fError = 1;
+                    iIteration = 1;
+                    fProteinsForFatPrevious = fMolarFlowProteinsRemaining;
+                    while fError > 1e-12 && iIteration < 200
+                        fRemainingATP       = tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowATPforFatSynthesis + fAdditionalATP;
+                        fAddtionalOxygen    = - fRemainingATP * (1 / this.tfMetabolicConversionFactors.rProteinMetabolismATP);
+                        fAdditionalProtein  = fAddtionalOxygen * this.tfMetabolicConversionFactors.rProteinMetabolism;
+
+                        fProteinsForFat = fMolarFlowProteinsRemaining - fAdditionalProtein;
+                        tfMetabolicFlowsFatSynthesis.Protein = this.calculateFatSynthesisFromProteins(fProteinsForFat);
+                        
+                        fError = abs(fProteinsForFatPrevious - fProteinsForFat);
+                        fProteinsForFatPrevious = fProteinsForFat;
+                        iIteration = iIteration + 1;
+                    end
+                    fAddtionalCO2       = fAddtionalOxygen * this.tfMetabolicConversionFactors.rRespiratoryCoefficientProteins;
+                    fAdditionalH2O      = fAddtionalOxygen * this.tfMetabolicConversionFactors.rProteinMetabolismH2O;
+                    fAdditionalUrea     = fAddtionalOxygen * this.tfMetabolicConversionFactors.rProteinMetabolismUrea;
+                    
+                    tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowO2forFatSynthesis        = fAddtionalOxygen      + tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowO2forFatSynthesis;
+                    tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowCO2fromFatSynthesis      = fAddtionalCO2         + tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowCO2fromFatSynthesis;
+                    tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowH2OfromFatSynthesis      = fAdditionalH2O        + tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowH2OfromFatSynthesis;
+                    tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowUreafromFatSynthesis     = fAdditionalUrea       + tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowUreafromFatSynthesis;
+                    tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowProteinforFatSynthesis   = fAdditionalProtein    + tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowProteinforFatSynthesis;
+                    
+                    fUnusedMolarFlowGlucose = 0;
+                end
+                
+            
+            else
+                tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowFatfromFatSynthesis      = 0;
+                tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowO2forFatSynthesis        = 0;
+                tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowGlucoseforFatSynthesis   = 0;
+                tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowCO2fromFatSynthesis      = 0;
+                tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowH2OfromFatSynthesis      = 0;
+                tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowUreafromFatSynthesis     = 0;
+                tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowATPforFatSynthesis       = 0;
+                tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowProteinforFatSynthesis   = 0;
+            end
+                
+            if fUnusedMolarFlowGlucose > 0
+                
+                % If the fat synthesis produce excess ATP that is currently
+                % neglected. Previously the human model assumed that simply
+                % no ATP is consumed or generated during the synthesis
                 tfMetabolicFlowsFatSynthesis.Glucose.fMolarFlowGlucoseforFatSynthesis   = fUnusedMolarFlowGlucose;
                 tfMetabolicFlowsFatSynthesis.Glucose.fMolarFlowFatfromFatSynthesis      = this.tfMetabolicConversionFactors.Glucose.rFatsynthesisCoefficient          * fUnusedMolarFlowGlucose;
                 tfMetabolicFlowsFatSynthesis.Glucose.fMolarFlowO2forFatSynthesis        = this.tfMetabolicConversionFactors.Glucose.rFatsynthesisCoefficientOxygen    * fUnusedMolarFlowGlucose;
@@ -967,54 +1176,6 @@ classdef Metabolic < vsys
                 tfMetabolicFlowsFatSynthesis.Glucose.fMolarFlowCO2fromFatSynthesis      = 0;
                 tfMetabolicFlowsFatSynthesis.Glucose.fMolarFlowH2OfromFatSynthesis      = 0;
                 tfMetabolicFlowsFatSynthesis.Glucose.fMolarFlowATPfromFatSynthesis      = 0;
-            end
-            
-            % If we also have proteins remaining, we can calculate the
-            % amount of fat synthesized from protein.
-            if fMolarFlowProteinsRemaining > 0
-                
-                % 2 C6H12O6 + 24 C3H7NO2 + 11.5 O2 -> C51H98O6 + 12 CH4N2O + 21 CO2 + 23 H2O
-                tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowFatfromFatSynthesis      = fMolarFlowProteinsRemaining * this.tfMetabolicConversionFactors.Protein.rFatsynthesisCoefficient;
-                tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowO2forFatSynthesis        = fMolarFlowProteinsRemaining * this.tfMetabolicConversionFactors.Protein.rFatsynthesisCoefficientOxygen;
-                tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowGlucoseforFatSynthesis   = fMolarFlowProteinsRemaining * this.tfMetabolicConversionFactors.Protein.rFatsynthesisCoefficientGlucose;
-                tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowCO2fromFatSynthesis      = fMolarFlowProteinsRemaining * this.tfMetabolicConversionFactors.Protein.rFatsynthesisCoefficientCO2;
-                tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowH2OfromFatSynthesis      = fMolarFlowProteinsRemaining * this.tfMetabolicConversionFactors.Protein.rFatsynthesisCoefficientH2O;
-                tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowUreafromFatSynthesis     = fMolarFlowProteinsRemaining * this.tfMetabolicConversionFactors.Protein.rFatsynthesisCoefficientUrea;
-                tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowATPforFatSynthesis       = fMolarFlowProteinsRemaining * this.tfMetabolicConversionFactors.Protein.rFatsynthesisCoefficientATP;
-                tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowProteinforFatSynthesis   = fMolarFlowProteinsRemaining;
-                
-                % Note that synthesizing fat from proteins requires ATP,
-                % therefore we subtract the ATP generated by glucose fat
-                % synthesis and calculate the amount of ATP that is still
-                % required
-                fEffectiveATPFlowFatSynthesis = tfMetabolicFlowsFatSynthesis.Glucose.fMolarFlowATPfromFatSynthesis + tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowATPforFatSynthesis;
-                
-                % If the fat synthesis produce excess ATP that is currently
-                % neglected. Previously the human model assumed that simply
-                % no ATP is consumed or generated during the synthesis
-                if fEffectiveATPFlowFatSynthesis < 0
-                    % In this case more ATP is consumed than created and
-                    % some additional ATP must be generated:
-                    fAddtionalOxygen    = - fEffectiveATPFlowFatSynthesis * (1 / this.tfMetabolicConversionFactors.rATPCoefficientGlucose);
-                    fAdditionalGlucose  = fAddtionalOxygen * this.tfMetabolicConversionFactors.rCoefficientGlucose;
-                    fAddtionalCO2       = fAddtionalOxygen * this.tfMetabolicConversionFactors.rRespiratoryCoefficientGlucose;
-                    fAdditionalH2O      = fAddtionalOxygen * this.tfMetabolicConversionFactors.rH2OCoefficientGlucose;
-                    
-                    tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowO2forFatSynthesis        = fAddtionalOxygen      + tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowO2forFatSynthesis;
-                    tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowGlucoseforFatSynthesis   = fAdditionalGlucose    + tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowGlucoseforFatSynthesis;
-                    tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowCO2fromFatSynthesis      = fAddtionalCO2         + tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowCO2fromFatSynthesis;
-                    tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowH2OfromFatSynthesis      = fAdditionalH2O        + tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowH2OfromFatSynthesis;
-                    
-                end
-            else
-                tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowFatfromFatSynthesis      = 0;
-                tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowO2forFatSynthesis        = 0;
-                tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowGlucoseforFatSynthesis   = 0;
-                tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowCO2fromFatSynthesis      = 0;
-                tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowH2OfromFatSynthesis      = 0;
-                tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowUreafromFatSynthesis     = 0;
-                tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowATPforFatSynthesis       = 0;
-                tfMetabolicFlowsFatSynthesis.Protein.fMolarFlowProteinforFatSynthesis   = 0;
             end
             
             % Now we combine the metabolic flows for fat synthesis from all
@@ -1035,9 +1196,25 @@ classdef Metabolic < vsys
             
         end
         
+        function ProteinFatSynthesis = calculateFatSynthesisFromProteins(this, fMolarFlowProteinToFat)
+            
+            % 2 C6H12O6 + 24 C3H7NO2 + 11.5 O2 -> C51H98O6 + 12 CH4N2O + 21 CO2 + 23 H2O
+            ProteinFatSynthesis.fMolarFlowFatfromFatSynthesis      = fMolarFlowProteinToFat * this.tfMetabolicConversionFactors.Protein.rFatsynthesisCoefficient;
+            ProteinFatSynthesis.fMolarFlowO2forFatSynthesis        = fMolarFlowProteinToFat * this.tfMetabolicConversionFactors.Protein.rFatsynthesisCoefficientOxygen;
+            ProteinFatSynthesis.fMolarFlowGlucoseforFatSynthesis   = fMolarFlowProteinToFat * this.tfMetabolicConversionFactors.Protein.rFatsynthesisCoefficientGlucose;
+            ProteinFatSynthesis.fMolarFlowCO2fromFatSynthesis      = fMolarFlowProteinToFat * this.tfMetabolicConversionFactors.Protein.rFatsynthesisCoefficientCO2;
+            ProteinFatSynthesis.fMolarFlowH2OfromFatSynthesis      = fMolarFlowProteinToFat * this.tfMetabolicConversionFactors.Protein.rFatsynthesisCoefficientH2O;
+            ProteinFatSynthesis.fMolarFlowUreafromFatSynthesis     = fMolarFlowProteinToFat * this.tfMetabolicConversionFactors.Protein.rFatsynthesisCoefficientUrea;
+            ProteinFatSynthesis.fMolarFlowATPforFatSynthesis       = fMolarFlowProteinToFat * this.tfMetabolicConversionFactors.Protein.rFatsynthesisCoefficientATP;
+            ProteinFatSynthesis.fMolarFlowProteinforFatSynthesis   = fMolarFlowProteinToFat;
+
+        end
+        
         function tfMetabolicFlowsProteins = ProteinMetabolism(this, fMuscleChangeMassFlow)
             % Based on biochemistry from "Biochemie" 2013 Berg et al
             fMetabolizedFlowrateProteins = this.oParent.toChildren.Digestion.fDigestedMassFlowProteins - (1 - this.rH2OtoMuscleMassRatio) * fMuscleChangeMassFlow;
+            
+            fMetabolizedFlowrateProteins = fMetabolizedFlowrateProteins + (this.toStores.Metabolism.toPhases.Metabolism.afMass(this.oMT.tiN2I.C3H7NO2) - this.fInitialProteinMassMetabolism) / 3600;
             
             if fMetabolizedFlowrateProteins < 0
                 % In this case ammino acids must be synthesized from
@@ -1354,7 +1531,7 @@ classdef Metabolic < vsys
             
             this.tfMetabolicFlowsRest = this.RestingAerobicSystem();
             
-            fMolarFlowProteinsRemaining = calculateFinalMetabolicFlows(this);
+            fMolarFlowProteinsRemaining = this.calculateFinalMetabolicFlows();
             
             % The metabolism system requires the training and detraining
             % factors, so we calculate that beforehand

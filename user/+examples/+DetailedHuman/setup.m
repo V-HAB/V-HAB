@@ -344,6 +344,24 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.LargeIntestine_to_Rectum',    	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.DietaryFiber)',	'kg/s',     'Fiber from LargeIntestine');
             oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.LargeIntestine_to_Rectum',     	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',      	'kg/s',     'Sodium from LargeIntestine');
             
+            
+            oLog.addVirtualValue('cumsum("Ingested Water Flow Rate"     .* "Timestep")', 'kg', 'Ingested Water');
+            oLog.addVirtualValue('cumsum("Respiration Water Flow Rate"	.* "Timestep")', 'kg', 'Respiration Water');
+            oLog.addVirtualValue('cumsum("Perspiration Water Flow Rate"	.* "Timestep")', 'kg', 'Perspiration Water');
+            oLog.addVirtualValue('cumsum("Metabolism H2O Flow Rate"     .* "Timestep")', 'kg', 'Metabolism Water');
+            oLog.addVirtualValue('cumsum("Stomach H2O Flow Rate"        .* "Timestep")', 'kg', 'Stomach Water');
+            oLog.addVirtualValue('cumsum("H2O from LargeIntestine"      .* "Timestep")', 'kg', 'Feces Water');
+            oLog.addVirtualValue('cumsum("H2O Massflow to Bladder"      .* "Timestep")', 'kg', 'Urine Water');
+            oLog.addVirtualValue('cumsum("Food Flow Rate"               .* "Timestep")', 'kg', 'Ingested Food');
+            oLog.addVirtualValue('cumsum("Protein from LargeIntestine"	.* "Timestep")', 'kg', 'Feces Protein');
+            oLog.addVirtualValue('cumsum("Fat from LargeIntestine"      .* "Timestep")', 'kg', 'Feces Fat');
+            oLog.addVirtualValue('cumsum("Glucose from LargeIntestine"	.* "Timestep")', 'kg', 'Feces Glucose');
+            oLog.addVirtualValue('cumsum("Fiber from LargeIntestine"	.* "Timestep")', 'kg', 'Feces Fiber');
+            oLog.addVirtualValue('cumsum("Sodium from LargeIntestine"	.* "Timestep")', 'kg', 'Feces Na+');
+            oLog.addVirtualValue('cumsum("Na+ Massflow to Bladder"      .* "Timestep")', 'kg', 'Urine Na+');
+            oLog.addVirtualValue('cumsum("K+ Massflow to Bladder"       .* "Timestep")', 'kg', 'Urine K+');
+            oLog.addVirtualValue('cumsum("Metabolism Urea Flow Rate"	.* "Timestep")', 'kg', 'Urine Urea');
+            
         end
         
         function plot(this, varargin) % Plotting the results
@@ -532,107 +550,88 @@ classdef setup < simulation.infrastructure
             
             afTimeSteps = (oLogger.afTime(2:end) - oLogger.afTime(1:end-1));
 
-            for iLog = 1:oLogger.iNumberOfLogItems
-                if strcmp(oLogger.tLogValues(iLog).sLabel, 'Ingested Water Flow Rate')
-                    iDrinkingWaterFlow = iLog;
+            for iVirtualLog = 1:length(oLogger.tVirtualValues)
+                if strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel, 'Ingested Water')
+                    iDrinkingWaterFlow = iVirtualLog;
                 end
                 
-                if strcmp(oLogger.tLogValues(iLog).sLabel, 'Respiration Water Flow Rate')
-                    iRespirationWaterFlow = iLog;
+                if strcmp(oLogger.tLogValues(iVirtualLog).sLabel, 'Respiration Water')
+                    iRespirationWaterFlow = iVirtualLog;
                 end
                 
-                if strcmp(oLogger.tLogValues(iLog).sLabel, 'Perspiration Water Flow Rate')
-                    iPerspirationWaterFlow = iLog;
+                if strcmp(oLogger.tLogValues(iVirtualLog).sLabel, 'Perspiration Water')
+                    iPerspirationWaterFlow = iVirtualLog;
                 end
                 
-                if strcmp(oLogger.tLogValues(iLog).sLabel, 'Metabolism H2O Flow Rate')
-                    iMetabolicWater = iLog;
+                if strcmp(oLogger.tLogValues(iVirtualLog).sLabel, 'Metabolism Water')
+                    iMetabolicWater = iVirtualLog;
                 end
                 
-                if strcmp(oLogger.tLogValues(iLog).sLabel, 'Stomach H2O Flow Rate')
-                    iWaterinFood = iLog;
+                if strcmp(oLogger.tLogValues(iVirtualLog).sLabel, 'Stomach Water')
+                    iWaterinFood = iVirtualLog;
                 end
                 
-                if strcmp(oLogger.tLogValues(iLog).sLabel, 'H2O from LargeIntestine')
-                    iFecesH2O = iLog;
+                if strcmp(oLogger.tLogValues(iVirtualLog).sLabel, 'Feces water')
+                    iFecesH2O = iVirtualLog;
                 end
                 
-                if strcmp(oLogger.tLogValues(iLog).sLabel, 'H2O Massflow to Bladder')
-                    iUrineH2O = iLog;
+                if strcmp(oLogger.tLogValues(iVirtualLog).sLabel, 'Urine Water')
+                    iUrineH2O = iVirtualLog;
                 end
                 
-                if strcmp(oLogger.tLogValues(iLog).sLabel, 'Food Flow Rate')
-                    iFood = iLog;
+                if strcmp(oLogger.tLogValues(iVirtualLog).sLabel, 'Ingested Food')
+                    iFood = iVirtualLog;
                 end
                 
-                if strcmp(oLogger.tLogValues(iLog).sLabel, 'Protein from LargeIntestine')
-                    iProteinFeces = iLog;
+                if strcmp(oLogger.tLogValues(iVirtualLog).sLabel, 'Feces Protein')
+                    iProteinFeces = iVirtualLog;
                 end
                 
-                if strcmp(oLogger.tLogValues(iLog).sLabel, 'Fat from LargeIntestine')
-                    iFatFeces = iLog;
+                if strcmp(oLogger.tLogValues(iVirtualLog).sLabel, 'Feces Fat')
+                    iFatFeces = iVirtualLog;
                 end
                 
-                if strcmp(oLogger.tLogValues(iLog).sLabel, 'Glucose from LargeIntestine')
-                    iGlucoseFeces = iLog;
+                if strcmp(oLogger.tLogValues(iVirtualLog).sLabel, 'Feces Glucose')
+                    iGlucoseFeces = iVirtualLog;
                 end
                 
-                if strcmp(oLogger.tLogValues(iLog).sLabel, 'Fiber from LargeIntestine')
-                    iFiberFeces = iLog;
+                if strcmp(oLogger.tLogValues(iVirtualLog).sLabel, 'Feces Fiber')
+                    iFiberFeces = iVirtualLog;
                 end
                 
-                if strcmp(oLogger.tLogValues(iLog).sLabel, 'Sodium from LargeIntestine')
-                    iSodiumFeces = iLog;
+                if strcmp(oLogger.tLogValues(iVirtualLog).sLabel, 'Feces Na+')
+                    iSodiumFeces = iVirtualLog;
                 end
                 
-                if strcmp(oLogger.tLogValues(iLog).sLabel, 'Na+ Massflow to Bladder')
-                    iSodiumUrine = iLog;
+                if strcmp(oLogger.tLogValues(iVirtualLog).sLabel, 'Urine Na+')
+                    iSodiumUrine = iVirtualLog;
                 end
                 
-                if strcmp(oLogger.tLogValues(iLog).sLabel, 'K+ Massflow to Bladder')
-                    iPotassiumUrine = iLog;
+                if strcmp(oLogger.tLogValues(iVirtualLog).sLabel, 'Urine K+')
+                    iPotassiumUrine = iVirtualLog;
                 end
                 
-                if strcmp(oLogger.tLogValues(iLog).sLabel, 'Metabolism Urea Flow Rate')
-                    iUreaUrine = iLog;
+                if strcmp(oLogger.tLogValues(iVirtualLog).sLabel, 'Urine Urea')
+                    iUreaUrine = iVirtualLog;
                 end
             end
             
-            afConsumedDrinkingWater     = zeros(iLogs,1);
-            afProducedRespirationWater  = zeros(iLogs,1);
-            afProducedPerspirationWater = zeros(iLogs,1);
-            afProducedMetabolicWater    = zeros(iLogs,1);
-            afIngestedWaterInFood       = zeros(iLogs,1);
-            afFecesWater                = zeros(iLogs,1);
-            afUrineWater                = zeros(iLogs,1);
-            afFood                      = zeros(iLogs,1);
-            afFecesProtein            	= zeros(iLogs,1);
-            afFecesFat                	= zeros(iLogs,1);
-            afFecesGlucose            	= zeros(iLogs,1);
-            afFecesFiber            	= zeros(iLogs,1);
-            afFecesSodium             	= zeros(iLogs,1);
-            afUrineSodium             	= zeros(iLogs,1);
-            afUrinePotassium          	= zeros(iLogs,1);
-            afUrineUrea                 = zeros(iLogs,1);
-            
-            for iLog = 2:iLogs
-                afConsumedDrinkingWater(iLog)       = afConsumedDrinkingWater(iLog-1)       + afTimeSteps(iLog-1)' .* oLogger.mfLog(iLog,iDrinkingWaterFlow);
-                afProducedRespirationWater(iLog) 	= afProducedRespirationWater(iLog-1)    + afTimeSteps(iLog-1)' .* oLogger.mfLog(iLog,iRespirationWaterFlow);
-                afProducedPerspirationWater(iLog) 	= afProducedPerspirationWater(iLog-1)   + afTimeSteps(iLog-1)' .* oLogger.mfLog(iLog,iPerspirationWaterFlow);
-                afProducedMetabolicWater(iLog)      = afProducedMetabolicWater(iLog-1)      + afTimeSteps(iLog-1)' .* oLogger.mfLog(iLog,iMetabolicWater);
-                afIngestedWaterInFood(iLog)         = afIngestedWaterInFood(iLog-1)         + afTimeSteps(iLog-1)' .* oLogger.mfLog(iLog,iWaterinFood);
-                afFecesWater(iLog)                  = afFecesWater(iLog-1)                  + afTimeSteps(iLog-1)' .* oLogger.mfLog(iLog,iFecesH2O);
-                afUrineWater(iLog)                  = afUrineWater(iLog-1)                  + afTimeSteps(iLog-1)' .* oLogger.mfLog(iLog,iUrineH2O);
-                afFood(iLog)                        = afFood(iLog-1)                        + afTimeSteps(iLog-1)' .* oLogger.mfLog(iLog,iFood);
-                afFecesProtein(iLog)             	= afFecesProtein(iLog-1)              	+ afTimeSteps(iLog-1)' .* oLogger.mfLog(iLog,iProteinFeces);
-                afFecesFat(iLog)                    = afFecesFat(iLog-1)                    + afTimeSteps(iLog-1)' .* oLogger.mfLog(iLog,iFatFeces);
-                afFecesGlucose(iLog)             	= afFecesGlucose(iLog-1)              	+ afTimeSteps(iLog-1)' .* oLogger.mfLog(iLog,iGlucoseFeces);
-                afFecesFiber(iLog)                  = afFecesFiber(iLog-1)              	+ afTimeSteps(iLog-1)' .* oLogger.mfLog(iLog,iFiberFeces);
-                afFecesSodium(iLog)                 = afFecesSodium(iLog-1)              	+ afTimeSteps(iLog-1)' .* oLogger.mfLog(iLog,iSodiumFeces);
-                afUrineSodium(iLog)                 = afUrineSodium(iLog-1)              	+ afTimeSteps(iLog-1)' .* oLogger.mfLog(iLog,iSodiumUrine);
-                afUrinePotassium(iLog)          	= afUrinePotassium(iLog-1)              + afTimeSteps(iLog-1)' .* oLogger.mfLog(iLog,iPotassiumUrine);
-                afUrineUrea(iLog)                   = afUrineUrea(iLog-1)                   + afTimeSteps(iLog-1)' .* oLogger.mfLog(iLog,iUreaUrine);
-            end
+            afConsumedDrinkingWater     = oLogger.mfLog(:,iDrinkingWaterFlow);
+            afProducedRespirationWater  = oLogger.mfLog(:,iRespirationWaterFlow);
+            afProducedPerspirationWater = oLogger.mfLog(:,iPerspirationWaterFlow);
+            afProducedMetabolicWater    = oLogger.mfLog(:,iMetabolicWater);
+            afIngestedWaterInFood       = oLogger.mfLog(:,iWaterinFood);
+            afFecesWater                = oLogger.mfLog(:,iFecesH2O);
+            afUrineWater                = oLogger.mfLog(:,iUrineH2O);
+            afFood                      = oLogger.mfLog(:,iFood);
+            afFecesProtein            	= oLogger.mfLog(:,iProteinFeces);
+            afFecesFat                	= oLogger.mfLog(:,iFatFeces);
+            afFecesGlucose            	= oLogger.mfLog(:,iGlucoseFeces);
+            afFecesFiber            	= oLogger.mfLog(:,iFiberFeces);
+            afFecesSodium             	= oLogger.mfLog(:,iSodiumFeces);
+            afUrineSodium             	= oLogger.mfLog(:,iSodiumUrine);
+            afUrinePotassium          	= oLogger.mfLog(:,iPotassiumUrine);
+            afUrineUrea                 = oLogger.mfLog(:,iUreaUrine);
             
             % We calculated the individual masses to be able to check
             % those, but for now we just compare the total feces solid
@@ -655,9 +654,9 @@ classdef setup < simulation.infrastructure
             
             afGeneratedCO2Mass  = zeros(iLogs,1);
             afConsumedO2Mass    = zeros(iLogs,1);
-            for iLog = 2:iLogs
-                afGeneratedCO2Mass(iLog)  = sum(afTimeSteps(1:iLog-1)' .* mfEffectiveCO2Flow(2:iLog));
-                afConsumedO2Mass(iLog)    = sum(afTimeSteps(1:iLog-1)' .* mfEffectiveO2Flow(2:iLog));
+            for iVirtualLog = 2:iLogs
+                afGeneratedCO2Mass(iVirtualLog)  = sum(afTimeSteps(1:iVirtualLog-1)' .* mfEffectiveCO2Flow(2:iVirtualLog));
+                afConsumedO2Mass(iVirtualLog)    = sum(afTimeSteps(1:iVirtualLog-1)' .* mfEffectiveO2Flow(2:iVirtualLog));
             end
             
             figure()
@@ -682,42 +681,48 @@ classdef setup < simulation.infrastructure
             ylabel('Mass in [kg]')
             hold off
             
+            if any(isnan(afConsumedO2Mass))
+                iLastIndex = find(isnan(afConsumedO2Mass), 1) - 1;
+            else
+                iLastIndex = length(afConsumedO2Mass);
+            end
+            
             % Average Daily consumptions and productions
-            fAverageO2              = abs(afConsumedO2Mass(end)                                                 / (oLogger.afTime(end) / (24*3600)));
-            fAverageCO2             = abs(afGeneratedCO2Mass(end)                                               / (oLogger.afTime(end) / (24*3600)));
-            fAverageHumidity        = abs((afProducedRespirationWater(end) + afProducedPerspirationWater(end))  / (oLogger.afTime(end) / (24*3600)));
-            fAveragePotableWater    = abs(afConsumedDrinkingWater(end)                                          / (oLogger.afTime(end) / (24*3600)));
-            fAverageMetabolicWater 	= abs(afProducedMetabolicWater(end)                                         / (oLogger.afTime(end) / (24*3600)));
-            fAverageFoodWater       = abs(afIngestedWaterInFood(end)                                            / (oLogger.afTime(end) / (24*3600)));
-            fAverageFood            = abs(afFood(end)                                                           / (oLogger.afTime(end) / (24*3600)));
-            fAverageUrine           = abs((afUrineWater(end))                                                   / (oLogger.afTime(end) / (24*3600)));
-            fAverageUrineSolids    	= abs((afUrineSolids(end))                                                  / (oLogger.afTime(end) / (24*3600)));
-            fAverageFeces           = abs((afFecesWater(end))                                                   / (oLogger.afTime(end) / (24*3600)));
-            fAverageFecesSolid    	= abs((afFecesSolids(end))                                                  / (oLogger.afTime(end) / (24*3600)));
+            fAverageO2              = abs(afConsumedO2Mass(iLastIndex)                                                          / (oLogger.afTime(iLastIndex) / (24*3600)));
+            fAverageCO2             = abs(afGeneratedCO2Mass(iLastIndex)                                                        / (oLogger.afTime(iLastIndex) / (24*3600)));
+            fAverageHumidity        = abs((afProducedRespirationWater(iLastIndex) + afProducedPerspirationWater(iLastIndex))    / (oLogger.afTime(iLastIndex) / (24*3600)));
+            fAveragePotableWater    = abs(afConsumedDrinkingWater(iLastIndex)                                                   / (oLogger.afTime(iLastIndex) / (24*3600)));
+            fAverageMetabolicWater 	= abs(afProducedMetabolicWater(iLastIndex)                                                  / (oLogger.afTime(iLastIndex) / (24*3600)));
+            fAverageFoodWater       = abs(afIngestedWaterInFood(iLastIndex)                                                     / (oLogger.afTime(iLastIndex) / (24*3600)));
+            fAverageFood            = abs(afFood(iLastIndex)                                                                    / (oLogger.afTime(iLastIndex) / (24*3600)));
+            fAverageUrine           = abs((afUrineWater(iLastIndex))                                                            / (oLogger.afTime(iLastIndex) / (24*3600)));
+            fAverageUrineSolids    	= abs((afUrineSolids(iLastIndex))                                                           / (oLogger.afTime(iLastIndex) / (24*3600)));
+            fAverageFeces           = abs((afFecesWater(iLastIndex))                                                            / (oLogger.afTime(iLastIndex) / (24*3600)));
+            fAverageFecesSolid    	= abs((afFecesSolids(iLastIndex))                                                           / (oLogger.afTime(iLastIndex) / (24*3600)));
             
-            fDifferenceO2               = (1 - (fAverageO2              / 0.816))   * 100;
-            fDifferenceCO2              = (1 - (fAverageCO2             / 1.04))    * 100;
-            fDifferenceHumidity         = (1 - (fAverageHumidity        / 1.9))     * 100; 
-            fDifferencePotableWater     = (1 - (fAveragePotableWater    / 2.5))     * 100; 
-            fDifferenceMetabolicWater	= (1 - (fAverageMetabolicWater  / 0.345))   * 100; 
-            fDifferenceFoodWater        = (1 - (fAverageFoodWater       / 0.7))     * 100; 
-            fDifferenceFood             = (1 - (fAverageFood            / 1.5))     * 100; 
-            fDifferenceUrine            = (1 - (fAverageUrine           / 1.6))     * 100; 
-            fDifferenceUrineSolids    	= (1 - (fAverageUrineSolids     / 0.059))   * 100; 
-            fDifferenceFeces            = (1 - (fAverageFeces           / 0.1))     * 100; 
-            fDifferenceFecesSolid    	= (1 - (fAverageFecesSolid      / 0.032))   * 100; 
+            fDifferenceO2               = ((fAverageO2              / 0.816)    - 1)	* 100;
+            fDifferenceCO2              = ((fAverageCO2             / 1.04)     - 1)    * 100;
+            fDifferenceHumidity         = ((fAverageHumidity        / 1.9)      - 1) 	* 100; 
+            fDifferencePotableWater     = ((fAveragePotableWater    / 2.5)      - 1)  	* 100; 
+            fDifferenceMetabolicWater	= ((fAverageMetabolicWater  / 0.345)    - 1)    * 100; 
+            fDifferenceFoodWater        = ((fAverageFoodWater       / 0.7)      - 1)  	* 100; 
+            fDifferenceFood             = ((fAverageFood            / 1.5)      - 1)  	* 100; 
+            fDifferenceUrine            = ((fAverageUrine           / 1.6)      - 1)   	* 100; 
+            fDifferenceUrineSolids    	= ((fAverageUrineSolids     / 0.059)    - 1)    * 100; 
+            fDifferenceFeces            = ((fAverageFeces           / 0.1)      - 1)  	* 100; 
+            fDifferenceFecesSolid    	= ((fAverageFecesSolid      / 0.032)    - 1)    * 100; 
             
-            disp(['Average daily O2 consumption:                ', num2str(fAverageO2), ' kg    BVAD value is 0.816 kg'])
-            disp(['Average daily Water consumption:             ', num2str(fAveragePotableWater), ' kg  BVAD value is 2.5 kg'])
-            disp(['Average daily Food Water consumption:        ', num2str(fAverageFoodWater), ' kg  BVAD value is 0.7 kg'])
-            disp(['Average daily Food consumption:              ', num2str(fAverageFood), ' kg  BVAD value is 1.5 kg'])
-            disp(['Average daily Metabolic Water production:    ', num2str(fAverageMetabolicWater), ' kg  BVAD value is 0.345 kg'])
-            disp(['Average daily CO2 production:                ', num2str(fAverageCO2), ' kg   BVAD value is 1.04 kg'])
-            disp(['Average daily Humidity production:           ', num2str(fAverageHumidity), ' kg  BVAD value is 1.9 kg'])
-            disp(['Average daily Urine Water production:        ', num2str(fAverageUrine), ' kg     BVAD value is 1.6 kg'])
-            disp(['Average daily Urine Solid production:        ', num2str(fAverageUrineSolids), ' kg     BVAD value is 0.059 kg'])
-            disp(['Average daily Feces Water production:        ', num2str(fAverageFeces), ' kg     BVAD value is 0.1 kg'])
-            disp(['Average daily Feces Solid production:        ', num2str(fAverageFecesSolid), ' kg     BVAD value is 0.032 kg'])
+            disp(['Average daily O2 consumption:                    ', num2str(fAverageO2), ' kg           	BVAD value is 0.816 kg'])
+            disp(['Average daily Water consumption:                 ', num2str(fAveragePotableWater), ' kg              BVAD value is 2.5 kg'])
+            disp(['Average daily Food Water consumption:            ', num2str(fAverageFoodWater), ' kg             BVAD value is 0.7 kg'])
+            disp(['Average daily Food consumption:                  ', num2str(fAverageFood), ' kg         	BVAD value is 1.5 kg'])
+            disp(['Average daily Metabolic Water production:        ', num2str(fAverageMetabolicWater), ' kg                BVAD value is 0.345 kg'])
+            disp(['Average daily CO2 production:                    ', num2str(fAverageCO2), ' kg          	BVAD value is 1.04 kg'])
+            disp(['Average daily Humidity production:               ', num2str(fAverageHumidity), ' kg          BVAD value is 1.9 kg'])
+            disp(['Average daily Urine Water production:            ', num2str(fAverageUrine), ' kg             BVAD value is 1.6 kg'])
+            disp(['Average daily Urine Solid production:            ', num2str(fAverageUrineSolids), ' kg       BVAD value is 0.059 kg'])
+            disp(['Average daily Feces Water production:            ', num2str(fAverageFeces), ' kg             BVAD value is 0.1 kg'])
+            disp(['Average daily Feces Solid production:            ', num2str(fAverageFecesSolid), ' kg        BVAD value is 0.032 kg'])
             disp('')
             disp(['Difference daily O2 consumption:                ', num2str(fDifferenceO2), ' %'])
             disp(['Difference daily Water consumption:             ', num2str(fDifferencePotableWater), ' %'])

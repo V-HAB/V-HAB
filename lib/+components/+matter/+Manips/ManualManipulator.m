@@ -12,16 +12,21 @@ classdef ManualManipulator < matter.manips.substance.stationary
         % substance that the user defned using the setFlowRate function
         afManualFlowRates; % [kg/s]
         aarManualFlowsToCompound;
+        
+        bAlwaysAutoAdjustFlowRates = false;
     end
     
     methods
-        function this = ManualManipulator(oParent, sName, oPhase)
+        function this = ManualManipulator(oParent, sName, oPhase, bAutoAdjustFlowRates)
             this@matter.manips.substance.stationary(sName, oPhase);
 
             this.oParent = oParent;
             
             this.afManualFlowRates = zeros(1,this.oMT.iSubstances);
             this.aarManualFlowsToCompound = zeros(this.oPhase.oMT.iSubstances, this.oPhase.oMT.iSubstances);
+            if nargin > 3
+                this.bAlwaysAutoAdjustFlowRates = bAutoAdjustFlowRates;
+            end
         end
         
         function setFlowRate(this, afFlowRates, aarFlowsToCompound, bAutoAdjustFlowRates)
@@ -31,7 +36,11 @@ classdef ManualManipulator < matter.manips.substance.stationary
             % specified by oMT.tiN2I, each entry represents a flowrate for
             % the respective substance in kg/s. The flowrates have to add up to 0! 
             if nargin < 4
-                bAutoAdjustFlowRates = false;
+                if this.bAlwaysAutoAdjustFlowRates
+                    bAutoAdjustFlowRates = true;
+                else
+                    bAutoAdjustFlowRates = false;
+                end
             end
             %% for small errors this calculation will minimize the mass balance errors
             fError = sum(afFlowRates);

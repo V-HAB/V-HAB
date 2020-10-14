@@ -25,7 +25,7 @@ classdef Example < vsys
             this.iNumberOfCrewMembers = 1;
             
             % Number of days that events shall be planned goes here:
-            iLengthOfMission = 10; % [d]
+            iLengthOfMission = 200; % [d]
             
             ctEvents = cell(iLengthOfMission, this.iNumberOfCrewMembers);
             

@@ -293,7 +293,7 @@ classdef Digestion < vsys
             
             % Add a manipulator to convert the ingested food into the base
             % nutrients it is comprised of
-            components.matter.Manips.ManualManipulator(this, 'FoodConverter', oStomachPhase);
+            components.matter.Manips.ManualManipulator(this, 'FoodConverter', oStomachPhase, true);
             
             this.txFoodWater.Stomach.fMass      = 0.8 * oStomachPhase.afMass(this.oMT.tiN2I.H2O);
             this.txFoodWater.Stomach.rRatio     = 0.8;
@@ -306,9 +306,9 @@ classdef Digestion < vsys
             tfDuodenumContent = struct( 'C6H12O6',                          0.5 * 0.5 * this.tfDuodenumParameters.fMaximalContent,...
                                         'C3H7NO2',                          0.5 * 0.2 * this.tfDuodenumParameters.fMaximalContent,...
                                         'C51H98O6',                         0.5 * 0.3 * this.tfDuodenumParameters.fMaximalContent,...
-                                        'H2O',                              0.5 * 0.2 * this.tfDuodenumParameters.fMaximalContent,...
+                                        'H2O',                              0.5 * 2.4 * this.tfDuodenumParameters.fMaximalContent,...
                                         'Naplus',   fInitialSodiumConcentration *    0.5 * 0.2 * this.tfDuodenumParameters.fMaximalContent);
-                                        
+                                        % H2O ~ 0.19 kg
             oDuodenumPhase = this.toStores.Digestion.createPhase(	'mixture',	'Duodenum', 'liquid',        this.tfDuodenumParameters.fMaximalContent/1000,      tfDuodenumContent,       this.oParent.fBodyCoreTemperature, 1e5);
             
             this.txFoodWater.Duodenum.fMass     = oDuodenumPhase.afMass(this.oMT.tiN2I.H2O);
@@ -322,7 +322,7 @@ classdef Digestion < vsys
             tfJejunumContent = struct( 'C6H12O6',                           0.4 * 0.5   * this.tfJejunumParameters.fMaximalContent,...
                                         'C3H7NO2',                          0.4 * 0.2   * this.tfJejunumParameters.fMaximalContent,...
                                         'C51H98O6',                         0.4 * 0.3   * this.tfJejunumParameters.fMaximalContent,...
-                                        'H2O',                              0.4 * 0.005 * this.tfJejunumParameters.fMaximalContent,...
+                                        'H2O',                              0.4 * 0.785 * this.tfJejunumParameters.fMaximalContent,...
                                         'Naplus',   fInitialSodiumConcentration *    0.4 * 0.05 * this.tfJejunumParameters.fMaximalContent);
                                         
             oJejunumPhase = this.toStores.Digestion.createPhase(	'mixture',	'Jejunum', 'liquid',        this.tfJejunumParameters.fMaximalContent/1000,      tfJejunumContent,       this.oParent.fBodyCoreTemperature, 1e5);
@@ -338,9 +338,9 @@ classdef Digestion < vsys
             tfIleumContent = struct(    'C6H12O6',                         0.3 * 0.5   * this.tfIleumParameters.fMaximalContent,...
                                         'C3H7NO2',                         0.3 * 0.2   * this.tfIleumParameters.fMaximalContent,...
                                         'C51H98O6',                        0.3 * 0.3   * this.tfIleumParameters.fMaximalContent,...
-                                        'H2O',                             0.3 * 0.002 * this.tfIleumParameters.fMaximalContent,...
+                                        'H2O',                             0.3 * 0.552 * this.tfIleumParameters.fMaximalContent,...
                                         'Naplus',   fInitialSodiumConcentration *   0.3 * 0.02 * this.tfIleumParameters.fMaximalContent);
-                                        
+                                   
             oIleumPhase = this.toStores.Digestion.createPhase(	'mixture',	'Ileum', 'liquid',        this.tfIleumParameters.fMaximalContent/1000,      tfIleumContent,       this.oParent.fBodyCoreTemperature, 1e5);
             
             this.txFoodWater.Ileum.fMass     = oIleumPhase.afMass(this.oMT.tiN2I.H2O);
@@ -350,7 +350,7 @@ classdef Digestion < vsys
             %% LargeIntestine
             % initialized to be empty
             tfLargeIntestineContent = struct(   'DietaryFiber',                             0.02 * this.tfLargeIntestineParameters.fMaximalContent,...
-                                                'H2O',                                      0.02 * this.tfLargeIntestineParameters.fMaximalContent,...
+                                                'H2O',                                      0.10 * this.tfLargeIntestineParameters.fMaximalContent,...
                                                 'Naplus',   fInitialSodiumConcentration *   0.02 * this.tfLargeIntestineParameters.fMaximalContent);
                                         
             oLargeIntestinePhase = this.toStores.Digestion.createPhase(	'mixture',	'LargeIntestine', 'liquid',        this.tfLargeIntestineParameters.fMaximalContent/1000,      tfLargeIntestineContent,       this.oParent.fBodyCoreTemperature, 1e5);
@@ -365,7 +365,7 @@ classdef Digestion < vsys
                                         
             oRectumPhase = this.toStores.Digestion.createPhase(	'mixture',	'Rectum', 'liquid',        this.tfRectumParameters.fMaximalContent/1000,      tfRectumContent,       this.oParent.fBodyCoreTemperature, 1e5);
             
-            components.matter.Manips.ManualManipulator(this, 'FecesConverter', oRectumPhase);
+            components.matter.Manips.ManualManipulator(this, 'FecesConverter', oRectumPhase, true);
             
             %% P2Ps
             components.matter.P2Ps.ManualP2P(this.toStores.Digestion, 'Stomach_to_Duodenum',             oStomachPhase,        oDuodenumPhase);
