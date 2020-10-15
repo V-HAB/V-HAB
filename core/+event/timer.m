@@ -164,9 +164,11 @@ classdef timer < base
         % stored here
         aiNumberOfPostTickLevel;
         
-        % The current overall time step in seconds
+        % The current overall time step in seconds. Note that this property
+        % is set before the new flowrates are calculated!
         fTimeStep = 0;
         
+        fTimeStepFinal = 0;
     end
     
     properties (SetAccess = protected, GetAccess = public)
@@ -510,22 +512,7 @@ classdef timer < base
                 this.fMinimumTimeStep = 10 * this.fMinimumTimeStep;
             end
             
-            % If time is -1 the min. time step - first tick, advance to zero
-            %if this.fTime == (-1 * this.fTimeStep)
-            %TODO throw out here. Include in solvers themselves.
-            if this.fTime <= (10 * this.fMinimumTimeStep)
-                fThisStep = this.fMinimumTimeStep;
-            else
-                % Determine next time step. Calculate last execution time plus
-                % current time step for every system that is not dependent,
-                % i.e. that has a 'real' time step set, not -1 which means that
-                % it is executed every timer tick.
-                fNextExecutionTime = min((this.afLastExec(~this.abDependent) + this.afTimeSteps(~this.abDependent)));
-                
-                % fNextExecutionTime is an absolute time, so subtract the
-                % current time to get the time step for this tick
-                fThisStep = fNextExecutionTime - this.fTime;
-            end
+            fThisStep = this.fTimeStepFinal;
             
             % Calculated step smaller than the min. time step?
             %TODO if one system has a time step of 0, the above calculation
@@ -700,6 +687,23 @@ classdef timer < base
             % are currently executing
             this.iCurrentPostTickGroup = 0;
             this.iCurrentPostTickLevel = 0;
+            
+            % If time is -1 the min. time step - first tick, advance to zero
+            %if this.fTime == (-1 * this.fTimeStep)
+            %TODO throw out here. Include in solvers themselves.
+            if this.fTime <= (10 * this.fMinimumTimeStep)
+                this.fTimeStepFinal = this.fMinimumTimeStep;
+            else
+                % Determine next time step. Calculate last execution time plus
+                % current time step for every system that is not dependent,
+                % i.e. that has a 'real' time step set, not -1 which means that
+                % it is executed every timer tick.
+                fNextExecutionTime = min((this.afLastExec(~this.abDependent) + this.afTimeSteps(~this.abDependent)));
+                
+                % fNextExecutionTime is an absolute time, so subtract the
+                % current time to get the time step for this tick
+                this.fTimeStepFinal = fNextExecutionTime - this.fTime;
+            end
         end
     end
 end
