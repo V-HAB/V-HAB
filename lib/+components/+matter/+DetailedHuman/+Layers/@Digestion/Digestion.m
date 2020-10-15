@@ -295,69 +295,69 @@ classdef Digestion < vsys
             % nutrients it is comprised of
             components.matter.Manips.ManualManipulator(this, 'FoodConverter', oStomachPhase, true);
             
-            this.txFoodWater.Stomach.fMass      = 0.8 * oStomachPhase.afMass(this.oMT.tiN2I.H2O);
             this.txFoodWater.Stomach.rRatio     = 0.8;
-            this.txFoodWater.Stomach.fSodiumSecretionMass = 0;
+            this.txFoodWater.Stomach.fMass      = 0.8 * oStomachPhase.afMass(this.oMT.tiN2I.H2O);
+            this.txFoodWater.Stomach.fSodiumSecretionMass = (1 - this.txFoodWater.Stomach.rRatio)    * fInitialSodiumConcentration * oStomachPhase.afMass(this.oMT.tiN2I.H2O);
             
             %% Duodenum
             % standard food composition based on the composition suggested
             % in the HDIH on page 2010 488 is initilized with 50% fill
             % status for the Duodenum
-            tfDuodenumContent = struct( 'C6H12O6',                          0.5 * 0.5 * this.tfDuodenumParameters.fMaximalContent,...
-                                        'C3H7NO2',                          0.5 * 0.2 * this.tfDuodenumParameters.fMaximalContent,...
-                                        'C51H98O6',                         0.5 * 0.3 * this.tfDuodenumParameters.fMaximalContent,...
-                                        'H2O',                              0.5 * 2.4 * this.tfDuodenumParameters.fMaximalContent,...
-                                        'Naplus',   fInitialSodiumConcentration *    0.5 * 0.2 * this.tfDuodenumParameters.fMaximalContent);
-                                        % H2O ~ 0.19 kg
+            tfDuodenumContent = struct( 'C6H12O6',                          0.5 * 0.4  * this.tfDuodenumParameters.fMaximalContent,...
+                                        'C3H7NO2',                          0.5 * 0.16 * this.tfDuodenumParameters.fMaximalContent,...
+                                        'C51H98O6',                         0.5 * 0.24 * this.tfDuodenumParameters.fMaximalContent,...
+                                        'H2O',                              0.5 * 0.25 * this.tfDuodenumParameters.fMaximalContent,...
+                                        'Naplus',   fInitialSodiumConcentration *    0.5 * 0.25 * this.tfDuodenumParameters.fMaximalContent);
+                                        
             oDuodenumPhase = this.toStores.Digestion.createPhase(	'mixture',	'Duodenum', 'liquid',        this.tfDuodenumParameters.fMaximalContent/1000,      tfDuodenumContent,       this.oParent.fBodyCoreTemperature, 1e5);
             
-            this.txFoodWater.Duodenum.fMass     = oDuodenumPhase.afMass(this.oMT.tiN2I.H2O);
-            this.txFoodWater.Duodenum.rRatio 	= 1;
-            this.txFoodWater.Duodenum.fSodiumSecretionMass = 0;
+            this.txFoodWater.Duodenum.rRatio                = 0.1;
+            this.txFoodWater.Duodenum.fMass                 = this.txFoodWater.Duodenum.rRatio          * oDuodenumPhase.afMass(this.oMT.tiN2I.H2O);
+            this.txFoodWater.Duodenum.fSodiumSecretionMass  = (1 - this.txFoodWater.Duodenum.rRatio)    * fInitialSodiumConcentration * oDuodenumPhase.afMass(this.oMT.tiN2I.H2O);
             
             %% Jejunum
             % standard food composition based on the composition suggested
             % in the HDIH on page 2010 488 is initilized with 40% fill
             % status for the Jejunum
-            tfJejunumContent = struct( 'C6H12O6',                           0.4 * 0.5   * this.tfJejunumParameters.fMaximalContent,...
-                                        'C3H7NO2',                          0.4 * 0.2   * this.tfJejunumParameters.fMaximalContent,...
-                                        'C51H98O6',                         0.4 * 0.3   * this.tfJejunumParameters.fMaximalContent,...
-                                        'H2O',                              0.4 * 0.785 * this.tfJejunumParameters.fMaximalContent,...
-                                        'Naplus',   fInitialSodiumConcentration *    0.4 * 0.05 * this.tfJejunumParameters.fMaximalContent);
+            tfJejunumContent = struct( 'C6H12O6',                           0.4 * 0.4   * this.tfJejunumParameters.fMaximalContent,...
+                                        'C3H7NO2',                          0.4 * 0.16  * this.tfJejunumParameters.fMaximalContent,...
+                                        'C51H98O6',                         0.4 * 0.24   * this.tfJejunumParameters.fMaximalContent,...
+                                        'H2O',                              0.4 * 0.25  * this.tfJejunumParameters.fMaximalContent,...
+                                        'Naplus',   fInitialSodiumConcentration *    0.4 * 0.25 * this.tfJejunumParameters.fMaximalContent);
                                         
             oJejunumPhase = this.toStores.Digestion.createPhase(	'mixture',	'Jejunum', 'liquid',        this.tfJejunumParameters.fMaximalContent/1000,      tfJejunumContent,       this.oParent.fBodyCoreTemperature, 1e5);
             
-            this.txFoodWater.Jejunum.fMass     = oJejunumPhase.afMass(this.oMT.tiN2I.H2O);
-            this.txFoodWater.Jejunum.rRatio 	= 1;
-            this.txFoodWater.Jejunum.fSodiumSecretionMass = 0;
+            this.txFoodWater.Jejunum.rRatio                = 0.1;
+            this.txFoodWater.Jejunum.fMass                 = this.txFoodWater.Duodenum.rRatio          * oJejunumPhase.afMass(this.oMT.tiN2I.H2O);
+            this.txFoodWater.Jejunum.fSodiumSecretionMass  = (1 - this.txFoodWater.Duodenum.rRatio)    * fInitialSodiumConcentration * oJejunumPhase.afMass(this.oMT.tiN2I.H2O);
             
             %% Ileum
             % standard food composition based on the composition suggested
             % in the HDIH on page 2010 488 is initilized with 30% fill
             % status for the Ileum
-            tfIleumContent = struct(    'C6H12O6',                         0.3 * 0.5   * this.tfIleumParameters.fMaximalContent,...
-                                        'C3H7NO2',                         0.3 * 0.2   * this.tfIleumParameters.fMaximalContent,...
-                                        'C51H98O6',                        0.3 * 0.3   * this.tfIleumParameters.fMaximalContent,...
-                                        'H2O',                             0.3 * 0.552 * this.tfIleumParameters.fMaximalContent,...
-                                        'Naplus',   fInitialSodiumConcentration *   0.3 * 0.02 * this.tfIleumParameters.fMaximalContent);
-                                   
+            tfIleumContent = struct(    'C6H12O6',                         0.3 * 0.4   * this.tfIleumParameters.fMaximalContent,...
+                                        'C3H7NO2',                         0.3 * 0.16   * this.tfIleumParameters.fMaximalContent,...
+                                        'C51H98O6',                        0.3 * 0.24   * this.tfIleumParameters.fMaximalContent,...
+                                        'H2O',                             0.3 * 0.25 * this.tfIleumParameters.fMaximalContent,...
+                                        'Naplus',   fInitialSodiumConcentration *   0.3 * 0.25 * this.tfIleumParameters.fMaximalContent);
+                                        
             oIleumPhase = this.toStores.Digestion.createPhase(	'mixture',	'Ileum', 'liquid',        this.tfIleumParameters.fMaximalContent/1000,      tfIleumContent,       this.oParent.fBodyCoreTemperature, 1e5);
             
-            this.txFoodWater.Ileum.fMass     = oIleumPhase.afMass(this.oMT.tiN2I.H2O);
-            this.txFoodWater.Ileum.rRatio 	= 1;
-            this.txFoodWater.Ileum.fSodiumSecretionMass = 0;
+            this.txFoodWater.Ileum.rRatio                = 0.1;
+            this.txFoodWater.Ileum.fMass                 = this.txFoodWater.Duodenum.rRatio          * oIleumPhase.afMass(this.oMT.tiN2I.H2O);
+            this.txFoodWater.Ileum.fSodiumSecretionMass  = (1 - this.txFoodWater.Duodenum.rRatio)    * oIleumPhase.afMass(this.oMT.tiN2I.H2O);
             
             %% LargeIntestine
             % initialized to be empty
-            tfLargeIntestineContent = struct(   'DietaryFiber',                             0.02 * this.tfLargeIntestineParameters.fMaximalContent,...
-                                                'H2O',                                      0.10 * this.tfLargeIntestineParameters.fMaximalContent,...
-                                                'Naplus',   fInitialSodiumConcentration *   0.02 * this.tfLargeIntestineParameters.fMaximalContent);
+            tfLargeIntestineContent = struct(   'DietaryFiber',                             0.02 * 0.75 * this.tfLargeIntestineParameters.fMaximalContent,...
+                                                'H2O',                                      0.02 * 0.25 * this.tfLargeIntestineParameters.fMaximalContent,...
+                                                'Naplus',   fInitialSodiumConcentration *   0.02 * 0.25 * this.tfLargeIntestineParameters.fMaximalContent);
                                         
             oLargeIntestinePhase = this.toStores.Digestion.createPhase(	'mixture',	'LargeIntestine', 'liquid',        this.tfLargeIntestineParameters.fMaximalContent/1000,      tfLargeIntestineContent,       this.oParent.fBodyCoreTemperature, 1e5);
             
-            this.txFoodWater.LargeIntestine.fMass   = oLargeIntestinePhase.afMass(this.oMT.tiN2I.H2O);
-            this.txFoodWater.LargeIntestine.rRatio 	= 1;
-            this.txFoodWater.LargeIntestine.fSodiumSecretionMass = 0;
+            this.txFoodWater.LargeIntestine.rRatio                = 0.1;
+            this.txFoodWater.LargeIntestine.fMass                 = this.txFoodWater.Duodenum.rRatio          * oLargeIntestinePhase.afMass(this.oMT.tiN2I.H2O);
+            this.txFoodWater.LargeIntestine.fSodiumSecretionMass  = (1 - this.txFoodWater.Duodenum.rRatio)    * fInitialSodiumConcentration * oLargeIntestinePhase.afMass(this.oMT.tiN2I.H2O);
             
             %% Rectum
             % initialized to be empty
@@ -511,20 +511,35 @@ classdef Digestion < vsys
             % intestine:
             fTimeStep = this.oTimer.fTime - this.fLastUpdateTime;
             
-            fSecretionMassPrevious = (1 - this.txFoodWater.Stomach.rRatio) * (this.txFoodWater.Stomach.fMass / this.txFoodWater.Stomach.rRatio);
+            this.txFoodWater.Stomach.fMass = this.txFoodWater.Stomach.rRatio * oStomachPhase.afMass(this.oMT.tiN2I.H2O);
             
-            fNewSecretionMass = fSecretionMassPrevious                              + this.tfFlowRates.Stomach.afSecretionFlowRates(this.oMT.tiN2I.H2O)     * fTimeStep + this.tfFlowRates.Mouth.afSecretionMasses(this.oMT.tiN2I.H2O);
-            fSodiumSecretionMass = this.txFoodWater.Stomach.fSodiumSecretionMass    + this.tfFlowRates.Stomach.afSecretionFlowRates(this.oMT.tiN2I.Naplus)  * fTimeStep + this.tfFlowRates.Mouth.afSecretionMasses(this.oMT.tiN2I.Naplus);
-                
+            if this.txFoodWater.Stomach.rRatio == 0
+                fNewSecretionMass       = oStomachPhase.afMass(this.oMT.tiN2I.H2O);
+                fSodiumSecretionMass    = oStomachPhase.afMass(this.oMT.tiN2I.Naplus);
+            else
+                fSecretionMassPrevious  = (1 - this.txFoodWater.Stomach.rRatio) * (this.txFoodWater.Stomach.fMass / this.txFoodWater.Stomach.rRatio);
+                fNewSecretionMass       = fSecretionMassPrevious                              + this.tfFlowRates.Stomach.afSecretionFlowRates(this.oMT.tiN2I.H2O)     * fTimeStep + this.tfFlowRates.Mouth.afSecretionMasses(this.oMT.tiN2I.H2O);
+                fSodiumSecretionMass    = this.txFoodWater.Stomach.fSodiumSecretionMass    + this.tfFlowRates.Stomach.afSecretionFlowRates(this.oMT.tiN2I.Naplus)  * fTimeStep + this.tfFlowRates.Mouth.afSecretionMasses(this.oMT.tiN2I.Naplus);
+            end
+            
             % Now we reset the secretion masses from mouth to not consider
             % them twice
             this.tfFlowRates.Mouth.afSecretionMasses = zeros(1, this.oMT.iSubstances);
             
-            fCurrentFoodWaterMass   = oStomachPhase.afMass(this.oMT.tiN2I.H2O) - fNewSecretionMass;
-            fCurrentFoodSodiumMass  = oStomachPhase.afMass(this.oMT.tiN2I.Naplus) - fSodiumSecretionMass;
+            if fNewSecretionMass > oStomachPhase.afMass(this.oMT.tiN2I.H2O)
+                fNewSecretionMass       = oStomachPhase.afMass(this.oMT.tiN2I.H2O);
+                fSodiumSecretionMass    = oStomachPhase.afMass(this.oMT.tiN2I.Naplus);
+                fCurrentFoodWaterMass   = 0;
+                fCurrentFoodSodiumMass  = 0;
+            else
+                fCurrentFoodWaterMass   = oStomachPhase.afMass(this.oMT.tiN2I.H2O) - fNewSecretionMass;
+                fCurrentFoodSodiumMass  = oStomachPhase.afMass(this.oMT.tiN2I.Naplus)- fSodiumSecretionMass;
+            end
             this.txFoodWater.Stomach.fMass = fCurrentFoodWaterMass;
             this.txFoodWater.Stomach.rRatio = fCurrentFoodWaterMass / oStomachPhase.afMass(this.oMT.tiN2I.H2O);
             this.txFoodWater.Stomach.fSodiumSecretionMass = fSodiumSecretionMass;
+            
+            fSodiumSecretionMass = (1 - this.txFoodWater.Stomach.rRatio) * oStomachPhase.afMass(this.oMT.tiN2I.Naplus);
             
             rSecretionMassRatioInStomach = fNewSecretionMass / oStomachPhase.fMass;
             
@@ -621,9 +636,18 @@ classdef Digestion < vsys
             % stomach in 3 minutes
             fDrinkingWaterTransportFlow = fCurrentFoodWaterMass / 180;
             fDrinkingSodiumTransportFlow = fCurrentFoodSodiumMass / 180;
-            afTransportFlowRates(this.oMT.tiN2I.H2O)    = afTransportFlowRates(this.oMT.tiN2I.H2O) + fDrinkingWaterTransportFlow;
-            afTransportFlowRates(this.oMT.tiN2I.Naplus) = afTransportFlowRates(this.oMT.tiN2I.Naplus) + fDrinkingSodiumTransportFlow;
             
+            % Assume that 100g water always remain in the stomach
+            if oStomachPhase.afMass(this.oMT.tiN2I.H2O) < 0.1
+                afTransportFlowRates(this.oMT.tiN2I.H2O)    = 0;
+            else
+                afTransportFlowRates(this.oMT.tiN2I.H2O)    = afTransportFlowRates(this.oMT.tiN2I.H2O) + fDrinkingWaterTransportFlow;
+            end
+            if oStomachPhase.afMass(this.oMT.tiN2I.Naplus) < 0.001
+                afTransportFlowRates(this.oMT.tiN2I.Naplus) = 0;
+            else
+                afTransportFlowRates(this.oMT.tiN2I.Naplus) = afTransportFlowRates(this.oMT.tiN2I.Naplus) + fDrinkingSodiumTransportFlow;
+            end
             this.toStores.Digestion.toProcsP2P.Stomach_to_Duodenum.setFlowRate(afTransportFlowRates);
             
             %% Secretion calculation:
@@ -634,7 +658,7 @@ classdef Digestion < vsys
             % stomach will readsorb water, to keep it at 0.25 to 0.3 mass
             % ratio of secretions, requiring new secretions once new food
             % enters the stomach
-            if rSecretionMassRatioInStomach > 0.3
+            if rSecretionMassRatioInStomach > 0.3 && oStomachPhase.afMass(this.oMT.tiN2I.H2O) > 0.1
                 fSecretionFlow  = -((rSecretionMassRatioInStomach - 0.3) / 0.7) * (fNewSecretionMass - 0.3 * oStomachPhase.fMass) / 60;
                 fNaFlow         = -((rSecretionMassRatioInStomach - 0.3) / 0.7) * (fSodiumSecretionMass - 0.3 * fSodiumSecretionMass) / 60;
                 
@@ -664,15 +688,26 @@ classdef Digestion < vsys
             tfIntestinePreviousFlowRate  = this.tfFlowRates.(sIntestine);
             txIntestineFoodWater         = this.txFoodWater.(sIntestine);
             
-            fSecretionMassPrevious = (1 - txIntestineFoodWater.rRatio) * (txIntestineFoodWater.fMass / txIntestineFoodWater.rRatio);
+            if txIntestineFoodWater.rRatio > 0
+                fSecretionMassPrevious = (1 - txIntestineFoodWater.rRatio) * (txIntestineFoodWater.fMass / txIntestineFoodWater.rRatio);
 
-            fSecretionMass = fSecretionMassPrevious + tfIntestinePreviousFlowRate.afSecretionFlowRates(this.oMT.tiN2I.H2O) * fTimeStep;
-            fSodiumSecretionMass = txIntestineFoodWater.fSodiumSecretionMass + tfIntestinePreviousFlowRate.afSecretionFlowRates(this.oMT.tiN2I.Naplus) * fTimeStep;
+                fSecretionMass = fSecretionMassPrevious + tfIntestinePreviousFlowRate.afSecretionFlowRates(this.oMT.tiN2I.H2O) * fTimeStep;
+                fSodiumSecretionMass = txIntestineFoodWater.fSodiumSecretionMass + tfIntestinePreviousFlowRate.afSecretionFlowRates(this.oMT.tiN2I.Naplus) * fTimeStep;
+            else
+                fSecretionMass          = oPhase.afMass(this.oMT.tiN2I.H2O);
+                fSodiumSecretionMass    = oPhase.afMass(this.oMT.tiN2I.Naplus);
+            end
                 
             fCurrentFoodWaterMass = oPhase.afMass(this.oMT.tiN2I.H2O) - fSecretionMass;
             txIntestineFoodWater.fMass  = fCurrentFoodWaterMass;
-            txIntestineFoodWater.rRatio = fCurrentFoodWaterMass / oPhase.afMass(this.oMT.tiN2I.H2O);
+            if oPhase.afMass(this.oMT.tiN2I.H2O) > 0
+                txIntestineFoodWater.rRatio = fCurrentFoodWaterMass / oPhase.afMass(this.oMT.tiN2I.H2O);
+            else
+                txIntestineFoodWater.rRatio = 0;
+            end
             txIntestineFoodWater.fSodiumSecretionMass = fSodiumSecretionMass;
+            
+            fSodiumSecretionMass = (1 - txIntestineFoodWater.rRatio) * oPhase.afMass(this.oMT.tiN2I.Naplus);
             
             this.txFoodWater.(sIntestine) = txIntestineFoodWater;
             

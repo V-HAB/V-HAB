@@ -87,6 +87,15 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Example:c:Human_1.toBranches.CO2_to_Brain',      'fFlowRate',      'kg/s',     'Metabolic CO2 to Brain');
             oLog.addValue('Example:c:Human_1.toBranches.CO2_to_Tissue',     'fFlowRate',      'kg/s',     'Metabolic CO2 to Tissue');
             
+            oLog.addValue('Example:c:Human_1:c:Respiration.toStores.Lung.toPhases.Air',         'this.afMass(this.oMT.tiN2I.H2O)',	'kg', 	'Water in Lung Air');
+            oLog.addValue('Example:c:Human_1:c:Respiration.toStores.Lung.toPhases.Blood',       'this.afMass(this.oMT.tiN2I.H2O)',	'kg', 	'Water in Lung Blood');
+            oLog.addValue('Example:c:Human_1:c:Respiration.toStores.Arteries.toPhases.Blood', 	'this.afMass(this.oMT.tiN2I.H2O)',	'kg', 	'Water in Arteries');
+            oLog.addValue('Example:c:Human_1:c:Respiration.toStores.Veins.toPhases.Blood',     	'this.afMass(this.oMT.tiN2I.H2O)',	'kg', 	'Water in Veins');
+            oLog.addValue('Example:c:Human_1:c:Respiration.toStores.Brain.toPhases.Blood',      'this.afMass(this.oMT.tiN2I.H2O)',	'kg', 	'Water in Brain Blood');
+            oLog.addValue('Example:c:Human_1:c:Respiration.toStores.Brain.toPhases.Tissue',     'this.afMass(this.oMT.tiN2I.H2O)',	'kg', 	'Water in Brain Tissue');
+            oLog.addValue('Example:c:Human_1:c:Respiration.toStores.Tissue.toPhases.Blood',     'this.afMass(this.oMT.tiN2I.H2O)',	'kg', 	'Water in Tissue Blood');
+            oLog.addValue('Example:c:Human_1:c:Respiration.toStores.Tissue.toPhases.Tissue',    'this.afMass(this.oMT.tiN2I.H2O)',	'kg', 	'Water in Tissue Tissue');
+            
             oLog.addValue('Example:c:Human_1:c:Respiration.toStores.Lung.toProcsP2P.Alveola_to_Air',    'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)',      'kg/s', 	'Exhaled CO2');
             oLog.addValue('Example:c:Human_1:c:Respiration.toStores.Lung.toProcsP2P.Air_to_Alveola',    'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.O2)',       'kg/s',     'Inhaled O2');
             oLog.addValue('Example:c:Human_1:c:Respiration.toStores.Brain.toProcsP2P.Blood_to_Brain',   'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.O2)',       'kg/s',     'Brain absorbed O2');
@@ -115,10 +124,12 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Example:c:Human_1:c:Metabolic', 'fAdditionalFoodEnergyDemand',       '-',        'Additional Energy Demand from Exercise');
             
             oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.Liver',            'this.afMass(this.oMT.tiN2I.C6H12O6)',  	 'kg', 'Glucose in Liver');
+            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.Liver',            'this.afMass(this.oMT.tiN2I.H2O)',          'kg', 'Water in Liver');
             oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.AdiposeTissue',    'this.afMass(this.oMT.tiN2I.C51H98O6)',  	 'kg', 'Fat Mass Adipose Tissue');
             oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.AdiposeTissue',    'this.afMass(this.oMT.tiN2I.H2O)',          'kg', 'Water in Adipose Tissue');
             oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.MuscleTissue',     'this.afMass(this.oMT.tiN2I.C6H12O6)',  	 'kg', 'Glucose in Muscle');
             oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.MuscleTissue',     'this.afMass(this.oMT.tiN2I.Human_Tissue)', 'kg', 'Muscle Mass');
+            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.MuscleTissue',     'this.afMass(this.oMT.tiN2I.H2O)',          'kg', 'Water in Muscle');
             oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.Metabolism',       'this.afMass(this.oMT.tiN2I.C3H7NO2)',      'kg', 'Protein Mass in Metabolism');
             oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.Metabolism',       'this.afMass(this.oMT.tiN2I.C51H98O6)',     'kg', 'Fat Mass in Metabolism');
             oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.Metabolism',       'this.afMass(this.oMT.tiN2I.C6H12O6)',      'kg', 'Glucose Mass in Metabolism');
@@ -344,6 +355,7 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.LargeIntestine_to_Rectum',    	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.DietaryFiber)',	'kg/s',     'Fiber from LargeIntestine');
             oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.LargeIntestine_to_Rectum',     	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',      	'kg/s',     'Sodium from LargeIntestine');
             
+            oLog.addValue('Example.oTimer',     'fTimeStep',	's',   'Timestep');
             
             oLog.addVirtualValue('cumsum("Ingested Water Flow Rate"     .* "Timestep")', 'kg', 'Ingested Water');
             oLog.addVirtualValue('cumsum("Respiration Water Flow Rate"	.* "Timestep")', 'kg', 'Respiration Water');
@@ -361,6 +373,13 @@ classdef setup < simulation.infrastructure
             oLog.addVirtualValue('cumsum("Na+ Massflow to Bladder"      .* "Timestep")', 'kg', 'Urine Na+');
             oLog.addVirtualValue('cumsum("K+ Massflow to Bladder"       .* "Timestep")', 'kg', 'Urine K+');
             oLog.addVirtualValue('cumsum("Metabolism Urea Flow Rate"	.* "Timestep")', 'kg', 'Urine Urea');
+            
+            oLog.addVirtualValue('"H2O Mass in LargeIntestine" + "H2O Mass in Ileum" + "H2O Mass in Jejunum" + "H2O Mass in Duodenum" + "H2O Mass in Stomach"',                                                                 'kg', 'Water Mass in Digestion Layer');
+            oLog.addVirtualValue('"H2O Mass in Blood Plasma" + "H2O Mass in InterstitialFluid" + "H2O Mass in IntracellularFluid" + "H2O Mass in Kidney" + "H2O Mass in Bladder"',                                              'kg', 'Water Mass in Water Layer');
+            oLog.addVirtualValue('"Water in Adipose Tissue" + "Water Mass in Metabolism" + "Water in Liver" + "Water in Muscle"',                                                                                               'kg', 'Water Mass in Metabolic Layer');
+            oLog.addVirtualValue('"Water in Lung Air" + "Water in Lung Blood" + "Water in Arteries" + "Water in Veins" + "Water in Brain Blood" + "Water in Brain Tissue" + "Water in Tissue Blood" + "Water in Tissue Tissue"',	'kg', 'Water Mass in Respiration Layer');
+            
+            
             
         end
         
@@ -446,6 +465,12 @@ classdef setup < simulation.infrastructure
                 '"H2O Massflow to Bladder"',      	'"Na+ Massflow to Bladder"',      	'"K+ Massflow to Bladder"'},                                           	'Kidney Flows', tPlotOptions);
             
             oPlotter.defineFigure(coPlot,  'Water Balance');
+            
+            coPlot = cell(2,2);
+            coPlot{1,1} = oPlotter.definePlot({'"Water Mass in Digestion Layer"', '"Water Mass in Water Layer"', '"Water Mass in Metabolic Layer"', '"Water Mass in Respiration Layer"'},      'Water Masses in Layers',       tPlotOptions);
+            coPlot{1,2} = oPlotter.definePlot({'"Ingested Water Flow Rate"', '"Respiration Water Flow Rate"', '"Perspiration Water Flow Rate"', '"Metabolism H2O Flow Rate"', '"Stomach H2O Flow Rate"', '"H2O from LargeIntestine"', '"H2O Massflow to Bladder"'},      'Water Flows',       tPlotOptions);
+                
+            oPlotter.defineFigure(coPlot,  'Water Balance all Layers Overview');
             
             %% Digestion
             csPhases = {'Stomach', 'Duodenum', 'Jejunum', 'Ileum', 'LargeIntestine'};
@@ -542,6 +567,9 @@ classdef setup < simulation.infrastructure
                 
             oPlotter.defineFigure(coPlot,  'Digestion Readsorption and Secretion Flows');
             
+            
+            
+            
             oPlotter.plot();
             
             oLogger = this.toMonitors.oLogger;
@@ -555,83 +583,83 @@ classdef setup < simulation.infrastructure
                     iDrinkingWaterFlow = iVirtualLog;
                 end
                 
-                if strcmp(oLogger.tLogValues(iVirtualLog).sLabel, 'Respiration Water')
+                if strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel, 'Respiration Water')
                     iRespirationWaterFlow = iVirtualLog;
                 end
                 
-                if strcmp(oLogger.tLogValues(iVirtualLog).sLabel, 'Perspiration Water')
+                if strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel, 'Perspiration Water')
                     iPerspirationWaterFlow = iVirtualLog;
                 end
                 
-                if strcmp(oLogger.tLogValues(iVirtualLog).sLabel, 'Metabolism Water')
+                if strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel, 'Metabolism Water')
                     iMetabolicWater = iVirtualLog;
                 end
                 
-                if strcmp(oLogger.tLogValues(iVirtualLog).sLabel, 'Stomach Water')
+                if strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel, 'Stomach Water')
                     iWaterinFood = iVirtualLog;
                 end
                 
-                if strcmp(oLogger.tLogValues(iVirtualLog).sLabel, 'Feces water')
+                if strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel, 'Feces Water')
                     iFecesH2O = iVirtualLog;
                 end
                 
-                if strcmp(oLogger.tLogValues(iVirtualLog).sLabel, 'Urine Water')
+                if strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel, 'Urine Water')
                     iUrineH2O = iVirtualLog;
                 end
                 
-                if strcmp(oLogger.tLogValues(iVirtualLog).sLabel, 'Ingested Food')
+                if strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel, 'Ingested Food')
                     iFood = iVirtualLog;
                 end
                 
-                if strcmp(oLogger.tLogValues(iVirtualLog).sLabel, 'Feces Protein')
+                if strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel, 'Feces Protein')
                     iProteinFeces = iVirtualLog;
                 end
                 
-                if strcmp(oLogger.tLogValues(iVirtualLog).sLabel, 'Feces Fat')
+                if strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel, 'Feces Fat')
                     iFatFeces = iVirtualLog;
                 end
                 
-                if strcmp(oLogger.tLogValues(iVirtualLog).sLabel, 'Feces Glucose')
+                if strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel, 'Feces Glucose')
                     iGlucoseFeces = iVirtualLog;
                 end
                 
-                if strcmp(oLogger.tLogValues(iVirtualLog).sLabel, 'Feces Fiber')
+                if strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel, 'Feces Fiber')
                     iFiberFeces = iVirtualLog;
                 end
                 
-                if strcmp(oLogger.tLogValues(iVirtualLog).sLabel, 'Feces Na+')
+                if strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel, 'Feces Na+')
                     iSodiumFeces = iVirtualLog;
                 end
                 
-                if strcmp(oLogger.tLogValues(iVirtualLog).sLabel, 'Urine Na+')
+                if strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel, 'Urine Na+')
                     iSodiumUrine = iVirtualLog;
                 end
                 
-                if strcmp(oLogger.tLogValues(iVirtualLog).sLabel, 'Urine K+')
+                if strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel, 'Urine K+')
                     iPotassiumUrine = iVirtualLog;
                 end
                 
-                if strcmp(oLogger.tLogValues(iVirtualLog).sLabel, 'Urine Urea')
+                if strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel, 'Urine Urea')
                     iUreaUrine = iVirtualLog;
                 end
             end
             
-            afConsumedDrinkingWater     = oLogger.mfLog(:,iDrinkingWaterFlow);
-            afProducedRespirationWater  = oLogger.mfLog(:,iRespirationWaterFlow);
-            afProducedPerspirationWater = oLogger.mfLog(:,iPerspirationWaterFlow);
-            afProducedMetabolicWater    = oLogger.mfLog(:,iMetabolicWater);
-            afIngestedWaterInFood       = oLogger.mfLog(:,iWaterinFood);
-            afFecesWater                = oLogger.mfLog(:,iFecesH2O);
-            afUrineWater                = oLogger.mfLog(:,iUrineH2O);
-            afFood                      = oLogger.mfLog(:,iFood);
-            afFecesProtein            	= oLogger.mfLog(:,iProteinFeces);
-            afFecesFat                	= oLogger.mfLog(:,iFatFeces);
-            afFecesGlucose            	= oLogger.mfLog(:,iGlucoseFeces);
-            afFecesFiber            	= oLogger.mfLog(:,iFiberFeces);
-            afFecesSodium             	= oLogger.mfLog(:,iSodiumFeces);
-            afUrineSodium             	= oLogger.mfLog(:,iSodiumUrine);
-            afUrinePotassium          	= oLogger.mfLog(:,iPotassiumUrine);
-            afUrineUrea                 = oLogger.mfLog(:,iUreaUrine);
+            afConsumedDrinkingWater     = oLogger.tVirtualValues(iDrinkingWaterFlow).calculationHandle(oLogger.mfLog);
+            afProducedRespirationWater  = oLogger.tVirtualValues(iRespirationWaterFlow).calculationHandle(oLogger.mfLog);
+            afProducedPerspirationWater = oLogger.tVirtualValues(iPerspirationWaterFlow).calculationHandle(oLogger.mfLog);
+            afProducedMetabolicWater    = oLogger.tVirtualValues(iMetabolicWater).calculationHandle(oLogger.mfLog);
+            afIngestedWaterInFood       = oLogger.tVirtualValues(iWaterinFood).calculationHandle(oLogger.mfLog);
+            afFecesWater                = oLogger.tVirtualValues(iFecesH2O).calculationHandle(oLogger.mfLog);
+            afUrineWater                = oLogger.tVirtualValues(iUrineH2O).calculationHandle(oLogger.mfLog);
+            afFood                      = oLogger.tVirtualValues(iFood).calculationHandle(oLogger.mfLog);
+            afFecesProtein            	= oLogger.tVirtualValues(iProteinFeces).calculationHandle(oLogger.mfLog);
+            afFecesFat                	= oLogger.tVirtualValues(iFatFeces).calculationHandle(oLogger.mfLog);
+            afFecesGlucose            	= oLogger.tVirtualValues(iGlucoseFeces).calculationHandle(oLogger.mfLog);
+            afFecesFiber            	= oLogger.tVirtualValues(iFiberFeces).calculationHandle(oLogger.mfLog);
+            afFecesSodium             	= oLogger.tVirtualValues(iSodiumFeces).calculationHandle(oLogger.mfLog);
+            afUrineSodium             	= oLogger.tVirtualValues(iSodiumUrine).calculationHandle(oLogger.mfLog);
+            afUrinePotassium          	= oLogger.tVirtualValues(iPotassiumUrine).calculationHandle(oLogger.mfLog);
+            afUrineUrea                 = oLogger.tVirtualValues(iUreaUrine).calculationHandle(oLogger.mfLog);
             
             % We calculated the individual masses to be able to check
             % those, but for now we just compare the total feces solid
@@ -659,21 +687,27 @@ classdef setup < simulation.infrastructure
                 afConsumedO2Mass(iVirtualLog)    = sum(afTimeSteps(1:iVirtualLog-1)' .* mfEffectiveO2Flow(2:iVirtualLog));
             end
             
+            if any(isnan(afConsumedO2Mass))
+                iLastIndex = find(isnan(afConsumedO2Mass), 1) - 1;
+            else
+                iLastIndex = length(afConsumedO2Mass);
+            end
+            
             figure()
-            plot(oLogger.afTime./3600, -1 .* afConsumedDrinkingWater,   	'-')
+            plot(oLogger.afTime(1:iLastIndex)./3600, -1 .* afConsumedDrinkingWater(1:iLastIndex),         '-')
             hold on
             grid on
-            plot(oLogger.afTime./3600, -1 .* afProducedRespirationWater,   	'-')
-            plot(oLogger.afTime./3600, -1 .* afProducedPerspirationWater,  	'-')
-            plot(oLogger.afTime./3600,       afProducedMetabolicWater,     	'--')
-            plot(oLogger.afTime./3600, -1 .* afFecesWater,                  '--')
-            plot(oLogger.afTime./3600, -1 .* afFecesSolids,                 '--')
-            plot(oLogger.afTime./3600, -1 .* afUrineWater,                  ':')
-            plot(oLogger.afTime./3600, -1 .* afUrineSolids,                 ':')
-            plot(oLogger.afTime./3600, -1 .* afGeneratedCO2Mass,            ':')
-            plot(oLogger.afTime./3600,       afIngestedWaterInFood,     	'-.')
-            plot(oLogger.afTime./3600,       afFood,                        '-.')
-            plot(oLogger.afTime./3600,       afConsumedO2Mass,              '-.')
+            plot(oLogger.afTime(1:iLastIndex)./3600, -1 .* afProducedRespirationWater(1:iLastIndex),   	'-')
+            plot(oLogger.afTime(1:iLastIndex)./3600, -1 .* afProducedPerspirationWater(1:iLastIndex),  	'-')
+            plot(oLogger.afTime(1:iLastIndex)./3600,       afProducedMetabolicWater(1:iLastIndex),     	'--')
+            plot(oLogger.afTime(1:iLastIndex)./3600, -1 .* afFecesWater(1:iLastIndex),                    '--')
+            plot(oLogger.afTime(1:iLastIndex)./3600, -1 .* afFecesSolids(1:iLastIndex),                   '--')
+            plot(oLogger.afTime(1:iLastIndex)./3600, -1 .* afUrineWater(1:iLastIndex),                    ':')
+            plot(oLogger.afTime(1:iLastIndex)./3600, -1 .* afUrineSolids(1:iLastIndex),                   ':')
+            plot(oLogger.afTime(1:iLastIndex)./3600, -1 .* afGeneratedCO2Mass(1:iLastIndex),              ':')
+            plot(oLogger.afTime(1:iLastIndex)./3600,       afIngestedWaterInFood(1:iLastIndex),           '-.')
+            plot(oLogger.afTime(1:iLastIndex)./3600,       afFood(1:iLastIndex),                          '-.')
+            plot(oLogger.afTime(1:iLastIndex)./3600,       afConsumedO2Mass(1:iLastIndex),                '-.')
            
             legend( 'Drinking Water', 'Respiration Water', 'Perspiration Water', 'Metabolic Water', 'Feces Water', 'Feces Solids', ...
                     'Urine Water', 'Urine Solids', 'Generated CO2', 'Ingested Water from Food', 'Consumed Food', 'Consumed O2');
@@ -681,11 +715,6 @@ classdef setup < simulation.infrastructure
             ylabel('Mass in [kg]')
             hold off
             
-            if any(isnan(afConsumedO2Mass))
-                iLastIndex = find(isnan(afConsumedO2Mass), 1) - 1;
-            else
-                iLastIndex = length(afConsumedO2Mass);
-            end
             
             % Average Daily consumptions and productions
             fAverageO2              = abs(afConsumedO2Mass(iLastIndex)                                                          / (oLogger.afTime(iLastIndex) / (24*3600)));

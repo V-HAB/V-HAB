@@ -846,10 +846,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             if any(isnan(afTotalInOuts))
                 for iI = 1:this.iProcsEXME
                     if any(isnan(mfTotalFlows(iI,:)))
+                        iLastError = iI;
                         disp(['Error in phase ', this.sName, '. The flow rate of EXME ', this.coProcsEXME{iI}.sName, ' is NaN.']);
                     end
                 end
-                error('VHAB:Phase:ExMeFlowRateIsNaN', 'Error in phase ''%s''. The flow rate of EXME ''%s'' is NaN.', this.sName, this.coProcsEXME{iI}.sName);
+                error('VHAB:Phase:ExMeFlowRateIsNaN', 'Error in phase ''%s''. The flow rate of EXME ''%s'' is NaN.', this.sName, this.coProcsEXME{iLastError}.sName);
             end
         end
         
