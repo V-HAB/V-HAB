@@ -192,7 +192,7 @@ classdef WaterBalance < vsys
             tfBladderInitialMasses      = struct( 'Urine',      0.02);
             oBladder                    = this.toStores.WaterBalance.createPhase( 	'liquid',     	'Bladder',               	this.fBladderVolume,                     tfBladderInitialMasses,                  this.oParent.fBodyCoreTemperature, 1e5);
            
-            components.matter.Manips.ManualManipulator(this, 'UrineConverter', oBladder);
+            components.matter.Manips.ManualManipulator(this, 'UrineConverter', oBladder, true);
             
             %% PerspirationFlow
             % THis phase is necessary because P2P branches cannot be IF

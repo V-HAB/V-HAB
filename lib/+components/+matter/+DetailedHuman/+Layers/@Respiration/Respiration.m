@@ -53,16 +53,21 @@ classdef Respiration < vsys
         
         fRespirationWaterOutput = 0; % [kg/s]
         
-        % Current total volumetric blood flow
-        fTotalVolumetricFlow_Blood = 0; % m^3/s
-        
         tfPartialPressure;
+        
+        tfBloodFlows;
         
         fHumanTimeStep;
         
-        tOdeOptions = odeset('RelTol', 1e-3, 'AbsTol', 1e-4);
+        fNewVolumetricBloodFlowFromActivity;
+        fDeltaVentilationActivity;
         
-        hCalculatePeripheralChemoreceptor;
+        hCalculateChangeRate;
+        
+        fInternalTimeStep = 2;
+        
+        tOdeFlowRates;
+        tOdeOptions = odeset('RelTol', 1e-1, 'AbsTol', 1e-2);
     end
     
     properties (Constant)
@@ -188,7 +193,7 @@ classdef Respiration < vsys
             this.tfPartialPressure.Arteries.CO2     = 0;
             
             % Define rate of change function for ODE solver.
-            this.hCalculatePeripheralChemoreceptor = @(t, m) this.PeripheralChemoreceptor(m, t);
+            this.hCalculateChangeRate = @(t, m) this.calculateChangeRate(m, t);
         end
         
         
@@ -370,12 +375,12 @@ classdef Respiration < vsys
                     tTimeStepProperties.rMaxChange = 0.1;
                     
                     arMaxChange = zeros(1,this.oMT.iSubstances);
-                    arMaxChange(this.oMT.tiN2I.C6H12O6)     = 0.01;
-                    arMaxChange(this.oMT.tiN2I.C51H98O6)    = 0.01;
-                    arMaxChange(this.oMT.tiN2I.C6H12O6)     = 0.01;
-                    arMaxChange(this.oMT.tiN2I.H2O)         = 0.01;
-                    arMaxChange(this.oMT.tiN2I.O2)          = 0.01;
-                    arMaxChange(this.oMT.tiN2I.CO2)         = 0.01;
+                    arMaxChange(this.oMT.tiN2I.C6H12O6)     = 0.1;
+                    arMaxChange(this.oMT.tiN2I.C51H98O6)    = 0.1;
+                    arMaxChange(this.oMT.tiN2I.C6H12O6)     = 0.1;
+                    arMaxChange(this.oMT.tiN2I.H2O)         = 0.1;
+                    arMaxChange(this.oMT.tiN2I.O2)          = 0.1;
+                    arMaxChange(this.oMT.tiN2I.CO2)         = 0.1;
                     tTimeStepProperties.arMaxChange = arMaxChange;
 
                     oPhase.setTimeStepProperties(tTimeStepProperties);
@@ -493,20 +498,20 @@ classdef Respiration < vsys
             fConcentrationCO2 = fConcentrationCO2_mmol_l * this.oMT.afMolarMass(this.oMT.tiN2I.CO2) / this.fBloodDensity;
         end
         
-        function [fPartialPressureO2, fPartialPressureCO2] = calculatePartialPressuresTissue(this, oTissue)
+        function [fPartialPressureO2, fPartialPressureCO2] = calculatePartialPressuresTissue(this, afMass)
             % This calculation provides the corresponding partial pressure
             % equivalents of O2 and CO2 for the provided tissue phase and
             % calculates the flow rates of O2 and CO2 from the tissue to
             % the blood stream
             
             %% Oxygen
-            fConcentrationO2 = oTissue.afMass(this.oMT.tiN2I.O2) / oTissue.afMass(this.oMT.tiN2I.Human_Tissue); % kg/kg
+            fConcentrationO2 = afMass(this.oMT.tiN2I.O2) / afMass(this.oMT.tiN2I.Human_Tissue); % kg/kg
             
             fPartialPressureO2 = fConcentrationO2 / this.fHenryConstantO2;
             
             %% Carbon Dioxide
-            fConcentrationCO2  = oTissue.afMass(this.oMT.tiN2I.CO2) / oTissue.afMass(this.oMT.tiN2I.Human_Tissue); % kg/kg
-            fConcentrationHCO3 = oTissue.afMass(this.oMT.tiN2I.HCO3) /oTissue.afMass(this.oMT.tiN2I.Human_Tissue); % kg/kg
+            fConcentrationCO2  = afMass(this.oMT.tiN2I.CO2)  / afMass(this.oMT.tiN2I.Human_Tissue); % kg/kg
+            fConcentrationHCO3 = afMass(this.oMT.tiN2I.HCO3) / afMass(this.oMT.tiN2I.Human_Tissue); % kg/kg
             
             fDissolvedConcentrationCO2 = fConcentrationCO2 - fConcentrationHCO3;
             
@@ -522,7 +527,7 @@ classdef Respiration < vsys
         % be possible to store all these values in properties, that would
         % likely make the code more confusing
         
-        function [fNewVolumetricFlow_BrainBlood, fNewVolumetricFlow_TissueBlood] = BloodFlowControl(this, fPartialPressureO2, fPartialPressureCO2, fNewVolumetricBloodFlowFromActivity)
+        function [fNewVolumetricFlow_BrainBlood, fNewVolumetricFlow_TissueBlood] = BloodFlowControl(this, fPartialPressureO2, fPartialPressureCO2, fNewVolumetricBloodFlowFromActivity, fInternalElapsedTime)
             % This function represents the cardiac control function which
             % controls the blood flow based on the arterial partial
             % pressure of oxygen and carbon dioxide, which must be provided
@@ -538,12 +543,12 @@ classdef Respiration < vsys
             % not the original paper!
             fPsiO2      = this.fCardiacC1 * (exp(-(fPartialPressureO2 / this.fCardiacC2)) - exp(-(this.fBasePartialPressureO2_Arteries / this.fCardiacC2)));
             
-            this.fYo2   = this.fYo2 + ((1/ this.fTauO2) * (fPsiO2 - this.fYo2)) * this.fElapsedTime;
+            this.fYo2   = this.fYo2 + ((1/ this.fTauO2) * (fPsiO2 - this.fYo2)) * fInternalElapsedTime;
             
             fPsiCO2     = ((this.fCardiacA + this.fCardiacB / (1 + this.fCardiacC * exp(this.fCardiacD * log10(fPartialPressureCO2)))) / ...
                            (this.fCardiacA + this.fCardiacB / (1 + this.fCardiacC * exp(this.fCardiacD * log10(this.fBasePartialPressureCO2_Arteries))))) - 1;
             
-            this.fYco2  = this.fYco2 + ((1/ this.fTauCO2) * (fPsiCO2 - this.fYco2)) * this.fElapsedTime;
+            this.fYco2  = this.fYco2 + ((1/ this.fTauCO2) * (fPsiCO2 - this.fYco2)) * fInternalElapsedTime;
             
             % According to "Cardiovascular response to dynamicaerobic
             % exercise: a mathematical model", E. Magosso, M. Ursino, 2002
@@ -558,7 +563,7 @@ classdef Respiration < vsys
             fNewVolumetricFlow_TissueBlood = this.fBaseVolumetricFlow_TissueBlood * (1 + this.fCardiacRho * this.fYco2)   +  fNewVolumetricBloodFlowFromActivity;
         end
         
-        function [fNewDeltaVentilationPeripheralChemorezeptor, fPeripheralChemorezeptorDelay] = PeripheralChemoreceptor(this, fCurrentDeltaVentilationPeripheralChemorezeptor, fTime)
+        function [fNewDeltaVentilationPeripheralChemorezeptor, fPeripheralChemorezeptorDelay] = PeripheralChemoreceptor(this, fTotalVolumetricFlow_Blood, fInternalElapsedTime)
             %% Peripheral Chemoreceptor
             % This section models the peripheral chemoreceptor as
             % described in the dissertation from Markus Czupalla in section
@@ -572,7 +577,7 @@ classdef Respiration < vsys
             % equation A19 from "An integrated model of the human
             % ventilatory control system: the response to hypercapnia",
             % Ursino, M.; Magosso, E.; Avanzolini, G., 2001
-            fPeripheralChemorezeptorDelay = this.fKdp / this.fTotalVolumetricFlow_Blood;
+            fPeripheralChemorezeptorDelay = this.fKdp / fTotalVolumetricFlow_Blood;
             
             % The equation uses a delay, which means the discharge
             % frequency at a different time is required. The following
@@ -582,7 +587,7 @@ classdef Respiration < vsys
             
             % Now we calculate the time from which we want to know the
             % partial pressure of CO2 in the brain
-            fDelayedTime = fTime - fPeripheralChemorezeptorDelay;
+            fDelayedTime = this.oTimer.fTime - fPeripheralChemorezeptorDelay;
             
             % if that time is smaller than zero, we use the basal partial
             % pressure of the brain
@@ -630,10 +635,11 @@ classdef Respiration < vsys
             % equation with 60, which basically changes the time constant
             % fTauP to 1s. Here the implementation from the original source
             % is used
-            fNewDeltaVentilationPeripheralChemorezeptor = (1 / this.fTauP) * (-fCurrentDeltaVentilationPeripheralChemorezeptor + this.fGp * ...
-                                                          (fDelayedPeriheralChemorezeptorDischargeFrequency - this.fBasalPeriheralChemorezeptorDischargeFrequency));
+            fNewDeltaVentilationPeripheralChemorezeptor = this.fDeltaVentilationPeripheralChemorezeptor + (...
+                                                          (fInternalElapsedTime / this.fTauP) * (-this.fDeltaVentilationPeripheralChemorezeptor + this.fGp * ...
+                                                          (fDelayedPeriheralChemorezeptorDischargeFrequency - this.fBasalPeriheralChemorezeptorDischargeFrequency)));
             
-%             this.fDeltaVentilationPeripheralChemorezeptor = fNewDeltaVentilationPeripheralChemorezeptor;
+            this.fDeltaVentilationPeripheralChemorezeptor = fNewDeltaVentilationPeripheralChemorezeptor;
         end
         
         function fNewPeriheralChemorezeptorDischargeFrequency = calculatePeripheralChemorezeptorDischargeFrequency(this, fPartialPressureO2_Arteries, fPartialPressureCO2_Arteries)
@@ -665,7 +671,7 @@ classdef Respiration < vsys
             
         end
         
-        function [fNewDeltaVentilationCentralChemorezeptor, fCentralChemorezeptorDelay] = CentralChemoreceptor(this, fTotalVolumetricFlow_Blood)
+        function [fNewDeltaVentilationCentralChemorezeptor, fCentralChemorezeptorDelay] = CentralChemoreceptor(this, fTotalVolumetricFlow_Blood, fInternalElapsedTime)
             %% Central Chemoreceptor
             % This section models the central chemoreceptor as
             % described in the dissertation from Markus Czupalla in section
@@ -739,13 +745,13 @@ classdef Respiration < vsys
             % equation with 60, which basically changes the time constant
             % fTauC to 1s. Here the implementation from the original source
             % is used
-            fDeltaVentialtionChange = ((this.fElapsedTime / this.fTauC) * (-this.fDeltaVentilationCentralChemorezeptor + this.fGc * (fDelayedPartialPressureCO2_Brain - this.fBasePartialPressureCO2_Brain)));
+            fDeltaVentialtionChange = ((fInternalElapsedTime / this.fTauC) * (-this.fDeltaVentilationCentralChemorezeptor + this.fGc * (fDelayedPartialPressureCO2_Brain - this.fBasePartialPressureCO2_Brain)));
             fNewDeltaVentilationCentralChemorezeptor = this.fDeltaVentilationCentralChemorezeptor + fDeltaVentialtionChange;
                                                      
             this.fDeltaVentilationCentralChemorezeptor = fNewDeltaVentilationCentralChemorezeptor;
         end
             
-        function fNewAlphaH = CentralVentilationDepression(this, fPartialPressureO2_Brain)
+        function fNewAlphaH = CentralVentilationDepression(this, fPartialPressureO2_Brain, fInternalElapsedTime)
             %% Central Ventilation Depression
             % this section models the central ventilation depression as
             % described in the dissertation from Markus Czupalla in section
@@ -764,7 +770,7 @@ classdef Respiration < vsys
                 
             end
             
-            fNewAlphaH      = this.fAlphaH + ((1 / this.fTauH) * (- this.fAlphaH) * fHstat) * this.fElapsedTime;
+            fNewAlphaH      = this.fAlphaH + ((1 / this.fTauH) * (- this.fAlphaH) * fHstat) * fInternalElapsedTime;
             this.fAlphaH    = fNewAlphaH;
         end
         
@@ -834,97 +840,83 @@ classdef Respiration < vsys
             % is not possible to define the update order if we use the exec
             % functions!!
         end
-    end
-    methods (Access = {?components.matter.DetailedHuman.Human})
         
-        function update(this)
+        function afMassChangeRate = calculateChangeRate(this, afMasses, fTime, fInternalElapsedTime, arMassArteries)
             
-            this.fElapsedTime = this.oTimer.fTime - this.fLastRespirationUpdate;
+            afMassBrainBlood   = afMasses(1:this.oMT.iSubstances)';
+            afMassBrainTissue  = afMasses(this.oMT.iSubstances + 1     : 2 * this.oMT.iSubstances)';
+            afMassTissueBlood  = afMasses(2 * this.oMT.iSubstances + 1 : 3 * this.oMT.iSubstances)';
+            afMassTissueTissue = afMasses(3 * this.oMT.iSubstances + 1 : 4 * this.oMT.iSubstances)';
             
-            % Calculate the current impact of activity on the respiration
-            % and blood flow
-            [fNewVolumetricBloodFlowFromActivity, fDeltaVentilationActivity] = this.ActivityControl();
+            arMassBrainBlood  = afMassBrainBlood ./ sum(afMassBrainBlood);
+            arMassTissueBlood = afMassTissueBlood ./ sum(afMassTissueBlood);
+            
             
             % Calculate the current partial pressure of oxygen and co2 in
             % the arteries
-            [fPartialPressureO2_Arteries, fPartialPressureCO2_Arteries]     = this.calculateBloodPartialPressure(this.toStores.Arteries.toPhases.Blood.arPartialMass(this.oMT.tiN2I.O2), this.toStores.Arteries.toPhases.Blood.arPartialMass(this.oMT.tiN2I.CO2));
+            [fPartialPressureO2_Arteries, fPartialPressureCO2_Arteries]     = this.calculateBloodPartialPressure(arMassArteries(this.oMT.tiN2I.O2), arMassArteries(this.oMT.tiN2I.CO2));
+            
             
             %% Blood Flow Calculations
-            
             % Using these pressure values we can calculate the current
             % blood flow through the brain and the tissue
-            [fNewVolumetricFlow_BrainBlood, fNewVolumetricFlow_TissueBlood] = this.BloodFlowControl(fPartialPressureO2_Arteries, fPartialPressureCO2_Arteries, fNewVolumetricBloodFlowFromActivity);
+            [fNewVolumetricFlow_BrainBlood, fNewVolumetricFlow_TissueBlood] = this.BloodFlowControl(fPartialPressureO2_Arteries, fPartialPressureCO2_Arteries, this.fNewVolumetricBloodFlowFromActivity, fInternalElapsedTime);
             
             % Since the calculated values are volumetric, we have to
             % transform them into mass flows
-            fCurrentTissueBloodFlow =  fNewVolumetricFlow_TissueBlood * this.fBloodDensity;
-            fCurrentBrainBloodFlow  =  fNewVolumetricFlow_BrainBlood  * this.fBloodDensity;
-            fCurrentTotalBloodFlow  =  fCurrentTissueBloodFlow + fCurrentBrainBloodFlow;
+            this.tfBloodFlows.fCurrentTissueBloodFlow =  fNewVolumetricFlow_TissueBlood * this.fBloodDensity;
+            this.tfBloodFlows.fCurrentBrainBloodFlow  =  fNewVolumetricFlow_BrainBlood  * this.fBloodDensity;
+            this.tfBloodFlows.fCurrentTotalBloodFlow  =  this.tfBloodFlows.fCurrentTissueBloodFlow + this.tfBloodFlows.fCurrentBrainBloodFlow;
             
-            fCurrentAlveolaBloodFlow = fCurrentTotalBloodFlow * (1 - this.rPulmonaryShunt);
+            this.tfBloodFlows.fCurrentAlveolaBloodFlow = this.tfBloodFlows.fCurrentTotalBloodFlow * (1 - this.rPulmonaryShunt);
+            this.tfBloodFlows.fCurrentShuntBloodFlow   = this.tfBloodFlows.fCurrentTotalBloodFlow - this.tfBloodFlows.fCurrentAlveolaBloodFlow;
             
             %% Calculate gas exchange flows in the brain
-            [fPartialPressureO2_Brain, fPartialPressureCO2_Brain] = this.calculatePartialPressuresTissue(this.toStores.Brain.toPhases.Tissue);
+            [fPartialPressureO2_Brain, fPartialPressureCO2_Brain] = this.calculatePartialPressuresTissue(afMassBrainTissue);
             
             [fConcentrationO2, fConcentrationCO2] = this.calculateBloodConcentrations(fPartialPressureO2_Brain, fPartialPressureCO2_Brain);
             % now we subtract inlet and outlet concentration, the
             % difference is what the P2P absorbs. The concentrations are
             % calculated in kg/kg and therefore are actually mass ratios
-            fAdsorptionFlowRateO2_Brain  =   fCurrentBrainBloodFlow * (this.toStores.Brain.toPhases.Blood.arPartialMass(this.oMT.tiN2I.O2)  - fConcentrationO2);
-            fDesorptionFlowRateCO2_Brain = - fCurrentBrainBloodFlow * (this.toStores.Brain.toPhases.Blood.arPartialMass(this.oMT.tiN2I.CO2) - fConcentrationCO2);
+            fAdsorptionFlowRateO2_Brain  =   this.tfBloodFlows.fCurrentBrainBloodFlow * (arMassBrainBlood(this.oMT.tiN2I.O2)  - fConcentrationO2);
+            fDesorptionFlowRateCO2_Brain = - this.tfBloodFlows.fCurrentBrainBloodFlow * (arMassBrainBlood(this.oMT.tiN2I.CO2) - fConcentrationCO2);
             
-            afPartialFlowRates = zeros(1, this.oMT.iSubstances);
-            afPartialFlowRates(this.oMT.tiN2I.O2) = fAdsorptionFlowRateO2_Brain;
-            this.toStores.Brain.toProcsP2P.Blood_to_Brain.setFlowRate(afPartialFlowRates);
+            afPartialFlowRatesBrainO2 = zeros(1, this.oMT.iSubstances);
+            afPartialFlowRatesBrainO2(this.oMT.tiN2I.O2) = fAdsorptionFlowRateO2_Brain;
             
-            afPartialFlowRates = zeros(1, this.oMT.iSubstances);
-            afPartialFlowRates(this.oMT.tiN2I.CO2) = fDesorptionFlowRateCO2_Brain;
-            this.toStores.Brain.toProcsP2P.Brain_to_Blood.setFlowRate(afPartialFlowRates);
+            afPartialFlowRatesBrainCO2 = zeros(1, this.oMT.iSubstances);
+            afPartialFlowRatesBrainCO2(this.oMT.tiN2I.CO2) = fDesorptionFlowRateCO2_Brain;
             
             %% calculate gas exchange flows in the tissue
-            [fPartialPressureO2, fPartialPressureCO2] = this.calculatePartialPressuresTissue(this.toStores.Tissue.toPhases.Tissue);
+            [fPartialPressureO2, fPartialPressureCO2] = this.calculatePartialPressuresTissue(afMassTissueTissue);
             
             [fConcentrationO2, fConcentrationCO2] = this.calculateBloodConcentrations(fPartialPressureO2, fPartialPressureCO2);
             % now we subtract inlet and outlet concentration, the
             % difference is what the P2P absorbs. The concentrations are
             % calculated in kg/kg and therefore are actually mass ratios
-            fAdsorptionFlowRateO2_Tissue  =   fCurrentTissueBloodFlow * (this.toStores.Tissue.toPhases.Blood.arPartialMass(this.oMT.tiN2I.O2)  - fConcentrationO2);
-            fDesorptionFlowRateCO2_Tissue = - fCurrentTissueBloodFlow * (this.toStores.Tissue.toPhases.Blood.arPartialMass(this.oMT.tiN2I.CO2) - fConcentrationCO2);
+            fAdsorptionFlowRateO2_Tissue  =   this.tfBloodFlows.fCurrentTissueBloodFlow * (arMassTissueBlood(this.oMT.tiN2I.O2)  - fConcentrationO2);
+            fDesorptionFlowRateCO2_Tissue = - this.tfBloodFlows.fCurrentTissueBloodFlow * (arMassTissueBlood(this.oMT.tiN2I.CO2) - fConcentrationCO2);
             
-            afPartialFlowRates = zeros(1, this.oMT.iSubstances);
-            afPartialFlowRates(this.oMT.tiN2I.O2) = fAdsorptionFlowRateO2_Tissue;
-            this.toStores.Tissue.toProcsP2P.Blood_to_Tissue.setFlowRate(afPartialFlowRates);
+            afPartialFlowRatesTissueO2 = zeros(1, this.oMT.iSubstances);
+            afPartialFlowRatesTissueO2(this.oMT.tiN2I.O2) = fAdsorptionFlowRateO2_Tissue;
             
-            afPartialFlowRates = zeros(1, this.oMT.iSubstances);
-            afPartialFlowRates(this.oMT.tiN2I.CO2) = fDesorptionFlowRateCO2_Tissue;
-            this.toStores.Tissue.toProcsP2P.Tissue_to_Blood.setFlowRate(afPartialFlowRates);
+            afPartialFlowRatesTissueCO2 = zeros(1, this.oMT.iSubstances);
+            afPartialFlowRatesTissueCO2(this.oMT.tiN2I.CO2) = fDesorptionFlowRateCO2_Tissue;
             
             %% Ventilation Control
             % This section handles the calculation of the new volumetric
             % air flow rate. For this purpose the corresponding functions
             % to calculate the necessary parameters are called here
-            this.fTotalVolumetricFlow_Blood = fCurrentTotalBloodFlow / this.fBloodDensity;
-            fNewAlphaH                                          = this.CentralVentilationDepression( fPartialPressureO2_Brain);
-            [fNewDeltaVentilationCentralChemorezeptor,      ~] 	= this.CentralChemoreceptor(         this.fTotalVolumetricFlow_Blood);
-            
-            if this.fElapsedTime > 7
-                % The time constant for the peripheral chemorezeptor is 7s,
-                % if the time step becomes to large the calculation would
-                % become instable. To ensure this does not happen we use
-                % the ode solver for time steps exceeding the time constant
-                [~, afVentilationChangePeripheralChemorezeptor] = ode45(this.hCalculatePeripheralChemoreceptor, [this.fLastRespirationUpdate, this.oTimer.fTime], this.fDeltaVentilationPeripheralChemorezeptor, this.tOdeOptions);
-                
-                this.fDeltaVentilationPeripheralChemorezeptor = afVentilationChangePeripheralChemorezeptor(end);
-            else
-                [fNewDeltaVentilationPeripheralChemorezeptor,   ~]  = this.PeripheralChemoreceptor(      this.fDeltaVentilationPeripheralChemorezeptor, this.oTimer.fTime);
-                this.fDeltaVentilationPeripheralChemorezeptor = this.fDeltaVentilationPeripheralChemorezeptor + this.fElapsedTime * fNewDeltaVentilationPeripheralChemorezeptor;
-            end
+            fTotalVolumetricFlow_Blood = this.tfBloodFlows.fCurrentTotalBloodFlow / this.fBloodDensity;
+            fNewAlphaH                                          = this.CentralVentilationDepression( fPartialPressureO2_Brain,      fInternalElapsedTime);
+            [fNewDeltaVentilationCentralChemorezeptor,      ~] 	= this.CentralChemoreceptor(         fTotalVolumetricFlow_Blood ,   fInternalElapsedTime);
+            [fNewDeltaVentilationPeripheralChemorezeptor,   ~]  = this.PeripheralChemoreceptor(      fTotalVolumetricFlow_Blood,    fInternalElapsedTime);
             
             % Equation (11-51) from the dissertation by Markus Czupalla or 
             % A15 from "An integrated model of the human ventilatory
             % control system: the response to hypercapnia", Ursino, M.;
             % Magosso, E.; Avanzolini, G., 2001
-            fCurrentVolumetricFlow_Air = this.fBaseVolumetricFlow_Air + fNewAlphaH * this.fDeltaVentilationPeripheralChemorezeptor + fNewDeltaVentilationCentralChemorezeptor + fDeltaVentilationActivity;
+            fCurrentVolumetricFlow_Air = this.fBaseVolumetricFlow_Air + fNewAlphaH * fNewDeltaVentilationPeripheralChemorezeptor + fNewDeltaVentilationCentralChemorezeptor + this.fDeltaVentilationActivity;
             
             % According to A15 the value cannot become negative, but zero
             % (apneic phase)
@@ -944,19 +936,229 @@ classdef Respiration < vsys
             % necessitates a complete recalculation of the respiratory
             % layer, it does not provide a real advantage.
             fCurrentAirInletFlow = this.oParent.toBranches.Air_In.coExmes{2}.oPhase.fDensity * fCurrentVolumetricFlow_AlveolaAir;
-            this.oParent.toBranches.Air_In.oHandler.setFlowRate(- fCurrentAirInletFlow);
             
-            %% Set branch flow rates
+            %% Built rate vector for ODE
+            % Now we built rate vector for each compartment in the
+            % respiratory layer which can then be combined to an overall
+            % mass change vector
+            
+            % Brain Blood:
+            afFlowratesBrainBlood = this.tfBloodFlows.fCurrentBrainBloodFlow .* (arMassArteries - arMassBrainBlood);
+            afFlowratesBrainBlood = afFlowratesBrainBlood - afPartialFlowRatesBrainO2 + afPartialFlowRatesBrainCO2;
+            
+            % Tissue Blood:
+            afFlowratesTissueBlood = this.tfBloodFlows.fCurrentTissueBloodFlow .* (arMassArteries - arMassTissueBlood);
+            afFlowratesTissueBlood = afFlowratesTissueBlood - afPartialFlowRatesTissueO2 + afPartialFlowRatesTissueCO2;
+            
+            % Brain Tissue:
+            afFlowratesBrainTissue = afPartialFlowRatesBrainO2 - afPartialFlowRatesBrainCO2;
+            afFlowratesBrainTissue(this.oMT.tiN2I.CO2) = afFlowratesBrainTissue(this.oMT.tiN2I.CO2) + this.oParent.toBranches.CO2_to_Brain.fFlowRate;
+            afFlowratesBrainTissue(this.oMT.tiN2I.O2)  = afFlowratesBrainTissue(this.oMT.tiN2I.O2) - this.oParent.toBranches.O2_from_Brain.fFlowRate;
+            
+            % Tissue Tissue:
+            afFlowratesTissueTissue = afPartialFlowRatesTissueO2 - afPartialFlowRatesTissueCO2;
+            afFlowratesTissueTissue(this.oMT.tiN2I.CO2) = afFlowratesTissueTissue(this.oMT.tiN2I.CO2) + this.oParent.toBranches.CO2_to_Tissue.fFlowRate;
+            afFlowratesTissueTissue(this.oMT.tiN2I.O2)  = afFlowratesTissueTissue(this.oMT.tiN2I.O2) - this.oParent.toBranches.O2_from_Tissue.fFlowRate;
+            
+            afMassChangeRate = [afFlowratesBrainBlood';...
+                              	afFlowratesBrainTissue';...
+                              	afFlowratesTissueBlood';...
+                             	afFlowratesTissueTissue'];
+                            
+            % In this case we are not actually interested in the masses the
+            % ODE calculates as results, but rather in the flowrates that
+            % are calculated in between:
+            this.tOdeFlowRates.afPartialFlowRatesBrainO2(end+1,:)     = afPartialFlowRatesBrainO2;
+            this.tOdeFlowRates.afPartialFlowRatesBrainCO2(end+1,:)    = afPartialFlowRatesBrainCO2;
+            this.tOdeFlowRates.afPartialFlowRatesTissueO2(end+1,:)    = afPartialFlowRatesTissueO2;
+            this.tOdeFlowRates.afPartialFlowRatesTissueCO2(end+1,:)   = afPartialFlowRatesTissueCO2;
+            this.tOdeFlowRates.fCurrentTissueBloodFlow(end+1)         = this.tfBloodFlows.fCurrentTissueBloodFlow;
+            this.tOdeFlowRates.fCurrentBrainBloodFlow(end+1)          = this.tfBloodFlows.fCurrentBrainBloodFlow;
+            this.tOdeFlowRates.fCurrentTotalBloodFlow(end+1)          = this.tfBloodFlows.fCurrentTotalBloodFlow;
+            this.tOdeFlowRates.fCurrentAlveolaBloodFlow(end+1)        = this.tfBloodFlows.fCurrentAlveolaBloodFlow;
+            this.tOdeFlowRates.fCurrentAirInletFlow(end+1)            = fCurrentAirInletFlow;
+            this.tOdeFlowRates.fTime(end+1)                           = fTime;
+            
+            
+            %% Variable Storage handling
+            % for a few variables it is necessary to store values over time
+            % to model delays. This is handled at the end of the update in
+            % this section
+
+            % Store the value of partial pressure for future calculations
+            this.mfPartialPressureCO2_Brain(1,end+1) = fTime;
+            this.mfPartialPressureCO2_Brain(2,end) = fPartialPressureCO2_Brain;
+
+            % If the vector already has more than 4000 entries, remove the
+            % first entry. We do not want to keep data for several weeks
+            % stored in here!
+            if length(this.mfPartialPressureCO2_Brain) > 4000
+                this.mfPartialPressureCO2_Brain(:,1) = [];
+            end
+
+            % store the discharge frequency of the peripheral chemoreceptor
+            this.mfPeriheralChemorezeptorDischargeFrequency(1,end+1) = fTime;
+            this.mfPeriheralChemorezeptorDischargeFrequency(2,end)   = calculatePeripheralChemorezeptorDischargeFrequency(this, fPartialPressureO2_Arteries, fPartialPressureCO2_Arteries);
+
+            % If the vector already has more than 4000 entries, remove the
+            % first entry. We do not want to keep data for several weeks
+            % stored in here!
+            if length(this.mfPeriheralChemorezeptorDischargeFrequency) > 4000
+                this.mfPeriheralChemorezeptorDischargeFrequency(:,1) = [];
+            end
+
+            %% Informative Variable Story
+            % In this section we only store variables as properties that
+            % are interesting for logging and plotting purposes. They could
+            % also be removed from the list of properties and the code
+            % would still function
+            this.fVolumetricFlow_BrainBlood         = fNewVolumetricFlow_BrainBlood;
+            this.fVolumetricFlow_TissueBlood        = fNewVolumetricFlow_TissueBlood;
+            this.fVolumetricFlow_Air                = fCurrentVolumetricFlow_Air;
+
+            this.tfPartialPressure.Brain.O2         = fPartialPressureO2_Brain;
+            this.tfPartialPressure.Brain.CO2        = fPartialPressureCO2_Brain;
+            this.tfPartialPressure.Tissue.O2        = fPartialPressureO2;
+            this.tfPartialPressure.Tissue.CO2       = fPartialPressureCO2;
+            this.tfPartialPressure.Arteries.O2      = fPartialPressureO2_Arteries;
+            this.tfPartialPressure.Arteries.CO2     = fPartialPressureCO2_Arteries;
+        end
+    end
+    methods (Access = {?components.matter.DetailedHuman.Human})
+        
+        function update(this)
+            
+            this.fElapsedTime = this.oTimer.fTime - this.fLastRespirationUpdate;
+            
+            % Calculate the current impact of activity on the respiration
+            % and blood flow
+            [this.fNewVolumetricBloodFlowFromActivity, this.fDeltaVentilationActivity] = this.ActivityControl();
+            
+            
+            fStepBeginTime = this.fLastRespirationUpdate;
+            fStepEndTime   = this.oTimer.fTime;
+            
+            this.tOdeFlowRates = struct();
+            this.tOdeFlowRates.afPartialFlowRatesBrainO2(1,:)     = zeros(1, this.oMT.iSubstances);
+            this.tOdeFlowRates.afPartialFlowRatesBrainCO2(1,:)    = zeros(1, this.oMT.iSubstances);
+            this.tOdeFlowRates.afPartialFlowRatesTissueO2(1,:)    = zeros(1, this.oMT.iSubstances);
+            this.tOdeFlowRates.afPartialFlowRatesTissueCO2(1,:)   = zeros(1, this.oMT.iSubstances);
+            this.tOdeFlowRates.fCurrentTissueBloodFlow(1)         = 0;
+            this.tOdeFlowRates.fCurrentBrainBloodFlow(1)          = 0;
+            this.tOdeFlowRates.fCurrentTotalBloodFlow(1)          = 0;
+            this.tOdeFlowRates.fCurrentAlveolaBloodFlow(1)        = 0;
+            this.tOdeFlowRates.fCurrentAirInletFlow(1)            = 0;
+            this.tOdeFlowRates.fTime(1)                           = this.oTimer.fTime;
+
+            if ~any(this.toStores.Arteries.toPhases.Blood.arPartialMass ~= 0)
+                afInitialMasses = [this.toStores.Brain.toPhases.Blood.afMass';...
+                                   this.toStores.Brain.toPhases.Tissue.afMass';...
+                                   this.toStores.Tissue.toPhases.Blood.afMass';...
+                                   this.toStores.Tissue.toPhases.Tissue.afMass'];
+            else
+                afInitialMasses = [this.toStores.Brain.toPhases.Blood.afMass';...
+                                   this.toStores.Brain.toPhases.Tissue.afMass';...
+                                   this.toStores.Tissue.toPhases.Blood.afMass';...
+                                   this.toStores.Tissue.toPhases.Tissue.afMass'];
+            end
+            % For an ODE solver to work, a different way to handle the
+            % delayed chemorezeptor responses would be necessary, as the
+            % hCalculatueChangeRate function is called with varying times.
+            % Also a way to get the elapsed time compared to previous step
+            % would be necessary or these parts would have to be better
+            % integrated into the ODE.
+            % if (fStepEndTime - fStepBeginTime) > 1
+            %     [mfSolutionTimes, afSolutionMasses] = ode45(this.hCalculateChangeRate, [fStepBeginTime, fStepEndTime], afInitialMasses, this.tOdeOptions);
+            % else
+
+            fOriginalInternalStep = this.fInternalTimeStep;
+            if (fStepEndTime - fStepBeginTime) < this.fInternalTimeStep
+                mfTimes = [fStepBeginTime fStepEndTime];
+            else
+                fSteps = (fStepEndTime - fStepBeginTime) / this.fInternalTimeStep;
+                this.fInternalTimeStep = this.fInternalTimeStep * (1 + mod(fSteps, 1)  ./ floor(fSteps));
+
+                mfTimes = fStepBeginTime:this.fInternalTimeStep:fStepEndTime;
+            end
+
+            afMasses = afInitialMasses;
+
+            for iTime = 2:length(mfTimes)
+                if iTime > 2
+                    afMassBrainBlood   = afMasses(1:this.oMT.iSubstances)';
+                    afMassTissueBlood  = afMasses(2 * this.oMT.iSubstances + 1 : 3 * this.oMT.iSubstances)';
+
+                    arMassBrainBlood  = afMassBrainBlood ./ sum(afMassBrainBlood);
+                    arMassTissueBlood = afMassTissueBlood ./ sum(afMassTissueBlood);
+            
+                    % Built partial mass ratio vectors for the flow phases based on
+                    % the current conditions
+                    % Veins:
+                    if this.tfBloodFlows.fCurrentTotalBloodFlow == 0
+                        arMassVeins = zeros(1, this.oMT.iSubstances);
+                    else
+                        arMassVeins = (this.tfBloodFlows.fCurrentTissueBloodFlow .* arMassTissueBlood + this.tfBloodFlows.fCurrentBrainBloodFlow .* arMassBrainBlood) / this.tfBloodFlows.fCurrentTotalBloodFlow;
+                    end
+
+                    % Alveola:
+                    afFlowRatesAlveola = this.toStores.Lung.toProcsP2P.Air_to_Alveola.fFlowRate .* this.toStores.Lung.toProcsP2P.Air_to_Alveola.arPartialMass;
+                    afFlowRatesAlveola = afFlowRatesAlveola - (this.toStores.Lung.toProcsP2P.Alveola_to_Air.fFlowRate .* this.toStores.Lung.toProcsP2P.Alveola_to_Air.arPartialMass);
+                    % We also have to include the mass change from different in and
+                    % out flow compositions
+                    afFlowRatesAlveola = afFlowRatesAlveola + (this.tfBloodFlows.fCurrentAlveolaBloodFlow .* arMassVeins);
+                    afFlowRatesAlveola(afFlowRatesAlveola < 0) = 0;
+                    
+                    % Since for alveola we only consider the ratios, not the total
+                    % masses we adjust the vector to reflect ratio changes:
+                    if sum(afFlowRatesAlveola) == 0
+                        arMassAlveola = zeros(1, this.oMT.iSubstances);
+                    else
+                        arMassAlveola = (afFlowRatesAlveola ./ sum(afFlowRatesAlveola));
+                    end
+
+                    % Arteries:
+                    if this.tfBloodFlows.fCurrentTotalBloodFlow == 0
+                        arMassArteries = zeros(1, this.oMT.iSubstances);
+                    else
+                        arMassArteries = (this.tfBloodFlows.fCurrentShuntBloodFlow .* arMassVeins + this.tfBloodFlows.fCurrentAlveolaBloodFlow .* arMassAlveola) / this.tfBloodFlows.fCurrentTotalBloodFlow;
+                    end
+                    
+                else
+                    arMassArteries  = this.toStores.Arteries.toPhases.Blood.arPartialMass;
+                end
+                fInternalElapsedTime = mfTimes(iTime) - mfTimes(iTime - 1);
+                
+                afMassChangeRate = this.calculateChangeRate(afMasses, mfTimes(iTime), fInternalElapsedTime, arMassArteries);
+                
+                afMasses = afMasses + afMassChangeRate .* (mfTimes(iTime) - mfTimes(iTime-1));
+                afMasses(afMasses < 0) = 0;
+            end
+
+            iSteps = length(mfTimes) - 1;
+            afPartialFlowRatesBrainO2   = sum(this.tOdeFlowRates.afPartialFlowRatesBrainO2(2:end,:), 1) ./ iSteps;
+            afPartialFlowRatesBrainCO2  = sum(this.tOdeFlowRates.afPartialFlowRatesBrainCO2(2:end,:), 1) ./ iSteps;
+            afPartialFlowRatesTissueO2  = sum(this.tOdeFlowRates.afPartialFlowRatesTissueO2(2:end,:), 1) ./ iSteps;
+            afPartialFlowRatesTissueCO2 = sum(this.tOdeFlowRates.afPartialFlowRatesTissueCO2(2:end,:), 1) ./ iSteps;
+            fCurrentTissueBloodFlow     = sum(this.tOdeFlowRates.fCurrentTissueBloodFlow(2:end)) ./ iSteps;
+            fCurrentBrainBloodFlow      = sum(this.tOdeFlowRates.fCurrentBrainBloodFlow(2:end)) ./ iSteps;
+            fCurrentAlveolaBloodFlow    = sum(this.tOdeFlowRates.fCurrentAlveolaBloodFlow(2:end)) ./ iSteps;
+            fCurrentAirInletFlow        = sum(this.tOdeFlowRates.fCurrentAirInletFlow(2:end)) ./ iSteps;
+                
+            this.fInternalTimeStep = fOriginalInternalStep;
+            
+            %% Set branch and P2P flow rates
             % Only some branches are set manually, the remaining branches
             % are multi solver branches to ensure mass balance and correct
             % calculation of the P2Ps
+            this.oParent.toBranches.Air_In.oHandler.setFlowRate(- fCurrentAirInletFlow);
+
             this.toBranches.Arteries_to_Brain.oHandler.setFlowRate(     fCurrentBrainBloodFlow);
             this.toBranches.Brain_to_BrainOutlet.oHandler.setFlowRate(	fCurrentBrainBloodFlow);
-            
+
             this.toBranches.Tissue_to_TissueOutlet.oHandler.setFlowRate(fCurrentTissueBloodFlow);
-                
+
             this.toBranches.Veins_to_Alveola.oHandler.setFlowRate(      fCurrentAlveolaBloodFlow);
-            
+
             if any([~isreal(fCurrentAirInletFlow), ~isreal(fCurrentBrainBloodFlow), ~isreal(fCurrentTissueBloodFlow), ~isreal(fCurrentAlveolaBloodFlow)])
                 keyboard()
             end
@@ -966,50 +1168,12 @@ classdef Respiration < vsys
             afPartialFlowRates = zeros(1, this.oMT.iSubstances);
             afPartialFlowRates(this.oMT.tiN2I.H2O)      = this.fRespirationWaterOutput;
             this.oParent.toBranches.RespirationWaterOutput.oHandler.setFlowRate(afPartialFlowRates);
-            
-            %% Variable Storage handling
-            % for a few variables it is necessary to store values over time
-            % to model delays. This is handled at the end of the update in
-            % this section
-            
-            % Store the value of partial pressure for future calculations
-            this.mfPartialPressureCO2_Brain(1,end+1) = this.oTimer.fTime;
-            this.mfPartialPressureCO2_Brain(2,end) = fPartialPressureCO2_Brain;
-            
-            % If the vector already has more than 4000 entries, remove the
-            % first entry. We do not want to keep data for several weeks
-            % stored in here!
-            if length(this.mfPartialPressureCO2_Brain) > 4000
-                this.mfPartialPressureCO2_Brain(:,1) = [];
-            end
-            
-            % store the discharge frequency of the peripheral chemoreceptor
-            this.mfPeriheralChemorezeptorDischargeFrequency(1,end+1) = this.oTimer.fTime;
-            this.mfPeriheralChemorezeptorDischargeFrequency(2,end)   = calculatePeripheralChemorezeptorDischargeFrequency(this, fPartialPressureO2_Arteries, fPartialPressureCO2_Arteries);
-            
-            % If the vector already has more than 4000 entries, remove the
-            % first entry. We do not want to keep data for several weeks
-            % stored in here!
-            if length(this.mfPeriheralChemorezeptorDischargeFrequency) > 4000
-                this.mfPeriheralChemorezeptorDischargeFrequency(:,1) = [];
-            end
-            
-            %% Informative Variable Story
-            % In this section we only store variables as properties that
-            % are interesting for logging and plotting purposes. They could
-            % also be removed from the list of properties and the code
-            % would still function
-            this.fVolumetricFlow_BrainBlood         = fNewVolumetricFlow_BrainBlood;
-            this.fVolumetricFlow_TissueBlood        = fNewVolumetricFlow_TissueBlood;
-            this.fVolumetricFlow_Air                = fCurrentVolumetricFlow_Air;
-            
-            this.tfPartialPressure.Brain.O2         = fPartialPressureO2_Brain;
-            this.tfPartialPressure.Brain.CO2        = fPartialPressureCO2_Brain;
-            this.tfPartialPressure.Tissue.O2        = fPartialPressureO2;
-            this.tfPartialPressure.Tissue.CO2       = fPartialPressureCO2;
-            this.tfPartialPressure.Arteries.O2      = fPartialPressureO2_Arteries;
-            this.tfPartialPressure.Arteries.CO2     = fPartialPressureCO2_Arteries;
-            
+
+            this.toStores.Brain.toProcsP2P.Blood_to_Brain.setFlowRate(afPartialFlowRatesBrainO2);
+            this.toStores.Brain.toProcsP2P.Brain_to_Blood.setFlowRate(afPartialFlowRatesBrainCO2);
+            this.toStores.Tissue.toProcsP2P.Blood_to_Tissue.setFlowRate(afPartialFlowRatesTissueO2);
+            this.toStores.Tissue.toProcsP2P.Tissue_to_Blood.setFlowRate(afPartialFlowRatesTissueCO2);
+
             this.fLastRespirationUpdate = this.oTimer.fTime;
         end
     end

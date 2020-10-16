@@ -9,7 +9,7 @@ classdef Example < vsys
     
     methods
         function this = Example(oParent, sName)
-            this@vsys(oParent, sName, 60);
+            this@vsys(oParent, sName, 600);
             
             %% crew planer
             % Since the crew schedule follows the same pattern every day,
@@ -25,7 +25,7 @@ classdef Example < vsys
             this.iNumberOfCrewMembers = 1;
             
             % Number of days that events shall be planned goes here:
-            iLengthOfMission = 10; % [d]
+            iLengthOfMission = 200; % [d]
             
             ctEvents = cell(iLengthOfMission, this.iNumberOfCrewMembers);
             
@@ -83,7 +83,7 @@ classdef Example < vsys
                 txCrewPlaner.ctEvents = ctEvents(:, iCrewMember);
                 txCrewPlaner.tMealTimes = tMealTimes;
                 
-                components.matter.DetailedHuman.Human(this, ['Human_', num2str(iCrewMember)], txCrewPlaner, 60);
+                components.matter.DetailedHuman.Human(this, ['Human_', num2str(iCrewMember)], txCrewPlaner, 600);
                 
                 clear txCrewPlaner;
             end
