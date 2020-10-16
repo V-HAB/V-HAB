@@ -118,7 +118,8 @@ classdef Metabolic < vsys
         iAerobicDetrainingWeeks	= 0;
         iAnaerobicDetrainingWeeks	= 0;
         
-        fTimeModuloWeek = 0;
+        fTimeModuloWeek = 0; % s
+        fTimeModuloDay  = 0; % s
         
         % Struct to store the current training improvements factors of the
         % model
@@ -1242,16 +1243,17 @@ classdef Metabolic < vsys
             % of Markus Czupalla. All equation numbers also
             % refer to the dissertation.
             %
-            % This function is only called once per day from the metabolic
-            % exec. At that point we check if the aerobic and anaerobic
-            % training thresholds have been reached for this day:
-            if this.bDailyAnaerobicTrainingThresholdReached
-                this.iAnaerobicTrainingDays = this.iAnaerobicTrainingDays + 1;
-            elseif this.bDailyAerobicTrainingThresholdReached
-                this.iAerobicTrainingDays   = this.iAerobicTrainingDays + 1;
-            else
-                this.iRestDays              = this.iRestDays + 1;
+            % Check once per day if the training threshold was reached:
+            if mod(this.oTimer.fTime, 86400) < this.fTimeModuloDay
+                if this.bDailyAnaerobicTrainingThresholdReached
+                    this.iAnaerobicTrainingDays = this.iAnaerobicTrainingDays + 1;
+                elseif this.bDailyAerobicTrainingThresholdReached
+                    this.iAerobicTrainingDays   = this.iAerobicTrainingDays + 1;
+                else
+                    this.iRestDays              = this.iRestDays + 1;
+                end
             end
+            this.fTimeModuloDay = mod(this.oTimer.fTime, 86400);
             
             % In order to check if a week has passed, we store the modulo
             % values of the current time in the property fTimeModuloWeek,
@@ -1282,7 +1284,7 @@ classdef Metabolic < vsys
                     this.iAnaerobicDetrainingWeeks  = 0;
                 end
                 % Equation 11-220 and Section 11.1.1.2.11
-                fNewSlowTwitchMass = this.rSlowTwitchInitial * this.fInitialMuscleMass * ((this.tTrainingFactors.rAerobicSlowTwitchImprovement * this.tTrainingFactors.rAnaerobicSlowTwitchImprovement) - 1);
+                fNewSlowTwitchMass = this.rSlowTwitchInitial * this.fInitialMuscleMass * ((this.tTrainingFactors.rAerobicSlowTwitchImprovement + this.tTrainingFactors.rAnaerobicSlowTwitchImprovement) - 1);
                 fNewFastTwitchMass = this.rFastTwitchInitial * this.fInitialMuscleMass * this.tTrainingFactors.rAnaerobicFastTwitchImprovement;
                 this.fMuscleChangeMassFlow = ((fNewSlowTwitchMass + fNewFastTwitchMass) - this.fInitialMuscleMass) / (7 * 24 * 3600);
             end

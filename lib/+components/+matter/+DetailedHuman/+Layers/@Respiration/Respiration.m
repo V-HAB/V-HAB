@@ -375,12 +375,12 @@ classdef Respiration < vsys
                     tTimeStepProperties.rMaxChange = 0.1;
                     
                     arMaxChange = zeros(1,this.oMT.iSubstances);
-                    arMaxChange(this.oMT.tiN2I.C6H12O6)     = 0.01;
-                    arMaxChange(this.oMT.tiN2I.C51H98O6)    = 0.01;
-                    arMaxChange(this.oMT.tiN2I.C6H12O6)     = 0.01;
-                    arMaxChange(this.oMT.tiN2I.H2O)         = 0.01;
-                    arMaxChange(this.oMT.tiN2I.O2)          = 0.01;
-                    arMaxChange(this.oMT.tiN2I.CO2)         = 0.01;
+                    arMaxChange(this.oMT.tiN2I.C6H12O6)     = 0.1;
+                    arMaxChange(this.oMT.tiN2I.C51H98O6)    = 0.1;
+                    arMaxChange(this.oMT.tiN2I.C6H12O6)     = 0.1;
+                    arMaxChange(this.oMT.tiN2I.H2O)         = 0.1;
+                    arMaxChange(this.oMT.tiN2I.O2)          = 0.1;
+                    arMaxChange(this.oMT.tiN2I.CO2)         = 0.1;
                     tTimeStepProperties.arMaxChange = arMaxChange;
 
                     oPhase.setTimeStepProperties(tTimeStepProperties);
