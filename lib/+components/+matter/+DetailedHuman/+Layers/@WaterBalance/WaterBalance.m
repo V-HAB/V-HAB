@@ -632,6 +632,8 @@ classdef WaterBalance < vsys
             % seems to be an error there, because according to the
             % equations, the flow can only be higher if the Readsorption
             % flow of the distal tubule becomes negative.
+            % According to BVAD a normal value for water flow to bladder
+            % would be 1.852e-5 kg/s
             if this.fConcentrationOfADHinBloodPlasma <= 0.765
                 rFractionOfWaterLoadInDistalTubule = 0;
             elseif this.fConcentrationOfADHinBloodPlasma <= 3

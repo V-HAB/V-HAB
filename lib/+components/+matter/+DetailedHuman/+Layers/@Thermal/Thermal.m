@@ -52,7 +52,11 @@ classdef Thermal < vsys
         % "The Measurement of Transepidermal Water Loss"
         % the average value of TEWL is 300 to 400 ml per day. For the simple model
         % we just assume 350 g/d of TEWL
-        fTransepidermalWaterLoss = 0.35 / (24*3600);
+        % However, BVAD state the water output of a human in nominal
+        % activity is 1.695 kg/d (Table 3.22), and the respiration only
+        % accounts for about 0.9533 kg of this. Therefore, the TEWL is
+        % increased by the missing 400 g
+        fTransepidermalWaterLoss = 0.75 / (24*3600);
     end
     
     methods

@@ -227,7 +227,11 @@ classdef Digestion < vsys
             % 0.0313 / 0.1 = 0.3130
             % However, for currently unkown reasons, the feces water
             % production was higher by a factor of 2.3 so the non
-            % absorption rate was adjusted to 0.1361
+            % absorption rate was adjusted to 0.1361. With the reworked of
+            % the digestion layer, it seems that some of the water is mixed
+            % up wit the secreation, which is why the pass through had to
+            % increase to produce the correct amount of feces water. This
+            % issue is to be handled
             %
             % for Sodium we assume that everything is absorbed
             
@@ -258,19 +262,19 @@ classdef Digestion < vsys
             this.arPassThroughRatios.Jejunum(this.oMT.tiN2I.C3H7NO2)            = 0.406;
             this.arPassThroughRatios.Jejunum(this.oMT.tiN2I.C6H12O6)            = 0.1492;
             this.arPassThroughRatios.Jejunum(this.oMT.tiN2I.C51H98O6)           = 0.3616;
-            this.arPassThroughRatios.Jejunum(this.oMT.tiN2I.H2O)                = 0.3892;
+            this.arPassThroughRatios.Jejunum(this.oMT.tiN2I.H2O)                = 0.6487;
             this.arPassThroughRatios.Jejunum(this.oMT.tiN2I.Naplus)             = 0.66;
             
             this.arPassThroughRatios.Ileum(this.oMT.tiN2I.C3H7NO2)              = 0.2741;
             this.arPassThroughRatios.Ileum(this.oMT.tiN2I.C6H12O6)              = 0.0995;
             this.arPassThroughRatios.Ileum(this.oMT.tiN2I.C51H98O6)             = 0.2411;
-            this.arPassThroughRatios.Ileum(this.oMT.tiN2I.H2O)                  = 0.2595;
+            this.arPassThroughRatios.Ileum(this.oMT.tiN2I.H2O)                  = 0.3460;
             this.arPassThroughRatios.Ileum(this.oMT.tiN2I.Naplus)               = 0.33;
             
             this.arPassThroughRatios.LargeIntestine(this.oMT.tiN2I.C3H7NO2)     = 1;
             this.arPassThroughRatios.LargeIntestine(this.oMT.tiN2I.C6H12O6)     = 1;
             this.arPassThroughRatios.LargeIntestine(this.oMT.tiN2I.C51H98O6)    = 1;
-            this.arPassThroughRatios.LargeIntestine(this.oMT.tiN2I.H2O)         = 0.1361;
+            this.arPassThroughRatios.LargeIntestine(this.oMT.tiN2I.H2O)         = 0.613;
             this.arPassThroughRatios.LargeIntestine(this.oMT.tiN2I.Naplus)      = 0;
             
             
