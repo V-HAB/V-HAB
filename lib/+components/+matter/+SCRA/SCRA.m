@@ -238,8 +238,14 @@ classdef SCRA < vsys
             csStoreNames = fieldnames(this.toStores);
             for iStore = 1:length(csStoreNames)
                 if strcmp(csStoreNames{iStore}, 'CRA_Accumulator')
+                    tTimeStepProperties  = struct();
                     tTimeStepProperties.rMaxChange = 0.2;
+                    tTimeStepProperties.fMaxStep = this.fTimeStep * 5;
                     this.toStores.(csStoreNames{iStore}).toPhases.CO2.setTimeStepProperties(tTimeStepProperties);
+                    
+                    tTimeStepProperties = struct();
+                    tTimeStepProperties.fMaxStep = this.fTimeStep * 5;
+                    this.toStores.(csStoreNames{iStore}).toPhases.CO2.oCapacity.setTimeStepProperties(tTimeStepProperties);
                 else
                     for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
                         oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
@@ -254,6 +260,7 @@ classdef SCRA < vsys
                         arMaxChange(this.oMT.tiN2I.CH4) = 0.75;
                         tTimeStepProperties.arMaxChange = arMaxChange;
                         tTimeStepProperties.fMaxStep = this.fTimeStep * 5;
+                        tTimeStepProperties.rMaxChange = 0.1;
 
                         oPhase.setTimeStepProperties(tTimeStepProperties);
 

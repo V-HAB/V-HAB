@@ -95,10 +95,24 @@ classdef BPA < vsys
             oSolver.setSolverProperties(tSolverProperties);
             
             tTimeStepProperties.rMaxChange = inf;
-            tTimeStepProperties.fMaxStep = this.fTimeStep;
 
             this.toStores.Bladder.toPhases.Brine.setTimeStepProperties(tTimeStepProperties);
             this.toStores.ConcentratedBrineDisposal.toPhases.ConcentratedBrine.setTimeStepProperties(tTimeStepProperties);
+            
+            csStoreNames = fieldnames(this.toStores);
+            for iStore = 1:length(csStoreNames)
+                for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
+                    oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
+                    tTimeStepProperties = struct();
+                    tTimeStepProperties.fMaxStep = this.fTimeStep * 5;
+
+                    oPhase.setTimeStepProperties(tTimeStepProperties);
+
+                    tTimeStepProperties = struct();
+                    tTimeStepProperties.fMaxStep = this.fTimeStep * 5;
+                    oPhase.oCapacity.setTimeStepProperties(tTimeStepProperties);
+                end
+            end
             
             this.setThermalSolvers();
         end
@@ -128,7 +142,6 @@ classdef BPA < vsys
                 % limited
                 tTimeStepProperties = struct();
                 tTimeStepProperties.rMaxChange = 1e-3;
-                tTimeStepProperties.fMaxStep = 20;
 
                 this.toStores.Bladder.toPhases.Brine.setTimeStepProperties(tTimeStepProperties);
             end
@@ -142,7 +155,6 @@ classdef BPA < vsys
                     % bladder phase can change by as much as it likes
                     tTimeStepProperties = struct();
                     tTimeStepProperties.rMaxChange = inf;
-                    tTimeStepProperties.fMaxStep = this.fTimeStep;
 
                     this.toStores.Bladder.toPhases.Brine.setTimeStepProperties(tTimeStepProperties);
                     

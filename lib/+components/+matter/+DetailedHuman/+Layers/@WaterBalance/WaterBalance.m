@@ -578,8 +578,8 @@ classdef WaterBalance < vsys
             rGlomerularTubularBalance = 5.815 - 0.0357 * fVolumetricMolarConcentrationNa;
             % In the simulink model, this was performed by a saturation
             % block, which limits the values to be between 0 and 1
-            if rGlomerularTubularBalance > 0.95
-                rGlomerularTubularBalance = 0.95;
+            if rGlomerularTubularBalance > 0.99
+                rGlomerularTubularBalance = 0.99;
             elseif rGlomerularTubularBalance < 0
                 rGlomerularTubularBalance = 0; 
             end

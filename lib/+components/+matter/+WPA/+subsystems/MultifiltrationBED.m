@@ -112,6 +112,20 @@ classdef MultifiltrationBED < vsys
                 this.toStores.OrganicRemoval.toPhases.BigOrganics.setTimeStepProperties(tTimeStepProperties);
             end
             
+            csStoreNames = fieldnames(this.toStores);
+            for iStore = 1:length(csStoreNames)
+                for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
+                    oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
+                    tTimeStepProperties.fMaxStep = this.oParent.fTimeStep * 5;
+
+                    oPhase.setTimeStepProperties(tTimeStepProperties);
+
+                    tTimeStepProperties = struct();
+                    tTimeStepProperties.fMaxStep = this.oParent.fTimeStep * 5;
+                    oPhase.oCapacity.setTimeStepProperties(tTimeStepProperties);
+                end
+            end
+            
             this.setThermalSolvers();
         end
     end
