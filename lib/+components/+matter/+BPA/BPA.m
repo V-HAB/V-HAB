@@ -30,10 +30,10 @@ classdef BPA < vsys
         % According to [1] each cycle requires 26 days
         fProcessingTime = 26*24*3600;
         
-        % Power usage of BPA is currently unknown, but it uses fans and
-        % heaters and some electronics, so a small power demand based on
-        % the UPA standby power demand is used here
-        fPower = 56 ; % [W]
+        % Power usage of BPA (which is based on the Paragon IWP technology)
+        % is 142 W according to "Selection of a Brine Processor Technology
+        % for NASA Manned Missions", Donald L. Carter et.al. 2016, ICES-2016-014
+        fPower = 142 ; % [W]
     end
     
     methods

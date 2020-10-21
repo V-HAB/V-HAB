@@ -96,8 +96,9 @@ classdef CCAA < vsys
         % See "Living together in space: the design and operation of the
         % life support systems on the International Space Station" P.O.
         % Wieland, 1998, page 104, where the CCAA fan power consumption is
-        % mentioned to be 410 W
-        fCurrentPowerConsumption = 410; % W
+        % mentioned to be 410 W if the other power demands are summed up a
+        % total power demand of 470 W is reached
+        fCurrentPowerConsumption = 470; % W
         
         tParameterOverwrite;
     end

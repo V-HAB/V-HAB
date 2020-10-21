@@ -1043,8 +1043,12 @@ classdef CDRA < vsys
             end
             % The CDRA datime power consumption I received from ESA state
             % 1070 W, since the heater consume at most 960 W we assume here
-            % that ~ 200 W of other power demand is necessary for CDRA
-            this.fCurrentPowerConsumption = fTotalHeatFlow + 200;
+            % that the average power demand for the remaining components
+            % from  "Living together in space: the design and operation of the
+            % life support systems on the International Space Station" P.O.
+            % Wieland, 1998, page 132 is necessary in addition to the
+            % heater power
+            this.fCurrentPowerConsumption = fTotalHeatFlow + 107;
             this.fLastExecutionTime = this.oTimer.fTime;
         end
 	end

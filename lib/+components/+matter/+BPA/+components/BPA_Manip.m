@@ -30,7 +30,7 @@ classdef BPA_Manip < matter.manips.substance.stationary
             % done
             afPartialFlows = zeros(1, this.oPhase.oMT.iSubstances);
             
-            if(this.bActive)
+            if(this.bActive) && (this.oPhase.afMass(this.oPhase.oMT.tiN2I.Brine) > 0)
                 % Abbreviating some of the variables to make code more legible
                 tiN2I      = this.oPhase.oMT.tiN2I;
                 
