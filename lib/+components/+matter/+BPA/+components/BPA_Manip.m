@@ -76,6 +76,8 @@ classdef BPA_Manip < matter.manips.substance.stationary
                 this.oPhase.oStore.toProcsP2P.WaterP2P.setFlowRate(afWaterP2PFlows);
             else
                 update@matter.manips.substance(this, afPartialFlows);
+                afWaterP2PFlows = zeros(1, this.oPhase.oMT.iSubstances);
+                this.oPhase.oStore.toProcsP2P.WaterP2P.setFlowRate(afWaterP2PFlows);
             end
         end
     end
