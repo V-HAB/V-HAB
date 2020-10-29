@@ -52,7 +52,12 @@ classdef Photobioreactor < vsys
                 error('The third input must be a structure.')
             end
    
-            this@vsys(oParent, sName, 30)
+            if isfield(txPhotobioreactorProperties, 'sLightColor') && ischar(txPhotobioreactorProperties.fTimeStep)
+                fTimeStep = txPhotobioreactorProperties.fTimeStep;
+            else
+                fTimeStep = 30;
+            end
+            this@vsys(oParent, sName, fTimeStep)
             eval(this.oRoot.oCfgParams.configCode(this));
             
             %% set Photobioreactor properties by checking if an input is specified
@@ -292,7 +297,7 @@ classdef Photobioreactor < vsys
             this.toStores.ReactorAir.toPhases.HighCO2Air.setTimeStepProperties(tTimeStepProperties)
             
             tTimeStepProperties = struct();
-            tTimeStepProperties.fFixedTimeStep = 20;
+            tTimeStepProperties.fFixedTimeStep = this.fTimeStep;
             
             this.toStores.MediumMaintenance.toPhases.NO3Supply.setTimeStepProperties(tTimeStepProperties);
             this.toStores.MediumMaintenance.toPhases.WaterSupply.setTimeStepProperties(tTimeStepProperties);
@@ -300,6 +305,19 @@ classdef Photobioreactor < vsys
             
             this.setThermalSolvers();
             
+            csStoreNames = fieldnames(this.toStores);
+            for iStore = 1:length(csStoreNames)
+                for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
+                    oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
+                    tTimeStepProperties.fMaxStep = this.fTimeStep * 5;
+
+                    oPhase.setTimeStepProperties(tTimeStepProperties);
+
+                    tTimeStepProperties = struct();
+                    tTimeStepProperties.fMaxStep = this.fTimeStep * 5;
+                    oPhase.oCapacity.setTimeStepProperties(tTimeStepProperties);
+                end
+            end
         end
     end
     

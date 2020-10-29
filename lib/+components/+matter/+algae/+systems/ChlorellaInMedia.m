@@ -36,7 +36,7 @@ classdef ChlorellaInMedia < vsys
     
     methods
         function this = ChlorellaInMedia (oParent, sName)
-            this@vsys(oParent, sName, 30);
+            this@vsys(oParent, sName, oParent.fTimeStep);
             eval(this.oRoot.oCfgParams.configCode(this));
             
             %initially set refill parameters to false for solver control logic.
@@ -74,7 +74,7 @@ classdef ChlorellaInMedia < vsys
 
             matter.phases.mixture(this.toStores.GrowthChamber, 'GrowthMedium', 'liquid', this.tfGrowthChamberComponents, 303, 1e5);
             
-            this.toStores.GrowthChamber.createPhase('gas', 'AirInGrowthChamber', 0.05 ,struct('O2',5000, 'CO2', 59000), 293, 0.5);
+            this.toStores.GrowthChamber.createPhase('gas', 'flow', 'AirInGrowthChamber', 0.05 ,struct('O2',5000, 'CO2', 59000), 293, 0.5);
             
             
             %% Air Connection to Photobioreactor Air Supply in PBR Parent System 
@@ -173,7 +173,8 @@ classdef ChlorellaInMedia < vsys
             
             %% air connection
             solver.matter.manual.branch(this.toBranches.Air_to_GrowthChamber);
-            solver.matter.residual.branch(this.toBranches.Air_from_GrowthChamber);
+            aoMultiSolverBranches = [this.toBranches.Air_from_GrowthChamber];
+            solver.matter_multibranch.iterative.branch(aoMultiSolverBranches, 'complex');
             
             %Since interfaces always have to be on the right side in the subsystem branches that are supposed to transport matter into the subsystem always have a negative flow rate.
             
@@ -194,6 +195,20 @@ classdef ChlorellaInMedia < vsys
             %Urine Supply from PBR
             solver.matter.manual.branch(this.toBranches.Urine_from_PBR);
             this.setThermalSolvers();
+            
+            csStoreNames = fieldnames(this.toStores);
+            for iStore = 1:length(csStoreNames)
+                for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
+                    oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
+                    tTimeStepProperties.fMaxStep = this.fTimeStep * 5;
+
+                    oPhase.setTimeStepProperties(tTimeStepProperties);
+
+                    tTimeStepProperties = struct();
+                    tTimeStepProperties.fMaxStep = this.fTimeStep * 5;
+                    oPhase.oCapacity.setTimeStepProperties(tTimeStepProperties);
+                end
+            end
         end
         %%
         function createThermalStructure(this)
