@@ -690,8 +690,12 @@ function update(this)
                 end
                 
                 
-                % Now we can call the setFlowRate callback.
-                this.chSetBranchFlowRate{iB}(this.afFlowRates(iB), afDeltaPressures);
+                if tools.round.prec(this.afFlowRates(iB), this.oTimer.iPrecision) == 0
+                    this.chSetBranchFlowRate{iB}(0, afDeltaPressures);
+                else
+                    % Now we can call the setFlowRate callback.
+                    this.chSetBranchFlowRate{iB}(this.afFlowRates(iB), afDeltaPressures);
+                end
             end
             
             % Marking this branch as updated so we don't do it again.

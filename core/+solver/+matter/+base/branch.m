@@ -197,6 +197,11 @@ classdef branch < base & event.source
                     afPressures = zeros(1, this.oBranch.iFlowProcs);
                 end
 
+                if tools.round.prec(fFlowRate, oIn.oStore.oTimer.iPrecision) == 0
+                    fFlowRate = 0;
+                    afPressures = zeros(1, this.oBranch.iFlowProcs);
+                end
+                
                 this.fFlowRate = fFlowRate;
 
             end
