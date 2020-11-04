@@ -290,7 +290,7 @@ classdef SCRA < vsys
         function exec(this, ~)
             exec@vsys(this);
             
-            fCO2FlowRate = -((this.toBranches.CRA_H2_In.fFlowRate / this.oMT.afMolarMass(this.oMT.tiN2I.H2)) ./ 3.5) * this.oMT.afMolarMass(this.oMT.tiN2I.CO2);
+            fCO2FlowRate = -(((this.toBranches.CRA_H2_In.fFlowRate * this.toBranches.CRA_H2_In.aoFlows(1).arPartialMass(this.oMT.tiN2I.H2)) / this.oMT.afMolarMass(this.oMT.tiN2I.H2)) ./ 3.5) * this.oMT.afMolarMass(this.oMT.tiN2I.CO2);
             % Through setting the valve, H2 is vented without passing
             % through the sabatier reactors in case no CO2 is available
             this.toProcsF2F.VentValveH2.setOpen(   	false);
@@ -298,7 +298,7 @@ classdef SCRA < vsys
             this.toProcsF2F.Checkvalve.setOpen(     true);
                 
             fAccumulatorPressure = this.toStores.CRA_Accumulator.toPhases.CO2.fPressure;
-            if this.toStores.CRA_Accumulator.toPhases.CO2.fPressure > 7.2e5
+            if fAccumulatorPressure > 7.2e5
                 if fCO2FlowRate <= this.toBranches.CRA_CO2_In.fFlowRate
                     fCO2FlowRate = 1.1 * this.toBranches.CRA_CO2_In.fFlowRate;
                 end

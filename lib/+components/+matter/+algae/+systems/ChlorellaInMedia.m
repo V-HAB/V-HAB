@@ -82,7 +82,7 @@ classdef ChlorellaInMedia < vsys
             %(eg. cabin air)
             %inlet flow
             matter.procs.exmes.gas(this.toStores.GrowthChamber.toPhases.AirInGrowthChamber, 'From_Outside');
-            components.matter.pipe(this, 'Air_In', 0.1, 0.01); %length, diameter
+            components.matter.algae.F2F.GrowthMediumAirInlet(this, 'Air_In'); %length, diameter
             matter.branch(this, 'GrowthChamber.From_Outside', {'Air_In'}, 'Air_Inlet', 'Air_to_GrowthChamber');
             
             %outlet flow
@@ -172,13 +172,13 @@ classdef ChlorellaInMedia < vsys
             createSolverStructure@vsys(this);
             
             %% air connection
-            solver.matter.manual.branch(this.toBranches.Air_to_GrowthChamber);
-            aoMultiSolverBranches = [this.toBranches.Air_from_GrowthChamber];
+            solver.matter.manual.branch(this.toBranches.Air_from_GrowthChamber);
+            aoMultiSolverBranches = [this.toBranches.Air_to_GrowthChamber];
             solver.matter_multibranch.iterative.branch(aoMultiSolverBranches, 'complex');
             
             %Since interfaces always have to be on the right side in the subsystem branches that are supposed to transport matter into the subsystem always have a negative flow rate.
             
-            this.toBranches.Air_to_GrowthChamber.oHandler.setFlowRate(-0.1);
+            this.toBranches.Air_from_GrowthChamber.oHandler.setFlowRate(0.1);
 
             
             %% medium to harvest
@@ -339,10 +339,6 @@ classdef ChlorellaInMedia < vsys
 
             %% update everything
             exec@vsys(this)
-            
-            
         end
     end
-    
-    
 end
