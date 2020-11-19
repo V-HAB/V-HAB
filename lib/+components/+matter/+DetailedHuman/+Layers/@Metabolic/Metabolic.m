@@ -176,13 +176,22 @@ classdef Metabolic < vsys
         
         rFatEnergyConversionEfficiency      = ((106*12)/2340);
         
-        % assumed efficiency of mechanical work
-        rMechanicalEfficiency = 0.25;
+        % assumed efficiency of mechanical work. Since the energy yield of
+        % ATP as previously wrongly assumed to be 12 kcal/mol, while the
+        % correct yield (see comment at the energy yield) is 7.3 kcal/mol,
+        % the mechanical efficiency is adapted. Since the food consumption
+        % with 12 kcal/mol and 0.25 was correct according to BVAD, the
+        % total ATP expenditure should remain the same.
+        rMechanicalEfficiency = 0.25/(7.3/12);
         
         % The activity level at lactate threshold
         rLactateActivityLevelThreshold = 0.7;
         
-        fEnergyYieldATP = 12 * 4184;
+        % Two books, "Biochemstry" Berg et.al. 2013 on page 434 and
+        % Molecular Cell Biology of Lodish 2016 on page 62 mention the
+        % energy release of ATP to be 7.3 kcal/mol. The original V-Man
+        % model assumed 12 kcal/mol
+        fEnergyYieldATP = 7.3 * 4184;
         
         % Corresponds to epsilon_gluc,liver in the dissertation
         rRatioOfGlucoseUsedFromLiver = 0.2;
