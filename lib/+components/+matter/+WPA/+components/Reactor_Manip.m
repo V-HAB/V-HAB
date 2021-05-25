@@ -5,7 +5,7 @@ classdef Reactor_Manip < matter.manips.substance.flow
     properties
         fReactorLength           = 1.12; %[m]
         fBubbleVelocity          = 0.0018; %m/s 0.18cm/s
-        fBubbleRadius            = 0.139; %[m] if there'd be 1g instead of 0.01g--> 12.7cm
+        fBubbleRadius            = 0.139/2; %[m] if there'd be 1g instead of 0.01g--> 12.7cm diameter
         rSphericityOxygenBubbles = 0.5; %small_diameter/large_diameter
         fOxidationRate           = -5.15*10^-4; %in kg/m^2 32 Mol_O2,
         
@@ -98,7 +98,7 @@ classdef Reactor_Manip < matter.manips.substance.flow
             
         end
         
-        function calculateConversionRate(this, afInFlowRates, aarInPartials)
+        function calculateConversionRate(this, afInFlowRates, aarInPartials, ~)
             %getting inflowrates
             afPartialInFlows = sum((afInFlowRates .* aarInPartials),1);
             
@@ -126,41 +126,45 @@ classdef Reactor_Manip < matter.manips.substance.flow
                 % Get the current oxygen inlet flowrate
                 fOxygenInjection = this.oPhase.oStore.toProcsP2P.ReactorOxygen_P2P.fFlowRate * this.oPhase.oStore.toProcsP2P.ReactorOxygen_P2P.arPartialMass(this.oMT.tiN2I.O2);
 
-                % According to the same paper, the oxygen mass consumption
-                % potential is defined in equation (5)
-                fOxygenMassConsumptionPotential = rOxygenUtilization * fOxygenInjection * this.fResidenceTime; %amount of oxygen that can be used for oxidation
+                if fOxygenInjection == 0
+                    this.afFlowRates     = zeros(1, this.oMT.iSubstances);
+                else
+                    % According to the same paper, the oxygen mass consumption
+                    % potential is defined in equation (5)
+                    fOxygenMassConsumptionPotential = rOxygenUtilization * fOxygenInjection * this.fResidenceTime; %amount of oxygen that can be used for oxidation
 
-                % And the amount of organics removed in the reaction can be
-                % expressed by equation (6)
-                afRemovedOrganics = fOxygenMassConsumptionPotential .* this.oMT.afMolarMass(this.abVolatile) ./ (this.arStochiometricO2Ratio(this.abVolatile) .* this.oMT.afMolarMass(this.oMT.tiN2I.O2));
+                    % And the amount of organics removed in the reaction can be
+                    % expressed by equation (6)
+                    afRemovedOrganics = fOxygenMassConsumptionPotential .* this.oMT.afMolarMass(this.abVolatile) ./ (this.arStochiometricO2Ratio(this.abVolatile) .* this.oMT.afMolarMass(this.oMT.tiN2I.O2));
 
-                % If the removed organics value is larger than the value that
-                % enters the reactor, everything of that substance reacts.
-                % Otherwise, a specific ratio remains.
-                arRemovalEfficiencies = ones(1, this.oMT.iSubstances);
-                arRemovalEfficiencies(this.abVolatile) = (afOrganicsToRemove - afRemovedOrganics) ./ afOrganicsToRemove;
-                arRemovalEfficiencies(arRemovalEfficiencies < 0) = 0;
-                arRemovalEfficiencies = ones(1, this.oMT.iSubstances) - arRemovalEfficiencies;
+                    % If the removed organics value is larger than the value that
+                    % enters the reactor, everything of that substance reacts.
+                    % Otherwise, a specific ratio remains.
+                    arRemovalEfficiencies = ones(1, this.oMT.iSubstances);
+                    arRemovalEfficiencies(this.abVolatile) = (afOrganicsToRemove - afRemovedOrganics) ./ afOrganicsToRemove;
+                    arRemovalEfficiencies(arRemovalEfficiencies < 0) = 0;
+                    arRemovalEfficiencies = ones(1, this.oMT.iSubstances) - arRemovalEfficiencies;
 
-                afReactedVolatiles = afPartialInFlows .* arRemovalEfficiencies;
+                    afReactedVolatiles = afPartialInFlows .* arRemovalEfficiencies;
 
-                afReactedVolatilesMols = afReactedVolatiles ./ this.oMT.afMolarMass;
+                    afReactedVolatilesMols = afReactedVolatiles ./ this.oMT.afMolarMass;
 
-                afReactedO2Mols     = afReactedVolatilesMols .* this.arStochiometricO2Ratio;
-                afProducedCO2Mols   = afReactedVolatilesMols .* this.arStochiometricCO2Ratio;
-                afProducedH2OMols   = afReactedVolatilesMols .* this.arStochiometricH2ORatio;
-                afProducedN2Mols    = afReactedVolatilesMols .* this.arStochiometricN2Ratio;
+                    afReactedO2Mols     = afReactedVolatilesMols .* this.arStochiometricO2Ratio;
+                    afProducedCO2Mols   = afReactedVolatilesMols .* this.arStochiometricCO2Ratio;
+                    afProducedH2OMols   = afReactedVolatilesMols .* this.arStochiometricH2ORatio;
+                    afProducedN2Mols    = afReactedVolatilesMols .* this.arStochiometricN2Ratio;
 
-                fO2Consumption  = sum(afReactedO2Mols)      * this.oMT.afMolarMass(this.oMT.tiN2I.O2);
-                fCO2Production  = sum(afProducedCO2Mols)    * this.oMT.afMolarMass(this.oMT.tiN2I.CO2);
-                fH2OProduction  = sum(afProducedH2OMols)    * this.oMT.afMolarMass(this.oMT.tiN2I.H2O);
-                fN2Production   = sum(afProducedN2Mols)     * this.oMT.afMolarMass(this.oMT.tiN2I.N2);
+                    fO2Consumption  = sum(afReactedO2Mols)      * this.oMT.afMolarMass(this.oMT.tiN2I.O2);
+                    fCO2Production  = sum(afProducedCO2Mols)    * this.oMT.afMolarMass(this.oMT.tiN2I.CO2);
+                    fH2OProduction  = sum(afProducedH2OMols)    * this.oMT.afMolarMass(this.oMT.tiN2I.H2O);
+                    fN2Production   = sum(afProducedN2Mols)     * this.oMT.afMolarMass(this.oMT.tiN2I.N2);
 
-                this.afFlowRates     = - afReactedVolatiles;
-                this.afFlowRates(this.oMT.tiN2I.O2)  = - fO2Consumption;
-                this.afFlowRates(this.oMT.tiN2I.CO2) = fCO2Production;
-                this.afFlowRates(this.oMT.tiN2I.H2O) = fH2OProduction;
-                this.afFlowRates(this.oMT.tiN2I.N2)  = fN2Production;
+                    this.afFlowRates     = - afReactedVolatiles;
+                    this.afFlowRates(this.oMT.tiN2I.O2)  = - fO2Consumption;
+                    this.afFlowRates(this.oMT.tiN2I.CO2) = fCO2Production;
+                    this.afFlowRates(this.oMT.tiN2I.H2O) = fH2OProduction;
+                    this.afFlowRates(this.oMT.tiN2I.N2)  = fN2Production;
+                end
             end
             
             this.update();

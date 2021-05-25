@@ -1,4 +1,4 @@
-classdef Desorption_P2P < matter.procs.p2ps.flow
+classdef flowDesorption_P2P < matter.procs.p2ps.flow
     % P2P processor representing the desorption flow.
     % Called and set externaly in the adsorption p2p processor.
     % IMPORTANT, the adsorption P2P must be defined before the desorption
@@ -7,7 +7,7 @@ classdef Desorption_P2P < matter.procs.p2ps.flow
     end
     
     methods
-        function [this] = Desorption_P2P(oStore, sName, sPhaseIn, sPhaseOut)
+        function [this] = flowDesorption_P2P(oStore, sName, sPhaseIn, sPhaseOut)
             this@matter.procs.p2ps.flow(oStore, sName, sPhaseIn, sPhaseOut);  
         end
         

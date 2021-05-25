@@ -21,6 +21,7 @@ classdef WPA < vsys
         % "Performance Qualification Test of the ISS Water Processor
         % Assembly (WPA) Expendables", Layne Carter et.al, 2005
         fFlowRate           = 5.8967 / 3600;         %flowrate out of the waste water tank
+        fVolumetricFlowRate = (5.8967 / 3600) / 998.24;         %flowrate out of the waste water tank
         
         fCheckFillStateIntervall = 60;
         
@@ -29,6 +30,11 @@ classdef WPA < vsys
         
         % Power usage in Standby from "Status of the Regenerative ECLSS Water Recovery System", D. Layne Carter, ICES-2009-2352
         fPower = 133 + 94 + 14; % [W]
+        
+        % For verification the WPA is supposed to run continously (or if
+        % the user would like this), can be activated through the function
+        % setContinousMode
+        bContinousWaterProcessingMode = false;
     end
     methods
         function this = WPA(oParent, sName)
@@ -40,13 +46,11 @@ classdef WPA < vsys
             % discretice the inddividual resin parts of the multifiltration
             % beds:
             miCells =  [5, 5, 3, 5, 3, 3, 2];
-            % increase of speed by decreasing max capacity of MFBeds (used
-            % to speed up the simulation for faster verification)
-            fSpeed            = 1;                    
-       
-            components.matter.WPA.subsystems.MultifiltrationBED(this, 'MultiBED1',  miCells, fSpeed);
-            components.matter.WPA.subsystems.MultifiltrationBED(this, 'MultiBED2',  miCells, fSpeed);
-            components.matter.WPA.subsystems.MultifiltrationBED(this, 'IonBed',     miCells, fSpeed, true);
+            % Boolean parameter decides whether the cell mass is modelled
+            % or not
+            components.matter.WPA.subsystems.MultifiltrationBED(this, 'MultiBED1',  miCells, false);
+            components.matter.WPA.subsystems.MultifiltrationBED(this, 'MultiBED2',  miCells, false);
+            components.matter.WPA.subsystems.MultifiltrationBED(this, 'IonBed',     miCells, false, true);
         end
         
         function createMatterStructure(this)
@@ -54,7 +58,7 @@ classdef WPA < vsys
             
             %% stores
             
-            matter.store(this, 'WasteWater', 68/998);    % Waster water tank 150lb water tank= 0,068m^3
+            matter.store(this, 'WasteWater', 68/998);    % Waste water tank 150lb water tank= 0,068m^3
             matter.store(this, 'LiquidSeperator_1',  2e-6);
             
             % reactor part
@@ -70,7 +74,7 @@ classdef WPA < vsys
             matter.store(this, 'Rack_Air',      fReactorVolume + 1e-6);
             
             %WW_Tank & WT_Tank
-            oWasteWater         = this.toStores.WasteWater.createPhase(       	'mixture',          'Water', 'liquid',        0.62*this.toStores.WasteWater.fVolume,   struct('H2O', 1),                    293, 1e5);
+            oWasteWater         = this.toStores.WasteWater.createPhase(       	'mixture',          'Water', 'liquid',        0.04*this.toStores.WasteWater.fVolume,   struct('H2O', 1),                    293, 1e5);
             oLiquidSeperator1   = this.toStores.LiquidSeperator_1.createPhase(	'mixture', 'flow',	'Water', 'liquid',        1e-6,                                    struct('H2O', 1),                    293, 1e5);
             oCheckTank          = this.toStores.Check_Tank.createPhase(      	'mixture', 'flow',	'Water', 'liquid',        this.toStores.Check_Tank.fVolume,        struct('H2O', 1),                    293, 1e5);
             oReactor            = this.toStores.Rack_Air.createPhase(           'mixture', 'flow', 	'Water', 'liquid',        fReactorVolume,                          struct('H2O', 0.9995, 'O2', 5e-4),	402.594,  4.481e5);%265 Fahrenheit, 65psia =4,481bar
@@ -82,6 +86,7 @@ classdef WPA < vsys
             
             %% components
             components.matter.WPA.components.Reactor_Manip('Oxidator', oReactor);
+            components.matter.Manips.ManualManipulator(this, 'WasteWaterManip', oWasteWater);
             
             components.matter.WPA.components.MLS(this.toStores.LiquidSeperator_1, 'LiquidSeperator_1_P2P', oLiquidSeperator1, oLiquidSeperator1Air);
             components.matter.WPA.components.MLS(this.toStores.LiquidSeperator_2, 'LiquidSeperator_2_P2P', oLiquidSeperator2, oLiquidSeperator2Air);
@@ -89,6 +94,8 @@ classdef WPA < vsys
             components.matter.P2Ps.ManualP2P(    this.toStores.Rack_Air,          'ReactorOxygen_P2P',     oRackAir, oReactor);
             
             
+            components.matter.pH_Module.flowManip('pH_Manipulator_CheckTank', oCheckTank);
+                    
             %% Valves
             oReflowValve = components.matter.valve(this, 'ReflowValve', 0);
             this.abContaminants = this.toChildren.MultiBED1.abContaminants;
@@ -152,6 +159,10 @@ classdef WPA < vsys
             
             solver.matter.manual.branch(this.toBranches.WasteWater_to_MLS1);
             
+            if this.bContinousWaterProcessingMode
+                this.toBranches.WasteWater_to_MLS1.oHandler.setFlowRate(this.fFlowRate);
+            end
+                
             solver.matter.manual.branch(this.toBranches.AirInlet);
             this.toBranches.AirInlet.oHandler.setFlowRate(-0.1);
             
@@ -166,20 +177,62 @@ classdef WPA < vsys
                 aoMultiSolverBranches(iBranch,1) = this.toBranches.(csFields{iBranch});%#ok
             end
             
-            aoMultiSolverBranches = [aoMultiSolverBranches; this.toChildren.MultiBED1.aoBranches];
-            
-            for iResin = 1:7
-                aoMultiSolverBranches = [aoMultiSolverBranches; this.toChildren.MultiBED1.toChildren.(['Resin_', num2str(iResin)]).aoBranches];%#ok
-            end
-            
-            aoMultiSolverBranches = [aoMultiSolverBranches; this.toChildren.MultiBED2.aoBranches];
-            for iResin = 1:7
-                aoMultiSolverBranches = [aoMultiSolverBranches; this.toChildren.MultiBED2.toChildren.(['Resin_', num2str(iResin)]).aoBranches];%#ok
-            end
-            
-            aoMultiSolverBranches = [aoMultiSolverBranches; this.toChildren.IonBed.aoBranches];
-            for iResin = 1:7
-                aoMultiSolverBranches = [aoMultiSolverBranches; this.toChildren.IonBed.toChildren.(['Resin_', num2str(iResin)]).aoBranches];%#ok
+            if true%~this.toChildren.MultiBED1.bModelCellMass && ~this.toChildren.MultiBED2.bModelCellMass && ~this.toChildren.IonBed.bModelCellMass
+                aoMultiSolverBranches = [aoMultiSolverBranches; this.toChildren.MultiBED1.aoBranches];
+                for iResin = 1:7
+                    aoMultiSolverBranches = [aoMultiSolverBranches; this.toChildren.MultiBED1.toChildren.(['Resin_', num2str(iResin)]).aoBranches];%#ok
+                end
+                aoMultiSolverBranches = [aoMultiSolverBranches; this.toChildren.MultiBED2.aoBranches];
+                for iResin = 1:7
+                    aoMultiSolverBranches = [aoMultiSolverBranches; this.toChildren.MultiBED2.toChildren.(['Resin_', num2str(iResin)]).aoBranches];%#ok
+                end
+                aoMultiSolverBranches = [aoMultiSolverBranches; this.toChildren.IonBed.aoBranches];
+                for iResin = 1:7
+                    aoMultiSolverBranches = [aoMultiSolverBranches; this.toChildren.IonBed.toChildren.(['Resin_', num2str(iResin)]).aoBranches];%#ok
+                end
+            else
+                for iResin = 1:7
+                    if iResin > 1
+                        if ~this.toChildren.MultiBED1.bModelCellMass
+                            solver.matter.manual.branch(this.toChildren.MultiBED1.toBranches.(['Resin', num2str(iResin-1),'_to_',  num2str(iResin)]));
+                            this.toChildren.MultiBED1.toBranches.(['Resin', num2str(iResin-1),'_to_',  num2str(iResin)]).oHandler.setVolumetricFlowRate(this.fVolumetricFlowRate);
+                            aoMultiSolverBranches = [aoMultiSolverBranches; this.toChildren.MultiBED1.toBranches.(['Resin', num2str(iResin-1),'_to_ResinStore'])];%#ok
+                        else
+                            aoMultiSolverBranches = [aoMultiSolverBranches; this.toChildren.MultiBED1.toBranches.(['Resin', num2str(iResin-1),'_to_',  num2str(iResin)])];%#ok
+                        end
+                    end
+                    aoMultiSolverBranches = [aoMultiSolverBranches; this.toChildren.MultiBED1.toChildren.(['Resin_', num2str(iResin)]).aoBranches];%#ok
+                end
+                aoMultiSolverBranches = [aoMultiSolverBranches; this.toChildren.MultiBED1.toBranches.(['Resin', num2str(iResin),'_Cell', num2str(this.toChildren.MultiBED1.toChildren.(['Resin_', num2str(iResin)]).iCells), '_to_OrganicRemoval'])];
+
+
+                for iResin = 1:7
+                    if iResin > 1
+                        if ~this.toChildren.MultiBED2.bModelCellMass
+                            solver.matter.manual.branch(this.toChildren.MultiBED2.toBranches.(['Resin', num2str(iResin-1),'_to_',  num2str(iResin)]));
+                            this.toChildren.MultiBED2.toBranches.(['Resin', num2str(iResin-1),'_to_',  num2str(iResin)]).oHandler.setVolumetricFlowRate(this.fVolumetricFlowRate);
+                            aoMultiSolverBranches = [aoMultiSolverBranches; this.toChildren.MultiBED2.toBranches.(['Resin', num2str(iResin-1),'_to_ResinStore'])];%#ok
+                        else
+                            aoMultiSolverBranches = [aoMultiSolverBranches; this.toChildren.MultiBED2.toBranches.(['Resin', num2str(iResin-1),'_to_',  num2str(iResin)])];%#ok
+                        end
+                    end
+                    aoMultiSolverBranches = [aoMultiSolverBranches; this.toChildren.MultiBED2.toChildren.(['Resin_', num2str(iResin)]).aoBranches];%#ok
+                end
+                aoMultiSolverBranches = [aoMultiSolverBranches; this.toChildren.MultiBED2.toBranches.(['Resin', num2str(iResin),'_Cell', num2str(this.toChildren.MultiBED2.toChildren.(['Resin_', num2str(iResin)]).iCells), '_to_OrganicRemoval'])];
+
+                for iResin = 1:7
+                    if iResin > 1
+                        if ~this.toChildren.IonBed.bModelCellMass
+                            solver.matter.manual.branch(this.toChildren.IonBed.toBranches.(['Resin', num2str(iResin-1),'_to_',  num2str(iResin)]));
+                            this.toChildren.IonBed.toBranches.(['Resin', num2str(iResin-1),'_to_',  num2str(iResin)]).oHandler.setVolumetricFlowRate(this.fVolumetricFlowRate);
+                            aoMultiSolverBranches = [aoMultiSolverBranches; this.toChildren.IonBed.toBranches.(['Resin', num2str(iResin-1),'_to_ResinStore'])];%#ok
+                        else
+                            aoMultiSolverBranches = [aoMultiSolverBranches; this.toChildren.IonBed.toBranches.(['Resin', num2str(iResin-1),'_to_',  num2str(iResin)])];%#ok
+                        end
+                    end
+
+                    aoMultiSolverBranches = [aoMultiSolverBranches; this.toChildren.IonBed.toChildren.(['Resin_', num2str(iResin)]).aoBranches];%#ok
+                end
             end
             
             tSolverProperties.fMaxError = 1e-6;
@@ -190,6 +243,11 @@ classdef WPA < vsys
             
             oSolver = solver.matter_multibranch.iterative.branch(aoMultiSolverBranches, 'complex');
             oSolver.setSolverProperties(tSolverProperties);
+
+%             for iBranch = 1:length(aoMultiSolverBranches)
+%                 oHandler = solver.matter.manual.branch(aoMultiSolverBranches(iBranch));
+%                 oHandler.setVolumetricFlowRate(this.fVolumetricFlowRate);
+%             end
             
             for iBed = 1:this.iChildren
                 oBed = this.toChildren.(this.csChildren{iBed});
@@ -236,52 +294,89 @@ classdef WPA < vsys
             this.connectIF('AirOutlet',    	varargin{4});
         end
         
+        function setContinousMode(this, bContinous, fFlowRate)
+            % this function is primarily used for the example, where a test case for the WPA is simulated in a continous flow mode
+            this.bContinousWaterProcessingMode = bContinous;
+            
+            this.fFlowRate = fFlowRate;
+            this.fVolumetricFlowRate = this.fFlowRate/ 998.24;
+            
+            if ~isempty(this.toBranches.WasteWater_to_MLS1.oHandler)
+                this.toBranches.WasteWater_to_MLS1.oHandler.setFlowRate(this.fFlowRate);
+                
+                for iResin = 2:7
+                    this.toChildren.MultiBED1.toBranches.(['Resin', num2str(iChild-1),'_to_',  num2str(iChild)]).oHandler.setVolumetricFlowRate(this.fVolumetricFlowRate);
+                    this.toChildren.MultiBED2.toBranches.(['Resin', num2str(iChild-1),'_to_',  num2str(iChild)]).oHandler.setVolumetricFlowRate(this.fVolumetricFlowRate);
+                    this.toChildren.IonBed.toBranches.(['Resin', num2str(iChild-1),'_to_',  num2str(iChild)]).oHandler.setVolumetricFlowRate(this.fVolumetricFlowRate);
+                end
+            end
+        end
+        function switchOffMicrobialCheckValve(this, bAlwaysOpen)
+            % with this function the functionality that waste water of too
+            % bad quality flows back to the waste water tank can be turned
+            % off
+            this.toProcsF2F.MicrobialCheckValve.switchAlwaysOpen(bAlwaysOpen);
+        end
     end
     
     methods (Access = protected)
         function exec(this, ~)
             
             exec@vsys(this);
-            %% Internal Space Station Water Balance Operation (Paper)
-            bActiveMassTransfer = this.toBranches.WasteWater_to_MLS1.oHandler.bMassTransferActive;
-            if (this.toStores.WasteWater.toPhases.Water.fMass > 0.65 * 68) && ~bActiveMassTransfer
-                % flowrate set to inlet processing flowrate
-                fMassToTransfer = 0.61 * this.toStores.WasteWater.toPhases.Water.fMass;
-                fTimeForTransfer = fMassToTransfer / this.fFlowRate;
-                
-            	this.toBranches.WasteWater_to_MLS1.oHandler.setMassTransfer(fMassToTransfer, fTimeForTransfer)
-                
-                % Since the only next point at which we want to execute the
-                % WPA is when the transfer is finished, we set the time
-                % step accordingly
-                this.setTimeStep(fTimeForTransfer)
-            
-            end
-            
-            this.bCurrentlyProcessingWater = this.toBranches.WasteWater_to_MLS1.oHandler.bMassTransferActive;
-            
-            if this.bCurrentlyProcessingWater
-                % According to "Two-Phase Oxidizing Flow in Volatile Removal
-                % Assembly Reactor Under Microgravity Conditions", Boyun Guo,
-                % Donald W. Holder and John T. Tester, 2005, 
-                % The oxygen injection rate of the VRA reactor on the ISS is
-                % 0.001 g/s
-                afFlowRates = zeros(1, this.oMT.iSubstances);
-                afFlowRates(this.oMT.tiN2I.O2) = 0.001e-3;
-                this.toStores.Rack_Air.toProcsP2P.ReactorOxygen_P2P.setFlowRate(afFlowRates);
-                
+            if ~this.bContinousWaterProcessingMode
+                %% Internal Space Station Water Balance Operation (Paper)
+                bActiveMassTransfer = this.toBranches.WasteWater_to_MLS1.oHandler.bMassTransferActive;
+                if (this.toStores.WasteWater.toPhases.Water.fMass > 0.65 * 68) && ~bActiveMassTransfer
+                    % flowrate set to inlet processing flowrate
+                    fMassToTransfer = 0.61 * this.toStores.WasteWater.toPhases.Water.fMass;
+                    fTimeForTransfer = fMassToTransfer / this.fFlowRate;
+
+                    this.toBranches.WasteWater_to_MLS1.oHandler.setMassTransfer(fMassToTransfer, fTimeForTransfer)
+
+                    % Since the only next point at which we want to execute the
+                    % WPA is when the transfer is finished, we set the time
+                    % step accordingly
+                    this.setTimeStep(fTimeForTransfer)
+
+                end
+
+                this.bCurrentlyProcessingWater = this.toBranches.WasteWater_to_MLS1.oHandler.bMassTransferActive;
+
+                if this.bCurrentlyProcessingWater
+                    % According to "Two-Phase Oxidizing Flow in Volatile Removal
+                    % Assembly Reactor Under Microgravity Conditions", Boyun Guo,
+                    % Donald W. Holder and John T. Tester, 2005, 
+                    % The oxygen injection rate of the VRA reactor on the ISS is
+                    % 0.001 g/s
+                    afFlowRates = zeros(1, this.oMT.iSubstances);
+                    afFlowRates(this.oMT.tiN2I.O2) = 0.001e-3;
+                    this.toStores.Rack_Air.toProcsP2P.ReactorOxygen_P2P.setFlowRate(afFlowRates);
+
+                    % Power usage while recycling from "Status of the Regenerative ECLSS Water Recovery System", D. Layne Carter, ICES-2009-2352
+                    this.fPower = 320 + 94 + 14; % [W]
+                else
+                    afFlowRates = zeros(1, this.oMT.iSubstances);
+                    this.toStores.Rack_Air.toProcsP2P.ReactorOxygen_P2P.setFlowRate(afFlowRates);
+
+                    % While the WPA is off, we check the fill state of the tank
+                    % at the specified intervall
+                    this.setTimeStep(this.fCheckFillStateIntervall)
+
+                    % Power usage in Standby from "Status of the Regenerative ECLSS Water Recovery System", D. Layne Carter, ICES-2009-2352
+                    this.fPower = 133 + 94 + 14;
+                end
+            else
                 % Power usage while recycling from "Status of the Regenerative ECLSS Water Recovery System", D. Layne Carter, ICES-2009-2352
                 this.fPower = 320 + 94 + 14; % [W]
-            else
+                
+                rPartialH = 10^-7 * this.oMT.afMolarMass(this.oMT.tiN2I.Hplus);
+                rPartialOH = 10^-7 * this.oMT.afMolarMass(this.oMT.tiN2I.OH);
                 afFlowRates = zeros(1, this.oMT.iSubstances);
-                this.toStores.Rack_Air.toProcsP2P.ReactorOxygen_P2P.setFlowRate(afFlowRates);
                 
-                % While the WPA is off, we check the fill state of the tank
-                % at the specified intervall
-                this.setTimeStep(this.fCheckFillStateIntervall)
-                
-                % Power usage in Standby from "Status of the Regenerative ECLSS Water Recovery System", D. Layne Carter, ICES-2009-2352
-                this.fPower = 133 + 94 + 14;
+                afFlowRates(this.oMT.tiN2I.Hplus)   = rPartialH * this.fFlowRate;
+                afFlowRates(this.oMT.tiN2I.OH)      = rPartialOH * this.fFlowRate;
+                afFlowRates(this.oMT.tiN2I.H2O)     = -sum(afFlowRates);
+                this.toStores.WasteWater.toPhases.Water.toManips.substance.setFlowRate(afFlowRates);
             end
         end
     end
