@@ -48,8 +48,6 @@ classdef FuelCellReaction < matter.manips.substance.stationary
             afPartialFlowsH2O = zeros(1, this.oPhase.oMT.iSubstances);
             afPartialFlowsH2O(this.oMT.tiN2I.H2O) = afPartialFlows(this.oMT.tiN2I.H2O);
             this.oPhase.oStore.toProcsP2P.Membrane_to_O2.setFlowRate(afPartialFlowsH2O);
-            
-            this.oPhase.oStore.oContainer.toStores.O2_WaterSeperation.toProcsP2P.Dryer.setFlowRate(afPartialFlowsH2O);
         end
     end
 end
