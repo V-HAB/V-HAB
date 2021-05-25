@@ -9,6 +9,7 @@ classdef BPA_Manip < matter.manips.substance.stationary
         bActive = false;
         
         rInitialWaterInBrine = 0;
+        rLastCalcWaterInBrine = 0;
         
         aarConcentratedBrineFlowsToCompound;
     end
@@ -39,9 +40,9 @@ classdef BPA_Manip < matter.manips.substance.stationary
                 afResolvedMass = afResolvedMass - this.oPhase.afMass;
                 afResolvedMass(this.oMT.abCompound) = 0;
                 
-                rWaterInBrine = afResolvedMass(tiN2I.H2O) / this.oPhase.afMass(tiN2I.Brine);
+                rWaterInBrine = afResolvedMass(tiN2I.H2O) / this.oPhase.fMass;
                 
-                if rWaterInBrine > this.rInitialWaterInBrine
+                if rWaterInBrine > this.rLastCalcWaterInBrine
                     % In this case we are processing a new batch and
                     % therefore have to calculate the new brine composition
                     this.rInitialWaterInBrine = rWaterInBrine;
@@ -74,6 +75,8 @@ classdef BPA_Manip < matter.manips.substance.stationary
                 afWaterP2PFlows = zeros(1, this.oPhase.oMT.iSubstances);
                 afWaterP2PFlows(tiN2I.H2O) = afPartialFlows(tiN2I.H2O);
                 this.oPhase.oStore.toProcsP2P.WaterP2P.setFlowRate(afWaterP2PFlows);
+                
+                this.rLastCalcWaterInBrine = rWaterInBrine;
             else
                 update@matter.manips.substance(this, afPartialFlows);
                 afWaterP2PFlows = zeros(1, this.oPhase.oMT.iSubstances);

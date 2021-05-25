@@ -19,11 +19,9 @@ classdef setup < simulation.infrastructure
             
             % Possible to change the constructor paths and params for the
             % monitors
-            ttMonitorConfig = struct();
-%             ttMonitorConfig.oLogger.cParams = {true, 10000};
-            
-%             ttMonitorConfig.oTimeStepObserver.sClass = 'simulation.monitors.timestepObserver';
-%             ttMonitorConfig.oTimeStepObserver.cParams = { 0 };
+            ttMonitorConfig.oTimeStepObserver.sClass = 'simulation.monitors.timestepObserver';
+            ttMonitorConfig.oTimeStepObserver.cParams = { 0 };
+            ttMonitorConfig.oLogger.cParams = {true};
             
 %             ttMonitorConfig.oMassBalanceObserver.sClass = 'simulation.monitors.massbalanceObserver';
 %             fAccuracy = 1e-8;
@@ -31,15 +29,15 @@ classdef setup < simulation.infrastructure
 %             bSetBreakPoints = false;
 %             ttMonitorConfig.oMassBalanceObserver.cParams = { fAccuracy, fMaxMassBalanceDifference, bSetBreakPoints };
             
-            this@simulation.infrastructure('Example_CDRA', ptConfigParams, tSolverParams, ttMonitorConfig);
+            this@simulation.infrastructure('Example_SCRA', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             % Creating the root object
-            examples.CDRA.systems.Example(this.oSimulationContainer, 'Example');
+            examples.SCRA.systems.Example(this.oSimulationContainer, 'Example');
 
             %% Simulation length
             % Stop when specific time in simulation is reached or after 
             % specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 3600 * 50; % In seconds
+            this.fSimTime = 3600 * 16.1 + 144 * 60; % In seconds
             this.bUseTime = true;
         end
         
@@ -51,8 +49,6 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'rRelHumidity',              '-',    'Relative Humidity Cabin');
             oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'afPP(this.oMT.tiN2I.CO2)',  'Pa',   'Partial Pressure CO2');
             oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'fTemperature',              'K',    'Temperature Atmosphere');
-            
-            oLog.addValue('Example.oTimer',                                 'fTimeStepFinal',                 's',   'Timestep');
             
             oLog.addValue('Example:c:CCAA:s:CHX.toPhases.CHX_PhaseIn',      'fTemperature',                             'K',    'Temperature CHX');
             oLog.addValue('Example:c:CCAA:s:CHX.toPhases.CHX_PhaseIn',      'this.fMass * this.fMassToPressure',        'Pa',   'Pressure CHX');
@@ -98,8 +94,6 @@ classdef setup < simulation.infrastructure
             end
             
             oLog.addValue('Example.toStores.CCAA_CDRA_Connection.aoPhases',      'fPressure',  'Pa',   'Connection Pressure CCAA to CDRA');
-            
-            oLog.addValue('Example.toStores.Cabin.toProcsP2P.CrewCO2',       'fFlowRate',  'kg/s', 'CO2 Production');
             
             % CDRA In
             oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_In_1.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'CDRA CO2 Inlet Flow 1');
@@ -164,6 +158,33 @@ classdef setup < simulation.infrastructure
             
             oLog.addVirtualValue(sLogSum, 'W', 'CDRA Heater Power');
             
+            %% SCRA logging
+            oLog.addValue('Example:c:SCRA.toStores.CRA_Accumulator.toPhases.CO2',                  'fPressure',                 'Pa',   'SCRA CO_2 Accumulator Pressure');
+            
+            oLog.addValue('Example:c:SCRA.toBranches.CRA_CO2_In',                                  'fFlowRate',                 'kg/s', 'SCRA CO_2 Inlet');
+            oLog.addValue('Example:c:SCRA.toBranches.CRA_H2_In',                                   'fFlowRate',                 'kg/s', 'SCRA H_2 Inlet');
+            oLog.addValue('Example:c:SCRA.toBranches.Accumulator_To_CRA',                          'fFlowRate',                 'kg/s', 'SCRA CO_2 flow to Reactor');
+            oLog.addValue('Example:c:SCRA.toBranches.H2_to_Sabatier',                              'fFlowRate',                 'kg/s', 'SCRA H_2 flow to Reactor');
+            oLog.addValue('Example:c:SCRA.toBranches.H2_to_Vent',                                  'fFlowRate',                 'kg/s', 'SCRA H_2 flow to Vent');
+            oLog.addValue('Example:c:SCRA.toBranches.CRA_RecWaterOut',                             'fFlowRate',                 'kg/s', 'SCRA recovered H_2O');
+            
+            oLog.addValue('Example:c:SCRA.toBranches.CRA_DryGastoVent.aoFlows(1,1)',               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)',	'kg/s', 'SCRA Vented CO2');
+            oLog.addValue('Example:c:SCRA.toBranches.CRA_DryGastoVent.aoFlows(1,1)',               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2)',	'kg/s', 'SCRA Vented H2');
+            oLog.addValue('Example:c:SCRA.toBranches.CRA_DryGastoVent.aoFlows(1,1)',               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',	'kg/s', 'SCRA Vented H2O');
+            oLog.addValue('Example:c:SCRA.toBranches.CRA_DryGastoVent.aoFlows(1,1)',               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CH4)',	'kg/s', 'SCRA Vented CH4');
+            
+            oLog.addValue('Example:c:SCRA',                                                        'fCurrentPowerConsumption',  'W',    'SCRA Power Consumption');
+            
+            oLog.addValue('Example.oTimer',                                                         'fTimeStepFinal',                 's',   'Timestep');
+            
+            oLog.addVirtualValue('cumsum("SCRA Vented CO2"    .* "Timestep")', 'kg', 'SCRA Vented CO2 Mass');
+            oLog.addVirtualValue('cumsum("SCRA Vented H2"     .* "Timestep")', 'kg', 'SCRA Vented H2 Mass');
+            oLog.addVirtualValue('cumsum("SCRA Vented H2O"    .* "Timestep")', 'kg', 'SCRA Vented H2O Mass');
+            oLog.addVirtualValue('cumsum("SCRA Vented CH4"    .* "Timestep")', 'kg', 'SCRA Vented CH4 Mass');
+            oLog.addVirtualValue('cumsum("SCRA recovered H_2O" .* "Timestep")', 'kg', 'SCRA Recovered H2O Mass');
+            
+            oLog.addVirtualValue('cumsum("SCRA CO_2 flow to Reactor" .* "Timestep")',   'kg', 'SCRA CO2 to Reactor Mass');
+            oLog.addVirtualValue('cumsum("SCRA H_2 flow to Reactor" .* "Timestep")',    'kg', 'SCRA H2 to Reactor Mass');
         end
         
         function plot(this) % Plotting the results
@@ -190,17 +211,8 @@ classdef setup < simulation.infrastructure
             mfCO2OutletFlow(isnan(mfCO2OutletFlow)) = [];
             mfCO2OutletFlow(end) = [];
             
-            csLogVariableNames = {'Timestep'};
-            [aiLogIndices, ~] = tools.findLogIndices(oLogger, csLogVariableNames);
-            try
-                afTimeSteps =  oLogger.mfLog(:,aiLogIndices(1));
-                afTimeSteps(isnan(afTimeSteps)) = [];
-                fAveragedCO2Outlet = sum(mfCO2OutletFlow .* afTimeSteps(1:length(mfCO2OutletFlow))) ./ sum(afTimeSteps);
-            catch
-                afTimeSteps = oLogger.afTime(2:end) - oLogger.afTime(1:end-1);
-                fAveragedCO2Outlet = sum(mfCO2OutletFlow .* afTimeSteps') ./ sum(afTimeSteps);
-            end
-            
+            afTimeSteps = oLogger.afTime(2:end) - oLogger.afTime(1:end-1);
+            fAveragedCO2Outlet = sum(mfCO2OutletFlow .* afTimeSteps') ./ sum(afTimeSteps);
             
             disp(' ')
             disp(['Averaged CO2 Outlet Flow:       ', num2str(fAveragedCO2Outlet)])
@@ -381,7 +393,7 @@ classdef setup < simulation.infrastructure
             coPlot{1,3} = oPlotter.definePlot({'"Partial Pressure CO2"'},                                       'Partial Pressure CO2 Habitat',tPlotOptions);
             coPlot{2,1} = oPlotter.definePlot({'"Partial Pressure CO2 Torr"'},                                  'Partial Pressure CO2 Habitat in Torr',tPlotOptions);
             coPlot{2,2} = oPlotter.definePlot({'"Relative Humidity Cabin"'},                                    'Relative Humidity Cabin',tPlotOptions);
-            coPlot{2,3} = oPlotter.definePlot({'"CO2 Production"', '"CDRA effective CO2 Flow"'},                'Effective CO2 FlowRates',tPlotOptions);
+            coPlot{2,3} = oPlotter.definePlot({'"CDRA effective CO2 Flow"'},                                    'Effective CO2 FlowRates',tPlotOptions);
             coPlot{3,1} = oPlotter.definePlot({'"Temperature CHX"', '"Temperature TCCV"'},                      'Temperatures in CHX',tPlotOptions);
             coPlot{3,2} = oPlotter.definePlot({'"Pressure CHX"', '"Pressure TCCV"'},                            'Pressure in CHX', tPlotOptions);
             coPlot{3,3} = oPlotter.definePlot({'"Partial Pressure H2O TCCV"', '"Partial Pressure CO2 TCCV"'},   'Partial Pressure H2O and CO2 TCCV', tPlotOptions);
@@ -391,6 +403,18 @@ classdef setup < simulation.infrastructure
             
             
             oPlotter.defineFigure(coPlot,  'Plots');
+            
+            %% SCRA plotting
+            csSCRAFlowRates     = {'"SCRA CO_2 Inlet"', '"SCRA H_2 Inlet"', '"SCRA CO_2 flow to Reactor"', '"SCRA H_2 flow to Reactor"', '"SCRA H_2 flow to Vent"', '"SCRA recovered H_2O"'};
+            csVentedFlowRates   = {'"SCRA Vented CO2"', '"SCRA Vented H2"', '"SCRA Vented H2O"', '"SCRA Vented CH4"'};
+            csVentedMasses      = {'"SCRA Vented CO2 Mass"', '"SCRA Vented H2 Mass"', '"SCRA Vented H2O Mass"', '"SCRA Vented CH4 Mass"', '"SCRA Recovered H2O Mass"'};
+            coPlots = cell.empty();
+            coPlots{1,1} = oPlotter.definePlot({'"SCRA CO_2 Accumulator Pressure"'}, 	'Sabatier Accumulator Pressure',  	tPlotOptions);
+            coPlots{1,2} = oPlotter.definePlot(csSCRAFlowRates,                         'Sabatier Reactor Flow Rates',  	tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot(csVentedFlowRates,                       'Sabatier Vented Flow Rates',       tPlotOptions);
+            coPlots{2,2} = oPlotter.definePlot(csVentedMasses,                          'Sabatier Vented Masses',           tPlotOptions);
+            
+            oPlotter.defineFigure(coPlots,         'Sabatier');
             
             oPlotter.plot();
             
@@ -420,72 +444,55 @@ classdef setup < simulation.infrastructure
             title('CDRA Energy Demand')
             grid on
             
-            %% Get Test Data:
-            iFileID = fopen(strrep('+examples/+CDRA/+TestData/CDRA_Test_Data.csv','/',filesep), 'r');
+            csLogVariableNames = {'Timestep', 'SCRA Recovered H2O Mass', 'SCRA H2 to Reactor Mass',  'SCRA CO2 to Reactor Mass', 'SCRA Vented H2 Mass', 'SCRA Vented CO2 Mass', 'SCRA Vented H2O Mass', 'SCRA H_2 flow to Vent', 'SCRA CO_2 Inlet'};
+            [aiLogIndices, aiVirtualLogIndices] = tools.findLogIndices(oLogger, csLogVariableNames);
+            % After a time of 144 minutes start the calculation.
+            % Value should be a total water production of 876.34 g while
+            % the theoretic maximum should be 939.85 g, The Sabatier starve
+            % time should be 15 minutes
+            afTimeStep      = oLogger.mfLog(:,aiLogIndices(1));
+            afRecoveredH2O	= oLogger.tVirtualValues(aiVirtualLogIndices(2)).calculationHandle(oLogger.mfLog);
+            afSuppliedH2	= oLogger.tVirtualValues(aiVirtualLogIndices(3)).calculationHandle(oLogger.mfLog);
+            afSuppliedCO2	= oLogger.tVirtualValues(aiVirtualLogIndices(4)).calculationHandle(oLogger.mfLog);
+            afVentedH2      = oLogger.tVirtualValues(aiVirtualLogIndices(5)).calculationHandle(oLogger.mfLog);
+            afVentedCO2     = oLogger.tVirtualValues(aiVirtualLogIndices(6)).calculationHandle(oLogger.mfLog);
+            afVentedH2O     = oLogger.tVirtualValues(aiVirtualLogIndices(7)).calculationHandle(oLogger.mfLog);
             
-            [FilePath,~,~,~] = fopen(iFileID);
+            afVentedH2Flow = oLogger.mfLog(:,aiLogIndices(8));
+            afCO2InletFlow = oLogger.mfLog(:,aiLogIndices(9));
             
-            mfTestData = csvread(FilePath);
-            % at hour 50 of the test data the CO2 input is reduced to 4 CM,
-            % this corresponds to hour 19.3 in the simulation. Therefore
-            % Test data is timeshifted by 30.7 hours to fit the simulation
-            % and ease plotting:
-            mfTestData(:,1) = mfTestData(:,1) - 30.7;
-            % We do not need the negative values (the test data had a
-            % period where an error occur, we start comparing after that)
-            mfTestData(mfTestData(:,1) < 0,:) = [];
+            abStart = (oLogger.afTime > 144*60);
+            iStartTimeIndex = find(abStart);
+            iStartTimeIndex = iStartTimeIndex(1);
             
-            % Plot overlay with test data:
-            figure()
-            plot(mfTestData(:,1), mfTestData(:,2));
-            grid on
-            xlabel('Time / h');
-            ylabel('Partial Pressure CO_2 / Torr');
-            hold on
+            abVentedTimeStep = afVentedH2Flow ~= 0;
+            fTotalStarveTime = sum(afTimeStep(abVentedTimeStep));
+            %rPercentStarveTime = fTotalStarveTime / (oLogger.afTime(end) - oLogger.afTime(iStartTimeIndex));
             
-            for iVirtualLog = 1:length(oLogger.tVirtualValues)
-                if strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel, 'Partial Pressure CO2 Torr')
-                    calculationHandle = oLogger.tVirtualValues(iVirtualLog).calculationHandle;
-                end
-            end
-            mfCO2PartialPressure = calculationHandle(oLogger.mfLog);
-            mfCO2PartialPressure(isnan(mfCO2PartialPressure)) = [];
+            abCompressorRunning = abs(afCO2InletFlow) > 10^-6;
+            fTotalCompressorRunTime = sum(afTimeStep(abCompressorRunning));
             
-            afTime = (oLogger.afTime./3600)';
-            afTime(isnan(afTime)) = [];
+            %oLogger.afTime
+            fRecoveredH2O   = afRecoveredH2O(end)   - afRecoveredH2O(iStartTimeIndex);
+            fSuppliedH2     = afSuppliedH2(end)     - afSuppliedH2(iStartTimeIndex);
+            fSuppliedCO2    = afSuppliedCO2(end)    - afSuppliedCO2(iStartTimeIndex);
             
-            plot(afTime(1:length(mfCO2PartialPressure)), mfCO2PartialPressure);
-            legend('Test Data','Simulation');
+            % CO2 + 4 H2 -> CH4 + 2 H2O
+            fTheoreticWaterCO2  = 2 * (fSuppliedCO2 / this.oSimulationContainer.oMT.afMolarMass(this.oSimulationContainer.oMT.tiN2I.CO2)) * this.oSimulationContainer.oMT.afMolarMass(this.oSimulationContainer.oMT.tiN2I.H2O);
+            fTheoreticWaterH2   = 0.5 * (fSuppliedH2 / this.oSimulationContainer.oMT.afMolarMass(this.oSimulationContainer.oMT.tiN2I.H2)) * this.oSimulationContainer.oMT.afMolarMass(this.oSimulationContainer.oMT.tiN2I.H2O);
             
-            [afTimeDataUnique, ia, ~] = unique(mfTestData(:,1));
-            afCO2DataUnique = mfTestData(ia,2);
+            fTheoreticWater = min(fTheoreticWaterH2, fTheoreticWaterCO2);
             
-            InterpolatedTestData = interp1(afTimeDataUnique, afCO2DataUnique, afTime);
-            
-            % There will be some nan values because the simulation has data
-            % before the simulation data, these are removed here
-            mfCO2PartialPressure(isnan(InterpolatedTestData)) = [];
-            afTime(isnan(InterpolatedTestData)) = [];
-            InterpolatedTestData(isnan(InterpolatedTestData)) = [];
-            
-            % We only look at the differen from hour 11 onward as before
-            % the test data is not accurate because CDRA was turned off
-            % since it had a water carry over event
-            mfCO2PartialPressure(afTime < 11) = [];
-            InterpolatedTestData(afTime < 11) = [];
-            
-            fMaxDiff  = max(abs(mfCO2PartialPressure - InterpolatedTestData));
-            fMinDiff  = min(abs(mfCO2PartialPressure - InterpolatedTestData));
-            fMeanDiff = mean(mfCO2PartialPressure - InterpolatedTestData);
-            rPercentualError = 100 * fMeanDiff / mean(InterpolatedTestData);
-            fMeanSquaredError = mean((mfCO2PartialPressure - InterpolatedTestData).^2);
-            
-            disp(['Maximum   Difference between Simulation and Test:     ', num2str(fMaxDiff), ' Torr'])
-            disp(['Minimum   Difference between Simulation and Test:     ', num2str(fMinDiff), ' Torr'])
-            disp(['Mean      Difference between Simulation and Test:     ', num2str(fMeanDiff), ' Torr'])
-            disp(['MSE       Difference between Simulation and Test:     ', num2str(fMeanSquaredError), ' Torr'])
-            disp(['Percent   Difference between Simulation and Test:     ', num2str(rPercentualError), ' %'])
-            
+            disp(['Maximum      Theoretic Water Production Sim:     ', num2str(fTheoreticWater*1000), ' g'])
+            disp(['Maximum      Theoretic Water Production Test:   	', num2str(939.85), ' g'])
+            disp(['Actual       Water Production Sim:               ', num2str(fRecoveredH2O*1000), ' g'])
+            disp(['Actual       Water Production Test:              ', num2str(876.34), ' g'])
+            disp(['Efficiency	of Water Production Sim:            ', num2str(fRecoveredH2O/fTheoreticWater*100), ' %'])
+            disp(['Efficiency	of Water Production Test:           ', num2str(93), ' %'])
+            disp(['Starve Time	of Simulation:                      ', num2str(fTotalStarveTime/60), ' min'])
+            disp(['Starve Time	of Test:                            ', num2str(15), ' min'])
+            disp(['Compressor   Runtime	of Simulation:            	', num2str(fTotalCompressorRunTime/60), ' min'])
+            disp(['Compressor   Runtime	of Test:                   	', num2str(168), ' min'])
         end
     end
 end

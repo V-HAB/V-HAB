@@ -32,7 +32,7 @@ classdef CRA_Sabatier_manip_proc < matter.manips.substance.flow
             
             this.mPartialConversionFlowRates = zeros(1, this.oPhase.oMT.iSubstances); 
         end
-        function calculateConversionRate(this, afInFlowRates, aarInPartials)
+        function calculateConversionRate(this, afInFlowRates, aarInPartials, ~)
             
             %initializes the flowrates for each individual substance of this manipulator to 0
             this.mPartialConversionFlowRates = zeros(1, this.oPhase.oMT.iSubstances);
@@ -88,32 +88,32 @@ classdef CRA_Sabatier_manip_proc < matter.manips.substance.flow
             %H2 are required per mol of CO2. If there is too much H2 some
             %of it is left after the reaction and if there is too little H2
             %some CO2 is left after the reaction
-            if fMolH2 > 4*fMolCO2
-                fMolH2used = 4*fMolCO2*this.fEfficiency;
-                fMolCO2used = fMolCO2*this.fEfficiency;
-            elseif fMolH2 < 4*fMolCO2
-                fMolH2used = fMolH2*this.fEfficiency;
-                fMolCO2used = 0.25*fMolH2*this.fEfficiency;
+            if fMolH2       > 4 * fMolCO2
+                fMolH2used  = 4 * fMolCO2 * this.fEfficiency;
+                fMolCO2used =     fMolCO2 * this.fEfficiency;
+            elseif fMolH2   < 4 * fMolCO2
+                fMolH2used  =     fMolH2 * this.fEfficiency;
+                fMolCO2used = 0.25 * fMolH2 * this.fEfficiency;
             else
                 %this case covers a fully stochiometric reaction
-                fMolH2used = fMolH2*this.fEfficiency;
-                fMolCO2used = fMolCO2*this.fEfficiency;
+                fMolH2used  = fMolH2 * this.fEfficiency;
+                fMolCO2used = fMolCO2 * this.fEfficiency;
             end
             
             %according to "Modeling,Simulation, and Operation of a Sabatier
             %Reactor" by Peter J. Lunde in Ind. Eng. Chem.,  Process Des. Develop., Vol. 13, No. 3, 1974
             %on page 228 the reaction enthalpy is -39.433 cal/mol
-            fReactionEnthalpy = abs(1.8*(-16.4*this.oPhase.fTemperature+(0.00557*this.oPhase.fTemperature^2)-(112000/this.oPhase.fTemperature)-34633)*4.184); %J/mol
+            fReactionEnthalpy = abs(1.8 * (-16.4 * this.oPhase.fTemperature + (0.00557 * this.oPhase.fTemperature^2) - (112000 / this.oPhase.fTemperature) - 34633) * 4.184); %J/mol
             
             %this means the overall released heat flow is
-            this.fHeatFlowProduced = fReactionEnthalpy*(fMolH2used+fMolCO2used); %J/s
+            this.fHeatFlowProduced = fReactionEnthalpy * fMolCO2used; %J/s
             %the heat flow is only saved as property since this manipulator
             %is not able to increase the temperature. Instead a f2f heater
             %can use this property to calculate the temperature increase
             
             %Now the mol values have to be converted back to masses again
-            this.fCO2Reduction  = fMolCO2used*fMolMassCO2; %kg/s
-            this.fH2Reduction   = fMolH2used*fMolMassH2; %kg/s
+            this.fCO2Reduction  = fMolCO2used * fMolMassCO2; %kg/s
+            this.fH2Reduction   = fMolH2used  * fMolMassH2; %kg/s
             
             %also the production of water and methan has to be calculated.
             %As can be seen from the reaction 4H2 + CO2 --> 2H2O + CH4 for
@@ -125,25 +125,25 @@ classdef CRA_Sabatier_manip_proc < matter.manips.substance.flow
             %It is necessary to transform these mol ratios into a mass
             %ratio for how much of the mass flow that is produced is
             %methance and how much is water:
-            fMolMassWater = this.oPhase.oMT.afMolarMass(tiN2I.H2O); %kg/mol
-            fMolMassMethane = this.oPhase.oMT.afMolarMass(tiN2I.CH4); %kg/mol
-            rCH4Ratio = fMolMassMethane/(2*fMolMassWater+fMolMassMethane);
-            rH2ORatio = 1-rCH4Ratio;
+            fMolMassWater       = this.oPhase.oMT.afMolarMass(tiN2I.H2O); %kg/mol
+            fMolMassMethane     = this.oPhase.oMT.afMolarMass(tiN2I.CH4); %kg/mol
+            rCH4Ratio           = fMolMassMethane / (2 * fMolMassWater + fMolMassMethane);
+            rH2ORatio           = 1 - rCH4Ratio;
             %Then using the total mass flow that is used in the reaction it
             %is possible to calculate the mass flows of water and methane
             %that are generated:
-            fTotalMassFlowUsed = this.fCO2Reduction+this.fH2Reduction; %kg/s
+            fTotalMassFlowUsed = this.fCO2Reduction + this.fH2Reduction; %kg/s
             
-            this.fCH4Production = fTotalMassFlowUsed*rCH4Ratio; %kg/s
-            this.fH2OProduction = fTotalMassFlowUsed*rH2ORatio; %kg/s
+            this.fCH4Production = fTotalMassFlowUsed * rCH4Ratio; %kg/s
+            this.fH2OProduction = fTotalMassFlowUsed * rH2ORatio; %kg/s
             
             %These flow rates are then set for the respective entry for
             %this subsatnce in the flow rates vector which is then used to
             %update the manipulator.
-            this.mPartialConversionFlowRates(tiN2I.CO2)   =   - this.fCO2Reduction;    %kg/s
-            this.mPartialConversionFlowRates(tiN2I.H2)    =   - this.fH2Reduction;     %kg/s
-            this.mPartialConversionFlowRates(tiN2I.H2O)   = this.fH2OProduction;       %kg/s
-            this.mPartialConversionFlowRates(tiN2I.CH4)   = this.fCH4Production;       %kg/s
+            this.mPartialConversionFlowRates(tiN2I.CO2)   =   - this.fCO2Reduction;     %kg/s
+            this.mPartialConversionFlowRates(tiN2I.H2)    =   - this.fH2Reduction;      %kg/s
+            this.mPartialConversionFlowRates(tiN2I.H2O)   =     this.fH2OProduction;	%kg/s
+            this.mPartialConversionFlowRates(tiN2I.CH4)   =     this.fCH4Production;    %kg/s
             
             %In order to prevent numerical errors in the calculation from
             %creating or destroying mass the educt mass flow is adapted.

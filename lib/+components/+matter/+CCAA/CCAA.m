@@ -54,8 +54,10 @@ classdef CCAA < vsys
         % According to "International Space Station Carbon Dioxide Removal
         % Assembly Testing" 00ICES-234 James C. Knox (2000) the minmal flow
         % rate for CDRA to remove enough CO2 is 41 kg/hr. The nominal flow
-        % through CDRA is supposed to be 42.7 kg/hr.
-        fCDRA_FlowRate = 1.187e-2;
+        % through CDRA is mentioned to be 42.7 kg/hr. or 42.3 kg/hr and a
+        % difference in the flow between the two half cycles of 2.7 kg/h.
+        % Therefore we assumes the average value of 43.65 kg/hr
+        fCDRA_FlowRate = 43.65/3600;
         
         % Object for the phase of the module where the CCAA is located. Used
         % to get the current relative humidity and control the valve angles
@@ -100,7 +102,14 @@ classdef CCAA < vsys
         % total power demand of 470 W is reached
         fCurrentPowerConsumption = 470; % W
         
+        fNominalPowerConsumption = 470; % W
+        
         tParameterOverwrite;
+        
+        % Store the old control logic error to check if the sign changed
+        fOldError = 0;
+        
+        tControlLogicParameters = struct('fProportionalPart', 3.42, 'fIntegrativePart', 0.023, 'fDifferentialPart', 0, 'fMinTCCVAngle', 9, 'fMaxTCCVAngle', 84, 'fIntegratedError', 0, 'fDeadBand', 0.5, 'fMaxAngleChange', inf)
     end
     
     methods 
@@ -182,16 +191,50 @@ classdef CCAA < vsys
             % fBroadness:           Broadness of CHX in m
             % fLength:              Length of CHX in m
             % fPipeDiameter:        Diameter of the pipes inside the CCAA in m
+            % iLayers:              Number of layers inside the CCAA
             % miIncrements:         Number of increments in the numerical
             %                       CHX calculation
             this.tParameterOverwrite = tParameters;
             
             if isfield(this.tParameterOverwrite, 'fVolumetricFlowRate')
+                
+                this.fNominalPowerConsumption = this.fNominalPowerConsumption *  this.tParameterOverwrite.fVolumetricFlowRate / this.fVolumetricFlowRate;
                 this.fVolumetricFlowRate    = this.tParameterOverwrite.fVolumetricFlowRate;
+                
+                if this.bActive
+                    this.fCurrentPowerConsumption = this.fNominalPowerConsumption;
+                end
             end
             if isfield(this.tParameterOverwrite, 'fCoolantFlowRate')
                 this.fCoolantFlowRate       = this.tParameterOverwrite.fCoolantFlowRate;
             end
+            
+            if isfield(this.tParameterOverwrite, 'fProportionalPart')
+                this.tControlLogicParameters.fProportionalPart = this.tParameterOverwrite.fProportionalPart;
+            end
+            if isfield(this.tParameterOverwrite, 'fIntegrativePart')
+                this.tControlLogicParameters.fIntegrativePart = this.tParameterOverwrite.fIntegrativePart;
+            end
+            if isfield(this.tParameterOverwrite, 'fDifferentialPart')
+                this.tControlLogicParameters.fDifferentialPart = this.tParameterOverwrite.fDifferentialPart;
+            end
+            if isfield(this.tParameterOverwrite, 'fMinTCCVAngle')
+                this.tControlLogicParameters.fMinTCCVAngle = this.tParameterOverwrite.fMinTCCVAngle;
+            end
+            if isfield(this.tParameterOverwrite, 'fMaxTCCVAngle')
+                this.tControlLogicParameters.fMaxTCCVAngle = this.tParameterOverwrite.fMaxTCCVAngle;
+            end
+            if isfield(this.tParameterOverwrite, 'fDeadBand')
+                this.tControlLogicParameters.fDeadBand = this.tParameterOverwrite.fDeadBand;
+            end
+            if isfield(this.tParameterOverwrite, 'fMaxAngleChange')
+                this.tControlLogicParameters.fMaxAngleChange = this.tParameterOverwrite.fMaxAngleChange;
+            end
+            
+            if isfield(this.tParameterOverwrite, 'fTCCV_Angle')
+                this.fTCCV_Angle = this.tParameterOverwrite.fTCCV_Angle;
+            end
+            
         end
         
         function createMatterStructure(this)
@@ -263,7 +306,11 @@ classdef CCAA < vsys
             % thickness of the plate in m
             tGeometry.fThickness        = 0.0002;
             % number of layers stacked
-            tGeometry.iLayers           = 33;
+            if isfield(this.tParameterOverwrite, 'iLayers')
+                tGeometry.iLayers    	= this.tParameterOverwrite.iLayers; 
+            else
+                tGeometry.iLayers     	= 33; 
+            end
             % number of baffles (evenly distributed)
             tGeometry.iBaffles          = 3;
             % broadness of a fin of the first canal (air)
@@ -531,7 +578,7 @@ classdef CCAA < vsys
             % This function can be used to set the CDRA inactive,
             this.bActive = bActive;
             if this.bActive
-                this.fCurrentPowerConsumption =  410;
+                this.fCurrentPowerConsumption =  this.fNominalPowerConsumption;
                 this.toBranches.Coolant_In.oHandler.setFlowRate(-this.fCoolantFlowRate); 
             else
                 this.fCurrentPowerConsumption = 0;
@@ -545,7 +592,6 @@ classdef CCAA < vsys
      methods (Access = protected)
         
         function exec(this, ~)
-            exec@vsys(this);
             % in case the CCAA was set to be inactive the flowrates are all
             % set to zero and the calculation is aborted
             if this.bActive == 0
@@ -589,7 +635,6 @@ classdef CCAA < vsys
                 % If the inlet flow changed by less than 1% and the humidity
                 % changed by less than 1% it is not necessary to recalculate
                 % the CCAA
-
                 fError = this.fTemperatureSetPoint - this.oAtmosphere.fTemperature;
                 if (fPercentalFlowChange < 0.01) && (fHumidityChange < 0.01) && (abs(fError) < 0.5)
                     return
@@ -608,22 +653,48 @@ classdef CCAA < vsys
                 % temperature and the humidity is only passivly controlled.
                 % Controll logic based on figure 6-14 from DA by Christof Roth
 
-                if abs(fError) < 0.5
+                if abs(fError) < this.tControlLogicParameters.fDeadBand
                     this.fErrorTime = 0;
                     return
                 end
+                % Also reset error time for integrative part, if we
+                % switched sign of the error
+                if  sign(this.fOldError) ~= sign(fError)
+                    this.fErrorTime = 0;
+                end
 
+                fTimeSinceLastExec = this.oTimer.fTime - this.fLastExec;
+                if fTimeSinceLastExec < 0.1
+                    fTimeSinceLastExec = 0.1;
+                end
+                    
                 if this.fErrorTime == 0
                     this.fErrorTime = this.oTimer.fTime;
+                    % in this case use only proportional part of control
+                    % logic
+                    fTCCV_AngleChange = this.fTCCV_Angle + (this.tControlLogicParameters.fProportionalPart / 60) * fError * fTimeSinceLastExec;
+                    this.tControlLogicParameters.fIntegratedError = 0;
+                else
+                    this.tControlLogicParameters.fIntegratedError = this.tControlLogicParameters.fIntegratedError + fTimeSinceLastExec * this.fOldError;
+                    % Control logic for bypass flow:
+                    fTCCV_AngleChange = (this.tControlLogicParameters.fProportionalPart / 60) * fError * fTimeSinceLastExec +...
+                                       	 this.tControlLogicParameters.fIntegrativePart  * this.tControlLogicParameters.fIntegratedError +...
+                                      	 this.tControlLogicParameters.fDifferentialPart * (fError - this.fOldError) / fTimeSinceLastExec;
                 end
-                % Proportional Part of the control logic:
-                fNew_TCCV_Angle = this.fTCCV_Angle + 3.42 * fError + 0.023 * fError * (this.oTimer.fTime - this.fErrorTime);
+                
 
+                % If the user specified a maximum angle change per minute,
+                % this is enforced here. Note that this 
+                if abs(fTCCV_AngleChange / (fTimeSinceLastExec / 60)) > this.tControlLogicParameters.fMaxAngleChange 
+                    fTCCV_AngleChange = sign(fTCCV_AngleChange) * this.tControlLogicParameters.fMaxAngleChange * (fTimeSinceLastExec / 60);
+                end
+                fNew_TCCV_Angle = this.fTCCV_Angle + fTCCV_AngleChange;
+                
                 % limits the TCCV angle
-                if fNew_TCCV_Angle < 9
-                    fNew_TCCV_Angle = 9;
-                elseif fNew_TCCV_Angle > 84
-                    fNew_TCCV_Angle = 84;
+                if fNew_TCCV_Angle < this.tControlLogicParameters.fMinTCCVAngle
+                    fNew_TCCV_Angle = this.tControlLogicParameters.fMinTCCVAngle;
+                elseif fNew_TCCV_Angle > this.tControlLogicParameters.fMaxTCCVAngle
+                    fNew_TCCV_Angle = this.tControlLogicParameters.fMaxTCCVAngle;
                 end
                 this.fTCCV_Angle = fNew_TCCV_Angle;
                 %fTCCV_Angle = (this.rTCCV_ratio) * 77 + 3;
@@ -639,6 +710,8 @@ classdef CCAA < vsys
                 fCHX_FlowRate = fFlowPercentageCHX * (fInFlow+fInFlow2);
                 this.toBranches.TCCV_CHX.oHandler.setFlowRate(fCHX_FlowRate);
                 
+                this.fOldError = fError;
+                
                 if ~isempty(this.sCDRA)
                     if fCHX_FlowRate >= this.fCDRA_FlowRate
                         this.toBranches.CHX_CDRA.oHandler.setFlowRate(this.fCDRA_FlowRate);
@@ -647,6 +720,8 @@ classdef CCAA < vsys
                     end
                 end
             end
+            
+            exec@vsys(this);
         end
 	end
 end

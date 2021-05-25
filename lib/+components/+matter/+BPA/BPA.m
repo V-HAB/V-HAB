@@ -23,6 +23,7 @@ classdef BPA < vsys
         
         % Boolean that indicates UPA activity
         bProcessing = false;
+        bDisposingConcentratedBrine = false;
         
         % Time at which the last UPA process finished
         fProcessingFinishTime = -20000;
@@ -133,8 +134,7 @@ classdef BPA < vsys
         function exec(this, ~)
             exec@vsys(this);
             
-            
-            if (this.toStores.Bladder.toPhases.Brine.fMass >= this.fActivationFillBPA)
+            if (this.toStores.Bladder.toPhases.Brine.afMass(this.oMT.tiN2I.Brine) >= this.fActivationFillBPA)
                 this.bProcessing = true;
                 this.fProcessingFinishTime = inf;
                 
@@ -147,7 +147,7 @@ classdef BPA < vsys
             end
             
             if (this.bProcessing == true)
-                if this.oTimer.fTime >= this.fProcessingFinishTime
+                if this.oTimer.fTime >= this.fProcessingFinishTime || this.toStores.Bladder.toPhases.Brine.afMass(this.oMT.tiN2I.Brine) == 0
                     this.toStores.Bladder.toPhases.Brine.toManips.substance.setActive(false);
                     this.bProcessing = false;
                     
@@ -165,8 +165,11 @@ classdef BPA < vsys
                 end
             end
             
-            if ~this.bProcessing && this.Bladder.toPhases.Brine.fMass >= 0.01
+            if ~this.bProcessing && this.toStores.Bladder.toPhases.Brine.afMass(this.oMT.tiN2I.ConcentratedBrine) > 0.02 && ~this.toBranches.ConcentratedBrineDisposal.oHandler.bMassTransferActive
                 this.toBranches.ConcentratedBrineDisposal.oHandler.setMassTransfer(this.toStores.Bladder.toPhases.Brine.fMass - 0.01, 300);
+                this.bDisposingConcentratedBrine = true;
+            elseif ~this.toBranches.ConcentratedBrineDisposal.oHandler.bMassTransferActive
+                this.bDisposingConcentratedBrine = false;
             end
         end
     end

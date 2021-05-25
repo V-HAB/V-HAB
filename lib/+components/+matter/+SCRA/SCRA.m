@@ -73,65 +73,14 @@ classdef SCRA < vsys
             % 2005-01-2864 Table 5 the conversion efficiency is between 87%
             % and 93% with most test points resulting in 88% efficiency.
             % Therefore, this value is used here
-            components.matter.SCRA.CRA_Sabatier_manip_proc('CRA_Sabatier_proc', oCRA_SabatierPhase, 0.88);
-            
-            %The actual CHX that is used is unknown and therefore this
-            %simply uses a heat exchanger with somewhat realistic values.
-            %If data on the actual CHX is found this should be corrected.
-            % Creating the CHX
-            % Some configurating variables
-            sHX_type = 'plate_fin';       % Heat exchanger type
-            % broadness of the heat exchange area in m
-            tGeometry.fBroadness        = 0.05;  
-            % Height of the channel for fluid 1 in m
-            tGeometry.fHeight_1         = 0.002;
-            % Height of the channel for fluid 2 in m
-            tGeometry.fHeight_2         = 0.002;
-            % length of the heat exchanger in m
-            tGeometry.fLength           = 0.05;
-            % thickness of the plate in m
-            tGeometry.fThickness        = 0.0002;
-            % number of layers stacked
-            tGeometry.iLayers           = 15;
-            % number of baffles (evenly distributed)
-            tGeometry.iBaffles          = 3;
-            % broadness of a fin of the first canal (air)
-            tGeometry.fFinBroadness_1	= tGeometry.fBroadness/180;
-            % broadness of a fin of the second canal (coolant)
-            tGeometry.fFinBroadness_2	= tGeometry.fBroadness/180; 
-            %  Thickness of the Fins (for now both fins have the same thickness
-            tGeometry.fFinThickness     = 0.0002;
-            % Conductivity of the Heat exchanger solid material (W/m K)
-            Conductivity = 205;
-            % Number of incremental heat exchangers used in the calculation
-            % of the CHX
-            miIncrements = [6,3];
-            % Defines when the CHX should be recalculated: 
-            fTempChangeToRecalc = 4;       % If any inlet temperature changes by more than 1 K
-            fPercentChangeToRecalc = 0.1;  % If any inlet flowrate or composition changes by more than 5%
-            
-            % defines the heat exchanged object using the previously created properties
-            % (oParent, sName, mHX, sHX_type, iIncrements, fHX_TC, fTempChangeToRecalc, fPercentChangeToRecalc)
-            oCRA_CHX = components.matter.CHX(this, 'CRA_SabatierCHX', tGeometry, sHX_type, miIncrements, Conductivity, fTempChangeToRecalc, fPercentChangeToRecalc);
-            
-            tProperties.fSearchStepTemperatureDifference    = 5;
-            tProperties.iMaximumNumberOfSearchSteps         = 25;
-            tProperties.rMaxError                           = 0.2;
-            oCRA_CHX.setNumericProperties(tProperties);
-            %CRA Water Recovery
-            %Recovers the water from the sabatier production gas
-            %Implemented with three filters to prevent any water loss
+            components.matter.SCRA.components.CRA_Sabatier_manip_proc('CRA_Sabatier_proc', oCRA_SabatierPhase, 0.88);
             
             fVolumeCRA_WaterRec = 0.02;
             matter.store(this, 'CRA_WaterRec', fVolumeCRA_WaterRec);
-            oCRA_WaterRecLiquidPhase = this.toStores.CRA_WaterRec.createPhase(	'liquid', 'RecoveredWater', 0.5 * fVolumeCRA_WaterRec, struct('H2O', 1), 293, 1e5);
+            oCRA_WaterRecLiquidPhase = this.toStores.CRA_WaterRec.createPhase(	'liquid', 'flow', 'RecoveredWater', 0.5 * fVolumeCRA_WaterRec, struct('H2O', 1), 277, 1e5);
             
             fVolumeGasWaterRec = fVolumeCRA_WaterRec - oCRA_WaterRecLiquidPhase.fVolume;
             oCRA_WaterRecGasPhase	= this.toStores.CRA_WaterRec.createPhase( 'gas', 'flow', 'WRecgas', fVolumeGasWaterRec, struct('CO2', fPartialPressureCO2, 'H2', fPartialPressureH2, 'CH4', fPartialPressureCH4, 'H2O', fPartialPressureH2O), 280, 0);
-            
-            % adds the P2P proc for the CHX that takes care of the actual
-            % phase change
-            oCRA_CHX.oP2P = components.matter.HX.CHX_p2p(this.toStores.CRA_WaterRec, 'CondensingHX', oCRA_WaterRecGasPhase, oCRA_WaterRecLiquidPhase, oCRA_CHX);
             
             %this is only necessary because V-HAB does not allow two
             %interfaces to other systems in the same branch
@@ -155,24 +104,27 @@ classdef SCRA < vsys
             components.matter.pipe(this, 'Pipe_010', fPipelength, fPipeDiameter, fFrictionFactor);
             components.matter.pipe(this, 'Pipe_011', fPipelength, fPipeDiameter, fFrictionFactor);
             
-            components.matter.SCRA.CRA_Vacuum_Outlet(this, 'VacuumOutlet');
+            components.matter.SCRA.components.CRA_Vacuum_Outlet(this, 'VacuumOutlet');
             components.matter.SimplePressureRegulator(this, 'CRA_H2_Regulator', 1.5e5);
             
             components.matter.valve(this, 'SabatierValve', 0);
             components.matter.valve(this, 'VentValveH2', 0);
             % In this case we use a normal valve, like a check valve
             components.matter.valve(this, 'Checkvalve', 0);
-            components.matter.checkvalve(this, 'VacuumCheckvalve');
             
-            components.matter.SCRA.CRA_Sabatier_Heater(this, 'CRA_SabatierHeater');
+            components.matter.SCRA.components.CRA_Sabatier_Heater(this, 'CRA_SabatierHeater');
+            oCondenser = components.matter.SCRA.components.Condenser(this, 'CRA_CHX', 277, 0.5);
+            oP2P = components.matter.SCRA.components.CondenserP2P(this.toStores.CRA_WaterRec, 'CondensingHX', oCRA_WaterRecGasPhase, oCRA_WaterRecLiquidPhase, oCondenser);
+            components.matter.SCRA.components.CondenserCounterpart(this, 'CRA_CHXCoolant', oCondenser, oP2P);
+            components.matter.SCRA.components.CondenserTemperatureChange(this, 'CondenserTempChange', oCondenser);
             
             %Finally the flowpaths between all components
             matter.branch(this, oH2,                        {'Pipe_001', 'CRA_H2_Regulator'},                 	'SCRA_H2_In',           'CRA_H2_In');
             matter.branch(this, oAccumulatorCO2,            {'Pipe_002'},                                       'SCRA_CO2_In',          'CRA_CO2_In');
             matter.branch(this, oAccumulatorCO2,            {'Pipe_003'},                                       oCRA_SabatierPhase, 	'Accumulator_To_CRA');
             
-            matter.branch(this, oCRA_SabatierPhase,         {'Pipe_004', 'CRA_SabatierCHX_1', 'Checkvalve'},	oCRA_WaterRecGasPhase,	'CRA_ProductstoWaterRecbranch');
-            matter.branch(this, oCRA_WaterRecGasPhase,      {'Pipe_005', 'VacuumOutlet', 'VacuumCheckvalve'},  	'SCRA_DryGas_Out',   	'CRA_DryGastoVent');
+            matter.branch(this, oCRA_SabatierPhase,         {'Pipe_004', 'CRA_CHX', 'Checkvalve'},	oCRA_WaterRecGasPhase,	'CRA_ProductstoWaterRecbranch');
+            matter.branch(this, oCRA_WaterRecGasPhase,      {'Pipe_005', 'CondenserTempChange', 'VacuumOutlet'},  	'SCRA_DryGas_Out',   	'CRA_DryGastoVent');
             matter.branch(this, oCRA_WaterRecLiquidPhase,	{'Pipe_006'},                                       'SCRA_Condensate_Out',	'CRA_RecWaterOut');
             matter.branch(this, oCRA_CHXPhase,              {'Pipe_007'},                                       'SCRA_CoolantIn',     	'CRA_CoolantLoopIn');
             % As can be seen in the Schematic of the SCRA (Figure 3 in
@@ -182,7 +134,7 @@ classdef SCRA < vsys
             % Engineering Development Unit (EDU)", Knox et. al.
             % ICES-2005-01-2864. The heat from the sabatier reaction also
             % enter the coolant flow after the CHX:
-            matter.branch(this, oCRA_CHXPhase,              {'Pipe_008', 'CRA_SabatierCHX_2', 'CRA_SabatierHeater'},	'SCRA_CoolantOut',    	'CRA_CoolantLoopOut');
+            matter.branch(this, oCRA_CHXPhase,              {'Pipe_008','CRA_CHXCoolant', 'CRA_SabatierHeater'},	'SCRA_CoolantOut',    	'CRA_CoolantLoopOut');
             
             matter.branch(this, oH2,                        {'Pipe_009', 'SabatierValve'},                    	oCRA_SabatierPhase, 	'H2_to_Sabatier');
             matter.branch(this, oH2,                        {'Pipe_010', 'VentValveH2'},                    	oCRA_WaterRecGasPhase, 	'H2_to_Vent');
@@ -197,12 +149,13 @@ classdef SCRA < vsys
             
             oHeatSource = components.thermal.heatsources.ConstantTemperature('Sabatier_Constant_Temperature');
             this.toStores.CRA_Sabatier.toPhases.CRA_Sabatierphase.oCapacity.addHeatSource(oHeatSource);
+            
+            oHeatSource = components.thermal.heatsources.ConstantTemperature('RecoveredWater_Constant_Temperature');
+            this.toStores.CRA_WaterRec.toPhases.RecoveredWater.oCapacity.addHeatSource(oHeatSource);
         end
         
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
-            
-            solver.matter.residual.branch(this.toBranches.CRA_RecWaterOut);
             
             solver.matter.manual.branch(this.toBranches.Accumulator_To_CRA);
             solver.matter.manual.branch(this.toBranches.CRA_CoolantLoopIn);
@@ -222,7 +175,8 @@ classdef SCRA < vsys
                                      this.toBranches.H2_to_Sabatier,...
                                      this.toBranches.H2_to_Vent,...
                                      this.toBranches.CRA_ProductstoWaterRecbranch,...
-                                     this.toBranches.CRA_DryGastoVent];
+                                     this.toBranches.CRA_DryGastoVent,...
+                                     this.toBranches.CRA_RecWaterOut];
             
             tSolverProperties.fMaxError = 1e-2;
             tSolverProperties.iMaxIterations = 1000;
@@ -296,7 +250,7 @@ classdef SCRA < vsys
             this.toProcsF2F.VentValveH2.setOpen(   	false);
             this.toProcsF2F.SabatierValve.setOpen(  true);
             this.toProcsF2F.Checkvalve.setOpen(     true);
-                
+            
             fAccumulatorPressure = this.toStores.CRA_Accumulator.toPhases.CO2.fPressure;
             if fAccumulatorPressure > 7.2e5
                 if fCO2FlowRate <= this.toBranches.CRA_CO2_In.fFlowRate
@@ -328,10 +282,10 @@ classdef SCRA < vsys
             % https://www.aceee.org/files/proceedings/2005/data/papers/SS05_Panel01_Paper13.pdf
             % assuming we have to increase the pressure from 0.01 bar to 1
             % bar in a two stage compression
-            this.fCurrentPowerConsumption = fCO2FlowRate * oInFlow.fSpecificHeatCapacity * 293 * (((1e5 / 1e4)^1.289 - 1) + ((1e4 / 1e3)^1.289 - 1));
-           if this.fCurrentPowerConsumption > 1500
-               this.fCurrentPowerConsumption = 1500;
-           end
+            this.fCurrentPowerConsumption = -this.toBranches.CRA_CO2_In.fFlowRate * oInFlow.fSpecificHeatCapacity * 293 * (((1e5 / 1e4)^1.289 - 1) + ((1e4 / 1e3)^1.289 - 1));
+            if this.fCurrentPowerConsumption > 1500
+                this.fCurrentPowerConsumption = 1500;
+            end
         end
     end
 end

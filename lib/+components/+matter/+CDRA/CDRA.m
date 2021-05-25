@@ -136,7 +136,7 @@ classdef CDRA < vsys
             
             % Length for the individual filter material within CDRA
             % according to ICES-2014-160
-            this.tGeometry.Zeolite5A.fLength         =  16.68        *2.54/100;
+            this.tGeometry.Zeolite5A.fLength         =  18.68        *2.54/100;
             this.tGeometry.Sylobead.fLength          =  6.13         *2.54/100;
             this.tGeometry.Zeolite13x.fLength        = (5.881+0.84)  *2.54/100;
             
@@ -145,8 +145,7 @@ classdef CDRA < vsys
             this.tGeometry.Zeolite5A.rVoidFraction       = 0.445;
             this.tGeometry.Sylobead.rVoidFraction        = 0.348;
             
-            % From ICES-2015-160, divided with 2 as the values are given
-            % for the complete 4 BMS
+            % From ICES-2015-160 Table 1. Values from the table are per bed
             fMassZeolite13x     = 5.164;
             fMassSylobead       = 5.38; % + 0.632WS
             fMassZeolite5A      = 12.383;
@@ -450,7 +449,7 @@ classdef CDRA < vsys
                         % The absorber material thermal handling uses a
                         % multi branch solver to allow for larger time
                         % steps
-                        oFilterPhase.makeThermalNetworkNode();
+                        % oFilterPhase.makeThermalNetworkNode();
                         
                         % An individual orption and desorption Exme and P2P is
                         % required because it is possible that a few substances are
@@ -761,7 +760,7 @@ classdef CDRA < vsys
             oSolver = solver.matter_multibranch.iterative.branch(this.aoBranches, 'complex');
             oSolver.setSolverProperties(tSolverProperties);
             
-            solver.thermal.multi_branch.advanced.branch(this.aoThermalMultiSolverBranches, this.fTimeStep);
+            solver.thermal.multi_branch.basic.branch(this.aoThermalMultiSolverBranches, this.fTimeStep);
             
             csStores = fieldnames(this.toStores);
             % sets numerical properties for the phases of CDRA
@@ -782,14 +781,19 @@ classdef CDRA < vsys
                         
                         tTimeStepProperties = struct();
                         tTimeStepProperties.fMaxStep = this.fTimeStep * 5;
-                        tTimeStepProperties.rMaxChange = 0.05;
-                        tTimeStepProperties.fMaxTemperatureChange = 5;
+                        tTimeStepProperties.rMaxChange = 0.1;
+                        tTimeStepProperties.fMaxTemperatureChange = 10;
                         tTimeStepProperties.fMinimumTemperatureForTimeStep = 275;
                         oPhase.oCapacity.setTimeStepProperties(tTimeStepProperties);
                         
-                        % The absorber phase updates also trigger a solver
-                        % update
+                        % The absorber phase/capacity updates also trigger a solver
+                        % update. The capacity is necessary because the
+                        % temperature influences the adsorption process and
+                        % otherwise unrealistically low temperatures are
+                        % possible
                         oPhase.bind('update_post', @oSolver.registerUpdate);
+                        oPhase.oCapacity.bind('updateTemperature_post', @oSolver.registerUpdate);
+                        
                     else
                         tTimeStepProperties = struct();
                         tTimeStepProperties.fMaxStep = this.fTimeStep * 5;
@@ -1033,22 +1037,25 @@ classdef CDRA < vsys
                     end
                     
                 end
+                
+                fTotalHeatFlow = 0;
+                for iCell = 1:this.tGeometry.Zeolite5A.iCellNumber
+                    oCapacity = this.toStores.(['Zeolite5A_', num2str(iBed)]).toPhases.(['Absorber_', num2str(iCell)]).oCapacity;
+                    fTotalHeatFlow = fTotalHeatFlow + oCapacity.toHeatSources.(['AbsorberHeater_', num2str(iCell)]).fHeatFlow;
+                end
+                % The CDRA datime power consumption I received from ESA state
+                % 1070 W, since the heater consume at most 960 W we assume here
+                % that the average power demand for the remaining components
+                % from  "Living together in space: the design and operation of the
+                % life support systems on the International Space Station" P.O.
+                % Wieland, 1998, page 132 is necessary in addition to the
+                % heater power
+                this.fCurrentPowerConsumption = fTotalHeatFlow + 107;
             else
                 this.fCDRA_InactiveTime = this.fCDRA_InactiveTime + (this.oTimer.fTime - this.fLastExecutionTime);
+                
+                this.fCurrentPowerConsumption = 0;
             end
-            fTotalHeatFlow = 0;
-            for iCell = 1:this.tGeometry.Zeolite5A.iCellNumber
-                oCapacity = this.toStores.(['Zeolite5A_', num2str(iBed)]).toPhases.(['Absorber_', num2str(iCell)]).oCapacity;
-                fTotalHeatFlow = fTotalHeatFlow + oCapacity.toHeatSources.(['AbsorberHeater_', num2str(iCell)]).fHeatFlow;
-            end
-            % The CDRA datime power consumption I received from ESA state
-            % 1070 W, since the heater consume at most 960 W we assume here
-            % that the average power demand for the remaining components
-            % from  "Living together in space: the design and operation of the
-            % life support systems on the International Space Station" P.O.
-            % Wieland, 1998, page 132 is necessary in addition to the
-            % heater power
-            this.fCurrentPowerConsumption = fTotalHeatFlow + 107;
             this.fLastExecutionTime = this.oTimer.fTime;
         end
 	end

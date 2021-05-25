@@ -48,6 +48,13 @@ classdef UPA < vsys
         
         % Power usage in Standby from "Status of the Regenerative ECLSS Water Recovery System", D. Layne Carter, ICES-2009-2352
         fPower = 56 ; % [W]
+        
+        % This boolean can be used to decide whether the system should
+        % automatically try to get the urine if it is required or if the
+        % user will specify a urine supply logic in the parent system
+        bManualUrineSupply  = false;
+        
+        fInitialMassParentUrineSupply = 0;
     end
     
     methods
@@ -119,8 +126,8 @@ classdef UPA < vsys
             % note that you have to use a negative flowrate / mass to
             % transfer for it to flow into the UPA, because of the way
             % interface branches are defined
-            solver.matter.residual.branch(this.toBranches.Inlet);
-            this.toBranches.Inlet.oHandler.setPositiveFlowDirection(false);
+            solver.matter.manual.branch(this.toBranches.Inlet);
+            
             % Mass can be taken out of the WPA by using this branch, here a
             % positive flowrate will result in mass leaving the WPA!
             solver.matter.manual.branch(this.toBranches.Outlet);
@@ -161,6 +168,10 @@ classdef UPA < vsys
             end
         end
         
+        function setUrineSupplyToManual(this, bManualUrineSupply)
+            this.bManualUrineSupply = bManualUrineSupply;
+        end
+        
         function setIfFlows(this, sInlet, sOutlet, sBrineOultet)
             % This function connects the system and subsystem level branches with each other. It
             % uses the connectIF function provided by the matter.container class
@@ -169,6 +180,7 @@ classdef UPA < vsys
             this.connectIF('Outlet',        sOutlet);
             this.connectIF('BrineOutlet',   sBrineOultet);
             
+            this.fInitialMassParentUrineSupply = this.toBranches.Inlet.coExmes{2}.oPhase.fMass;
         end
     end
     
@@ -176,6 +188,17 @@ classdef UPA < vsys
         
         function exec(this, ~)
             exec@vsys(this);
+            
+            if ~this.bManualUrineSupply && this.toStores.WSTA.toPhases.Urine.fMass < this.fWSTACapacity
+                fDesiredUrineMass = this.fWSTACapacity - this.toStores.WSTA.toPhases.Urine.fMass;
+                if ~this.toBranches.Inlet.oHandler.bMassTransferActive
+                    if this.toBranches.Inlet.coExmes{2}.oPhase.fMass > fDesiredUrineMass
+                        this.toBranches.Inlet.oHandler.setMassTransfer(-fDesiredUrineMass, 60);
+                    else
+                        this.toBranches.Inlet.oHandler.setMassTransfer(-(this.toBranches.Inlet.coExmes{2}.oPhase.fMass - this.fInitialMassParentUrineSupply), 60);
+                    end
+                end
+            end
             
             % Time condition is because the UPA requires a 5 hour cooldown
             % after each cycle see [1]
