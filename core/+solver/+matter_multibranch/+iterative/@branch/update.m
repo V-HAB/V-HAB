@@ -495,7 +495,7 @@ function update(this)
                 keyboard();
                 this.throw('update', 'too many iterations, error %.12f', rError);
             end
-            if this.iIteration > this.iMaxIterations + 10
+            if this.iIteration > this.iMaxIterations + 10 && ~this.bBranchOscillationSuppressionActive
                 % if you reach this, please view debugging tipps at the
                 % beginning of this file!
                 keyboard();
