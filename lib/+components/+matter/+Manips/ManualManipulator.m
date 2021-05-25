@@ -14,6 +14,16 @@ classdef ManualManipulator < matter.manips.substance.stationary
         aarManualFlowsToCompound;
         
         bAlwaysAutoAdjustFlowRates = false;
+        
+        bMassTransferActive = false;
+        fMassTransferStartTime;
+        fMassTransferTime;
+        fMassTransferFinishTime;
+    end
+    properties (SetAccess = private, GetAccess = protected)
+        % function handle registered at the timer object that allows this
+        % phase to set a time step, which is then enforced by the timer
+        setMassTransferTimeStep;
     end
     
     methods
@@ -27,6 +37,14 @@ classdef ManualManipulator < matter.manips.substance.stationary
             if nargin > 3
                 this.bAlwaysAutoAdjustFlowRates = bAutoAdjustFlowRates;
             end
+            
+            this.setMassTransferTimeStep = this.oTimer.bind(@(~) this.checkMassTransfer(), 0, struct(...
+                'sMethod', 'checkMassTransfer', ...
+                'sDescription', 'The .checkMassTransfer method of a manual manip', ...
+                'oSrcObj', this ...
+            ));
+            % initialize the time step to inf
+            this.setMassTransferTimeStep(inf, true);
         end
         
         function setFlowRate(this, afFlowRates, aarFlowsToCompound, bAutoAdjustFlowRates)
@@ -41,6 +59,9 @@ classdef ManualManipulator < matter.manips.substance.stationary
                 else
                     bAutoAdjustFlowRates = false;
                 end
+            end
+            if this.bMassTransferActive
+                warning('Currently a mass transfer is in progress')
             end
             %% for small errors this calculation will minimize the mass balance errors
             fError = sum(afFlowRates);
@@ -78,8 +99,79 @@ classdef ManualManipulator < matter.manips.substance.stationary
             this.oPhase.registerMassupdate();
             
         end
+        
+        function setMassTransfer(this, afPartialMasses, fTime, aarFlowsToCompound)
+            % This function sets a specific mass that is transferred within
+            % a specific time. After the mass has been transferred the
+            % flowrate is set to 0 again. If a new mass transfer is
+            % initialized while another one is already taking place, a
+            % warning is displayed and the original mass transfer is
+            % finished. The required input for the transport is an afMass
+            % vector with corresponding partial masses
+            %
+            % Inputs are:
+            % afPartialMasses in [kg]
+            % aarFlowsToCompound as ratio
+            % fTime in [s]
+            if fTime == 0
+                error(['Stop joking, nothing can happen instantly. Manual solver ', this.oBranch.sName, ' was provided 0 time to transfer mass']);
+            end
+            
+            if this.bMassTransferActive
+                warning('Currently a mass transfer is in progress')
+            end
+            
+            this.bMassTransferActive = true;
+            this.fMassTransferStartTime = this.oTimer.fTime;
+            this.fMassTransferTime = fTime;
+            this.fMassTransferFinishTime = this.oTimer.fTime + fTime;
+            
+            % transforms the specified flowrates into the overall flowrate
+            % and the partial mass ratios.
+            this.afManualFlowRates = afPartialMasses ./ fTime;
+            
+            % we use true to reset the last time the time step for this
+            % manip was bound
+            this.setMassTransferTimeStep(fTime, true);
+            
+            if nargin > 2
+                this.aarManualFlowsToCompound = aarFlowsToCompound;
+            else
+                this.aarManualFlowsToCompound = zeros(this.oPhase.oMT.iSubstances, this.oPhase.oMT.iSubstances);
+            end
+            
+            % In this case, we have to call the phase massupdate to ensure
+            % we trigger the updates of the manipulators in the post tick!
+            this.oPhase.registerMassupdate();
+        end
     end
     methods (Access = protected)
+        function checkMassTransfer(this,~)
+            if this.bMassTransferActive && abs(this.oTimer.fTime - this.fMassTransferFinishTime) < this.oTimer.fMinimumTimeStep
+                
+                this.afManualFlowRates = zeros(1,this.oMT.iSubstances);
+                this.aarManualFlowsToCompound = zeros(this.oPhase.oMT.iSubstances, this.oPhase.oMT.iSubstances);
+                
+                this.bMassTransferActive = false;
+                this.setMassTransferTimeStep(inf, true);
+                
+                % In this case, we have to call the phase massupdate to ensure
+                % we trigger the updates of the manipulators in the post tick!
+                this.oPhase.registerMassupdate();
+                
+            elseif this.bMassTransferActive && abs(this.oTimer.fTime - this.fMassTransferFinishTime) > this.oTimer.fMinimumTimeStep
+                % If the branch is called before the set mass transfer time
+                % step, the afLastExec property in the timer for this
+                % branch is updated, while the timestep remains. This can
+                % lead to the branch missing its update. Therefore, in
+                % every update that occurs during a mass transfer that
+                % does not fullfill the above conditions we have to reduce
+                % the time step:
+                fTimeStep = this.fMassTransferFinishTime - this.oTimer.fTime;
+                
+                this.setMassTransferTimeStep(fTimeStep, true);
+            end
+        end
         function update(this, ~)
             %% sets the flowrate values
             update@matter.manips.substance(this, this.afManualFlowRates, this.aarManualFlowsToCompound);
