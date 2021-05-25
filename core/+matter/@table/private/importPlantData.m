@@ -2,7 +2,7 @@ function importPlantData(this)
 % importPlantData Imports data for the plant matter composition from the
 % plant model and creates the corresponding compound masses
 
-    [ ttxImportPlantParameters ] = components.matter.PlantModuleV2.plantparameters.importPlantParameters();
+    [ ttxImportPlantParameters ] = components.matter.PlantModule.plantparameters.importPlantParameters();
     
     csPlants = fieldnames(ttxImportPlantParameters);
     

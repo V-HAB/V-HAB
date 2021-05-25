@@ -86,7 +86,7 @@ for iSubsystemType = 1:length(csSystems)
         
         csInterface = cell.empty();
         if strcmp(sSubsystemType, 'Subsystem')
-            if strcmp(tSubsystem.sSubsystemPath, 'components.matter.PlantModuleV2.PlantCulture')
+            if strcmp(tSubsystem.sSubsystemPath, 'components.matter.PlantModule.PlantCulture')
                 csInterfaces = tInterfaces.Plant;
             elseif strcmp(tSubsystem.sSubsystemPath, 'hojo.ILCO2.subsystems.HFC')
                 csInterfaces = tInterfaces.HFC;
