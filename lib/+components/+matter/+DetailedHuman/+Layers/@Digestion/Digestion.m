@@ -436,6 +436,7 @@ classdef Digestion < vsys
             % are not important for it --> rMaxChange can be set to inf:
             tTimeStepProperties = struct();
             tTimeStepProperties.rMaxChange = inf;
+            this.toStores.Digestion.toPhases.Rectum.oCapacity.setTimeStepProperties(tTimeStepProperties);
             arMaxChange = zeros(1,this.oMT.iSubstances);
             tTimeStepProperties.arMaxChange = arMaxChange;
             this.toStores.Digestion.toPhases.Rectum.setTimeStepProperties(tTimeStepProperties);
@@ -762,7 +763,7 @@ classdef Digestion < vsys
             end
             afDelayedTransportFlow = tfIntestinePreviousFlowRate.mfPastInputFlowRates(iTimeIndex, :);
             
-            afDelayedTransportFlow(afMass == 0) = 0;
+            afDelayedTransportFlow(afMass < 1e-8) = 0;
             
             % Of these delayed input flows, the corresponding ratios
             % are then passed on to the next compartment. Since the
