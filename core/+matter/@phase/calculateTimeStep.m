@@ -109,7 +109,7 @@ else
             %      [also above, arPartialsChange!]
             % FOR NOW ... we'll go with fMass, faster and does not seem to
             % introduce big issues ...
-            rTotalPerSecond = abs(fChange / this.fMass);
+            rTotalPerSecond = abs(tools.round.prec(fChange, this.iTimeStepPrecision) / this.fMass);
         end
         
         %% Partial mass change compared to partial mas
