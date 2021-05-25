@@ -128,7 +128,17 @@ switch sMatterState
         afPartialDensity = arPartialMass.*fDensity;
         aiPhase = this.determinePhase(afMass, fTemperature, ones(1,this.iSubstances) .* fCurrentPressure);
 end
-
+% ignore partial densities that are very small, as they have practically no
+% influence on the result but lead to errors in the matter table
+iNumIndices = length(aiIndices);
+abRemoveIndex = false(1, iNumIndices);
+for iI = 1:iNumIndices
+    if afPartialDensity(aiIndices(iI)) < 1e-4*sum(afPartialDensity)
+        afPartialDensity(aiIndices(iI)) = 0;
+        abRemoveIndex(iI) = true;
+    end
+end
+aiIndices(abRemoveIndex) = [];
 iNumIndices = length(aiIndices);
 
 % Initialize a new array filled with zeros. Then iterate through all
