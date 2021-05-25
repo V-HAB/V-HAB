@@ -37,48 +37,27 @@ classdef stationaryManip < matter.manips.substance.stationary & components.matte
             if any(this.oPhase.arPartialMass(this.abDissociation)) && this.oPhase.afMass(this.oMT.tiN2I.H2O) > 10^-12
                 arPartials = this.oPhase.arPartialMass(this.abRelevantSubstances);
                 
-                if all(abs(((this.arLastPartials - arPartials) ./ (this.arLastPartials + 1e-8))) < this.rMaxChange)
+                if all(abs(((this.arLastPartials - arPartials) ./ (arPartials + 1e-8))) < this.rMaxChange)
                     return
                 end
                 this.arLastPartials = arPartials;
                 
-                fVolume = this.oPhase.fMass / this.oPhase.fDensity;
-                % Concentrations in mol/L!
+                fVolume = (this.oPhase.fMass / this.oPhase.fDensity) * 1000;
+                % Concentrations in mol/l!
                 afInitialConcentrations = ((this.oPhase.afMass ./ this.oMT.afMolarMass) ./ fVolume);
-
-                if this.fpH > 8
-                    % For high pH Values it is more stable to use the OH
-                    % concentration for the pH Calculation
-                    this.fpH = (-log10(this.oMT.afDissociationConstant(this.oMT.tiN2I.H2O)) - -log10(afInitialConcentrations(this.oMT.tiN2I.OH)));
-                elseif this.fpH < 6
-                    this.fpH = -log10(afInitialConcentrations(this.oMT.tiN2I.Hplus));
-                else
-                    fpH_OH = (-log10(this.oMT.afDissociationConstant(this.oMT.tiN2I.H2O)) - -log10(afInitialConcentrations(this.oMT.tiN2I.OH)));
-                    fpH_H  = -log10(afInitialConcentrations(this.oMT.tiN2I.Hplus));
-                    
-                    if isinf(fpH_OH) && isinf(fpH_H)
-                        this.fpH = 7;
-                    else
-                        % Since we do not know exactly at what point the
-                        % calculation becomes more stable, we check here
-                        % what calculation has the smaller difference
-                        if abs(fpH_OH - this.fpH) < abs(fpH_H - this.fpH)
-                            this.fpH = fpH_OH;
-                        else
-                            this.fpH = fpH_H;
-                        end
-                    end
-                end
+                
+                this.fpH = calculate_pHValue(this, afInitialConcentrations);
                 
                 if isinf(this.fpH)
                     this.fpH = 7;
                 end
                 
-                fInitialMassSum = this.oPhase.fMass ./ fVolume; % [kg/L]
+                fInitialMassSum = sum(this.oPhase.afMass(this.abRelevantSubstances)) ./ fVolume; % [kg/l]
                 
                 afConcentrations = this.calculateNewConcentrations(afInitialConcentrations, fInitialMassSum, this.fpH);
                 
-                afConcentrationDifference = afConcentrations' - afInitialConcentrations;
+                afConcentrationDifference = zeros(1, this.oMT.iSubstances);
+                afConcentrationDifference(this.abRelevantSubstances) = afConcentrations(this.abRelevantSubstances)' - afInitialConcentrations(this.abRelevantSubstances);
 
                 % Set very small concentration changes to 0
                 afConcentrationDifference(abs(afConcentrationDifference) < 1e-16) = 0;

@@ -25,7 +25,7 @@ classdef setup < simulation.infrastructure
             
             % Setting the simulation duration to one hour. Time is always
             % in units of seconds in V-HAB.
-            this.fSimTime = 7000;
+            this.fSimTime = 12000;
             
         end
         
