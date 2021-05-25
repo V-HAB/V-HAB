@@ -60,8 +60,8 @@ Nu_Gas_0 = tInput.tDimensionlessQuantitiesGas.fNu;											% Nusseltnumber of 
 %% Step 1:
 fDeltaTemp = tInput.fTemperatureGas - tInput.fTemperatureCoolant;
 
-% if smaller than 1e-13 fDelta equals zero and everything else goes NaN
-if fDeltaTemp > 1e-10
+% if smaller than 1e-8 fDelta equals zero and everything else goes NaN
+if fDeltaTemp > 1e-8
     
 % Initially the algorithm simply calculates the heat flows at all
 % temperatures in between the coolant and gas temperature, this step
@@ -97,8 +97,14 @@ mfFilmFlowRate                  = zeros(iSteps,1);
 for iStep = 1:iSteps
 	% Molar fraction of vapor right above the condensate film surface [-], based on Antoine equation, (2.39)
     try
-        % It is faster to store the interpolation in the CHX:
-        mfMolFractionVaporAtSurface(iStep) = oCHX.hVaporPressureInterpolation(mfTemperature(iStep)) / tInput.fPressureGas;
+        % It is faster to store the interpolation in the CHX, but we also
+        % have to make sure that the temperature we are considering is
+        % within the valid intervall for the stored interpolation
+        if oCHX.hVaporPressureInterpolation.GridVectors{1}(1) < mfTemperature(iStep) && mfTemperature(iStep) < oCHX.hVaporPressureInterpolation.GridVectors{1}(2)
+            mfMolFractionVaporAtSurface(iStep) = oCHX.hVaporPressureInterpolation(mfTemperature(iStep)) / tInput.fPressureGas;
+        else
+            mfMolFractionVaporAtSurface(iStep) = oCHX.oMT.calculateVaporPressure(mfTemperature(iStep), tInput.Vapor) / tInput.fPressureGas;
+        end
         if isnan(mfMolFractionVaporAtSurface(iStep))
             
             fTemperatureDifference = mfTemperature(end)+5 - 273;
