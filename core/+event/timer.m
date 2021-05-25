@@ -538,8 +538,9 @@ classdef timer < base
             if this.bSynchronizeExecuteCallBack
                 % tells the timer to executa all call backs
                 abExec = true(1, length(this.afTimeSteps));
-                
-                this.bSynchronizeExecuteCallBack = false;
+                bResetSynchronization = true;
+            else
+                bResetSynchronization = false;
             end
             
             aiExec  = find(abExec);
@@ -566,7 +567,9 @@ classdef timer < base
                     end
                 end
             end
-            
+            if bResetSynchronization
+                this.bSynchronizeExecuteCallBack = false;
+            end
             
             % Update last execution time - see above, abExec is logical, so
             % this works, don't need find!
