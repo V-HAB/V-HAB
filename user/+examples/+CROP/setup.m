@@ -4,7 +4,8 @@ classdef setup < simulation.infrastructure
     %   this class file.
     
     properties
-        tiLog = struct();
+        % Property where indices of logs can be stored
+        tiLogIndexes = struct();
     end
     
     methods
@@ -25,7 +26,7 @@ classdef setup < simulation.infrastructure
   %% Simulation length
             % Simulation length - stop when specific time in sim is reached
             % or after specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 1 * 24 * 3600;
+            this.fSimTime = 100 * 24 * 3600;
             this.iSimTicks = 200;
             this.bUseTime = true;
         end
@@ -35,52 +36,66 @@ classdef setup < simulation.infrastructure
             
             % The logged values from the simulation results. The detailed
             % information is included in the name as an argument of the
-            % function "oLogger.addValue".         
-            this.tiLog.M_Tank                            = oLogger.addValue('Example:c:CROP:s:CROP_Tank.toPhases.TankSolution', 'fMass', 'CROP_Tank Mass', 'kg'); % 1
-            this.tiLog.M_BioFilter_Liquid                = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.FlowPhase', 'fMass', 'CROP_BioFilter Liquid Mass', 'kg'); % 2
-            this.tiLog.M_CROP_BioFilter_Gas              = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.Atmosphere', 'fMass', 'CROP_BioFilter Gas Mass', 'kg'); % 3
-
-            this.tiLog.FR_TanFlt                         = oLogger.addValue('Example:c:CROP.toBranches.Tank_to_BioFilter', 'fFlowRate', 'Flow Rate To CROP_BioFilter', 'kg/s'); % 4
-            this.tiLog.FR_FltTan                         = oLogger.addValue('Example:c:CROP.toBranches.BioFilter_to_Tank', 'fFlowRate', 'Flow Rate From CROP_BioFilter', 'kg/s'); % 5
-                       
-            this.tiLog.M_CROP_BioFilter_Liquid_CH4N2O    = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.FlowPhase', 'afMass(this.oMT.tiN2I.CH4N2O)', 'CROP_BioFilter Liquid CH4N2O Mass', 'kg'); % 6
-            this.tiLog.M_CROP_BioFilter_Liquid_NH3       = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.FlowPhase', 'afMass(this.oMT.tiN2I.NH3)', 'CROP_BioFilter Liquid NH3 Mass', 'kg'); % 7
-            this.tiLog.M_CROP_BioFilter_Gas_CO2          = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.Atmosphere', 'afMass(this.oMT.tiN2I.CO2)', 'CROP_BioFilter Gas CO2 Mass', 'kg'); % 8
-            this.tiLog.M_CROP_BioFilter_Gas_O2           = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.Atmosphere', 'afMass(this.oMT.tiN2I.O2)', 'CROP_BioFilter Gas O2 Mass', 'kg'); % 9
-            this.tiLog.M_CROP_BioFilter_Liquid_NH4OH     = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.FlowPhase', 'afMass(this.oMT.tiN2I.NH4OH)', 'CROP_BioFilter Liquid NH4OH Mass', 'kg'); % 10
+            % function "oLogger.addValue".
             
-            this.tiLog.M_CROP_Tank_Liquid_CH4N2O         = oLogger.addValue('Example:c:CROP:s:CROP_Tank.toPhases.TankSolution', 'afMass(this.oMT.tiN2I.CH4N2O)', 'CROP_Tank Liquid CH4N2O Mass', 'kg'); % 11
-            this.tiLog.M_CROP_Tank_Liquid_NH3            = oLogger.addValue('Example:c:CROP:s:CROP_Tank.toPhases.TankSolution', 'afMass(this.oMT.tiN2I.NH3)', 'CROP_Tank Liquid NH3 Mass', 'kg'); % 12
-            this.tiLog.M_CROP_Tank_Liquid_NH4OH          = oLogger.addValue('Example:c:CROP:s:CROP_Tank.toPhases.TankSolution', 'afMass(this.oMT.tiN2I.NH4OH)', 'CROP_Tank Liquid NH4OH Mass', 'kg'); % 13
+            oLogger.addValue('Example.oTimer',	'fTimeStepFinal',	's',   'Timestep');
             
-            this.tiLog.M_CROP_BioFilter_Liquid_HNO2      = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.FlowPhase', 'afMass(this.oMT.tiN2I.HNO2)', 'CROP_BioFilter Liquid HNO2 Mass', 'kg'); % 14
-            this.tiLog.M_CROP_BioFilter_Liquid_HNO3      = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.FlowPhase', 'afMass(this.oMT.tiN2I.HNO3)', 'CROP_BioFilter Liquid HNO3 Mass', 'kg'); % 15
-            this.tiLog.M_CROP_Tank_Liquid_HNO2           = oLogger.addValue('Example:c:CROP:s:CROP_Tank.toPhases.TankSolution', 'afMass(this.oMT.tiN2I.HNO2)', 'CROP_Tank Liquid HNO2 Mass', 'kg'); % 16
-            this.tiLog.M_CROP_Tank_Liquid_HNO3           = oLogger.addValue('Example:c:CROP:s:CROP_Tank.toPhases.TankSolution', 'afMass(this.oMT.tiN2I.HNO3)', 'CROP_Tank Liquid HNO3 Mass', 'kg'); % 17
+            for iCROP = 1:1
+                sCROP = ['CROP_', num2str(iCROP)];
+                
+                oLogger.addValue(['Example:c:',sCROP,':s:CROP_Tank.toPhases.TankSolution'], 'fMass', 'kg', [sCROP, ' CROP Tank Mass']);
+                
+                oLogger.addValue(['Example:c:',sCROP,'.toBranches.CROP_Calcite_Inlet'], 'fFlowRate', 'kg/s', [sCROP, ' CROP Calcite Inlet']);
+                
+                
+                
+                this.tiLogIndexes.mfPH{iCROP} = oLogger.addValue(['Example:c:',sCROP,':s:CROP_BioFilter.toPhases.BioPhase.toManips.substance'], 'fpH', '-',              [sCROP ,' BioFilter pH']);
+                
+                this.tiLogIndexes.mfCH4N2O{iCROP}     	= oLogger.addValue(['Example:c:',sCROP,':s:CROP_Tank.toPhases.TankSolution'], 'afMass(this.oMT.tiN2I.CH4N2O)',  'kg',    [sCROP, ' Tank CH4N2O Mass']);
+                this.tiLogIndexes.mfNH3{iCROP}        	= oLogger.addValue(['Example:c:',sCROP,':s:CROP_Tank.toPhases.TankSolution'], 'afMass(this.oMT.tiN2I.NH3)',     'kg',    [sCROP, ' Tank NH3 Mass']);
+                this.tiLogIndexes.mfNH4{iCROP}       	= oLogger.addValue(['Example:c:',sCROP,':s:CROP_Tank.toPhases.TankSolution'], 'afMass(this.oMT.tiN2I.NH4)',     'kg',    [sCROP, ' Tank NH4 Mass']);
+                this.tiLogIndexes.mfNO3{iCROP}          = oLogger.addValue(['Example:c:',sCROP,':s:CROP_Tank.toPhases.TankSolution'], 'afMass(this.oMT.tiN2I.NO3)',     'kg',    [sCROP, ' Tank NO3 Mass']);
+                this.tiLogIndexes.mfNO2{iCROP}          = oLogger.addValue(['Example:c:',sCROP,':s:CROP_Tank.toPhases.TankSolution'], 'afMass(this.oMT.tiN2I.NO2)',     'kg',    [sCROP, ' Tank NO2 Mass']);
+                this.tiLogIndexes.mfCO2{iCROP}          = oLogger.addValue(['Example:c:',sCROP,':s:CROP_Tank.toPhases.TankSolution'], 'afMass(this.oMT.tiN2I.CO2)',     'kg',    [sCROP, ' Tank CO2 Mass']);
+                this.tiLogIndexes.mfCa{iCROP}           = oLogger.addValue(['Example:c:',sCROP,':s:CROP_Tank.toPhases.TankSolution'], 'afMass(this.oMT.tiN2I.Ca2plus)', 'kg',    [sCROP, ' Tank Ca Mass']);
+                this.tiLogIndexes.mfCO3{iCROP}          = oLogger.addValue(['Example:c:',sCROP,':s:CROP_Tank.toPhases.TankSolution'], 'afMass(this.oMT.tiN2I.CO3)',     'kg',    [sCROP, ' Tank CO3 Mass']);
+                
+                this.tiLogIndexes.mfCaCO3{iCROP}     	= oLogger.addValue(['Example:c:',sCROP,':s:CROP_Tank.toPhases.Calcite'], 'afMass(this.oMT.tiN2I.CaCO3)',        'kg',    [sCROP, ' Tank CaCO3 Mass']);
+                
+                this.tiLogIndexes.mfCH4N2Oflow{iCROP}     	= oLogger.addValue(['Example:c:',sCROP,':s:CROP_BioFilter.toPhases.BioPhase.toManips.substance'], 'afPartialFlows(this.oMT.tiN2I.CH4N2O)', 'kg/s',    [sCROP, ' Enzyme Reaction CH4N2O']);
+                this.tiLogIndexes.mfNH3flow{iCROP}        	= oLogger.addValue(['Example:c:',sCROP,':s:CROP_BioFilter.toPhases.BioPhase.toManips.substance'], 'afPartialFlows(this.oMT.tiN2I.NH3)',    'kg/s',    [sCROP, ' Enzyme Reaction NH3']);
+                this.tiLogIndexes.mfNH4flow{iCROP}       	= oLogger.addValue(['Example:c:',sCROP,':s:CROP_BioFilter.toPhases.BioPhase.toManips.substance'], 'afPartialFlows(this.oMT.tiN2I.NH4)',    'kg/s',    [sCROP, ' Enzyme Reaction NH4']);
+                this.tiLogIndexes.mfNO3flow{iCROP}          = oLogger.addValue(['Example:c:',sCROP,':s:CROP_BioFilter.toPhases.BioPhase.toManips.substance'], 'afPartialFlows(this.oMT.tiN2I.NO3)',    'kg/s',    [sCROP, ' Enzyme Reaction NO3']);
+                this.tiLogIndexes.mfNO2flow{iCROP}          = oLogger.addValue(['Example:c:',sCROP,':s:CROP_BioFilter.toPhases.BioPhase.toManips.substance'], 'afPartialFlows(this.oMT.tiN2I.NO2)',    'kg/s',    [sCROP, ' Enzyme Reaction NO2']);
+                this.tiLogIndexes.mfO2flow{iCROP}           = oLogger.addValue(['Example:c:',sCROP,':s:CROP_BioFilter.toPhases.BioPhase.toManips.substance'], 'afPartialFlows(this.oMT.tiN2I.O2)',     'kg/s',     [sCROP, ' Enzyme Reaction O2']);
+                this.tiLogIndexes.mfH2Oflow{iCROP}          = oLogger.addValue(['Example:c:',sCROP,':s:CROP_BioFilter.toPhases.BioPhase.toManips.substance'], 'afPartialFlows(this.oMT.tiN2I.H2O)',    'kg/s',    [sCROP, ' Enzyme Reaction H2O']);
+                this.tiLogIndexes.mfCO2flow{iCROP}          = oLogger.addValue(['Example:c:',sCROP,':s:CROP_BioFilter.toPhases.BioPhase.toManips.substance'], 'afPartialFlows(this.oMT.tiN2I.CO2)',    'kg/s',    [sCROP, ' Enzyme Reaction CO2']);
+                
+                this.tiLogIndexes.mfNH3gasex{iCROP}   	= oLogger.addValue(['Example:c:',sCROP,':s:CROP_Tank.toProcsP2P.NH3_Outgassing_Tank'], 'fFlowRate',    'kg/s',    [sCROP, ' NH3 gas exchange']);
+                this.tiLogIndexes.mfCO2gasex{iCROP}   	= oLogger.addValue(['Example:c:',sCROP,':s:CROP_Tank.toProcsP2P.CO2_Outgassing_Tank'], 'fFlowRate',    'kg/s',    [sCROP, ' CO2 gas exchange']);
+                this.tiLogIndexes.mfO2gasex{iCROP}   	= oLogger.addValue(['Example:c:',sCROP,':s:CROP_Tank.toProcsP2P.O2_to_TankSolution'],  'fFlowRate',    'kg/s',    [sCROP, ' O2 gas exchange']);
+                this.tiLogIndexes.mfO2gasex{iCROP}   	= oLogger.addValue(['Example:c:',sCROP,':s:CROP_Tank.toProcsP2P.Calcite_to_TankSolution'],  'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO3)',      'kg/s',    [sCROP, ' CO3 dissolve']);
+                this.tiLogIndexes.mfO2gasex{iCROP}   	= oLogger.addValue(['Example:c:',sCROP,':s:CROP_Tank.toProcsP2P.Calcite_to_TankSolution'],  'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Ca2plus)', 	'kg/s',    [sCROP, ' Ca2plus dissolve']);
+                
+                this.tiLogIndexes.mfNH3gascum{iCROP}   	= oLogger.addVirtualValue(['cumsum("', sCROP, ' NH3 gas exchange"   .* "Timestep")'], 'kg', [sCROP, ' exchanged NH3 Mass']);
+                this.tiLogIndexes.mfCO2gascum{iCROP}   	= oLogger.addVirtualValue(['cumsum("', sCROP, ' CO2 gas exchange"   .* "Timestep")'], 'kg', [sCROP, ' exchanged CO2 Mass']);
+                this.tiLogIndexes.mfO2gascum{iCROP}   	= oLogger.addVirtualValue(['cumsum("', sCROP, ' O2 gas exchange"    .* "Timestep")'], 'kg', [sCROP, ' exchanged O2 Mass']);
+                this.tiLogIndexes.mfCalcitecum{iCROP}  	= oLogger.addVirtualValue(['cumsum("', sCROP, ' CROP Calcite Inlet" .* "Timestep")'], 'kg', [sCROP, ' consumed Calcite Mass']);
+                this.tiLogIndexes.mfCalciumcum{iCROP}  	= oLogger.addVirtualValue(['cumsum("', sCROP, ' CO3 dissolve"       .* "Timestep")'], 'kg', [sCROP, ' dissolved Calcium Mass']);
+                this.tiLogIndexes.mfCarbonatecum{iCROP} = oLogger.addVirtualValue(['cumsum("', sCROP, ' Ca2plus dissolve"   .* "Timestep")'], 'kg', [sCROP, ' dissolved Carbonate Mass']);
+                
+                this.tiLogIndexes.mfCH4N2OEnzymeCum{iCROP}	= oLogger.addVirtualValue(['cumsum("', sCROP, ' Enzyme Reaction CH4N2O" .* "Timestep")'], 'kg', [sCROP, ' enzyme reacted CH4N2O Mass']);
+                this.tiLogIndexes.mfNH3EnzymeCum{iCROP}  	= oLogger.addVirtualValue(['cumsum("', sCROP, ' Enzyme Reaction NH3"    .* "Timestep")'], 'kg', [sCROP, ' enzyme reacted NH3 Mass']);
+                this.tiLogIndexes.mfNH4EnzymeCum{iCROP}  	= oLogger.addVirtualValue(['cumsum("', sCROP, ' Enzyme Reaction NH4"    .* "Timestep")'], 'kg', [sCROP, ' enzyme reacted NH4 Mass']);
+                this.tiLogIndexes.mfNO3EnzymeCum{iCROP}  	= oLogger.addVirtualValue(['cumsum("', sCROP, ' Enzyme Reaction NO3"    .* "Timestep")'], 'kg', [sCROP, ' enzyme reacted NO3 Mass']);
+                this.tiLogIndexes.mfNO2EnzymeCum{iCROP}  	= oLogger.addVirtualValue(['cumsum("', sCROP, ' Enzyme Reaction NO2"    .* "Timestep")'], 'kg', [sCROP, ' enzyme reacted NO2 Mass']);
+                this.tiLogIndexes.mfO2EnzymeCum{iCROP}  	= oLogger.addVirtualValue(['cumsum("', sCROP, ' Enzyme Reaction O2"     .* "Timestep")'], 'kg', [sCROP, ' enzyme reacted O2 Mass']);
+                this.tiLogIndexes.mfH2OEnzymeCum{iCROP}  	= oLogger.addVirtualValue(['cumsum("', sCROP, ' Enzyme Reaction H2O"    .* "Timestep")'], 'kg', [sCROP, ' enzyme reacted H2O Mass']);
+                this.tiLogIndexes.mfCO2EnzymeCum{iCROP}  	= oLogger.addVirtualValue(['cumsum("', sCROP, ' Enzyme Reaction CO2"    .* "Timestep")'], 'kg', [sCROP, ' enzyme reacted CO2 Mass']);
+                
+            end
             
-            this.tiLog.M_CROP_BioFilter_Liquid_pH        = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.BioPhase.toManips.substance', 'fpH', 'CROP_BioFilter Liquid pH', '-'); % 18
-            this.tiLog.M_CROP_BioFilter_Bio_CH4N2O       = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.BioPhase', 'afMass(this.oMT.tiN2I.CH4N2O)', 'CROP_BioFilter Bio CH4N2O Mass', 'kg'); % 19
-            this.tiLog.M_CROP_BioFilter_Bio_NH3          = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.BioPhase', 'afMass(this.oMT.tiN2I.NH3)', 'CROP_BioFilter Bio NH3 Mass', 'kg'); % 20
-            this.tiLog.M_CROP_BioFilter_Bio_NH4OH        = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.BioPhase', 'afMass(this.oMT.tiN2I.NH4OH)', 'CROP_BioFilter Bio NH4OH Mass', 'kg'); % 21
-            
-            this.tiLog.M_CROP_BioFilter_Bio_CO2          = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.BioPhase', 'afMass(this.oMT.tiN2I.CO2)', 'CROP_BioFilter Bio CO2 Mass', 'kg'); % 26
-            this.tiLog.M_CROP_BioFilter_Bio_O2           = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.BioPhase', 'afMass(this.oMT.tiN2I.O2)', 'CROP_BioFilter Bio O2 Mass', 'kg'); % 27
-            this.tiLog.M_CROP_BioFilter_Bio_HNO2         = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.BioPhase', 'afMass(this.oMT.tiN2I.HNO2)', 'CROP_BioFilter Bio HNO2 Mass', 'kg'); % 28
-            this.tiLog.M_CROP_BioFilter_Bio_HNO3         = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.BioPhase', 'afMass(this.oMT.tiN2I.HNO3)', 'CROP_BioFilter Bio HNO3 Mass', 'kg'); % 29
-            
-            
-            this.tiLog.M_CROP_BioFilter_Bio_AE           = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.BioPhase.toManips.substance', 'afConcentration(9)', 'CROP_BioFilter Liquid Bio A.E Concentration', 'mol/l'); % 30
-            this.tiLog.M_CROP_BioFilter_Bio_AI           = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.BioPhase.toManips.substance', 'afConcentration(11)', 'CROP_BioFilter Liquid Bio A.I Concentration', 'mol/l'); % 31
-            this.tiLog.M_CROP_BioFilter_Bio_AEI          = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.BioPhase.toManips.substance', 'afConcentration(12)', 'CROP_BioFilter Liquid Bio A.EI Concentration', 'mol/l'); % 32
-            
-            this.tiLog.M_CROP_BioFilter_Bio_BE           = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.BioPhase.toManips.substance', 'afConcentration(16)', 'CROP_BioFilter Liquid Bio B.E Concentration', 'mol/l'); % 33
-            this.tiLog.M_CROP_BioFilter_Bio_BI           = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.BioPhase.toManips.substance', 'afConcentration(18)', 'CROP_BioFilter Liquid Bio B.I Concentration', 'mol/l'); % 34
-            this.tiLog.M_CROP_BioFilter_Bio_BEI          = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.BioPhase.toManips.substance', 'afConcentration(19)', 'CROP_BioFilter Liquid Bio B.EI Concentration', 'mol/l'); % 35
-            
-            this.tiLog.M_CROP_BioFilter_Bio_CE           = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.BioPhase.toManips.substance', 'afConcentration(23)', 'CROP_BioFilter Liquid Bio C.E Concentration', 'mol/l'); % 36
-            this.tiLog.M_CROP_BioFilter_Bio_CI           = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.BioPhase.toManips.substance', 'afConcentration(25)', 'CROP_BioFilter Liquid Bio C.I Concentration', 'mol/l'); % 37
-            this.tiLog.M_CROP_BioFilter_Bio_CEI          = oLogger.addValue('Example:c:CROP:s:CROP_BioFilter.toPhases.BioPhase.toManips.substance', 'afConcentration(26)', 'CROP_BioFilter Liquid Bio C.EI Concentration', 'mol/l'); % 38
-            
+            this.tiLogIndexes.mfCalciumcumAlt{iCROP}= oLogger.addValue('Example:s:CalciteSupply.toPhases.CalciteSupply',  'this.afMassChange(this.oMT.tiN2I.CaCO3)', 	'kg',    'Total consumed Calcite Mass');
         end
         
          function plot(this)
@@ -96,6 +111,46 @@ classdef setup < simulation.infrastructure
             oPlotter = plot@simulation.infrastructure(this);
             oLogger = oPlotter.oSimulationInfrastructure.toMonitors.oLogger;
             
+            tPlotOptions.sTimeUnit = 'hours';
+            
+            coPlots{1,1} = oPlotter.definePlot(this.tiLogIndexes.mfPH,                	'pH Value',  	tPlotOptions);
+            coPlots{1,2} = oPlotter.definePlot(this.tiLogIndexes.mfCH4N2O,          	'Urea',       	tPlotOptions);
+            coPlots{1,3} = oPlotter.definePlot(this.tiLogIndexes.mfNH3,              	'NH3',       	tPlotOptions);
+            coPlots{1,4} = oPlotter.definePlot(this.tiLogIndexes.mfNH4,              	'NH4',       	tPlotOptions);
+            coPlots{1,5} = oPlotter.definePlot(this.tiLogIndexes.mfCaCO3,              	'CaCO3',       	tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot(this.tiLogIndexes.mfNO3,                 'NO3',         	tPlotOptions);
+            coPlots{2,2} = oPlotter.definePlot(this.tiLogIndexes.mfNO2,                 'NO2',        	tPlotOptions);
+            coPlots{2,3} = oPlotter.definePlot(this.tiLogIndexes.mfCO2,                 'CO2',        	tPlotOptions);
+            coPlots{2,4} = oPlotter.definePlot(this.tiLogIndexes.mfCa,                  'Ca',        	tPlotOptions);
+            coPlots{2,5} = oPlotter.definePlot(this.tiLogIndexes.mfCO3,                 'CO3',        	tPlotOptions);
+            
+            oPlotter.defineFigure(coPlots, 'CROP Masses and pH');
+            
+            clear coPlots
+            coPlots{1,1} = oPlotter.definePlot(this.tiLogIndexes.mfNH3gascum,       	'NH3 Gas Exchange',    	tPlotOptions);
+            coPlots{1,2} = oPlotter.definePlot(this.tiLogIndexes.mfCO2gascum,          	'CO2 Gas Exchange',   	tPlotOptions);
+            coPlots{1,3} = oPlotter.definePlot(this.tiLogIndexes.mfO2gascum,           	'O2 Gas Exchange',     	tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot(this.tiLogIndexes.mfCalcitecum,       	'Consumed Calcite', 	tPlotOptions);
+            coPlots{2,2} = oPlotter.definePlot(this.tiLogIndexes.mfCalciumcum,       	'Dissolved Calcium', 	tPlotOptions);
+            coPlots{2,3} = oPlotter.definePlot(this.tiLogIndexes.mfCarbonatecum,       	'Dissolved Carbonate', 	tPlotOptions);
+            
+            oPlotter.defineFigure(coPlots, 'CROP gas Exchange');
+            
+            clear coPlots
+            coPlots{1,1} = oPlotter.definePlot(this.tiLogIndexes.mfCH4N2Oflow,       	'CH4N2O Enzyme Reaction', 	tPlotOptions);
+            coPlots{1,2} = oPlotter.definePlot(this.tiLogIndexes.mfNH3flow,          	'NH3 Enzyme Reaction',  	tPlotOptions);
+            coPlots{1,3} = oPlotter.definePlot(this.tiLogIndexes.mfNH4flow,           	'NH4 Enzyme Reaction',     	tPlotOptions);
+            coPlots{1,4} = oPlotter.definePlot(this.tiLogIndexes.mfNO3flow,             'NO3 Enzyme Reaction',    	tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot(this.tiLogIndexes.mfNO2flow,             'NO2 Enzyme Reaction',     	tPlotOptions);
+            coPlots{2,2} = oPlotter.definePlot(this.tiLogIndexes.mfO2flow,              'O2 Enzyme Reaction',     	tPlotOptions);
+            coPlots{2,3} = oPlotter.definePlot(this.tiLogIndexes.mfH2Oflow,             'H2O Enzyme Reaction',    	tPlotOptions);
+            coPlots{2,4} = oPlotter.definePlot(this.tiLogIndexes.mfCO2flow,             'CO2 Enzyme Reaction',    	tPlotOptions);
+                
+            oPlotter.defineFigure(coPlots, 'CROP Enzyme Flowrates');
+            oPlotter.plot();
+            
+            TestData = load('+examples\+CROP\+TestData\Data_Experiment.mat');
+            % Value b is NH4OH, c is HNO2 and d is HNO3 
          end
     end
     
