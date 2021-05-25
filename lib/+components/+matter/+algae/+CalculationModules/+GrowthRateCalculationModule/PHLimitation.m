@@ -79,7 +79,7 @@ classdef PHLimitation < base
         function [rPHRelativeGrowth] = UpdatePHRelativeGrowth(this)
            %% calculate current pH
             fH2OVolume = 1000*this.oPhase.afMass(this.oPhase.oMT.tiN2I.H2O) / this.oPhase.oMT.ttxMatter.H2O.fStandardDensity;   % [1000*kg / (kg / m3)] = [L]
-            fHPlusMoles = this.oPhase.afMass(this.oPhase.oMT.tiN2I.Hplus) / this.oPhase.oMT.ttxMatter.Hplus.fMolarMass;         % [mol]
+            fHPlusMoles = this.oPhase.afMass(this.oPhase.oMT.tiN2I.Hplus) / this.oPhase.oMT.afMolarMass(this.oPhase.oMT.tiN2I.Hplus);         % [mol]
             fHPlusConcentration = (fHPlusMoles / fH2OVolume);                                                                   % [mol/m3]
             this.fPH = -log10(fHPlusConcentration);                                                                             % no unit
            

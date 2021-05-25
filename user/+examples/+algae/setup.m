@@ -26,7 +26,7 @@ classdef setup < simulation.infrastructure
             %% Simulation length
             % Stop when specific time in simulation is reached or after
             % specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 3600 * 24 * 10; % In seconds
+            this.fSimTime = 3600 * 24 * 7; % In seconds
             % this.fSimTime = 253000;
             this.iSimTicks = 1500;
             this.bUseTime = true;
@@ -54,47 +54,6 @@ classdef setup < simulation.infrastructure
             for iBranch = 1:length(csBranches)
                 oLog.addValue(['Cabin.toBranches.', csBranches{iBranch}],             'fFlowRate',    'kg/s', [csBranches{iBranch}, ' Flowrate']);
             end
-            
-            csStoresHuman_1 = fieldnames(this.oSimulationContainer.toChildren.Cabin.toChildren.Human_1.toStores);
-            
-            for iStore = 1:length(csStoresHuman_1)
-                csPhases = fieldnames(this.oSimulationContainer.toChildren.Cabin.toChildren.Human_1.toStores.(csStoresHuman_1{iStore}).toPhases);
-                for iPhase = 1:length(csPhases)
-                    oLog.addValue(['Cabin:c:Human_1.toStores.', csStoresHuman_1{iStore}, '.toPhases.', csPhases{iPhase}],	'fMass',        'kg', [csStoresHuman_1{iStore}, ' ', csPhases{iPhase}, ' Mass']);
-                    oLog.addValue(['Cabin:c:Human_1.toStores.', csStoresHuman_1{iStore}, '.toPhases.', csPhases{iPhase}],	'fPressure',	'Pa', [csStoresHuman_1{iStore}, ' ', csPhases{iPhase}, ' Pressure']);
-                    oLog.addValue(['Cabin:c:Human_1.toStores.', csStoresHuman_1{iStore}, '.toPhases.', csPhases{iPhase}],	'fTemperature',	'K',  [csStoresHuman_1{iStore}, ' ', csPhases{iPhase}, ' Temperature']);
-                end
-            end
-            
-            csBranchesHuman_1 = fieldnames(this.oSimulationContainer.toChildren.Cabin.toChildren.Human_1.toBranches);
-            for iBranch = 1:length(csBranchesHuman_1)
-                oLog.addValue(['Cabin:c:Human_1.toBranches.', csBranchesHuman_1{iBranch}],             'fFlowRate',    'kg/s', [csBranchesHuman_1{iBranch}, ' Flowrate']);
-            end
-            
-            oLog.addValue('Cabin:c:Human_1', 'fVO2_current',              '-', 'VO2');
-            oLog.addValue('Cabin:c:Human_1', 'fCurrentEnergyDemand',      'W', 'Current Energy Demand');
-            
-            oLog.addValue('Cabin:c:Human_1', 'fOxygenDemand',                 'kg/s', 'Oxygen Consumption');
-            oLog.addValue('Cabin:c:Human_1', 'fCO2Production',                'kg/s', 'CO_2 Production');
-            oLog.addValue('Cabin:c:Human_1', 'fRespiratoryCoefficient',       '-',    'Respiratory Coefficient');
-            
-            
-            oLog.addValue('Cabin:c:Human_1.toStores.Human.toPhases.HumanPhase', 'this.afMass(this.oMT.tiN2I.O2)',          'kg',    'Internal O_2 Mass');
-            oLog.addValue('Cabin:c:Human_1.toStores.Human.toPhases.HumanPhase', 'this.afMass(this.oMT.tiN2I.CO2)',         'kg',    'Internal CO_2 Mass');
-            oLog.addValue('Cabin:c:Human_1.toStores.Human.toPhases.HumanPhase', 'this.afMass(this.oMT.tiN2I.H2O)',         'kg',    'Internal H_2O Mass');
-            oLog.addValue('Cabin:c:Human_1.toStores.Human.toPhases.HumanPhase', 'this.afMass(this.oMT.tiN2I.C4H5ON)',      'kg',    'Internal Protein Mass');
-            oLog.addValue('Cabin:c:Human_1.toStores.Human.toPhases.HumanPhase', 'this.afMass(this.oMT.tiN2I.C16H32O2)',    'kg',    'Internal Fat Mass');
-            oLog.addValue('Cabin:c:Human_1.toStores.Human.toPhases.HumanPhase', 'this.afMass(this.oMT.tiN2I.C6H12O6)',     'kg',    'Internal Carbohydrate Mass');
-            oLog.addValue('Cabin:c:Human_1.toStores.Human.toPhases.HumanPhase', 'this.afMass(this.oMT.tiN2I.C42H69O13N5)', 'kg',    'Internal Feces Solid Mass');
-            oLog.addValue('Cabin:c:Human_1.toStores.Human.toPhases.HumanPhase', 'this.afMass(this.oMT.tiN2I.C2H6O2N2)',    'kg',    'Internal Urine Solid Mass');
-            
-            oLog.addValue('Cabin:c:Human_1.toStores.Human.toProcsP2P.Food_P2P', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',            'kg/s',    'Food Conversion H2O Flowrate');
-            oLog.addValue('Cabin:c:Human_1.toStores.Human.toProcsP2P.Food_P2P', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C16H32O2)',       'kg/s',    'Food Conversion Fat Flowrate');
-            oLog.addValue('Cabin:c:Human_1.toStores.Human.toProcsP2P.Food_P2P', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C4H5ON)',         'kg/s',    'Food Conversion Protein Flowrate');
-            oLog.addValue('Cabin:c:Human_1.toStores.Human.toProcsP2P.Food_P2P', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C6H12O6)',        'kg/s',    'Food Conversion Carbohydrates Flowrate');
-            oLog.addValue('Cabin:c:Human_1.toStores.Human.toProcsP2P.Food_P2P', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C)',              'kg/s',    'Food Conversion Ash Flowrate');
-            
-            oLog.addValue('Cabin:c:Human_1.toStores.Human.toProcsP2P.Food_P2P', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C)',              'kg/s',    'Food Conversion Ash Flowrate');
             
             %cabin O2 and CO2 partialpressures
             oLog.addValue('Cabin.toStores.Cabin.toPhases.CabinAir', 'afPP(this.oMT.tiN2I.O2)',  'Pa',    'Cabin Partial Pressure of O2');
@@ -190,6 +149,17 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Cabin.toChildren.Photobioreactor.toChildren.ChlorellaInMedia.toStores.GrowthChamber.toPhases.GrowthMedium.toManips.substance.oChemicalReactions', 'fCurrentCalculatedHplus',         'kg/m^3', 'Calculated H+ Concentration');
             oLog.addValue('Cabin.toChildren.Photobioreactor.toChildren.ChlorellaInMedia.toStores.GrowthChamber.toPhases.GrowthMedium.toManips.substance.oChemicalReactions', 'fCurrentCalculatedPH',            '-', 'Calculated PH');
             
+            oLog.addValue('Cabin.oTimer',	'fTimeStep',                 's',   'fTimeStepFinal');
+            
+            oLog.addValue('Cabin.toChildren.Photobioreactor.toChildren.ChlorellaInMedia.toStores.GrowthChamber.toPhases.GrowthMedium.toManips.substance',      'this.afPartialFlows(this.oMT.tiN2I.Chlorella)',   	'kg/s',   'PBR Chlorella Growth Rate');
+            oLog.addValue('Cabin.toChildren.Photobioreactor.toChildren.ChlorellaInMedia.toStores.GrowthChamber.toPhases.GrowthMedium.toManips.substance',      'this.afPartialFlows(this.oMT.tiN2I.CO2)',           'kg/s',   'PBR CO_2 Consumption Rate');
+            oLog.addValue('Cabin.toChildren.Photobioreactor.toChildren.ChlorellaInMedia.toStores.GrowthChamber.toPhases.GrowthMedium.toManips.substance',      'this.afPartialFlows(this.oMT.tiN2I.O2)',            'kg/s',   'PBR O_2 Production Rate Rate');
+            oLog.addValue('Cabin.toChildren.Photobioreactor.toChildren.ChlorellaInMedia.toStores.GrowthChamber.toPhases.GrowthMedium.toManips.substance',      'this.afPartialFlows(this.oMT.tiN2I.O2)',            'kg/s',   'PBR H_2O Production Rate Rate');
+            
+            oLog.addVirtualValue('cumsum("PBR Chlorella Growth Rate"     .* "Timestep")', 'kg', 'PBR produced Chlorella Mass');
+            oLog.addVirtualValue('cumsum("PBR CO_2 Consumption Rate"     .* "Timestep")', 'kg', 'PBR consumed CO_2 Mass');
+            oLog.addVirtualValue('cumsum("PBR O_2 Production Rate Rate"  .* "Timestep")', 'kg', 'PBR produced O_2 Mass');
+            oLog.addVirtualValue('cumsum("PBR H_2O Production Rate Rate" .* "Timestep")', 'kg', 'PBR produced H_2O Mass');
         end
         
         function plot(this, varargin) % Plotting the results
@@ -280,32 +250,6 @@ classdef setup < simulation.infrastructure
             
           %  tPlotOptions.sTimeUnit = 'seconds';
             tFigureOptions = struct('bTimePlot', false, 'bPlotTools', false);
-            
-            coPlots{1,1} = oPlotter.definePlot({csPressures{:}, csPressuresHuman_1{:}},     'Pressures', tPlotOptions);
-            coPlots{2,1} = oPlotter.definePlot({csFlowRates{:}, csFlowRatesHuman_1{:}},     'Flow Rates', tPlotOptions);
-            coPlots{1,2} = oPlotter.definePlot({csTemperatures{:}, csTemperaturesHuman_1{:}},  'Temperatures', tPlotOptions);
-            %            coPlots{2,2} = oPlotter.definePlot({csMasses{:}, csMassesHuman_1{:}},  'Masses', tPlotOptions);
-            oPlotter.defineFigure(coPlots,  'Plots', tFigureOptions);
-            
-            csHumansPhaseMassses = {'"Internal O_2 Mass"', '"Internal CO_2 Mass"', '"Internal H_2O Mass"', '"Internal Protein Mass"',  '"Internal Fat Mass"',...
-                '"Internal Carbohydrate Mass"', '"Internal Feces Solid Mass"', '"Internal Urine Solid Mass"'};
-            
-            coPlots{1,1} = oPlotter.definePlot(csHumansPhaseMassses,     'Internal Human Masses', tPlotOptions);
-            coPlots{2,1} = oPlotter.definePlot({'"Current Energy Demand"'},     'Energy Demand', tPlotOptions);
-            coPlots{1,2} = oPlotter.definePlot({'"Oxygen Consumption"', '"CO_2 Production"'},  'Oxygen and CO2 flowrates', tPlotOptions);
-            coPlots{2,2} = oPlotter.definePlot({'"Respiratory Coefficient"'},  'Respiratory Coefficient', tPlotOptions);
-            oPlotter.defineFigure(coPlots,  'Human Model Plots', tFigureOptions);
-            
-            csFoodConversionFlows = {'"Food Conversion H2O Flowrate"', '"Food Conversion Fat Flowrate"', '"Food Conversion Protein Flowrate"',...
-                '"Food Conversion Carbohydrates Flowrate"', '"Food Conversion Ash Flowrate"'};
-            
-            coPlots = {};
-            coPlots{1,1} = oPlotter.definePlot(csFoodConversionFlows,           'Food Flows', tPlotOptions);
-            coPlots{2,1} = oPlotter.definePlot({'"Human HumanPhase Mass"'},     'Human Phase Mass', tPlotOptions);
-            coPlots{1,2} = oPlotter.definePlot({'"Human Stomach Mass"'},        'Stomach Phase Mass', tPlotOptions);
-            
-            oPlotter.defineFigure(coPlots,  'Food Plots', tFigureOptions);
-            
             
             CabinImportant{1,1}= oPlotter.definePlot({'"Cabin Partial Pressure of O2"'}, 'Cabin Partial Pressure of O2', tPlotOptions);
             CabinImportant{2,1}= oPlotter.definePlot({'"Cabin Partial Pressure of CO2"'}, 'Cabin Partial Pressure of CO2', tPlotOptions);

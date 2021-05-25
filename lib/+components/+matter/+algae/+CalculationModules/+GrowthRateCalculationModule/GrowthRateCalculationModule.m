@@ -71,10 +71,11 @@ classdef GrowthRateCalculationModule < base
             this.oSystem = oSystem; 
 
             %% define growth parameters
-            this.fLagTime = 0;                                    %[s]
-            this.fMaxSpecificGrowthRate =1.6*10^-5;               %[kg/m3s] equals to 1.3/day
-            this.fMaximumBiomassConcentration = 2.65;             %[kg/m^3]
-            this.bDead = 0;                                       % boolean operator if the algal culture is dead. then nothing can grow anymore
+            this.fLagTime = 0;                                      % [s]
+            % See Table 6-2 from MA Thomas Ruck http://mediatum.ub.tum.de/1473278
+            this.fMaxSpecificGrowthRate         = 3.89*10^-4;    	% [kg/m3s]
+            this.fMaximumBiomassConcentration   = 18.15;            % [kg/m^3]
+            this.bDead = 0;                                         % boolean operator if the algal culture is dead. then nothing can grow anymore
             
             % biomass concentration at which maximum growth occurs. this is
             % used as a set point for the harvester. in gompertz model this
@@ -153,9 +154,8 @@ classdef GrowthRateCalculationModule < base
         
         function CalculateInfluenceParameters(this)
             
-            [this.rTemperatureRelativeGrowth, bDead] = this.oTemperatureLimitation.UpdateTemperatureRelativeGrowth;
+            [this.rTemperatureRelativeGrowth, this.bDead] = this.oTemperatureLimitation.UpdateTemperatureRelativeGrowth;
             %if culture is dead all the absorbed PAR will go to heat since it is not being used for PS anymore.
-            this.bDead = bDead;
             
             this.rPARRelativeGrowth = this.oPARLimitation.UpdatePARRelativeGrowth; %calls further functions in PAR Module
             

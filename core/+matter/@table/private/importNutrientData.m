@@ -4,6 +4,14 @@ function importNutrientData(this)
 % want to add additional food to V-HAB search for it in the database,
 % download the corresponding CSV and add it to the folder
 % core/+matter/+data/+NutrientData
+% 
+% Unfortuntly the complete structure of the above mentioned database was
+% changed and therefore it is currently not possible to add new foods this
+% way. It is possible to access data using the descritpion provided here:
+% https://fdc.nal.usda.gov/api-guide.html and for our purposes the demo API
+% key would be sufficient. However, since the whole format of the received
+% data changes, a completly new import script is required to import the
+% data!
 %
 % The skript is able to import both the base and the full data file,
 % however it is recommended to import the full data file. In the base file
@@ -223,6 +231,41 @@ function importNutrientData(this)
     ttxImportNutrientData.Food.Mass.Vitamins.Niacin             = 16e-6     / 1.51;
     ttxImportNutrientData.Food.Mass.Vitamins.Biotin             = 30e-9     / 1.51;
     ttxImportNutrientData.Food.Mass.Vitamins.Pantothenic_acid  	= 30e-6     / 1.51;
+    
+    % Add chlorella as food, since the food data central only provides a
+    % branded chlorella food, the values from DOI: 10.1016/j.actaastro.2014.04.023
+    % "Physicochemical and biological technologies for future exploration
+    % missions", S. Belz et al 2014 are used here:
+    ttxImportNutrientData.Chlorella.Mass.Water                       = 0;
+    ttxImportNutrientData.Chlorella.Mass.Protein                     = 0.240;
+    ttxImportNutrientData.Chlorella.Mass.Carbohydrate__by_difference = 0.570;
+    ttxImportNutrientData.Chlorella.Mass.Total_lipid__fat_           = 0.190;
+    ttxImportNutrientData.Chlorella.Mass.Ash                         =  1 - (ttxImportNutrientData.Food.Mass.Water + ttxImportNutrientData.Food.Mass.Protein + ttxImportNutrientData.Food.Mass.Carbohydrate__by_difference + ttxImportNutrientData.Food.Mass.Total_lipid__fat_ );
+    ttxImportNutrientData.Chlorella.Mass.Fiber__total_dietary        = 0;
+    ttxImportNutrientData.Chlorella.Mass.Minerals.Calcium__Ca        = 0;
+    ttxImportNutrientData.Chlorella.Mass.Minerals.Phosphorus__P      = 0;
+    ttxImportNutrientData.Chlorella.Mass.Minerals.Magnesmium__Mg   	 = 0;
+    ttxImportNutrientData.Chlorella.Mass.Minerals.Sodium__Na         = 0;
+    ttxImportNutrientData.Chlorella.Mass.Minerals.Potassium__K       = 0;
+    ttxImportNutrientData.Chlorella.Mass.Minerals.Iron__Fe           = 0;
+    ttxImportNutrientData.Chlorella.Mass.Minerals.Copper__Cu         = 0;
+    ttxImportNutrientData.Chlorella.Mass.Minerals.Manganese__Mn      = 0;
+    ttxImportNutrientData.Chlorella.Mass.Minerals.Zinc__Zn           = 0;
+    ttxImportNutrientData.Chlorella.Mass.Minerals.Selenium__Se     	 = 0;
+    
+    ttxImportNutrientData.Chlorella.Mass.Vitamins.Vitamin_A          = 0;
+    ttxImportNutrientData.Chlorella.Mass.Vitamins.Vitamin_D          = 0;
+    ttxImportNutrientData.Chlorella.Mass.Vitamins.Vitamin_K          = 0;
+    ttxImportNutrientData.Chlorella.Mass.Vitamins.Vitamin_E          = 0;
+    ttxImportNutrientData.Chlorella.Mass.Vitamins.Vitamin_C          = 0;
+    ttxImportNutrientData.Chlorella.Mass.Vitamins.Vitamin_B_12       = 0;
+    ttxImportNutrientData.Chlorella.Mass.Vitamins.Vitamin_B_6        = 0;
+    ttxImportNutrientData.Chlorella.Mass.Vitamins.Thiamin            = 0;
+    ttxImportNutrientData.Chlorella.Mass.Vitamins.Riboflavin         = 0;
+    ttxImportNutrientData.Chlorella.Mass.Vitamins.Folate             = 0;
+    ttxImportNutrientData.Chlorella.Mass.Vitamins.Niacin             = 0;
+    ttxImportNutrientData.Chlorella.Mass.Vitamins.Biotin             = 0;
+    ttxImportNutrientData.Chlorella.Mass.Vitamins.Pantothenic_acid   = 0;
     
     this.ttxNutrientData = ttxImportNutrientData;
     

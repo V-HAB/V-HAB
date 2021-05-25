@@ -20,6 +20,7 @@ classdef Photobioreactor < vsys
         sLightColor                 %string that specifies the radiation source. can be chosen from selection in PAR module class constructor
         fDepthBelowSurface          %[m] depth of the photobioreactor below the irradiated surface
         fSurfacePPFD                %[µmol/m2s]
+        fNominalSurfacePPFD
         
         %membrane properties
         fMembraneSurface            %[m2]
@@ -36,6 +37,19 @@ classdef Photobioreactor < vsys
         fTotalProcessedUrine;       %[kg]
         fTotalProducedWater;        %[kg]calculated in water harvester P2p
         
+        fPower = 0;                 % [W] current power demand of the PBR
+        
+        % This boolean can be used to decide whether the system should
+        % automatically try to get the urine if it is required or if the
+        % user will specify a urine supply logic in the parent system
+        bManualUrineSupply      = false;
+        % Nitrate can be supplied instead of urine, but  the reactor will
+        % use urine if available. Set urine supply to manual to prevent
+        % that
+        bManualNitrateSupply    = false;
+        bManualWaterSupply      = false;
+        
+        tControlParameters;
     end
     
     methods
@@ -52,7 +66,7 @@ classdef Photobioreactor < vsys
                 error('The third input must be a structure.')
             end
    
-            if isfield(txPhotobioreactorProperties, 'sLightColor') && ischar(txPhotobioreactorProperties.fTimeStep)
+            if isfield(txPhotobioreactorProperties, 'fTimeStep') && isnumeric(txPhotobioreactorProperties.fTimeStep)
                 fTimeStep = txPhotobioreactorProperties.fTimeStep;
             else
                 fTimeStep = 30;
@@ -74,7 +88,7 @@ classdef Photobioreactor < vsys
             else
                 this.fSurfacePPFD = 400; %[µmol/m2s] best performance when selecting a value at or just below inhibition -> maximum of PBR in saturated growth zone. Above inhibition growth would be inhibited
             end
-            
+            this.fNominalSurfacePPFD = this.fSurfacePPFD;
             
             % size properties
             if isfield(txPhotobioreactorProperties, 'fGrowthVolume') && ~isnan(txPhotobioreactorProperties.fGrowthVolume)
@@ -133,6 +147,20 @@ classdef Photobioreactor < vsys
             this.fVolumetricFlowToHarvester = this.fCirculationVolumetricFlowPerFilter * this.fNumberOfParallelFilters; %%[m3/s]
           
             
+            % Calculate power demands based on "Dynamic Simulation of
+            % Performance and Mass, Power, and Volume prediction of an
+            % Algal Life Support System", Ruck et. al, 2019, ICES-2019-207
+            % Here we use linear scaling for the light and linear scaling
+            % for all other power consumptions based on growth volume and
+            % light
+            fLightPowerDemand = (this.fSurfacePPFD/400) * 4000;
+            fBasePowerDemandOther = (this.fSurfacePPFD/400) * (this.fGrowthVolume/0.5) * 3300;
+            % It is not considered feasible to turn the PBR off, as that
+            % would require modelling how to do that and what a minimal
+            % operating mode would be to maintain algae and start it up
+            % again
+            this.fPower = fBasePowerDemandOther + fLightPowerDemand;
+            
             %% set initial values to 0
             this.fTotalProducedWater = 0; %[kg]
             this.fTotalProcessedUrine = 0; %[kg]
@@ -142,6 +170,13 @@ classdef Photobioreactor < vsys
             components.matter.algae.systems.ChlorellaInMedia(this, 'ChlorellaInMedia');
             
             
+        end
+        
+        function setUrineSupplyToManual(this, bManualUrineSupply)
+            this.bManualUrineSupply = bManualUrineSupply;
+        end
+        function setNitrateSupplyToManual(this, bManualNitrateSupply)
+            this.bManualNitrateSupply = bManualNitrateSupply;
         end
         
         function createMatterStructure(this)
@@ -186,25 +221,35 @@ classdef Photobioreactor < vsys
             matter.branch(this, 'Air_from', {}, 'ReactorAir.Air_from_Algae');
             
             %% create medium maintenance (store with nutrients and water)
-            matter.store(this, 'MediumMaintenance', 1);
+            matter.store(this, 'MediumMaintenance', 1 + this.fGrowthVolume);
             %NO3 is currently defined as liquid because it can only exist in solution. should this be changed?
             
-            fMassNO3 = 100;
-            fMolNO3 = fMassNO3 / this.oMT.ttxMatter.NO3.fMolarMass; % kg/kg/mol = mol
+            fMolNO3    =  2.9 * this.fGrowthVolume; % 2.9 mol/m³
+            fMassNO3   = fMolNO3 * this.oMT.afMolarMass(this.oMT.tiN2I.NO3); % kg/kg/mol = mol
             fMassKplus = fMolNO3 * this.oMT.ttxMatter.Kplus.fMolarMass; % kg
             
-            matter.phases.mixture(this.toStores.MediumMaintenance, 'NO3Supply','solid', struct('NO3',fMassNO3, 'Kplus', fMassKplus), 293, 1e5); %only nitrate added since Na would just remain in water adn wouldn't be used by the algae model or any of its calculations
+            % assume highly concentrated nitrate
+            fWaterMass = 0.1 * fMassNO3;
             
-            matter.phases.liquid(this.toStores.MediumMaintenance, 'WaterSupply', struct('H2O', 100), 293, 1e5); %take temperature and pressure from somewhere else?
-            matter.phases.mixture(this.toStores.MediumMaintenance, 'UrineSupplyBuffer', 'liquid', struct('C2H6O2N2', 0.01475, 'H2O', 0.4), 295, 101325);
+            matter.phases.mixture(this.toStores.MediumMaintenance, 'NO3Supply','solid', struct('H2O', fWaterMass, 'NO3',fMassNO3, 'Kplus', fMassKplus), 293, 1e5); %only nitrate added since Na would just remain in water adn wouldn't be used by the algae model or any of its calculations
+            % Sufficient water to refill the growth volume once
+            matter.phases.liquid(this.toStores.MediumMaintenance, 'WaterSupply', struct('H2O', 1.1 * this.fGrowthVolume), 293, 1e5); %take temperature and pressure from somewhere else?
+            matter.phases.mixture(this.toStores.MediumMaintenance, 'UrineSupplyBuffer', 'liquid', struct('CH4N2O', 0.1475 * this.fGrowthVolume, 'H2O', 4 * this.fGrowthVolume), 295, 101325);
             
+            this.tControlParameters.fInitialMassNO3Supply   = this.toStores.MediumMaintenance.toPhases.NO3Supply.fMass;
+            this.tControlParameters.fInitialMassWaterSupply = this.toStores.MediumMaintenance.toPhases.WaterSupply.fMass;
+            this.tControlParameters.fInitialMassUrineBuffer = this.toStores.MediumMaintenance.toPhases.UrineSupplyBuffer.fMass;
             
             %exmes to growth medium
             matter.procs.exmes.mixture(this.toStores.MediumMaintenance.toPhases.NO3Supply, 'NO3_to_Medium');
-            matter.branch(this, 'NO3_Medium', {}, 'MediumMaintenance.NO3_to_Medium');
+            matter.procs.exmes.mixture(this.toStores.MediumMaintenance.toPhases.NO3Supply, 'NO3_Inlet');
+            matter.branch(this, 'NO3_Medium',                       {}, 'MediumMaintenance.NO3_to_Medium');
+            matter.branch(this, 'MediumMaintenance.NO3_Inlet',      {}, 'NO3_Inlet',                        'NO3_Inlet');
             
             matter.procs.exmes.liquid(this.toStores.MediumMaintenance.toPhases.WaterSupply, 'Water_to_Medium');
-            matter.branch(this, 'Water_Medium',{}, 'MediumMaintenance.Water_to_Medium');
+            matter.procs.exmes.liquid(this.toStores.MediumMaintenance.toPhases.WaterSupply, 'Water_Inlet');
+            matter.branch(this, 'Water_Medium',                     {}, 'MediumMaintenance.Water_to_Medium');
+            matter.branch(this, 'MediumMaintenance.Water_Inlet', 	{}, 'Water_Inlet',                      'Water_Inlet');
             
             %urine exme and branch to parent sys (urine store in cabin)
             matter.procs.exmes.mixture(this.toStores.MediumMaintenance.toPhases.UrineSupplyBuffer, 'UrineFromParent');
@@ -218,9 +263,10 @@ classdef Photobioreactor < vsys
             %% create Operations Interface (nutrient/watersupply, harvest)
             matter.store(this, 'Harvester', 0.1);
             
-            matter.phases.flow.mixture(this.toStores.Harvester, 'FlowThrough', 'liquid', struct('H2O', 1), 303, 1e5); %flow through pase which is connected to the growth medium and used for harvesting. medium constantly circulated between this flow phase and the growth chamber.
-            matter.phases.liquid(this.toStores.Harvester, 'WaterHarvest', struct('H2O', 10), 293, 1e5); %phase where harvested water goes to
-            matter.phases.mixture(this.toStores.Harvester, 'ChlorellaHarvest','liquid', struct('Chlorella', 0.1), 293,1e5); %phase where harvested chlorella goes to. Program is extremely slow if solid is used for this
+            matter.phases.flow.mixture(this.toStores.Harvester, 'FlowThrough', 'liquid', struct('H2O', 1), 303, 1e5); %flow through phase which is connected to the growth medium and used for harvesting. medium constantly circulated between this flow phase and the growth chamber.
+            
+            this.toStores.Harvester.createPhase('liquid',  'flow', 'WaterHarvest',               0.001, struct('H2O', 1), 293, 1e5);
+            this.toStores.Harvester.createPhase('mixture', 'flow', 'ChlorellaHarvest', 'liquid', 0.001, struct('Chlorella', 1), 293, 1e5);
             
             %interface to growth medium phase
             matter.procs.exmes.mixture(this.toStores.Harvester.toPhases.FlowThrough, 'Liquid_from_Medium');
@@ -233,7 +279,6 @@ classdef Photobioreactor < vsys
             matter.procs.exmes.mixture(this.toStores.Harvester.toPhases.FlowThrough, 'Harvest_ChlorellaFlow');
             matter.procs.exmes.mixture(this.toStores.Harvester.toPhases.ChlorellaHarvest, 'Harvest_Chlorella');
             components.matter.PBR.P2P.ChlorellaHarvest(this.toStores.Harvester, 'Chlorella_Harvest_P2P', 'FlowThrough.Harvest_ChlorellaFlow', 'ChlorellaHarvest.Harvest_Chlorella', this.toChildren.ChlorellaInMedia);
-            
             
             % P2P for harvest of water
             matter.procs.exmes.mixture(this.toStores.Harvester.toPhases.FlowThrough, 'Harvest_WaterFlow');
@@ -254,16 +299,66 @@ classdef Photobioreactor < vsys
             
         end
         
-        %be aware of naming convention:the outlet of the cabin is connected
-        %to the inlet of the PBR
-        function setIfFlows(this, sAir_Inlet, sAir_Outlet, sWater_Outlet, sUrine_Inlet, sChlorella_Outlet)
-            this.connectIF( 'Air_Inlet',sAir_Inlet);
-            this.connectIF( 'Air_Outlet',sAir_Outlet);
-            this.connectIF('To_Potable', sWater_Outlet);
-            this.connectIF('Urine_Cabin', sUrine_Inlet);
-            this.connectIF( 'Chlorella_Outlet',sChlorella_Outlet);
+        function createThermalStructure(this)
+            createThermalStructure@vsys(this);
+            
+            %% heat sources
+            % Maintain a constant temperature for the CO2 air:
+            oHeatSource = components.thermal.heatsources.ConstantTemperature('CO2_Air_TemperatureControl');
+            % Add the heat source to the capacity
+            this.toStores.ReactorAir.toPhases.HighCO2Air.oCapacity.addHeatSource(oHeatSource);
+            
+            
         end
         
+        %be aware of naming convention:the outlet of the cabin is connected
+        %to the inlet of the PBR
+        function setIfFlows(this, sAir_Inlet, sAir_Outlet, sWater_Outlet, sUrine_Inlet, sChlorella_Outlet, sNitrateInlet, sWaterInlet)
+            this.connectIF( 'Air_Inlet',        sAir_Inlet);
+            this.connectIF( 'Air_Outlet',       sAir_Outlet);
+            this.connectIF( 'To_Potable',       sWater_Outlet);
+            this.connectIF( 'Urine_Cabin',      sUrine_Inlet);
+            this.connectIF( 'Chlorella_Outlet', sChlorella_Outlet);
+            this.connectIF( 'NO3_Inlet',        sNitrateInlet);
+            this.connectIF( 'Water_Inlet',     	sWaterInlet);
+            
+        end
+        
+        function setOperatingMode(this, bMinimalMode)
+            if bMinimalMode
+                % in minimal operating mode, we limit the maximum amount of
+                % CO2 that the reactor is supplied to limit algae growth
+                % while keeping a valid culture alive
+                this.toChildren.ChlorellaInMedia.toBranches.Air_from_GrowthChamber.oHandler.setFlowRate(1e-3);
+                % Light intensity is also reduced to reduce power
+                % consumption:
+                this.fSurfacePPFD = 0.01 * this.fNominalSurfacePPFD;
+                % We reduce the CO2 flow to 1%, so we can also assume the
+                % remaining base power demand to drop, here it is assumed
+                % that it drops to 10%
+                fOtherPowerDemandPerVolume = 330;
+            else
+                this.toChildren.ChlorellaInMedia.toBranches.Air_from_GrowthChamber.oHandler.setFlowRate(0.1);
+                
+                this.fSurfacePPFD = this.fNominalSurfacePPFD;
+                fOtherPowerDemandPerVolume = 3300;
+            end
+            
+            % Calculate power demands based on "Dynamic Simulation of
+            % Performance and Mass, Power, and Volume prediction of an
+            % Algal Life Support System", Ruck et. al, 2019, ICES-2019-207
+            % Here we use linear scaling for the light and linear scaling
+            % for all other power consumptions based on growth volume and
+            % light
+            fLightPowerDemand = (this.fSurfacePPFD/400) * 4000;
+            fBasePowerDemandOther = (this.fSurfacePPFD/400) * (this.fGrowthVolume/0.5) * fOtherPowerDemandPerVolume;
+            % It is not considered feasible to turn the PBR off, as that
+            % would require modelling how to do that and what a minimal
+            % operating mode would be to maintain algae and start it up
+            % again
+            this.fPower = fBasePowerDemandOther + fLightPowerDemand;
+            
+        end
         
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
@@ -274,25 +369,20 @@ classdef Photobioreactor < vsys
             
             %air back to cabin. changed from flwo to PBR through consumed CO2 or
             %produced oxygen
-            solver.matter_multibranch.iterative.branch(this.toBranches.Air_To_Cabin, 'complex');
-            
-            %potable water that is produced by aglae is directly pushed to
-            %cabin potable water phase
-            solver.matter.residual.branch(this.toBranches.WaterHarvest_to_Potable);
-            
-            %Chlorella harvest
-            solver.matter.manual.branch(this.toBranches.ChlorellaHarvest_to_Cabin);
+            solver.matter_multibranch.iterative.branch([this.toBranches.Air_To_Cabin, this.toBranches.ChlorellaHarvest_to_Cabin, this.toBranches.WaterHarvest_to_Potable], 'complex');
             
             %urine supply from cabin to PBR and passed to Chlorella in
             %media system.
-            solver.matter.manual.branch(this.toBranches.Urine_from_Cabin); %residual does not seem to work here. workaround with two manuals that are set equally.
+            solver.matter.manual.branch(this.toBranches.Urine_from_Cabin); 
+            solver.matter.manual.branch(this.toBranches.NO3_Inlet); 
+            solver.matter.manual.branch(this.toBranches.Water_Inlet); 
             
             arMaxChange = zeros(1,this.oMT.iSubstances);
             arMaxChange(this.oMT.tiN2I.H2O) = 0.1;
             arMaxChange(this.oMT.tiN2I.CO2) = 0.1;
             arMaxChange(this.oMT.tiN2I.O2)  = 0.1;
-            tTimeStepProperties.arMaxChange =arMaxChange;
-            tTimeStepProperties.rMaxChange = 0.05;
+            tTimeStepProperties.arMaxChange = arMaxChange;
+            tTimeStepProperties.rMaxChange  = 0.05;
             
             this.toStores.ReactorAir.toPhases.HighCO2Air.setTimeStepProperties(tTimeStepProperties)
             
@@ -324,12 +414,38 @@ classdef Photobioreactor < vsys
     methods (Access = protected)
         function exec(this,~)
             
-            %since residual solver does not work on this buffer phase, this
-            %manual solver (parent to this) just uses the same flow rate as
-            %its corresponding branch to the child sys (this to child)
-            if this.toStores.MediumMaintenance.toPhases.UrineSupplyBuffer.fMass < 0.3
-                if this.toBranches.Urine_from_Cabin.coExmes{2}.oPhase.fMass > 0.3 && ~this.toBranches.Urine_from_Cabin.oHandler.bMassTransferActive
-                    this.toBranches.Urine_from_Cabin.oHandler.setMassTransfer(-0.1, 60);
+            % Resupply urine if that is not set to manual
+            if ~this.bManualUrineSupply && this.toStores.MediumMaintenance.toPhases.UrineSupplyBuffer.fMass < 0.7 * this.tControlParameters.fInitialMassUrineBuffer
+                fDesiredResupply = this.tControlParameters.fInitialMassUrineBuffer - this.toStores.MediumMaintenance.toPhases.UrineSupplyBuffer.fMass;
+                if this.toBranches.Urine_from_Cabin.coExmes{2}.oPhase.fMass > fDesiredResupply && ~this.toBranches.Urine_from_Cabin.oHandler.bMassTransferActive
+                    this.toBranches.Urine_from_Cabin.oHandler.setMassTransfer(-fDesiredResupply, 60);
+                elseif ~this.toBranches.Urine_from_Cabin.oHandler.bMassTransferActive
+                    this.toBranches.Urine_from_Cabin.oHandler.setMassTransfer(-0.7 * this.toBranches.Urine_from_Cabin.coExmes{2}.oPhase.fMass, 60);
+                end
+            end
+            
+            if ~this.bManualNitrateSupply && this.toStores.MediumMaintenance.toPhases.NO3Supply.fMass < 0.7 * this.tControlParameters.fInitialMassNO3Supply
+                fDesiredResupply = this.tControlParameters.fInitialMassNO3Supply - this.toStores.MediumMaintenance.toPhases.NO3Supply.fMass;
+                if this.toBranches.NO3_Inlet.coExmes{2}.oPhase.fMass > fDesiredResupply && ~this.toBranches.NO3_Inlet.oHandler.bMassTransferActive
+                    this.toBranches.NO3_Inlet.oHandler.setMassTransfer(-fDesiredResupply, 60);
+                elseif ~this.toBranches.NO3_Inlet.oHandler.bMassTransferActive
+                    this.toBranches.NO3_Inlet.oHandler.setMassTransfer(-0.7 * this.toBranches.NO3_Inlet.coExmes{2}.oPhase.fMass, 60);
+                end
+            end
+            
+            if ~this.bManualWaterSupply && this.toStores.MediumMaintenance.toPhases.WaterSupply.fMass < this.tControlParameters.fInitialMassWaterSupply
+                fDesiredResupply = this.tControlParameters.fInitialMassWaterSupply - this.toStores.MediumMaintenance.toPhases.WaterSupply.fMass;
+                if this.toBranches.Water_Inlet.coExmes{2}.oPhase.fMass > fDesiredResupply && ~this.toBranches.Water_Inlet.oHandler.bMassTransferActive
+                    this.toBranches.Water_Inlet.oHandler.setMassTransfer(-fDesiredResupply, 60);
+                elseif ~this.toBranches.Water_Inlet.oHandler.bMassTransferActive
+                    this.toBranches.Water_Inlet.oHandler.setMassTransfer(-0.7 * this.toBranches.Water_Inlet.coExmes{2}.oPhase.fMass, 60);
+                end
+            end
+            
+            % Resupply nitrate if that is not set to manual
+            if ~this.bManualNitrateSupply && this.toStores.MediumMaintenance.toPhases.NO3Supply.fMass < 0.3
+                if this.toBranches.NO3_Inlet.coExmes{2}.oPhase.fMass > 0.3 && ~this.toBranches.NO3_Inlet.oHandler.bMassTransferActive
+                    this.toBranches.NO3_Inlet.oHandler.setMassTransfer(-0.2, 60);
                 end
             end
             %track how mcuh urine and water are consumed/produced. Not
@@ -341,10 +457,6 @@ classdef Photobioreactor < vsys
             
             exec@vsys(this);
         end
-        
-        
-        
-        
     end
     
 end
