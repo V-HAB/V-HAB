@@ -838,8 +838,16 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
                 bResidual = false;
             end
             
+            bUpdateOutFlow = false;
             if ~bResidual && this.fLastSetOutdated >= this.oTimer.fTime
-                return;
+                if this.bFlow
+                    % Since flow phases can change instantly, we still have
+                    % to update their outflows even if they were already
+                    % updated in this tick
+                    bUpdateOutFlow = true;
+                else
+                    return;
+                end
             end
             
             this.fLastSetOutdated = this.oTimer.fTime;
@@ -849,7 +857,6 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
             % recalculation of flow rate.
             for iE = 1:this.iProcsEXME
                 oBranch = this.aoExmes(iE).oBranch;
-                
                 % We can't directly set this oBranch as outdated if
                 % it is just connected to an interface, because the
                 % solver is assigned to the 'leftest' branch.
@@ -863,7 +870,12 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
                 
                 % Tell branch to recalculate flow rate (done after
                 % the current tick, in timer post tick).
-                oBranch.setOutdated();
+                
+                if bUpdateOutFlow && this.aoExmes(iE).iSign * oBranch.fHeatFlow <= 0
+                    oBranch.setOutdated();
+                else
+                    oBranch.setOutdated();
+                end
             end
         end
     end

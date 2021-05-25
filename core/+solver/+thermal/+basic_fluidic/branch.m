@@ -119,12 +119,18 @@ classdef branch < solver.thermal.base.branch
             afTemperatures  = zeros(1,iFlowProcs + 1); % there is one more flow than f2f procs
             afF2F_HeatFlows = zeros(1,iFlowProcs);
             if oMatterObject.fFlowRate >= 0
+                if this.oBranch.coExmes{1}.oCapacity.bFlow
+                    this.oBranch.coExmes{1}.oCapacity.registerUpdateTemperature();
+                end
                 afTemperatures(1) = this.oBranch.coExmes{1}.oCapacity.fTemperature; %temperature of the first flow
                 iFirstFlow = 1;
                 iDirection = 1;
                 iFlowProcShifter = -1;
                 iExme = 2;
             else
+                if this.oBranch.coExmes{2}.oCapacity.bFlow
+                    this.oBranch.coExmes{2}.oCapacity.registerUpdateTemperature();
+                end
                 afTemperatures(end) = this.oBranch.coExmes{2}.oCapacity.fTemperature; %temperature of the first flow
                 iFirstFlow = iFlowProcs + 1;
                 iDirection = -1;
@@ -208,6 +214,17 @@ classdef branch < solver.thermal.base.branch
              
             update@solver.thermal.base.branch(this, fHeatFlow, afTemperatures);
             
+            % For flow capacity we must update the temperatures if the
+            % adjacent branch changed
+            if oMatterObject.fFlowRate >= 0
+                if this.oBranch.coExmes{2}.oCapacity.bFlow
+                    this.oBranch.coExmes{2}.oCapacity.registerUpdateTemperature();
+                end
+            else
+                if this.oBranch.coExmes{1}.oCapacity.bFlow
+                    this.oBranch.coExmes{1}.oCapacity.registerUpdateTemperature();
+                end
+            end
         end
     end
 end
