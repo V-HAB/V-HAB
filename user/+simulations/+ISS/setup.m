@@ -19,11 +19,11 @@ classdef setup < simulation.infrastructure
     % 'PlantChamber' will add a plant growth chamber to the ISS, this case
     % requires the additional parameter, sPlantLocation
     %
-    % vhab.exec('simulations.ISS.setup', containers.Map({'tbCases', 'sPlantLocation'},{struct('ACLS', true, 'SimpleCDRA', true, 'PlantChamber', true), 'Columbus'}))
+    % vhab.exec('simulations.ISS.setup', containers.Map({'tbCases', 'sPlantLocation'},{struct('ACLS', false, 'PlantChamber', true), 'Columbus'}))
     %
     % to specify a locations, just replace the string 'Columbus' with one of
     % the following available strings:
-    % 'US_Lab', 'Node1', 'Airlock', 'Node3', 'FGM', SM, Node2, Columbus, JEM, PMM
+    % 'US_Lab', 'Node1', 'Airlock', 'Node3', 'FGM', 'SM', 'Node2', 'Columbus', 'JEM', 'PMM'
     properties
     end
     
@@ -79,7 +79,7 @@ classdef setup < simulation.infrastructure
             % subsystem simply outcomment the code (but remember to do so in
             % the plotting as well, otherwise that will throw errors)
             
-            oLog = this.toMonitors.oLogger;
+            oLogger = this.toMonitors.oLogger;
             
             %% Logging for the ISS modules
             
@@ -87,23 +87,23 @@ classdef setup < simulation.infrastructure
             csNumbers = {'1', '2', '3', '4', '5', '6', '7', '8' '9', '10'};
             for iModule = 1:length(csModules)
                 
-                oLog.addValue(['ISS_ARS_MultiStore:s:', csModules{iModule}, '.aoPhases(1)'], 'fTemperature',                'K',  [csModules{iModule}, ' Temperature']);
-                oLog.addValue(['ISS_ARS_MultiStore:s:', csModules{iModule}, '.aoPhases(1)'], 'fPressure',                   'Pa', [csModules{iModule}, ' Pressure']);
-                oLog.addValue(['ISS_ARS_MultiStore:s:', csModules{iModule}, '.aoPhases(1)'], 'afPP(this.oMT.tiN2I.O2)',     'Pa', [csModules{iModule}, ' O2']);
-                oLog.addValue(['ISS_ARS_MultiStore:s:', csModules{iModule}, '.aoPhases(1)'], 'afPP(this.oMT.tiN2I.CO2)',    'Pa', [csModules{iModule}, ' CO2']);
-                oLog.addValue(['ISS_ARS_MultiStore:s:', csModules{iModule}, '.aoPhases(1)'], 'rRelHumidity',                '-',  [csModules{iModule}, ' RelativeHumidity']);
+                oLogger.addValue(['ISS_ARS_MultiStore:s:', csModules{iModule}, '.aoPhases(1)'], 'fTemperature',                'K',  [csModules{iModule}, ' Temperature']);
+                oLogger.addValue(['ISS_ARS_MultiStore:s:', csModules{iModule}, '.aoPhases(1)'], 'fPressure',                   'Pa', [csModules{iModule}, ' Pressure']);
+                oLogger.addValue(['ISS_ARS_MultiStore:s:', csModules{iModule}, '.aoPhases(1)'], 'afPP(this.oMT.tiN2I.O2)',     'Pa', [csModules{iModule}, ' O2']);
+                oLogger.addValue(['ISS_ARS_MultiStore:s:', csModules{iModule}, '.aoPhases(1)'], 'afPP(this.oMT.tiN2I.CO2)',    'Pa', [csModules{iModule}, ' CO2']);
+                oLogger.addValue(['ISS_ARS_MultiStore:s:', csModules{iModule}, '.aoPhases(1)'], 'rRelHumidity',                '-',  [csModules{iModule}, ' RelativeHumidity']);
                 %oLog.addValue(['ISS_ARS_MultiStore:s:', csModules{iModule}, '.aoPhases(1)'], 'fMass',                       'kg', [csModules{iModule}, ' Mass']);
-                oLog.addValue('ISS_ARS_MultiStore', ['afDewPointModules(' ,csNumbers{iModule},')'], 'K',   [csModules{iModule}, ' DewPoint']);
+                oLogger.addValue('ISS_ARS_MultiStore', ['afDewPointModules(' ,csNumbers{iModule},')'], 'K',   [csModules{iModule}, ' DewPoint']);
             end
             
             %% Tank Masses
             % Water tank masses, currently no differentiation between the
             % russian and US segment is implemented. Would require more
             % information on the russian segment to do that
-            oLog.addValue('ISS_ARS_MultiStore:s:WSS.aoPhases(1)',            'fMass', 'kg', 'WSS Water');
-            oLog.addValue('ISS_ARS_MultiStore:s:UrineStorage.aoPhases(1)',   'fMass', 'kg', 'Urine Mass');
-            oLog.addValue('ISS_ARS_MultiStore:s:FecesStorage.aoPhases(1)',   'fMass', 'kg', 'Feces Mass');
-            oLog.addValue('ISS_ARS_MultiStore:s:FoodStore.aoPhases(1)',      'fMass', 'kg', 'Food Mass');
+            oLogger.addValue('ISS_ARS_MultiStore:s:WSS.aoPhases(1)',            'fMass', 'kg', 'WSS Water');
+            oLogger.addValue('ISS_ARS_MultiStore:s:UrineStorage.aoPhases(1)',   'fMass', 'kg', 'Urine Mass');
+            oLogger.addValue('ISS_ARS_MultiStore:s:FecesStorage.aoPhases(1)',   'fMass', 'kg', 'Feces Mass');
+            oLogger.addValue('ISS_ARS_MultiStore:s:FoodStore.aoPhases(1)',      'fMass', 'kg', 'Food Mass');
             
             
             %% CCAAs logging
@@ -114,61 +114,61 @@ classdef setup < simulation.infrastructure
             end
             for iCCAA = 1:length(csCCAAs)
                 sLabel = strrep(csCCAAs{iCCAA}, '_', ' ');
-                oLog.addValue(['ISS_ARS_MultiStore:c:', csCCAAs{iCCAA}, ':c:CCAA_CHX'],                             'fTotalHeatFlow',            'W',    ['Total Heat Flow ', sLabel]);
-                oLog.addValue(['ISS_ARS_MultiStore:c:', csCCAAs{iCCAA}, ':c:CCAA_CHX'],                             'fTotalCondensateHeatFlow',  'W',    ['Condensation Heat Flow ', sLabel]);
-                oLog.addValue(['ISS_ARS_MultiStore:c:', csCCAAs{iCCAA}],                                            'fTCCV_Angle',               '°',    ['TCCV Angle ', sLabel]);
-                oLog.addValue(['ISS_ARS_MultiStore:c:', csCCAAs{iCCAA}, '.toStores.CHX.toProcsP2P.CondensingHX'],  	'fFlowRate',                 'kg/s', ['Condensate Flow ', sLabel]);
+                oLogger.addValue(['ISS_ARS_MultiStore:c:', csCCAAs{iCCAA}, ':c:CCAA_CHX'],                             'fTotalHeatFlow',            'W',    ['Total Heat Flow ', sLabel]);
+                oLogger.addValue(['ISS_ARS_MultiStore:c:', csCCAAs{iCCAA}, ':c:CCAA_CHX'],                             'fTotalCondensateHeatFlow',  'W',    ['Condensation Heat Flow ', sLabel]);
+                oLogger.addValue(['ISS_ARS_MultiStore:c:', csCCAAs{iCCAA}],                                            'fTCCV_Angle',               '°',    ['TCCV Angle ', sLabel]);
+                oLogger.addValue(['ISS_ARS_MultiStore:c:', csCCAAs{iCCAA}, '.toStores.CHX.toProcsP2P.CondensingHX'],  	'fFlowRate',                 'kg/s', ['Condensate Flow ', sLabel]);
             end
             
             %% SCRA logging
-            oLog.addValue('ISS_ARS_MultiStore:c:SCRA_Node3.toStores.CRA_Accumulator.toPhases.CO2',                  'fPressure',                 'Pa',   'SCRA CO_2 Accumulator Pressure');
+            oLogger.addValue('ISS_ARS_MultiStore:c:SCRA_Node3.toStores.CRA_Accumulator.toPhases.CO2',                  'fPressure',                 'Pa',   'SCRA CO_2 Accumulator Pressure');
             
-            oLog.addValue('ISS_ARS_MultiStore:c:SCRA_Node3.toBranches.CRA_CO2_In',                                  'fFlowRate',                 'kg/s', 'SCRA CO_2 Inlet');
-            oLog.addValue('ISS_ARS_MultiStore:c:SCRA_Node3.toBranches.CRA_H2_In',                                   'fFlowRate',                 'kg/s', 'SCRA H_2 Inlet');
-            oLog.addValue('ISS_ARS_MultiStore:c:SCRA_Node3.toBranches.Accumulator_To_CRA',                          'fFlowRate',                 'kg/s', 'SCRA CO_2 flow to Reactor');
-            oLog.addValue('ISS_ARS_MultiStore:c:SCRA_Node3.toBranches.H2_to_Sabatier',                              'fFlowRate',                 'kg/s', 'SCRA H_2 flow to Reactor');
-            oLog.addValue('ISS_ARS_MultiStore:c:SCRA_Node3.toBranches.H2_to_Vent',                                  'fFlowRate',                 'kg/s', 'SCRA H_2 flow to Vent');
-            oLog.addValue('ISS_ARS_MultiStore:c:SCRA_Node3.toBranches.CRA_RecWaterOut',                             'fFlowRate',                 'kg/s', 'SCRA recovered H_2O');
+            oLogger.addValue('ISS_ARS_MultiStore:c:SCRA_Node3.toBranches.CRA_CO2_In',                                  'fFlowRate',                 'kg/s', 'SCRA CO_2 Inlet');
+            oLogger.addValue('ISS_ARS_MultiStore:c:SCRA_Node3.toBranches.CRA_H2_In',                                   'fFlowRate',                 'kg/s', 'SCRA H_2 Inlet');
+            oLogger.addValue('ISS_ARS_MultiStore:c:SCRA_Node3.toBranches.Accumulator_To_CRA',                          'fFlowRate',                 'kg/s', 'SCRA CO_2 flow to Reactor');
+            oLogger.addValue('ISS_ARS_MultiStore:c:SCRA_Node3.toBranches.H2_to_Sabatier',                              'fFlowRate',                 'kg/s', 'SCRA H_2 flow to Reactor');
+            oLogger.addValue('ISS_ARS_MultiStore:c:SCRA_Node3.toBranches.H2_to_Vent',                                  'fFlowRate',                 'kg/s', 'SCRA H_2 flow to Vent');
+            oLogger.addValue('ISS_ARS_MultiStore:c:SCRA_Node3.toBranches.CRA_RecWaterOut',                             'fFlowRate',                 'kg/s', 'SCRA recovered H_2O');
             
-            oLog.addValue('ISS_ARS_MultiStore:c:SCRA_Node3.toBranches.CRA_DryGastoVent.aoFlows(1,1)',               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)',	'kg/s', 'SCRA Vented CO2');
-            oLog.addValue('ISS_ARS_MultiStore:c:SCRA_Node3.toBranches.CRA_DryGastoVent.aoFlows(1,1)',               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2)',	'kg/s', 'SCRA Vented H2');
-            oLog.addValue('ISS_ARS_MultiStore:c:SCRA_Node3.toBranches.CRA_DryGastoVent.aoFlows(1,1)',               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',	'kg/s', 'SCRA Vented H2O');
-            oLog.addValue('ISS_ARS_MultiStore:c:SCRA_Node3.toBranches.CRA_DryGastoVent.aoFlows(1,1)',               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CH4)',	'kg/s', 'SCRA Vented CH4');
+            oLogger.addValue('ISS_ARS_MultiStore:c:SCRA_Node3.toBranches.CRA_DryGastoVent.aoFlows(1,1)',               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)',	'kg/s', 'SCRA Vented CO2');
+            oLogger.addValue('ISS_ARS_MultiStore:c:SCRA_Node3.toBranches.CRA_DryGastoVent.aoFlows(1,1)',               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2)',	'kg/s', 'SCRA Vented H2');
+            oLogger.addValue('ISS_ARS_MultiStore:c:SCRA_Node3.toBranches.CRA_DryGastoVent.aoFlows(1,1)',               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',	'kg/s', 'SCRA Vented H2O');
+            oLogger.addValue('ISS_ARS_MultiStore:c:SCRA_Node3.toBranches.CRA_DryGastoVent.aoFlows(1,1)',               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CH4)',	'kg/s', 'SCRA Vented CH4');
             
-            oLog.addValue('ISS_ARS_MultiStore:c:SCRA_Node3',                                                        'fCurrentPowerConsumption',  'W',    'SCRA Power Consumption');
+            oLogger.addValue('ISS_ARS_MultiStore:c:SCRA_Node3',                                                        'fCurrentPowerConsumption',  'W',    'SCRA Power Consumption');
             
-            oLog.addValue('ISS_ARS_MultiStore.oTimer',                                                              'fTimeStep',                 's',   'Timestep');
+            oLogger.addValue('ISS_ARS_MultiStore.oTimer',                                                              'fTimeStepFinal',            's',   'Timestep');
             
-            oLog.addVirtualValue('cumsum("SCRA Vented CO2"    .* "Timestep")', 'kg', 'SCRA Vented CO2 Mass');
-            oLog.addVirtualValue('cumsum("SCRA Vented H2"     .* "Timestep")', 'kg', 'SCRA Vented H2 Mass');
-            oLog.addVirtualValue('cumsum("SCRA Vented H2O"    .* "Timestep")', 'kg', 'SCRA Vented H2O Mass');
-            oLog.addVirtualValue('cumsum("SCRA Vented CH4"    .* "Timestep")', 'kg', 'SCRA Vented CH4 Mass');
+            oLogger.addVirtualValue('cumsum("SCRA Vented CO2"    .* "Timestep")', 'kg', 'SCRA Vented CO2 Mass');
+            oLogger.addVirtualValue('cumsum("SCRA Vented H2"     .* "Timestep")', 'kg', 'SCRA Vented H2 Mass');
+            oLogger.addVirtualValue('cumsum("SCRA Vented H2O"    .* "Timestep")', 'kg', 'SCRA Vented H2O Mass');
+            oLogger.addVirtualValue('cumsum("SCRA Vented CH4"    .* "Timestep")', 'kg', 'SCRA Vented CH4 Mass');
             
             %% WPA Logging
-            oLog.addValue('ISS_ARS_MultiStore:c:WPA.toStores.WasteWater.toPhases.Water',            'fMass',        'kg',   'WPA Waste Water');
-            oLog.addValue('ISS_ARS_MultiStore:c:WPA.toBranches.Inlet',                              'fFlowRate',    'kg/s', 'WPA Waste Water Inflow');
-            oLog.addValue('ISS_ARS_MultiStore:c:WPA.toBranches.Check_to_WasteWater',                'fFlowRate',    'kg/s', 'WPA Water Reflow after Check');
-            oLog.addValue('ISS_ARS_MultiStore:c:WPA.toBranches.Outlet',                             'fFlowRate',    'kg/s', 'WPA Potable Water Outflow');
-            oLog.addValue('ISS_ARS_MultiStore:c:WPA.toBranches.Outlet.aoFlowProcs',                 'fPPM',         'ppm',  'WPA PPM Outlet');
-            oLog.addValue('ISS_ARS_MultiStore:c:WPA.toBranches.Outlet.aoFlowProcs',                 'fTOC',         '-',    'WPA TOC Outlet');
+            oLogger.addValue('ISS_ARS_MultiStore:c:WPA.toStores.WasteWater.toPhases.Water',            'fMass',        'kg',   'WPA Waste Water');
+            oLogger.addValue('ISS_ARS_MultiStore:c:WPA.toBranches.Inlet',                              'fFlowRate',    'kg/s', 'WPA Waste Water Inflow');
+            oLogger.addValue('ISS_ARS_MultiStore:c:WPA.toBranches.Check_to_WasteWater',                'fFlowRate',    'kg/s', 'WPA Water Reflow after Check');
+            oLogger.addValue('ISS_ARS_MultiStore:c:WPA.toBranches.Outlet',                             'fFlowRate',    'kg/s', 'WPA Potable Water Outflow');
+            oLogger.addValue('ISS_ARS_MultiStore:c:WPA.toBranches.Outlet.aoFlowProcs',                 'fPPM',         'ppm',  'WPA PPM Outlet');
+            oLogger.addValue('ISS_ARS_MultiStore:c:WPA.toBranches.Outlet.aoFlowProcs',                 'fTOC',         '-',    'WPA TOC Outlet');
             
-            oLog.addValue('ISS_ARS_MultiStore:c:WPA.toStores.Rack_Air.toPhases.Water.toManips.substance',  	'this.afFlowRates(this.oMT.tiN2I.O2)',         'kg/s',    'WPA O2 Consumption');
-            oLog.addValue('ISS_ARS_MultiStore:c:WPA.toStores.Rack_Air.toPhases.Water.toManips.substance',  	'this.afFlowRates(this.oMT.tiN2I.CO2)',        'kg/s',    'WPA CO2 Production');
+            oLogger.addValue('ISS_ARS_MultiStore:c:WPA.toStores.Rack_Air.toPhases.Water.toManips.substance',  	'this.afFlowRates(this.oMT.tiN2I.O2)',         'kg/s',    'WPA O2 Consumption');
+            oLogger.addValue('ISS_ARS_MultiStore:c:WPA.toStores.Rack_Air.toPhases.Water.toManips.substance',  	'this.afFlowRates(this.oMT.tiN2I.CO2)',        'kg/s',    'WPA CO2 Production');
             
             %% UPA + BPA Logging
-            oLog.addValue('ISS_ARS_MultiStore.toChildren.UPA.toBranches.Outlet',                    'fFlowRate',	'kg/s', 'UPA Water Flow');
-            oLog.addValue('ISS_ARS_MultiStore.toChildren.UPA.toBranches.BrineOutlet',               'fFlowRate',	'kg/s', 'UPA Brine Flow');
-            oLog.addValue('ISS_ARS_MultiStore.toChildren.UPA.toStores.WSTA.toPhases.Urine',         'fMass',        'kg',   'UPA WSTA Mass');
-            oLog.addValue('ISS_ARS_MultiStore.toChildren.UPA.toStores.ARTFA.toPhases.Brine',        'fMass',        'kg',   'UPA ARTFA Mass');
+            oLogger.addValue('ISS_ARS_MultiStore.toChildren.UPA.toBranches.Outlet',                    'fFlowRate',	'kg/s', 'UPA Water Flow');
+            oLogger.addValue('ISS_ARS_MultiStore.toChildren.UPA.toBranches.BrineOutlet',               'fFlowRate',	'kg/s', 'UPA Brine Flow');
+            oLogger.addValue('ISS_ARS_MultiStore.toChildren.UPA.toStores.WSTA.toPhases.Urine',         'fMass',        'kg',   'UPA WSTA Mass');
+            oLogger.addValue('ISS_ARS_MultiStore.toChildren.UPA.toStores.ARTFA.toPhases.Brine',        'fMass',        'kg',   'UPA ARTFA Mass');
             
-            oLog.addValue('ISS_ARS_MultiStore.toChildren.BPA.toStores.Bladder.toProcsP2P.WaterP2P',                             'fFlowRate',	'kg/s', 'BPA Water Flow');
-            oLog.addValue('ISS_ARS_MultiStore.toChildren.BPA.toStores.Bladder.toPhases.Brine',                                  'fMass',        'kg',   'BPA Bladder Mass');
-            oLog.addValue('ISS_ARS_MultiStore.toChildren.BPA.toStores.ConcentratedBrineDisposal.toPhases.ConcentratedBrine',  	'fMass',        'kg',   'BPA Concentrated Brine Mass');
+            oLogger.addValue('ISS_ARS_MultiStore.toChildren.BPA.toStores.Bladder.toProcsP2P.WaterP2P',                             'fFlowRate',	'kg/s', 'BPA Water Flow');
+            oLogger.addValue('ISS_ARS_MultiStore.toChildren.BPA.toStores.Bladder.toPhases.Brine',                                  'fMass',        'kg',   'BPA Bladder Mass');
+            oLogger.addValue('ISS_ARS_MultiStore.toChildren.BPA.toStores.ConcentratedBrineDisposal.toPhases.ConcentratedBrine',  	'fMass',        'kg',   'BPA Concentrated Brine Mass');
             
             
-            oLog.addVirtualValue('cumsum("UPA Water Flow"    .* "Timestep")', 'kg', 'UPA Produced Water');
-            oLog.addVirtualValue('cumsum("UPA Brine Flow"    .* "Timestep")', 'kg', 'UPA Produced Brine');
-            oLog.addVirtualValue('cumsum("BPA Water Flow"    .* "Timestep")', 'kg', 'BPA Produced Water');
+            oLogger.addVirtualValue('cumsum("UPA Water Flow"    .* "Timestep")', 'kg', 'UPA Produced Water');
+            oLogger.addVirtualValue('cumsum("UPA Brine Flow"    .* "Timestep")', 'kg', 'UPA Produced Brine');
+            oLogger.addVirtualValue('cumsum("BPA Water Flow"    .* "Timestep")', 'kg', 'BPA Produced Water');
             
             %% Mass and Temperature logging for all phases (can be usefull for debugging)
 %             oISS_ARS_MultiStore = this.oSimulationContainer.toChildren.ISS_ARS_MultiStore;
@@ -204,55 +204,90 @@ classdef setup < simulation.infrastructure
             if this.oSimulationContainer.toChildren.ISS_ARS_MultiStore.tbCases.ACLS
                 
                 for iBed = 1:3
-                    oLog.addValue(['ISS_ARS_MultiStore:c:ACLS:s:CCA_Bed',num2str(iBed),'.toPhases.ResineAB',num2str(iBed)],    'afMass(this.oMT.tiN2I.H2O)',   'kg',    ['ACLS Bed ',num2str(iBed),' Absorbed Mass H2O']);
-                    oLog.addValue(['ISS_ARS_MultiStore:c:ACLS:s:CCA_Bed',num2str(iBed),'.toPhases.ResineAB',num2str(iBed)],    'afMass(this.oMT.tiN2I.CO2)',   'kg',    ['ACLS Bed ',num2str(iBed),' Absorbed Mass CO2']);
+                    oLogger.addValue(['ISS_ARS_MultiStore:c:ACLS:s:CCA_Bed',num2str(iBed),'.toPhases.ResineAB',num2str(iBed)],    'afMass(this.oMT.tiN2I.H2O)',   'kg',    ['ACLS Bed ',num2str(iBed),' Absorbed Mass H2O']);
+                    oLogger.addValue(['ISS_ARS_MultiStore:c:ACLS:s:CCA_Bed',num2str(iBed),'.toPhases.ResineAB',num2str(iBed)],    'afMass(this.oMT.tiN2I.CO2)',   'kg',    ['ACLS Bed ',num2str(iBed),' Absorbed Mass CO2']);
                 end
                 
-                oLog.addValue('ISS_ARS_MultiStore:s:ACLS_Water.toPhases.ACLS_Water_Phase', 'fMass',	'kg',     'ACLS Supply Water');
+                oLogger.addValue('ISS_ARS_MultiStore:s:ACLS_Water.toPhases.ACLS_Water_Phase', 'fMass',	'kg',     'ACLS Supply Water');
                 
                 % Condensate Massflows of the CHXs
-                oLog.addValue('ISS_ARS_MultiStore:c:ACLS:s:CRA_WaterRec.toProcsP2P.CondensingHX',               'fFlowRate',	'kg/s',     'Sabatier Condensate Flowrate');
-                oLog.addValue('ISS_ARS_MultiStore:c:ACLS:s:CCA_WaterSeperator.toProcsP2P.CHX_Air_p2p',          'fFlowRate',	'kg/s',     'Air Condensate Flowrate');
-                oLog.addValue('ISS_ARS_MultiStore:c:ACLS:s:CCA_CO2_WaterRecovery.toProcsP2P.CHX_CO2_p2p',       'fFlowRate',	'kg/s',     'CO2 Condensate Flow Rate');
+                oLogger.addValue('ISS_ARS_MultiStore:c:ACLS:s:CRA_WaterRec.toProcsP2P.CondensingHX',               'fFlowRate',	'kg/s',     'Sabatier Condensate Flowrate');
+                oLogger.addValue('ISS_ARS_MultiStore:c:ACLS:s:CCA_WaterSeperator.toProcsP2P.CHX_Air_p2p',          'fFlowRate',	'kg/s',     'Air Condensate Flowrate');
+                oLogger.addValue('ISS_ARS_MultiStore:c:ACLS:s:CCA_CO2_WaterRecovery.toProcsP2P.CHX_CO2_p2p',       'fFlowRate',	'kg/s',     'CO2 Condensate Flow Rate');
                 
                 % Sabatier vented mass flow and composition (CO2, CH4, H2O, O2,
                 % N2, H2)
-                oLog.addValue('ISS_ARS_MultiStore:c:ACLS.toBranches.CRA_DryGastoVent.aoFlows(1)',    	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.N2)', 	'kg/s',     'ACLS Vent FlowRate N2');
-                oLog.addValue('ISS_ARS_MultiStore:c:ACLS.toBranches.CRA_DryGastoVent.aoFlows(1)',       'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.O2)', 	'kg/s',     'ACLS Vent FlowRate O2');
-                oLog.addValue('ISS_ARS_MultiStore:c:ACLS.toBranches.CRA_DryGastoVent.aoFlows(1)',   	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2)', 	'kg/s',     'ACLS Vent FlowRate H2');
-                oLog.addValue('ISS_ARS_MultiStore:c:ACLS.toBranches.CRA_DryGastoVent.aoFlows(1)',    	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 	'kg/s',     'ACLS Vent FlowRate CO2');
-                oLog.addValue('ISS_ARS_MultiStore:c:ACLS.toBranches.CRA_DryGastoVent.aoFlows(1)',     	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)', 	'kg/s',     'ACLS Vent FlowRate H2O');
-                oLog.addValue('ISS_ARS_MultiStore:c:ACLS.toBranches.CRA_DryGastoVent.aoFlows(1)',   	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CH4)', 	'kg/s',     'ACLS Vent FlowRate CH4');
+                oLogger.addValue('ISS_ARS_MultiStore:c:ACLS.toBranches.CRA_DryGastoVent.aoFlows(1)',    	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.N2)', 	'kg/s',     'ACLS Vent FlowRate N2');
+                oLogger.addValue('ISS_ARS_MultiStore:c:ACLS.toBranches.CRA_DryGastoVent.aoFlows(1)',       'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.O2)', 	'kg/s',     'ACLS Vent FlowRate O2');
+                oLogger.addValue('ISS_ARS_MultiStore:c:ACLS.toBranches.CRA_DryGastoVent.aoFlows(1)',   	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2)', 	'kg/s',     'ACLS Vent FlowRate H2');
+                oLogger.addValue('ISS_ARS_MultiStore:c:ACLS.toBranches.CRA_DryGastoVent.aoFlows(1)',    	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 	'kg/s',     'ACLS Vent FlowRate CO2');
+                oLogger.addValue('ISS_ARS_MultiStore:c:ACLS.toBranches.CRA_DryGastoVent.aoFlows(1)',     	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)', 	'kg/s',     'ACLS Vent FlowRate H2O');
+                oLogger.addValue('ISS_ARS_MultiStore:c:ACLS.toBranches.CRA_DryGastoVent.aoFlows(1)',   	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CH4)', 	'kg/s',     'ACLS Vent FlowRate CH4');
                 
                 % ACLS overall CO2 and H2O In- and Outlet flowrates
-                oLog.addValue('ISS_ARS_MultiStore:c:ACLS.toBranches.CCA_AirInlet.aoFlows(1)',           'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 	'kg/s',     'ACLS CO2 Inlet FlowRate');
-                oLog.addValue('ISS_ARS_MultiStore:c:ACLS.toBranches.CCA_AirInlet.aoFlows(1)',           'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',  'kg/s',     'ACLS H2O Inlet FlowRate');
+                oLogger.addValue('ISS_ARS_MultiStore:c:ACLS.toBranches.CCA_AirInlet.aoFlows(1)',           'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 	'kg/s',     'ACLS CO2 Inlet FlowRate');
+                oLogger.addValue('ISS_ARS_MultiStore:c:ACLS.toBranches.CCA_AirInlet.aoFlows(1)',           'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',  'kg/s',     'ACLS H2O Inlet FlowRate');
                 
-                oLog.addValue('ISS_ARS_MultiStore:c:ACLS.toBranches.CCA_AirOutlet.aoFlows(1)',          'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)',	'kg/s',     'ACLS CO2 Outlet FlowRate');
-                oLog.addValue('ISS_ARS_MultiStore:c:ACLS.toBranches.CCA_AirOutlet.aoFlows(1)',          'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',	'kg/s',     'ACLS H2O Outlet FlowRate');
+                oLogger.addValue('ISS_ARS_MultiStore:c:ACLS.toBranches.CCA_AirOutlet.aoFlows(1)',          'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)',	'kg/s',     'ACLS CO2 Outlet FlowRate');
+                oLogger.addValue('ISS_ARS_MultiStore:c:ACLS.toBranches.CCA_AirOutlet.aoFlows(1)',          'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',	'kg/s',     'ACLS H2O Outlet FlowRate');
             end
             
             %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%%                   PLANT MODULE LOGGING                  %%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             if this.oSimulationContainer.toChildren.ISS_ARS_MultiStore.tbCases.PlantChamber
-                csCultures = this.oSimulationContainer.toChildren.ISS_ARS_MultiStore.csCultures;
-                % log culture subsystems
-                for iI = 1:length(csCultures)
-                    % flow rates --> currently not plotted but can be helpful
-                    % to check whether everything is correct
-                    oLog.addValue(['ISS_ARS_MultiStore:c:', csCultures{iI}], 'tfGasExchangeRates.fO2ExchangeRate',          'kg/(s m^2)', [csCultures{iI}, ' FlowRate O2']);
-                    oLog.addValue(['ISS_ARS_MultiStore:c:', csCultures{iI}], 'tfGasExchangeRates.fCO2ExchangeRate',         'kg/(s m^2)', [csCultures{iI}, ' FlowRate CO2']);
-                    oLog.addValue(['ISS_ARS_MultiStore:c:', csCultures{iI}], 'tfGasExchangeRates.fTranspirationRate',       'kg/(s m^2)', [csCultures{iI}, ' FlowRate H2O']);
-                    oLog.addValue(['ISS_ARS_MultiStore:c:', csCultures{iI}], 'fNutrientConsumptionRate',                    'kg/(s m^2)', [csCultures{iI}, ' FlowRate Nutrients']);
-                    oLog.addValue(['ISS_ARS_MultiStore:c:', csCultures{iI}], 'tfBiomassGrowthRates.fGrowthRateEdible',      'kg/(s m^2)', [csCultures{iI}, ' FlowRate Edible']);
-                    oLog.addValue(['ISS_ARS_MultiStore:c:', csCultures{iI}], 'tfBiomassGrowthRates.fGrowthRateInedible',    'kg/(s m^2)', [csCultures{iI}, ' FlowRate Inedible']);
+                for iLettuce = 1:5
+                    oLogger.addValue(['ISS_ARS_MultiStore.toChildren.Lettuce' num2str(iLettuce) '.toStores.Plant_Culture.toPhases.Plants'], 'fMass',                                   'kg',   ['Lettuce ', num2str(iLettuce), ' Mass']);
+                    oLogger.addValue(['ISS_ARS_MultiStore.toChildren.Lettuce' num2str(iLettuce) '.toStores.Plant_Culture.toPhases.Plants'], 'this.afMass(this.oMT.tiN2I.Lettuce)',     'kg',   ['Lettuce ', num2str(iLettuce), ' Edible Biomass']);
+                    oLogger.addValue(['ISS_ARS_MultiStore.toChildren.Lettuce' num2str(iLettuce)],                                           'fWaterConsumptionRate',                   'kg/s', ['Lettuce ', num2str(iLettuce), ' Water Consumption Rate']);
+                    
+                    oLogger.addValue(['ISS_ARS_MultiStore.toChildren.Lettuce' num2str(iLettuce)],  'this.tfGasExchangeRates.fO2ExchangeRate',          'kg/s', ['Lettuce ', num2str(iLettuce), ' O2 Rate']);
+                    oLogger.addValue(['ISS_ARS_MultiStore.toChildren.Lettuce' num2str(iLettuce)],  'this.tfGasExchangeRates.fCO2ExchangeRate',         'kg/s', ['Lettuce ', num2str(iLettuce), ' CO2 Rate']);
+                    oLogger.addValue(['ISS_ARS_MultiStore.toChildren.Lettuce' num2str(iLettuce)],  'this.tfGasExchangeRates.fTranspirationRate',       'kg/s', ['Lettuce ', num2str(iLettuce), ' Transpiration Rate']);
+                    oLogger.addValue(['ISS_ARS_MultiStore.toChildren.Lettuce' num2str(iLettuce)],  'this.tfBiomassGrowthRates.fGrowthRateInedible',	'kg/s', ['Lettuce ', num2str(iLettuce), ' Inedible Growth Rate']);
+                    oLogger.addValue(['ISS_ARS_MultiStore.toChildren.Lettuce' num2str(iLettuce)],  'this.tfBiomassGrowthRates.fGrowthRateEdible',      'kg/s', ['Lettuce ', num2str(iLettuce), ' Edible Growth Rate']);
+                    
                 end
+                oLogger.addVirtualValue('"Lettuce 1 Mass" + "Lettuce 2 Mass" + "Lettuce 3 Mass" + "Lettuce 4 Mass" + "Lettuce 5 Mass"',                                                                                             'kg',	'Lettuce Mass');
+                oLogger.addVirtualValue('"Lettuce 1 Edible Biomass" + "Lettuce 2 Edible Biomass" + "Lettuce 3 Edible Biomass" + "Lettuce 4 Edible Biomass" + "Lettuce 5 Edible Biomass"',                                           'kg',	'Lettuce Edible Biomass');
+                
+                sSumOfLettuceWaterConsumption   = '"Lettuce 1 Water Consumption Rate" + "Lettuce 2 Water Consumption Rate" + "Lettuce 3 Water Consumption Rate" + "Lettuce 4 Water Consumption Rate" + "Lettuce 5 Water Consumption Rate"';
+                sSumOfLettuceO2                 = '"Lettuce 1 O2 Rate" + "Lettuce 2 O2 Rate" + "Lettuce 3 O2 Rate" + "Lettuce 4 O2 Rate" + "Lettuce 5 O2 Rate"';
+                sSumOfLettuceCO2                = '"Lettuce 1 CO2 Rate" + "Lettuce 2 CO2 Rate" + "Lettuce 3 CO2 Rate" + "Lettuce 4 CO2 Rate" + "Lettuce 5 CO2 Rate"';
+                sSumOfLettuceTranspiration      = '"Lettuce 1 Transpiration Rate" + "Lettuce 2 Transpiration Rate" + "Lettuce 3 Transpiration Rate" + "Lettuce 4 Transpiration Rate" + "Lettuce 5 Transpiration Rate"';
+                sSumOfLettuceInedible           = '"Lettuce 1 Inedible Growth Rate" + "Lettuce 2 Inedible Growth Rate" + "Lettuce 3 Inedible Growth Rate" + "Lettuce 4 Inedible Growth Rate" + "Lettuce 5 Inedible Growth Rate"';
+                sSumOfLettuceEdible             = '"Lettuce 1 Edible Growth Rate" + "Lettuce 2 Edible Growth Rate" + "Lettuce 3 Edible Growth Rate" + "Lettuce 4 Edible Growth Rate" + "Lettuce 5 Edible Growth Rate"';
+                
+                oLogger.addVirtualValue(sSumOfLettuceWaterConsumption, 	'kg/s',	'Lettuce Water Consumption Rate');
+                oLogger.addVirtualValue(sSumOfLettuceO2,                'kg/s',	'Lettuce O2 Rate');
+                oLogger.addVirtualValue(sSumOfLettuceCO2,               'kg/s',	'Lettuce CO2 Rate');
+                oLogger.addVirtualValue(sSumOfLettuceTranspiration,     'kg/s',	'Lettuce Transpiration Rate');
+                oLogger.addVirtualValue(sSumOfLettuceInedible,          'kg/s',	'Lettuce Inedible Growth Rate');
+                oLogger.addVirtualValue(sSumOfLettuceEdible,            'kg/s',	'Lettuce Edible Growth Rate');
 
-                % Logs the total mass that was consumed by the plants. The
-                % plot starts at zero and therefore directly indicates the
-                % amount of water that is consumed.
-                oLog.addValue('ISS_ARS_MultiStore:s:WaterSupply.toPhases.WaterSupply', 'this.fMass - 100000', 'kg', 'Water Supply Store Mass');
+                oLogger.addVirtualValue(['cumsum((' sSumOfLettuceWaterConsumption ')    .* "Timestep")'], 'kg', 'Lettuce Water Consumption');
+                oLogger.addVirtualValue(['cumsum((' sSumOfLettuceO2 ')                  .* "Timestep")'], 'kg', 'Lettuce O2');
+                oLogger.addVirtualValue(['cumsum((' sSumOfLettuceCO2 ')                 .* "Timestep")'], 'kg', 'Lettuce CO2');
+                oLogger.addVirtualValue(['cumsum((' sSumOfLettuceTranspiration ')       .* "Timestep")'], 'kg', 'Lettuce Transpiration');
+                oLogger.addVirtualValue(['cumsum((' sSumOfLettuceInedible ')            .* "Timestep")'], 'kg', 'Lettuce Inedible');
+                oLogger.addVirtualValue(['cumsum((' sSumOfLettuceEdible ')              .* "Timestep")'], 'kg', 'Lettuce Edible');
+
+                % Tomato Logs
+                oLogger.addValue('ISS_ARS_MultiStore.toChildren.Tomato1.toStores.Plant_Culture.toPhases.Plants', 'fMass',                                          'kg',   'Tomato Mass');
+                oLogger.addValue('ISS_ARS_MultiStore.toChildren.Tomato1.toStores.Plant_Culture.toPhases.Plants', 'this.afMass(this.oMT.tiN2I.Tomato)',             'kg',   'Tomato Edible Biomass');
+                oLogger.addValue('ISS_ARS_MultiStore.toChildren.Tomato1',                                        'fWaterConsumptionRate',                          'kg/s', 'Tomato Water Consumption Rate');
+                oLogger.addValue('ISS_ARS_MultiStore.toChildren.Tomato1',                                        'this.tfGasExchangeRates.fO2ExchangeRate',      	'kg/s', 'Tomato O2 Rate');
+                oLogger.addValue('ISS_ARS_MultiStore.toChildren.Tomato1',                                        'this.tfGasExchangeRates.fCO2ExchangeRate',     	'kg/s', 'Tomato CO2 Rate');
+                oLogger.addValue('ISS_ARS_MultiStore.toChildren.Tomato1',                                        'this.tfGasExchangeRates.fTranspirationRate',  	'kg/s', 'Tomato Transpiration Rate');
+                oLogger.addValue('ISS_ARS_MultiStore.toChildren.Tomato1',                                        'this.tfBiomassGrowthRates.fGrowthRateInedible',	'kg/s', 'Tomato Inedible Growth Rate');
+                oLogger.addValue('ISS_ARS_MultiStore.toChildren.Tomato1',                                        'this.tfBiomassGrowthRates.fGrowthRateEdible',   	'kg/s', 'Tomato Edible Growth Rate');
+
+                oLogger.addVirtualValue('cumsum("Tomato Water Consumption Rate"     .* "Timestep")', 'kg', 'Tomato Water Consumption');
+                oLogger.addVirtualValue('cumsum("Tomato O2 Rate"                    .* "Timestep")', 'kg', 'Tomato O2');
+                oLogger.addVirtualValue('cumsum("Tomato CO2 Rate"                   .* "Timestep")', 'kg', 'Tomato CO2');
+                oLogger.addVirtualValue('cumsum("Tomato Transpiration Rate"         .* "Timestep")', 'kg', 'Tomato Transpiration');
+                oLogger.addVirtualValue('cumsum("Tomato Inedible Growth Rate"       .* "Timestep")', 'kg', 'Tomato Inedible');
+                oLogger.addVirtualValue('cumsum("Tomato Edible Growth Rate"         .* "Timestep")', 'kg', 'Tomato Edible');
             end
             
             %% Simulation length
@@ -496,31 +531,19 @@ classdef setup < simulation.infrastructure
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Plots the total water that was consumed by the plants
             if this.oSimulationContainer.toChildren.ISS_ARS_MultiStore.tbCases.PlantChamber
-                
-                csNames = {'"Water Supply Store Mass"'};
+                coPlot{1,1} = oPlotter.definePlot({'"Lettuce Water Consumption Rate"', '"Tomato Water Consumption Rate"', '"Lettuce Transpiration Rate"', '"Tomato Transpiration Rate"'}, 'H2O Flowrate Plant Plots', tPlotOptions);
+                coPlot{1,2} = oPlotter.definePlot({'"Lettuce O2 Rate"', '"Tomato O2 Rate"'}, 'O2 Flowrate Plant Plots', tPlotOptions);
+                coPlot{2,1} = oPlotter.definePlot({'"Lettuce Inedible Growth Rate"', '"Lettuce Edible Growth Rate"', '"Tomato Inedible Growth Rate"', '"Tomato Edible Growth Rate"'}, 'Biomass Flowrate Plant Plots', tPlotOptions);
+                coPlot{2,2} = oPlotter.definePlot({'"Lettuce CO2 Rate"','"Tomato CO2 Rate"'}, 'CO2 Flowrate Plant Plots', tPlotOptions);
+                oPlotter.defineFigure(coPlot,       'Plant Plots');
+                coPlot = cell(0);
 
-                coPlots = [];
-                coPlots{1,1} = oPlotter.definePlot(csNames,     'Plant Water Supply Mass', tPlotOptions);
-
-                oPlotter.defineFigure(coPlots,  'Plant Water Supply Mass', tFigureOptions);
-            
-                csCultures = this.oSimulationContainer.toChildren.ISS_ARS_MultiStore.csCultures;
-                % log culture subsystems
-                
-                coPlots = [];
-                tPlotOptions.yLabel = 'Flowrate in kg/(s m^2)';
-                for iCulture = 1:length(csCultures)
-                    % flow rates --> currently not plotted but can be helpful
-                    % to check whether everything is correct
-                    csPlantFlowRates = {['"', csCultures{iCulture}, ' FlowRate O2"'], ['"', csCultures{iCulture}, ' FlowRate CO2"'], ['"', csCultures{iCulture}, ' FlowRate H2O"'],...
-                                        ['"', csCultures{iCulture}, ' FlowRate Nutrients"'], ['"', csCultures{iCulture}, ' FlowRate Edible"'], ['"', csCultures{iCulture}, ' FlowRate Inedible"']};
-                                    
-                    
-                    coPlots{1,iCulture} = oPlotter.definePlot(csPlantFlowRates,    [csCultures{iCulture}, 'Plant Flowrates'], tPlotOptions);
-                    
-                end
-                oPlotter.defineFigure(coPlots,  'Plant Flowrates', tFigureOptions);
-
+                coPlot{1,1} = oPlotter.definePlot({'"Lettuce Water Consumption"', '"Tomato Water Consumption"', '"Lettuce Transpiration"', '"Tomato Transpiration"'}, 'Cumulative Water Plant Plots', tPlotOptions);
+                coPlot{1,2} = oPlotter.definePlot({'"Lettuce O2"', '"Tomato O2"'}, 'Cumulative O2 Plant Plots', tPlotOptions);
+                coPlot{2,1} = oPlotter.definePlot({'"Lettuce Inedible"', '"Lettuce Edible"', '"Tomato Inedible"', '"Tomato Edible"'}, 'Cumulative Biomass Plant Plots', tPlotOptions);
+                coPlot{2,2} = oPlotter.definePlot({'"Lettuce CO2"', '"Tomato CO2"'}, 'Cumulative CO2 Plant Plots', tPlotOptions);
+                oPlotter.defineFigure(coPlot,       'Cumulative Plant Plots');
+                coPlot = cell(0);
             end
             
             

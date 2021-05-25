@@ -37,19 +37,11 @@ classdef ISS_ARS_MultiStore < vsys
         % Property to save the dew point of each module
         % Order: 'Node1', 'Node2', 'Node3', 'PMM', 'FGM', 'Airlock', 'SM', 'US_Lab' 'JEM', 'Columbus'
         afDewPointModules = zeros(1,10);
-    end
+        
     
-    % All the properties for the Plant Module
-    properties
-        ttxNutrientData;
-        
-        ttxPlantParameters;
-        
-        ttxInput;
-        
-        toCultures;
-        
-        csCultures;
+        % All the properties for the Plant Module
+        csPlants;
+        tfPlantControlParameters;
     end
     
     methods
@@ -261,71 +253,36 @@ classdef ISS_ARS_MultiStore < vsys
             %%%                   PLANT MODULE                          %%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             if this.tbCases.PlantChamber
-                %% Import Nutrient Data
-                % import nutirent data from .csv file
-                this.ttxNutrientData = components.PlantModuleV2.food.data.importNutrientData();
-
-                %% Import Plant Parameters
-                % import plant parameters from .csv file
-                this.ttxPlantParameters = components.PlantModuleV2.plantparameters.importPlantParameters();
-
-                %% import coefficient matrices for CQY and T_A
-                % save fieldnames to temporary cell array
-                csPlantSpecies = fieldnames(this.ttxPlantParameters);
-
-                % loop over entries in cell array (= number of plant species)
-                for iI = 1:size(csPlantSpecies)
-                    % import coefficient matrices for CQY
-                    this.ttxPlantParameters.(csPlantSpecies{iI}).mfMatrix_CQY = ...
-                        csvread(['+components/+PlantModuleV2/+plantparameters/', csPlantSpecies{iI}, '_Coefficient_Matrix_CQY.csv']);
-
-                    % import coefficient matrices for T_A
-                    this.ttxPlantParameters.(csPlantSpecies{iI}).mfMatrix_T_A = ...
-                        csvread(['+components/+PlantModuleV2/+plantparameters/', csPlantSpecies{iI}, '_Coefficient_Matrix_T_A.csv']);
-
-                    %% Additional Required Parameters
-                    % Unit conversion factor. not a true "plant" parameter per
-                    % se but needed in the MMEC calculations so it will be part
-                    % of ttxPlantParameters.
-                    % [s h^-1 mol �mol^-1]
-                    this.ttxPlantParameters.(csPlantSpecies{iI}).fAlpha = 0.0036;
-
-                    % fresh basis water factor FBWF_Edible = WBF * (1 - WBF)^-1
-                    % for edible biomass
-                    % [fluid mass over dry mass]
-                    this.ttxPlantParameters.(csPlantSpecies{iI}).fFBWF_Edible = ...
-                        this.ttxPlantParameters.(csPlantSpecies{iI}).fWBF * ...
-                        (1 - this.ttxPlantParameters.(csPlantSpecies{iI}).fWBF)^-1;
-
-                    % fresh basis water factor for inedible biomass
-                    % FBWF_Inedible. since inedible biomass water content is
-                    % always assumed to be 90% this factor equals 9 for all
-                    % species
-                    % [fluid mass over dry mass]
-                    this.ttxPlantParameters.(csPlantSpecies{iI}).fFBWF_Inedible = 9;
-                end
-
-                %% Import Culture Setup Inputs
-                Input = load('lib\+components\+PlantModuleV2\+cultures\VEGGIE\VEGGIELettuce.mat');
+                % Import Culture Setup Inputs
+                Input = load('lib\+components\+matter\+PlantModule\+cultures\VEGGIE\VEGGIELettuceTomato.mat');
 
                 % write to property
-                this.ttxInput = Input.CultureInput;
-
-                %% Create Culture Objects
+                ttxInput = Input.CultureInput;
+                for iLettuce = 1:5
+                    ttxInput.(['Lettuce', num2str(iLettuce)]).iConsecutiveGenerations = 200;
+                    ttxInput.(['Lettuce', num2str(iLettuce)]).mfSowTime = zeros(1,200);
+                end
+                
+                ttxInput.Tomato1.mfSowTime(2) = 0;
+                ttxInput.Tomato1.mfSowTime(3) = 0;
+                ttxInput.Tomato1.mfSowTime(4) = 0;
+                
+                % Create Culture Objects
                 % write culture names into cell array to be accessed within
                 % loop
-                this.csCultures = fieldnames(this.ttxInput);
+                this.csPlants = fieldnames(ttxInput);
                 % loop over total cultures amount
-                for iI = 1:length(this.csCultures)
+                for iI = 1:length(this.csPlants)
                     % culture object gets assigned using its culture name
-                    this.toCultures.(this.csCultures{iI}) = ...
-                        components.PlantModuleV2.PlantCulture(...
+                        components.matter.PlantModule.PlantCulture(...
                         this, ...                                                                           % parent system reference
-                        this.ttxInput.(this.csCultures{iI}), ...                                            % input for specific culture
+                        ttxInput.(this.csPlants{iI}).sCultureName, ...
                         60,...                                                                              % Time step of the plant module. Plants do not change their properties very quickly which is why a higher time step is sufficient.
+                        ttxInput.(this.csPlants{iI}), ...                                                      % input for specific culture
                         55);                                                                                % Initialization Time [d] of the plant module: e.g. if only the three last days of lettuce growth shall be analyzed, this needs to be set to 27 (lettuce has a harvest time of 30 days)
                 end
             end
+            
         end
             
         function createMatterStructure(this)
@@ -755,84 +712,76 @@ classdef ISS_ARS_MultiStore < vsys
             % When it is time to harvest a crop, the biomass is put into a
             % split buffer store (BiomassSplit), where the mass is split
             % into Edible and Inedible Mass.
-            
             if this.tbCases.PlantChamber
+                % Check where the plant chamber shall be located:
+                oCabinPhase = this.toStores.(this.sPlantLocation).toPhases.([this.sPlantLocation, '_Phase']);
+                
                 % Nutrient Supply
-                matter.store(this, 'NutrientSupply', 20);
-                oNutrientSupply = matter.phases.liquid(...
-                    this.toStores.NutrientSupply, ...                          % store containing phase
-                    'NutrientSupply', ...                                      % phase name
-                    struct(...                                                 % phase contens     [kg]
-                    'Nutrients', 1e3), ...
-                    20, ...                                                    % phase volume      [m^3]
-                    fAmbientTemperature, ...                                   % phase temperature [K]
-                    fPressure);                                                % phase pressure    [Pa]
-
-                % Biomass Split
-                matter.store(this, 'BiomassSplit', 10);
-                oBiomassEdibleSplit = matter.phases.liquid(...
-                    this.toStores.BiomassSplit, ...                            % store containing phase
-                    'BiomassEdible', ...                                       % phase name
-                    struct(...                                                 % phase contents    [kg]
-                    ), ...
-                    5, ...                                                     % phase volume      [m^3]
-                    fAmbientTemperature, ...                                   % phase temperature [K]
-                    fPressure);
-
-                oBiomassInedibleSplit = matter.phases.liquid(...
-                    this.toStores.BiomassSplit, ...                            % store containing phase
-                    'BiomassInedible', ...                                     % phase name
-                    struct(...                                                 % phase contents    [kg]
-                    ), ...
-                    5, ...                                                     % phase volume      [m^3]
-                    fAmbientTemperature, ...                                   % phase temperature [K]
-                    fPressure);
-
-
-                % get names and number of grown cultures
-                this.csCultures = fieldnames(this.toCultures);
-                csInedibleBiomass = cell(1, length(this.csCultures));
-
-                % loop over all cultures to create each required exmes
-                for iI = 1:length(this.csCultures)
-                    csInedibleBiomass{iI} = [this.toCultures.(this.csCultures{iI}).txPlantParameters.sPlantSpecies, 'InedibleWet'];
-                end
-
-                % Create Biomass Split P2P
-                components.P2Ps.ConstantMassP2P(this, ...
-                    this.toStores.BiomassSplit, ...
-                    'EdibleInedible_Split_P2P', ...
-                    oBiomassEdibleSplit, ...
-                    oBiomassInedibleSplit,...
-                    csInedibleBiomass, 1);
                 
-                oReferencePhase = this.getReferencePhase();
-                for iCulture = 1:length(this.csCultures)
-                    this.toChildren.(this.csCultures{iCulture}).setReferenceAtmosphere(oReferencePhase);
+                % This store is the connection to the plant NFT system. It
+                % receives potable water from the potable water store and CROP
+                % output solution
+                oStore = matter.store(this,     'NutrientSupply',    0.1);
+                fN_Mol_Concentration = 1; % mol/m^3
+                fN_Mass = fN_Mol_Concentration * 0.1 * this.oMT.afMolarMass(this.oMT.tiN2I.NO3);
+                fWaterMass = 0.1 * 998;
+                rNRatio = fN_Mass ./ (fN_Mass + fWaterMass);
+                oNutrientSupply 	= oStore.createPhase(	'liquid',               'NutrientSupply',    	oStore.fVolume,	struct('H2O', 1-rNRatio, 'NO3', rNRatio),	oCabinPhase.fTemperature,	oCabinPhase.fPressure);
+                
+                this.tfPlantControlParameters.InitialWater  = oNutrientSupply.afMass(this.oMT.tiN2I.H2O);
+                this.tfPlantControlParameters.InitialNO3    = oNutrientSupply.afMass(this.oMT.tiN2I.NO3);
+                
+                oStore = matter.store(this,     'BackupNutrientSupply',    0.1);
+                fN_Mol_Concentration = 100; % mol/m^3
+                fN_Mass = fN_Mol_Concentration * 0.1 * this.oMT.afMolarMass(this.oMT.tiN2I.NO3);
+                fWaterMass = 0.1 * 998;
+                rNRatio = fN_Mass ./ (fN_Mass + fWaterMass);
+                oBackupNutrientSupply = oStore.createPhase( 'liquid',   'boundary', 'NutrientSupply',   	oStore.fVolume,	struct('H2O', 1-rNRatio, 'NO3', rNRatio),	oCabinPhase.fTemperature,	oCabinPhase.fPressure);
+
+                oStore = matter.store(this,     'Plant_Preparation',    0.1);
+                oInedibleSplit   	= oStore.createPhase(	'mixture',  'flow',    	'Inedible',	'solid', 0.5*oStore.fVolume, struct('H2O', 0),              oCabinPhase.fTemperature,	oCabinPhase.fPressure);
+                oEdibleSplit        = oStore.createPhase(	'mixture',  'flow',    	'Edible',  	'solid', 0.5*oStore.fVolume, struct('H2O', 0),          	oCabinPhase.fTemperature,	oCabinPhase.fPressure);
+                
+                csInedibleBiomass = cell(length(this.csPlants),1);
+                for iPlant = 1:length(this.csPlants)
+                    csInedibleBiomass{iPlant} = [this.toChildren.(this.csPlants{iPlant}).txPlantParameters.sPlantSpecies, 'Inedible'];
+                end
+
+                matter.procs.exmes.mixture(oInedibleSplit,  'Plant_Preparation_Out');
+                matter.procs.exmes.mixture(oEdibleSplit,    'Plant_Preparation_In');
+                components.matter.P2Ps.ConstantMassP2P(this.toStores.Plant_Preparation, 'Plant_Preparation', 'Inedible.Plant_Preparation_Out', 'Edible.Plant_Preparation_In', csInedibleBiomass, 1);
+
+                % Now add branches to resupply the NFT store with water and
+                % nutrients and the branch for the edible biomass to be
+                % consumed by humans
+                matter.branch(this, oPotableWaterPhase,             	{}, oNutrientSupply,                        'PotableWater_to_NFT');
+                matter.branch(this, oBackupNutrientSupply,             	{}, oNutrientSupply,                        'BackupNutrient_to_NFT');
+                
+                matter.branch(this, oEdibleSplit,        {}, oFoodStore.toPhases.Food, 	'Plants_to_Foodstore');
+                
+                for iPlant = 1:length(this.csPlants)
+                    sCultureName = this.csPlants{iPlant};
+
+                    matter.procs.exmes.gas(oCabinPhase,              [sCultureName, '_AtmosphereCirculation_Out']);
+                    matter.procs.exmes.gas(oCabinPhase,              [sCultureName, '_AtmosphereCirculation_In']);
+                    matter.procs.exmes.liquid(oNutrientSupply,       [sCultureName, '_to_NFT']);
+                    matter.procs.exmes.liquid(oNutrientSupply,       [sCultureName, '_from_NFT']);
+                    matter.procs.exmes.mixture(oEdibleSplit,         [sCultureName, '_Biomass_In']);
+
+                    matter.branch(this, [sCultureName, '_Atmosphere_ToIF_Out'],      {}, [oCabinPhase.oStore.sName,         '.',	sCultureName, '_AtmosphereCirculation_Out']);
+                    matter.branch(this, [sCultureName, '_Atmosphere_FromIF_In'],     {}, [oCabinPhase.oStore.sName,         '.',  	sCultureName, '_AtmosphereCirculation_In']);
+                    matter.branch(this, [sCultureName, '_WaterSupply_ToIF_Out'],     {}, [oNutrientSupply.oStore.sName,     '.',    sCultureName, '_to_NFT']);
+                    matter.branch(this, [sCultureName, '_NutrientSupply_ToIF_Out'],  {}, [oNutrientSupply.oStore.sName,     '.',    sCultureName, '_from_NFT']);
+                    matter.branch(this, [sCultureName, '_Biomass_FromIF_In'],        {}, [oEdibleSplit.oStore.sName,        '.',    sCultureName, '_Biomass_In']);
+
+                    this.toChildren.(sCultureName).setIfFlows(...
+                        [sCultureName, '_Atmosphere_ToIF_Out'], ...
+                        [sCultureName ,'_Atmosphere_FromIF_In'], ...
+                        [sCultureName ,'_WaterSupply_ToIF_Out'], ...
+                        [sCultureName ,'_NutrientSupply_ToIF_Out'], ...
+                        [sCultureName ,'_Biomass_FromIF_In']);
                 end
                 
-                for  iI = 1:length(this.csCultures)
-                    sCulture = this.toCultures.(this.csCultures{iI}).sName;
-                    
-                    matter.branch(this, [sCulture, '_Atmosphere_ToIF_Out'],      {}, this.toStores.(this.sPlantLocation).toPhases([this.sPlantLocation, '_Phase']),     [sCulture, '_PlantAtmosphereCirculisation_Out']);
-                    matter.branch(this, [sCulture, '_Atmosphere_FromIF_In'],     {}, this.toStores.(this.sPlantLocation).toPhases([this.sPlantLocation, '_Phase']),     [sCulture, '_PlantAtmosphereCirculisation_In']);
-                    matter.branch(this, [sCulture, '_WaterSupply_ToIF_Out'],     {}, oWSS ,                                                                             [sCulture, '_PlantWaterSupply']);
-                    matter.branch(this, [sCulture, '_NutrientSupply_ToIF_Out'],  {}, oNutrientSupply,                                                                   [sCulture, '_PlantNutrientSupply']);
-                    matter.branch(this, [sCulture, '_Biomass_FromIF_In'],        {}, oBiomassEdibleSplit,                                                               [sCulture, '_PlantBiomass']);
-                end
-
-                % Connect Interfaces
-                for iI = 1:length(this.csCultures)
-                    sCulture = this.toCultures.(this.csCultures{iI}).sName;
-                    
-                    this.toCultures.(this.csCultures{iI}).setIfFlows(...
-                        [sCulture, '_Atmosphere_ToIF_Out'], ...
-                        [sCulture ,'_Atmosphere_FromIF_In'], ...
-                        [sCulture ,'_WaterSupply_ToIF_Out'], ...
-                        [sCulture ,'_NutrientSupply_ToIF_Out'], ...
-                        [sCulture ,'_Biomass_FromIF_In']);
-                end
-
             end
 
             
@@ -1115,6 +1064,13 @@ classdef ISS_ARS_MultiStore < vsys
                 this.toChildren.CCAA_Node2.setActive(false);
             end
             
+            if this.tbCases.PlantChamber
+                solver.matter.residual.branch(this.toBranches.Plants_to_Foodstore);
+            
+                solver.matter.manual.branch(this.toBranches.PotableWater_to_NFT);
+                solver.matter.manual.branch(this.toBranches.BackupNutrient_to_NFT);
+            end
+            
             this.setThermalSolvers();
             
             %% Set CCAA numeric properties
@@ -1167,12 +1123,8 @@ classdef ISS_ARS_MultiStore < vsys
             tTimeStepProperties.rMaxChange = inf;
             tTimeStepProperties.fMaxStep = this.fTimeStep;
 
+            this.toStores.UrineStorage.toPhases.Urine.setTimeStepProperties(tTimeStepProperties);
             this.toStores.BrineStorage.toPhases.Brine.setTimeStepProperties(tTimeStepProperties);
-            
-            tTimeStepProperties = struct();
-            tTimeStepProperties.rMaxChange = inf;
-            tTimeStepProperties.fMaxStep = this.fTimeStep;
-
             this.toStores.FecesStorage.toPhases.Feces.setTimeStepProperties(tTimeStepProperties);
         end
     end
@@ -1231,10 +1183,11 @@ classdef ISS_ARS_MultiStore < vsys
             end
             
             % BPA flowrate
-            if this.toStores.BrineStorage.toPhases.Brine.fMass > this.toChildren.BPA.fActivationFillBPA + 0.01 && ~this.toChildren.BPA.toBranches.BrineInlet.oHandlerbMassTransferActive
-                this.toChildren.BPA.toBranches.BrineInlet.oHandler.setMassTransfer(this.toStores.BrineStorage.toPhases.Brine.fMass - 0.01, 300);
+            if ~this.toChildren.BPA.bProcessing &&  ~this.toChildren.BPA.bDisposingConcentratedBrine && ~this.toChildren.BPA.toBranches.BrineInlet.oHandler.bMassTransferActive && ~(this.toChildren.BPA.toStores.Bladder.toPhases.Brine.fMass >= this.toChildren.BPA.fActivationFillBPA)
+                if this.toStores.BrineStorage.toPhases.Brine.fMass > this.toChildren.BPA.fActivationFillBPA
+                    this.toChildren.BPA.toBranches.BrineInlet.oHandler.setMassTransfer(-(this.toChildren.BPA.fActivationFillBPA), 300);
+                end
             end
-            
             
             this.oTimer.synchronizeCallBacks();
             
