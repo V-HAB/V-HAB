@@ -47,7 +47,7 @@ function updateNetwork(this, bForceP2Pcalc, bManipUpdate)
                 for iPhase = 1:length(coCurrentProcExme)
                     oPhase = coCurrentProcExme{iPhase}.oPhase;
                     
-                    [afInFlowRates, aarInPartials] = this.getPhaseInFlows(oPhase);
+                    [afInFlowRates, aarInPartials, ~] = this.getPhaseInFlows(oPhase, false);
                     
                     if oPhase.bFlow
                         
@@ -64,7 +64,9 @@ function updateNetwork(this, bForceP2Pcalc, bManipUpdate)
                         
                         if bManipUpdate
                             if oPhase.iSubstanceManipulators > 0
-                                oPhase.toManips.substance.calculateConversionRate(afInFlowRates, aarInPartials);
+                                [~, ~, mrInCompoundMass] = this.getPhaseInFlows(oPhase, true);
+                    
+                                oPhase.toManips.substance.calculateConversionRate(afInFlowRates, aarInPartials, mrInCompoundMass);
                                 % If we have a manip, we have to update the
                                 % partial masses again
                                 oPhase.updatePartials(afInFlowRates .* aarInPartials);
@@ -88,18 +90,17 @@ function updateNetwork(this, bForceP2Pcalc, bManipUpdate)
                                     if oProcP2P.oIn.oPhase ~= oPhase
                                         oOtherPhase = oProcP2P.oIn.oPhase;
 
-                                        [afInsideInFlowRates, aarInsideInPartials] = this.getPhaseInFlows(oOtherPhase);
+                                        [afInsideInFlowRates, aarInsideInPartials, ~] = this.getPhaseInFlows(oOtherPhase, false);
 
-                                        afOutsideInFlowRate = afInFlowRates;
+                                        afOutsideInFlowRate  = afInFlowRates;
                                         aarOutsideInPartials = aarInPartials; 
                                     else
                                         oOtherPhase = oProcP2P.oOut.oPhase;
 
-                                        [afOutsideInFlowRate, aarOutsideInPartials] = this.getPhaseInFlows(oOtherPhase);
+                                        [afOutsideInFlowRate, aarOutsideInPartials, ~] = this.getPhaseInFlows(oOtherPhase, false);
 
                                         afInsideInFlowRates = afInFlowRates;
-                                        aarInsideInPartials = aarInPartials; 
-
+                                        aarInsideInPartials = aarInPartials;
                                     end
 
                                     % Update the P2P! (not with update function

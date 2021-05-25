@@ -147,11 +147,11 @@ classdef (Abstract) substance < matter.manip
                 this.aarFlowsToCompound = aarFlowsToCompound;
                 % Here we check if the partial mass ratios defined for the
                 % manipulator sum up to 1 within an error of 1e-8
-                if any(this.afPartialFlows(this.oMT.abCompound)) && any(abs(sum(aarFlowsToCompound((this.afPartialFlows > 0) & this.oMT.abCompound, :), 2) - 1) > 1e-8)
+                if any(abs(this.afPartialFlows(this.oMT.abCompound)) > 10^-this.oTimer.iPrecision) && any(abs(sum(aarFlowsToCompound((this.afPartialFlows > 0) & this.oMT.abCompound, :), 2) - 1) > 1e-8)
                     error('in the definition of compound mass ratios, not all ratios sum up to 1')
                 end
             else
-                if any(this.afPartialFlows(this.oMT.abCompound))
+                if any(this.afPartialFlows(this.oMT.abCompound) > 0)
                     error(['A compound mass is created in manipulator ', this.sName, ' but aarFlowsToCompound is not defined! Define aarFlowsToCompound as described in the comments of this file!'])
                 end
                 this.aarFlowsToCompound =  zeros(this.oPhase.oMT.iSubstances, this.oPhase.oMT.iSubstances);
