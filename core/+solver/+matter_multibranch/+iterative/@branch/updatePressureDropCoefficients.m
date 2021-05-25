@@ -164,6 +164,7 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
                         this.throw('updatePDCoeffs','NaN in the pressure drops.');
                     end
 
+                    abFlowRateDependenPressureDrops = [oBranch.aoFlowProcs.bFlowRateDependPressureDrop];
                     % The pressure drops are linearized to drop coefficient
                     % by summing them all up and dividing them with the
                     % currently assumed flowrate (for laminar this is
@@ -172,7 +173,16 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
                     % flowrate. 
                     %TODO: Check if implementing that increases speed of
                     % the solver!) 
-                    this.afPressureDropCoeffsSum(iBranch) = sum(afPressureDrops)/abs(fFlowRate);
+                    this.afPressureDropCoeffsSum(iBranch) = sum(afPressureDrops(abFlowRateDependenPressureDrops))/abs(fFlowRate);
+                    
+                    if any(~abFlowRateDependenPressureDrops)
+                        iSign = sign(this.afFlowRates(iBranch));
+                        if iSign == 0
+                            iSign = 1;
+                        end
+
+                        afBoundaryConditions(iRow) = afBoundaryConditions(iRow) + iSign * sum(afPressureDrops(~abFlowRateDependenPressureDrops));
+                    end
                 end
 
 

@@ -58,6 +58,11 @@ classdef f2f < base & matlab.mixin.Heterogeneous
         % thermally active.
         bThermalActive = false;
         
+        % this boolean can be used to decide in solvers whether the
+        % pressure change over this f2f depends on the flowrate or should
+        % be considered constant
+        bFlowRateDependPressureDrop = true;
+        
         % Pressure difference of the f2f component in [Pa]
         fDeltaPressure = 0;
         
