@@ -36,6 +36,7 @@ classdef (Abstract) boundary < matter.phase
             % case, this enforces V-HAB to make a minimum size time step to
             % keep the error small
             tTimeStepProperties.rMaxChange = inf;
+            tTimeStepProperties.fMaxStep = inf;
             this.setTimeStepProperties(tTimeStepProperties)
             
             this.afMassChange = zeros(1,this.oMT.iSubstances);

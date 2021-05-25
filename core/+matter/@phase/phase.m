@@ -594,6 +594,17 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                     error('VHAB:Phase:arMaxChangeArrayTooLong', 'The arMaxChange value provided to the setTimeStepProperties function is not defined correctly. It has the wrong length.');
                 end
 
+                if strcmp(sField, 'fMaxStep') 
+                    if isfield(tTimeStepProperties, 'fMinStep')
+                        fMinStepLocal = tTimeStepProperties.fMinStep;
+                    else
+                        fMinStepLocal = this.fMinStep;
+                    end
+                    if tTimeStepProperties.(sField) < fMinStepLocal
+                        error('the maximum time step cannot be smaller than the minimum time step!')
+                    end
+                end
+                    
                 this.(sField) = tTimeStepProperties.(sField);
             end
 
@@ -871,7 +882,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             ));
             
             % Max time step
-            this.fMaxStep = this.oStore.oContainer.tSolverParams.fMaxTimeStep;
+            if ~this.bBoundary
+                this.fMaxStep = this.oStore.oContainer.tSolverParams.fMaxTimeStep;
+            end
             
             if ~this.oStore.bSealed
                 this.coProcsEXME = struct2cell(this.toProcsEXME)';
@@ -1233,25 +1246,25 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 
                 % Make sure it's not a p2ps.flow - their update method
                 % is called in updateProcessorsAndManipulators method
-                if bUpdateOutFlow
-                    if ~oExme.bFlowIsAProcP2P
+                if ~oExme.bFlowIsAProcP2P
+                    if bUpdateOutFlow
                         if oExme.iSign * oExme.oFlow.fFlowRate <= 0
                             % Tell branch to recalculate flow rate (done after
                             % the current tick, in timer post tick).
                             oBranch.setOutdated();
                         end
+                    else
+                        % We can't directly set this oBranch as outdated if
+                        % it is just connected to an interface, because the
+                        % solver is assigned to the 'leftest' branch.
+                        while ~isempty(oBranch.coBranches{1})
+                            oBranch = oBranch.coBranches{1};
+                        end
+
+                        % Tell branch to recalculate flow rate (done after
+                        % the current tick, in timer post tick).
+                        oBranch.setOutdated();
                     end
-                elseif isa(oBranch, 'matter.branch')
-                    % We can't directly set this oBranch as outdated if
-                    % it is just connected to an interface, because the
-                    % solver is assigned to the 'leftest' branch.
-                    while ~isempty(oBranch.coBranches{1})
-                        oBranch = oBranch.coBranches{1};
-                    end
-                    
-                    % Tell branch to recalculate flow rate (done after
-                    % the current tick, in timer post tick).
-                    oBranch.setOutdated();
                 end
             end
         end
