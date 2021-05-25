@@ -29,6 +29,10 @@ classdef fluidic < thermal.procs.conductor
         fPressureLastHeatCapacityUpdate;
         fTemperatureLastHeatCapacityUpdate;
         arPartialMassLastHeatCapacityUpdate;
+        
+        % Counter for the number of failures to update the heat capacity.
+        % Maximum allowed number of failures is 2
+        iFailedHeatCapacityUpdates = 0;
     end
     
     methods
@@ -135,7 +139,16 @@ classdef fluidic < thermal.procs.conductor
                         (max(abs(this.arPartialMassLastHeatCapacityUpdate - oFlow.arPartialMass)) > 0.01)
                     
                     % Recalculating the specific heat capacity
-                    this.fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(oFlow);
+                    try
+                        this.fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(oFlow);
+                        
+                        this.iFailedHeatCapacityUpdates = 0;
+                    catch
+                        if this.iFailedHeatCapacityUpdates > 2
+                            this.throw('FlowHeatCapacityUpdateError', ['In the branch: ',this.oMatterObject.sCustomName,' with the Flow Rate: ', num2str(this.oMatterObject.fFlowRate), ' [kg/s] and Heat Capactiy: ', num2str(this.fSpecificHeatCapacity),' [J/(kgK)] the update of the heat capacity failed']);
+                        end
+                        this.iFailedHeatCapacityUpdates = this.iFailedHeatCapacityUpdates + 1;
+                    end
                     
                     % Setting the properties for the next check
                     this.fPressureLastHeatCapacityUpdate     = oFlow.fPressure;
