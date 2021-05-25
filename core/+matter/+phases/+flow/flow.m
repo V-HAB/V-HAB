@@ -239,13 +239,16 @@ classdef (Abstract) flow < matter.phase
             % We check if the matter properties changed sufficiently to
             % make a matter table update of the property necessary are
             % performed within the function.
-            if isempty(this.fPressureLastHeatCapacityUpdate) ||...
+            if ~all(this.arPartialMass == 0) && (...
+               isempty(this.fPressureLastHeatCapacityUpdate) ||...
                (abs(this.fPressureLastHeatCapacityUpdate - this.fPressure) > 100) ||...
                (abs(this.fTemperatureLastHeatCapacityUpdate - this.fTemperature) > 1) ||...
-               (max(abs(this.arPartialMassLastHeatCapacityUpdate - this.arPartialMass)) > 0.01)
+               (max(abs(this.arPartialMassLastHeatCapacityUpdate - this.arPartialMass)) > 0.01))
                 
                 % Recalculating the specific heat capacity
                 this.oCapacity.setSpecificHeatCapacity(this.oMT.calculateSpecificHeatCapacity(this));
+                
+                this.fDensity =  this.oMT.calculateDensity(this);
                 
                 % Setting the properties for the next check
                 this.fPressureLastHeatCapacityUpdate     = this.fPressure;
@@ -253,6 +256,9 @@ classdef (Abstract) flow < matter.phase
                 this.arPartialMassLastHeatCapacityUpdate = this.arPartialMass;
             end
             
+            if this.bTriggerSetUpdateCallbackBound
+            	this.trigger('update_post');
+            end
             % Updating the fLastUpdate property
             this.fLastUpdate = this.oTimer.fTime;
         end
