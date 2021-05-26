@@ -59,7 +59,7 @@ classdef setup < simulation.infrastructure
             this.oSimulationContainer.oMT.defineCompoundMass(this, 'ConcentratedBrine', trBaseCompositionBrine);
             
             %% Creating the root object
-            fFixedTS = 180;
+            fFixedTS = 300;
             
             if isempty(ptConfigParams)
                 simulations.ISS.systems.ISS_ARS_MultiStore(this.oSimulationContainer, 'ISS_ARS_MultiStore', fFixedTS, struct());

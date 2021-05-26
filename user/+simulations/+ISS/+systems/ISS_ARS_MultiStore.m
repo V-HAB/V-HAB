@@ -26,7 +26,7 @@ classdef ISS_ARS_MultiStore < vsys
         aoNominalCrewMemberLocations;
         mbCrewMemberCurrentlyInNode3;
         
-        fFixedTS;
+        fControlTimeStep;
         
         % Property to decide between different cases for the simulation
         tbCases;
@@ -45,9 +45,9 @@ classdef ISS_ARS_MultiStore < vsys
     end
     
     methods
-        function this = ISS_ARS_MultiStore (oParent, sName, fFixedTS, tbCases, sPlantLocation)
-            this@vsys(oParent, sName, fFixedTS);
-            this.fFixedTS = fFixedTS;
+        function this = ISS_ARS_MultiStore (oParent, sName, fControlTimeStep, tbCases, sPlantLocation)
+            this@vsys(oParent, sName, -1);
+            this.fControlTimeStep = fControlTimeStep;
             
             this.tbCases.ACLS           = false;
             this.tbCases.SimpleCDRA     = false;
@@ -128,12 +128,12 @@ classdef ISS_ARS_MultiStore < vsys
            	tAtmosphere.fCO2Percent  = 0.0038;
             
             % OGAs
-            components.matter.OGA.OGA(this,             'OGA_Node3',    fFixedTS, fAmbientTemperature);
-            components.matter.OGA.OGA(this,             'OGA_SM',       fFixedTS, 353, 1);
+            components.matter.OGA.OGA(this,             'OGA_Node3',    fControlTimeStep, fAmbientTemperature);
+            components.matter.OGA.OGA(this,             'OGA_SM',       fControlTimeStep, 353, 1);
             
             % CCAAs
-            components.matter.CCAA.CCAA(this,           'CCAA_Node3',   fFixedTS, fCoolantTemperature, tAtmosphere, 'CDRA_Node3');
-            components.matter.CCAA.CCAA(this,           'CCAA_SM',      fFixedTS, fCoolantTemperature, tAtmosphere, 'Vozdukh'); 
+            components.matter.CCAA.CCAA(this,           'CCAA_Node3',   fControlTimeStep, fCoolantTemperature, tAtmosphere, 'CDRA_Node3');
+            components.matter.CCAA.CCAA(this,           'CCAA_SM',      fControlTimeStep, fCoolantTemperature, tAtmosphere, 'Vozdukh'); 
             
             % According to ICES 2004-01-2386 paper: "Summary of Resources
             % for the International Space Station Environmental Control and
@@ -143,24 +143,24 @@ classdef ISS_ARS_MultiStore < vsys
             % Recovery", Carter et. al, 2016, ICES-2016-036 only of CHX in
             % the USOS is active at any given time
             if this.tbCases.ModelInactiveSystems
-                components.matter.CCAA.CCAA(this,           'CCAA_USLab',   fFixedTS, fCoolantTemperature, tAtmosphere, 'CDRA_USLab', 0);
-                components.matter.CCAA.CCAA(this,           'CCAA_Airlock', fFixedTS, fCoolantTemperature, tAtmosphere);
-                components.matter.CCAA.CCAA(this,           'CCAA_Node2',   fFixedTS, fCoolantTemperature, tAtmosphere);
-                components.matter.CCAA.CCAA(this,           'CCAA_USLab2',  fFixedTS, fCoolantTemperature, tAtmosphere);
+                components.matter.CCAA.CCAA(this,           'CCAA_USLab',   fControlTimeStep, fCoolantTemperature, tAtmosphere, 'CDRA_USLab', 0);
+                components.matter.CCAA.CCAA(this,           'CCAA_Airlock', fControlTimeStep, fCoolantTemperature, tAtmosphere);
+                components.matter.CCAA.CCAA(this,           'CCAA_Node2',   fControlTimeStep, fCoolantTemperature, tAtmosphere);
+                components.matter.CCAA.CCAA(this,           'CCAA_USLab2',  fControlTimeStep, fCoolantTemperature, tAtmosphere);
             end
             
             % TO DO: At the moment just modeled as another CCAA but should
             % be an independant model
-            components.matter.CCAA.CCAA(this,           'CCAA_JEM',         fFixedTS, fCoolantTemperature, tAtmosphere);
-            components.matter.CCAA.CCAA(this,           'CCAA_Columbus',    fFixedTS, fCoolantTemperature, tAtmosphere);
+            components.matter.CCAA.CCAA(this,           'CCAA_JEM',         fControlTimeStep, fCoolantTemperature, tAtmosphere);
+            components.matter.CCAA.CCAA(this,           'CCAA_Columbus',    fControlTimeStep, fCoolantTemperature, tAtmosphere);
             
             % CDRAs
-            components.matter.CDRA.CDRA(this,           'CDRA_Node3',   tAtmosphere, [], fFixedTS);
-            components.matter.CDRA.CDRA(this,           'CDRA_USLab',   tAtmosphere, [], fFixedTS); 
-            components.matter.CDRA.CDRA(this,           'Vozdukh',      tAtmosphere, [], fFixedTS);
+            components.matter.CDRA.CDRA(this,           'CDRA_Node3',   tAtmosphere, [], fControlTimeStep);
+            components.matter.CDRA.CDRA(this,           'CDRA_USLab',   tAtmosphere, [], fControlTimeStep); 
+            components.matter.CDRA.CDRA(this,           'Vozdukh',      tAtmosphere, [], fControlTimeStep);
             
             % SCRA
-            components.matter.SCRA.SCRA(this,           'SCRA_Node3',   fFixedTS, fCoolantTemperature);
+            components.matter.SCRA.SCRA(this,           'SCRA_Node3',   fControlTimeStep, fCoolantTemperature);
             
             % Adding the WPA
             components.matter.WPA.WPA(this,             'WPA');
@@ -1084,6 +1084,20 @@ classdef ISS_ARS_MultiStore < vsys
                 end
             end
             %% Allocates the time step properties to all phases
+            csStoreNames = fieldnames(this.toStores);
+            for iStore = 1:length(csStoreNames)
+                for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
+                    oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
+                    tTimeStepProperties.fMaxStep = this.fControlTimeStep * 5;
+
+                    oPhase.setTimeStepProperties(tTimeStepProperties);
+
+                    tTimeStepProperties = struct();
+                    tTimeStepProperties.fMaxStep = this.fControlTimeStep * 5;
+                    oPhase.oCapacity.setTimeStepProperties(tTimeStepProperties);
+                end
+            end
+            
             % ISS System
             csStoreNames = fieldnames(this.toStores);
             for iStore = 1:length(csStoreNames)
@@ -1121,7 +1135,7 @@ classdef ISS_ARS_MultiStore < vsys
             end
             tTimeStepProperties = struct();
             tTimeStepProperties.rMaxChange = inf;
-            tTimeStepProperties.fMaxStep = this.fTimeStep;
+            tTimeStepProperties.fMaxStep = this.fControlTimeStep;
 
             this.toStores.UrineStorage.toPhases.Urine.setTimeStepProperties(tTimeStepProperties);
             this.toStores.BrineStorage.toPhases.Brine.setTimeStepProperties(tTimeStepProperties);

@@ -162,8 +162,8 @@ classdef SCRA < vsys
             solver.matter.manual.branch(this.toBranches.CRA_CoolantLoopOut);
             solver.matter.manual.branch(this.toBranches.CO2_to_Vent);
             
-            this.toBranches.CRA_CoolantLoopIn.oHandler.setFlowRate(-0.2);
-            this.toBranches.CRA_CoolantLoopOut.oHandler.setFlowRate(0.2);
+            this.toBranches.CRA_CoolantLoopIn.oHandler.setFlowRate(-0.5);
+            this.toBranches.CRA_CoolantLoopOut.oHandler.setFlowRate(0.5);
             
             % The CO2 Inlet branch is seperated from the other branches in
             % SCRA via the accumulator. It is also a multisolver branch
