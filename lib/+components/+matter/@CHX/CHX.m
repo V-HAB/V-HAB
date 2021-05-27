@@ -200,6 +200,9 @@ classdef CHX < vsys
           
             this.tCHX_Parameters = tCHX_Parameters;
             this.sCHX_type = sCHX_type;      
+            if isscalar(miIncrements)
+                miIncrements = [miIncrements, miIncrements];
+            end
             this.miIncrements = miIncrements;
             
             if nargin > 6
