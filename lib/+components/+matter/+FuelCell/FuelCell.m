@@ -297,14 +297,18 @@ classdef FuelCell < vsys
             % efficiency is calculatet by using the current voltage of the single cell
             % and the open circuit voltage regarding to current pressure and
             % temperature (fVoltage = Stack voltage)
-            this.rEfficiency = (this.fStackVoltage / this.iCells) / this.fStackZeroPotential;
-            
-            % Now calculate the heat flow of the fuel cell and set it to
-            % the heat source of the cooling system. The heatsource could
-            % also be placed in the membrane and the thermal conduction of
-            % the heat to the coolant channel could be calculated, but this
-            % is simplified in this fuel cell
-            fHeatFlow = this.fStackCurrent * this.fStackVoltage * (1 - this.rEfficiency);
+            if this.fStackCurrent == 0
+                this.rEfficiency    = 1;
+                fHeatFlow           = 0;
+            else
+                this.rEfficiency = (this.fStackVoltage / this.iCells) / this.fStackZeroPotential;
+                % Now calculate the heat flow of the fuel cell and set it to
+                % the heat source of the cooling system. The heatsource could
+                % also be placed in the membrane and the thermal conduction of
+                % the heat to the coolant channel could be calculated, but this
+                % is simplified in this fuel cell
+                fHeatFlow = this.fStackCurrent * this.fStackVoltage * (1 - this.rEfficiency);
+            end
             
             this.toStores.FuelCell.toPhases.CoolingSystem.oCapacity.toHeatSources.FuelCell_HeatSource.setHeatFlow(fHeatFlow);
             

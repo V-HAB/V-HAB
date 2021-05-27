@@ -18,7 +18,7 @@ classdef Electrolyzer < vsys
         fMembraneArea       = 0.01;	% m^2
              
         % Thickness of the membrane in one cell
-        fMembraneThickness  = 2*10^-6;      % m
+        fMembraneThickness  = 2.1e-4;      % m
         
         % The maximum current that can can pass through the membrane
         % See Fig. 5 from http://dx.doi.org/10.1016/j.electacta.2016.06.120
