@@ -408,7 +408,7 @@ for iFigure = 1:length(this.coFigures)
                 if isfield(tPlotOptions, 'yLabel')
                     sLabelY = tPlotOptions.yLabel;
                 else
-                    sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps, bUseSIConventionForLabel);
+                    sLabelY = this.getLabel(oLogger.poUnitsToLabels, tYLogProps, bUseSIConventionForLabel);
                 end
                 
                 % Getting the x axis data

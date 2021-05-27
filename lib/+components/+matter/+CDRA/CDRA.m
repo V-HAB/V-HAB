@@ -1015,27 +1015,30 @@ classdef CDRA < vsys
                     iBed = 1;
                 end
 
-                % Only start heating the beds after the air save time
+                % Only start heating the beds after the air save time, but
+                % before than prevent freezing conditions
                 if (fCDRA_OperationTime - this.tTimeProperties.fLastCycleSwitch) > this.tTimeProperties.fAirSafeTime
-                    for iCell = 1:this.tGeometry.Zeolite5A.iCellNumber
-                        oCapacity = this.toStores.(['Zeolite5A_', num2str(iBed)]).toPhases.(['Absorber_', num2str(iCell)]).oCapacity;
-                        if oCapacity.fTemperature < this.TargetTemperature
-                            % 10 second time step maximum for this exec: Reduce
-                            % heat flow if target temperature is reached within
-                            % 10 seconds
-                            fRequiredThermalEnergy = oCapacity.fTotalHeatCapacity * (this.TargetTemperature - oCapacity.fTemperature);
-                            fRequiredHeatFlow = fRequiredThermalEnergy / this.fTimeStep;
-                            if fRequiredHeatFlow < (this.fMaxHeaterPower / this.tGeometry.Zeolite5A.iCellNumber)
-                                fHeaterPower = fRequiredHeatFlow;
-                            else
-                                fHeaterPower = (this.fMaxHeaterPower / this.tGeometry.Zeolite5A.iCellNumber);
-                            end
-                            oCapacity.toHeatSources.(['AbsorberHeater_', num2str(iCell)]).setHeatFlow(fHeaterPower);
+                    fZeoliteTargetTemperature = this.TargetTemperature;
+                else
+                    fZeoliteTargetTemperature = 285;
+                end
+                for iCell = 1:this.tGeometry.Zeolite5A.iCellNumber
+                    oCapacity = this.toStores.(['Zeolite5A_', num2str(iBed)]).toPhases.(['Absorber_', num2str(iCell)]).oCapacity;
+                    if oCapacity.fTemperature < this.TargetTemperature
+                        % 10 second time step maximum for this exec: Reduce
+                        % heat flow if target temperature is reached within
+                        % 10 seconds
+                        fRequiredThermalEnergy = oCapacity.fTotalHeatCapacity * (fZeoliteTargetTemperature - oCapacity.fTemperature);
+                        fRequiredHeatFlow = fRequiredThermalEnergy / this.fTimeStep;
+                        if fRequiredHeatFlow < (this.fMaxHeaterPower / this.tGeometry.Zeolite5A.iCellNumber)
+                            fHeaterPower = fRequiredHeatFlow;
                         else
-                            oCapacity.toHeatSources.(['AbsorberHeater_', num2str(iCell)]).setHeatFlow(0);
+                            fHeaterPower = (this.fMaxHeaterPower / this.tGeometry.Zeolite5A.iCellNumber);
                         end
+                        oCapacity.toHeatSources.(['AbsorberHeater_', num2str(iCell)]).setHeatFlow(fHeaterPower);
+                    else
+                        oCapacity.toHeatSources.(['AbsorberHeater_', num2str(iCell)]).setHeatFlow(0);
                     end
-                    
                 end
                 
                 fTotalHeatFlow = 0;

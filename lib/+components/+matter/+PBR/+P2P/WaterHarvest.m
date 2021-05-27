@@ -52,7 +52,10 @@ classdef WaterHarvest < matter.procs.p2ps.flow
             fWaterSurplus = (oChlorella.toStores.GrowthChamber.toPhases.GrowthMedium.afMass(this.oMT.tiN2I.H2O) - oChlorella.tfGrowthChamberComponents.H2O) / (2 * this.oStore.oContainer.fTimeStep);
             
             fFlowRate = fFlowRateUrine + fFlowRateNitrate + fWaterSurplus;
-            
+            if fFlowRate < 0
+                fFlowRate = 0;
+            end
+
             this.setMatterProperties(fFlowRate, this.arExtractPartials);
 
         end
