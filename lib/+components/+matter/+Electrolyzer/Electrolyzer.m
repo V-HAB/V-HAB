@@ -22,11 +22,7 @@ classdef Electrolyzer < vsys
         
         % The maximum current that can can pass through the membrane
         % See Fig. 5 from http://dx.doi.org/10.1016/j.electacta.2016.06.120
-        % The effect of mass transport losses start to deviate
-        % significantly from the tafle slopes, which are what is basically
-        % implemented in this model. Therefore, the limit for the current
-        % density is 10000 A/m^2 of 1 A/cm^2
-        fMaxCurrentDensity  = 10000;       % A/m^2
+        fMaxCurrentDensity  = 40000;       % A/m^2
         
         % Charge transfer coefficient of anode and cathode. Base values are
         % from  http://www.electrochemsci.org/papers/vol7/7054143.pdf table 2
@@ -34,6 +30,12 @@ classdef Electrolyzer < vsys
         % http://dx.doi.org/10.1016/j.electacta.2016.06.120
         fChargeTransferAnode = 1;
         fChargeTransferCatode = 0.5;
+        
+        % Properties of internal values of the Electrolyzer:
+        fOhmicOverpotential         = 0; % V
+        fKineticOverpotential       = 0; % V
+        fConcentrationOverpotential = 0; % V
+        fMassTransportOverpotential = 0; % V
     end
     
     methods
@@ -322,7 +324,13 @@ classdef Electrolyzer < vsys
             % http://www.electrochemsci.org/papers/vol7/7054143.pdf
             % The losses also match the curve for kinetic losses from
             % http://dx.doi.org/10.1016/j.electacta.2016.06.120
-            fActivationLossVoltage = ((this.fChargeTransferAnode + this.fChargeTransferCatode)/(this.fChargeTransferAnode * this.fChargeTransferCatode)) * ...
+            %
+            % pressure factor is introduced and adjusted to match the
+            % behavior from
+            % http://dx.doi.org/10.1016/j.electacta.2016.06.120 
+            % figure 6
+            fPressureFactor = 1 / ((fPressureO2/1e5)^0.025);
+            fActivationLossVoltage = fPressureFactor * ((this.fChargeTransferAnode + this.fChargeTransferCatode)/(this.fChargeTransferAnode * this.fChargeTransferCatode)) * ...
                                     (this.oMT.Const.fUniversalGas * fTemperature / (2 * this.oMT.Const.fFaraday)) * ...
                                     log((fCurrentDensity / 10000) / (1.08*10^-17 * exp(0.086 * fTemperature)));
 
@@ -370,7 +378,63 @@ classdef Electrolyzer < vsys
             % units cancle out.
             fConcentrationLossVoltage = (fCurrentDensity / 10000) * (fBetaOne * fCurrentDensity/this.fMaxCurrentDensity)^2;
 
-            fNewCellVoltage = (fReversibleVoltage + fActivationLossVoltage + fOhmicLossVoltage + fConcentrationLossVoltage);
+            
+            % Mass transport overpotential according to 
+            % https://doi.org/10.1016/j.jclepro.2020.121184
+            % equation 21, but using the transfer coefficient adjustment
+            % from https://doi.org/10.1016/j.est.2016.06.006 to match the
+            % results of http://dx.doi.org/10.1016/j.electacta.2016.06.120
+            fTransferCoefficient = 0.075;
+            % Therefore a sigmoid function is used to better approximate
+            % the behavior. The sigmoid function goes from 0 to 1 between
+            % -6 and 6 in a s-shaped curve, we want the behavior from 0 to
+            % 6 for the later area, but before that the behavior is better
+            % approximated by a linear curve. Therefore we set a linear
+            % approximation for low current densities (up to basically a
+            % sigmoidX value of 0.5) and then use the sigmoid function.
+            fInflectionCurrentDensity = 15000;
+            if fCurrentDensity < fInflectionCurrentDensity
+                %fSigmoidX = ((fCurrentDensity ./ (2 * fPlateuCurrentDensity)) .* 12) - 6; 
+                % For values below
+                fMassTransportVoltage = (this.oMT.Const.fUniversalGas * fTemperature / (fTransferCoefficient * 2 * this.oMT.Const.fFaraday)) .* (fCurrentDensity ./ fInflectionCurrentDensity) .* 0.5;
+            else
+            	fSigmoidX = (((fCurrentDensity - (fInflectionCurrentDensity)) ./ (2 * (this.fMaxCurrentDensity - (fInflectionCurrentDensity)))) .* 12); 
+            
+                fMassTransportVoltage = (this.oMT.Const.fUniversalGas * fTemperature / (fTransferCoefficient * 2 * this.oMT.Const.fFaraday)) .* exp(fSigmoidX) ./ (exp(fSigmoidX) +1);
+            end
+            % Now we again adjust the value using a pressure factor to
+            % match behavior from figure 6 of 
+            % http://dx.doi.org/10.1016/j.electacta.2016.06.120
+            % Since no data above 100 bar is available, no further
+            % beneficial effects past that value are assumed
+            fPressureFactor = 1 - ((fPressureO2) ./ (100e5) / 3.84);
+            % The mass transport overpotential temperature behavior is
+            % reflected by the following adjustments
+            fTemperatureFactor = 0.65 + 0.6 * ((343.1500 - fTemperature) / 40);
+            if fTemperatureFactor < 0.55
+                fTemperatureFactor = 0.55;
+            end
+            fAdjustmentCurrentDensities = 25000;
+            if fCurrentDensity < fAdjustmentCurrentDensities
+                fTemperatureAdjustment = -(1/20) * (fTemperature - 323.15);
+                if fTemperatureAdjustment > 1
+                    fTemperatureAdjustment = 1;
+                elseif fTemperatureAdjustment < 0
+                    fTemperatureAdjustment = 0;
+                end
+                fAdjustmentFactor = (abs((abs(fCurrentDensity - (fAdjustmentCurrentDensities/2)) ./ (fAdjustmentCurrentDensities/2)) - 1)  .* 0.44 + 1)^fTemperatureAdjustment;
+                fTemperatureFactor = fAdjustmentFactor * fTemperatureFactor;
+            end
+            
+            fMassTransportVoltage = fPressureFactor * fTemperatureFactor * fMassTransportVoltage;
+            
+            fNewCellVoltage = (fReversibleVoltage + fActivationLossVoltage + fOhmicLossVoltage + fConcentrationLossVoltage + fMassTransportVoltage);
+            
+            % Store properties:
+            this.fOhmicOverpotential            = fOhmicLossVoltage;
+            this.fKineticOverpotential          = fActivationLossVoltage;
+            this.fConcentrationOverpotential    = fConcentrationLossVoltage;
+            this.fMassTransportOverpotential    = fMassTransportVoltage;
         end
         
         function exec(this, ~)
