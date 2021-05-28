@@ -34,7 +34,6 @@ classdef Electrolyzer < vsys
         % Properties of internal values of the Electrolyzer:
         fOhmicOverpotential         = 0; % V
         fKineticOverpotential       = 0; % V
-        fConcentrationOverpotential = 0; % V
         fMassTransportOverpotential = 0; % V
     end
     
@@ -157,8 +156,7 @@ classdef Electrolyzer < vsys
             oSolver = solver.matter_multibranch.iterative.branch(aoMultiSolverBranches, 'complex');
             oSolver.setSolverProperties(tSolverProperties);
             
-            
-            oWaterInlet = solver.matter.residual.branch(this.toBranches.Water_Inlet);
+            solver.matter.residual.branch(this.toBranches.Water_Inlet);
             
             solver.matter.manual.branch(this.toBranches.Cooling_Inlet);
             solver.matter.manual.branch(this.toBranches.Cooling_Outlet);
@@ -197,13 +195,13 @@ classdef Electrolyzer < vsys
             % through each cell
             fMaxCurrent = this.fMaxCurrentDensity * this.fMembraneArea;
             
-            fReversibleVoltage = this.calculateReversibleCellVoltage(fTemperature, fPressureH2, fPressureO2, fPressureH2O);
+            fOpenCircuitCellVoltage = this.calculateOpenCircuitCellVoltage(fTemperature, fPressureH2, fPressureO2, fPressureH2O);
             
             if this.fPower == 0
                 % If the power is 0, nothing is reacted and the cell
                 % voltage is the reversible voltage without losses
                 % (efficiency of 100%)
-                this.fCellVoltage = fReversibleVoltage;
+                this.fCellVoltage = fOpenCircuitCellVoltage;
 
             else
                 % Since the original iterative approach did not work for all
@@ -215,10 +213,10 @@ classdef Electrolyzer < vsys
                 
                 mfError         = zeros(2,1);
                 mfVoltage       = zeros(2,1);
-                mfVoltage(1)    = this.calculateStackValues(mfCurrent(1), fTemperature, fPressureO2, fReversibleVoltage);
+                mfVoltage(1)    = this.calculateStackValues(mfCurrent(1), fTemperature, fPressureO2, fOpenCircuitCellVoltage);
                 mfError(1)      = mfCurrent(1) - (this.fPower / (this.iCells * mfVoltage(1)));
                 
-                mfVoltage(2)    = this.calculateStackValues(mfCurrent(2), fTemperature, fPressureO2, fReversibleVoltage);
+                mfVoltage(2)    = this.calculateStackValues(mfCurrent(2), fTemperature, fPressureO2, fOpenCircuitCellVoltage);
                 mfError(2)      = mfCurrent(2) - (this.fPower / (this.iCells * mfVoltage(2)));
                 
                 fError = inf;
@@ -228,7 +226,7 @@ classdef Electrolyzer < vsys
                 while abs(fError) > 1e-4 && fIntervallSize > 1e-18 && iCounter < 500
             
                     fCurrent = (mfCurrent(2) + mfCurrent(1)) / 2;
-                    fNewCellVoltage = this.calculateStackValues(fCurrent, fTemperature, fPressureO2, fReversibleVoltage);
+                    fNewCellVoltage = this.calculateStackValues(fCurrent, fTemperature, fPressureO2, fOpenCircuitCellVoltage);
                 
                     fNewCurrent = this.fPower / (this.iCells * fNewCellVoltage);
                     
@@ -250,7 +248,7 @@ classdef Electrolyzer < vsys
                 this.fCellVoltage = fNewCellVoltage;
             end
             
-            this.rEfficiency = fReversibleVoltage / this.fCellVoltage;
+            this.rEfficiency = fOpenCircuitCellVoltage / this.fCellVoltage;
 
             this.fStackVoltage = this.iCells * this.fCellVoltage;
             
@@ -278,13 +276,12 @@ classdef Electrolyzer < vsys
                 
         end
         
-        function fReversibleVoltage = calculateReversibleCellVoltage(~, fTemperature, fPressureH2, fPressureO2, fPressureH2O)
-            % Nernst Equation e.g. from "Efficiency Calculationand
-            % Configuration Design of a PEM Electrolyzer System for Hydrogen Production"
-            % http://www.electrochemsci.org/papers/vol7/7054143.pdf (Eq. 5)
+        function fOpenCircuitVoltage = calculateOpenCircuitCellVoltage(this, fTemperature, fPressureH2, fPressureO2, fPressureH2O)
+            % Nernst Equation e.g. from https://doi.org/10.1016/j.jclepro.2020.121184
+            % using the reversible cell voltage of equation 13
             % This is the "optimal" voltage where the electrolyzer would
-            % operate at 100% efficiency
-            fReversibleVoltage = 1.229 - 8.5*10^-4*(fTemperature-298) + 4.3085*10^-5 * fTemperature * log(fPressureH2 * sqrt(fPressureO2) / fPressureH2O);
+            % operate at 100% efficiency, or also the open circuit voltage.
+            fOpenCircuitVoltage = 1.229 - 0.9*10^-3 * (fTemperature-298)  + (this.oMT.Const.fUniversalGas * fTemperature / (2 * this.oMT.Const.fFaraday)) * log(fPressureH2 * sqrt(fPressureO2) / fPressureH2O);
         end
         
         
@@ -342,7 +339,6 @@ classdef Electrolyzer < vsys
             % value. If the calculation for this is implemented, the model
             % must also be improved to correctly model the water content of
             % the membrane!
-            fWaterSaturationPressure = this.oMT.calculateVaporPressure(fTemperature, 'H2O');
             fMembraneHumidity       = 14;
             % Note that this equation is from
             % https://doi.org/10.1149/1.2085971 and is provided in cm!
@@ -350,34 +346,6 @@ classdef Electrolyzer < vsys
             % the current density in A/cm^2
             fMembraneConducivity    = (0.005139 * fMembraneHumidity + 0.00326) * exp(1267 * (1/303 - 1/fTemperature));
             fOhmicLossVoltage       = (fCurrentDensity / 10000) * ((this.fMembraneThickness * 100) /fMembraneConducivity);
-
-            % Concentration Losses (Eq. 8)
-            fPressureX = fPressureO2 / (0.1173 * 101325) + (fWaterSaturationPressure / 101325);
-            % However this equation is not well suited to high pressures,
-            % therefore the pressure X is limited to 3. See also 
-            % http://dx.doi.org/10.1016/j.electacta.2016.06.120
-            % which states that "In the commonly used operating range
-            % between 1 and 3 A/cm2 no cell voltage increase is observed,
-            % the thermodynamic increase is completely compensated by
-            % beneficial effects." for high pressure electrolysis of up to
-            % 100 bar. The small increases a low current densities shown in
-            % Table 2 of the source are mostly attributed to the delta
-            % E_cell which is a result of the Nernst equation, which is
-            % included in the calculation of the reversible cell voltage!
-            if fPressureX > 10
-                fPressureX = 10;
-            end
-            if fPressureX > 2
-                fBetaOne = (8.66*10^-5 * fTemperature - 0.068) * fPressureX - 1.6*10^-4 * fTemperature + 0.54;
-            else
-                fBetaOne = (7.16*10^-4 * fTemperature - 0.622) * fPressureX - 1.45*10^-3 * fTemperature + 1.68;
-            end
-            % Note this equation is also only valid with current densitied
-            % in A/cm^2. The value where the current density is divided
-            % with the maximum current density can remain as is, as the
-            % units cancle out.
-            fConcentrationLossVoltage = (fCurrentDensity / 10000) * (fBetaOne * fCurrentDensity/this.fMaxCurrentDensity)^2;
-
             
             % Mass transport overpotential according to 
             % https://doi.org/10.1016/j.jclepro.2020.121184
@@ -428,12 +396,11 @@ classdef Electrolyzer < vsys
             
             fMassTransportVoltage = fPressureFactor * fTemperatureFactor * fMassTransportVoltage;
             
-            fNewCellVoltage = (fReversibleVoltage + fActivationLossVoltage + fOhmicLossVoltage + fConcentrationLossVoltage + fMassTransportVoltage);
+            fNewCellVoltage = (fReversibleVoltage + fActivationLossVoltage + fOhmicLossVoltage + fMassTransportVoltage);
             
             % Store properties:
             this.fOhmicOverpotential            = fOhmicLossVoltage;
             this.fKineticOverpotential          = fActivationLossVoltage;
-            this.fConcentrationOverpotential    = fConcentrationLossVoltage;
             this.fMassTransportOverpotential    = fMassTransportVoltage;
         end
         

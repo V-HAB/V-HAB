@@ -50,7 +50,6 @@ classdef setup < simulation.infrastructure
                     oLogger.addValue(['ELY_FC:c:', sElectrolyzer], 'fCellVoltage',                  'V',    [sElectrolyzer, ' Cell Voltage']);
                     oLogger.addValue(['ELY_FC:c:', sElectrolyzer], 'fOhmicOverpotential',           'V',    [sElectrolyzer, ' Ohmic Overpotential']);
                     oLogger.addValue(['ELY_FC:c:', sElectrolyzer], 'fKineticOverpotential',         'V',    [sElectrolyzer, ' Kinetic Overpotential']);
-                    oLogger.addValue(['ELY_FC:c:', sElectrolyzer], 'fConcentrationOverpotential',  	'V',    [sElectrolyzer, ' Concentration Overpotential']);
                     oLogger.addValue(['ELY_FC:c:', sElectrolyzer], 'fMassTransportOverpotential',  	'V',    [sElectrolyzer, ' Mass Transport Overpotential']);
                 end
             end
@@ -76,7 +75,7 @@ classdef setup < simulation.infrastructure
                 
                 oEly = oELY_FC.toChildren.(sElectrolyzer);
                 
-                csLogVariableNames = {['"', sElectrolyzer, ' Current"'], ['"', sElectrolyzer, ' Ohmic Overpotential"'], ['"', sElectrolyzer, ' Kinetic Overpotential"'],  ['"', sElectrolyzer, ' Concentration Overpotential"'], ['"', sElectrolyzer, ' Mass Transport Overpotential"']};
+                csLogVariableNames = {['"', sElectrolyzer, ' Current"'], ['"', sElectrolyzer, ' Ohmic Overpotential"'], ['"', sElectrolyzer, ' Kinetic Overpotential"'], ['"', sElectrolyzer, ' Mass Transport Overpotential"']};
 
                 [aiLogIndices, ~] = tools.findLogIndices(oLogger, csLogVariableNames);
                 
@@ -85,7 +84,6 @@ classdef setup < simulation.infrastructure
                 h(iPressure, 1) = plot(fCurrentDensity, oLogger.mfLog(:,aiLogIndices(2)), 'Color', miPlotColor(iPressure,:), 'LineStyle', '-');
                 h(iPressure, 2) = plot(fCurrentDensity, oLogger.mfLog(:,aiLogIndices(3)), 'Color', miPlotColor(iPressure,:), 'LineStyle', '--');
                 h(iPressure, 3) = plot(fCurrentDensity, oLogger.mfLog(:,aiLogIndices(4)), 'Color', miPlotColor(iPressure,:), 'LineStyle', '-.');
-                h(iPressure, 4) = plot(fCurrentDensity, oLogger.mfLog(:,aiLogIndices(5)), 'Color', miPlotColor(iPressure,:), 'LineStyle', ':');
                 
                 % Add test data for this pressure:
                 sPressure = [num2str(oELY_FC.mfPressure(iPressure)), 'bar'];
@@ -107,7 +105,7 @@ classdef setup < simulation.infrastructure
             h(iPressure+1, 3) = plot(0, 0, 'Color', 'k', 'LineStyle', '-.');
             h(iPressure+1, 4) = plot(0, 0, 'Color', 'k', 'LineStyle', ':');
             
-            legend([h(1, 1), h(2, 1), h(3, 1), h(4, 1), h(4, 2), h(4, 3), h(4, 4)], '1 bar', ' 10 bar', '100 bar', 'Ohmic', 'Kinetic', 'Concentration', 'Mass Transport', 'Location','northwest')
+            legend([h(1, 1), h(2, 1), h(3, 1), h(4, 1), h(4, 2), h(4, 3)], '1 bar', ' 10 bar', '100 bar', 'Ohmic', 'Kinetic', 'Mass Transport', 'Location','northwest')
             grid on
             xlabel('Current Density / A/cm^2');
             ylabel('Overpotential / V');
@@ -127,7 +125,7 @@ classdef setup < simulation.infrastructure
                 
                 oEly = oELY_FC.toChildren.(sElectrolyzer);
                 
-                csLogVariableNames = {['"', sElectrolyzer, ' Current"'], ['"', sElectrolyzer, ' Ohmic Overpotential"'], ['"', sElectrolyzer, ' Kinetic Overpotential"'],  ['"', sElectrolyzer, ' Concentration Overpotential"'], ['"', sElectrolyzer, ' Mass Transport Overpotential"']};
+                csLogVariableNames = {['"', sElectrolyzer, ' Current"'], ['"', sElectrolyzer, ' Ohmic Overpotential"'], ['"', sElectrolyzer, ' Kinetic Overpotential"'], ['"', sElectrolyzer, ' Mass Transport Overpotential"']};
 
                 [aiLogIndices, ~] = tools.findLogIndices(oLogger, csLogVariableNames);
                 
@@ -136,7 +134,6 @@ classdef setup < simulation.infrastructure
                 h(iTemperature, 1) = plot(fCurrentDensity, oLogger.mfLog(:,aiLogIndices(2)), 'Color', miPlotColor(iTemperature,:), 'LineStyle', '-');
                 h(iTemperature, 2) = plot(fCurrentDensity, oLogger.mfLog(:,aiLogIndices(3)), 'Color', miPlotColor(iTemperature,:), 'LineStyle', '--');
                 h(iTemperature, 3) = plot(fCurrentDensity, oLogger.mfLog(:,aiLogIndices(4)), 'Color', miPlotColor(iTemperature,:), 'LineStyle', '-.');
-                h(iTemperature, 4) = plot(fCurrentDensity, oLogger.mfLog(:,aiLogIndices(5)), 'Color', miPlotColor(iTemperature,:), 'LineStyle', ':');
                 
                 % Add test data for this pressure:
                 sTemperature = [num2str(oELY_FC.mfTemperature(iTemperature)), '°C'];
