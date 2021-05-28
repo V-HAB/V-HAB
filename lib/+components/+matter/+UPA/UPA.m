@@ -142,13 +142,13 @@ classdef UPA < vsys
             % are not relevant to the system
             tTimeStepProperties = struct();
             tTimeStepProperties.rMaxChange = inf;
-            tTimeStepProperties.fMaxStep = this.fTimeStep;
+            tTimeStepProperties.fMaxStep = 5 * this.fTimeStep;
 
             this.toStores.ARTFA.toPhases.Brine.setTimeStepProperties(tTimeStepProperties);
                     
             tTimeStepProperties = struct();
-            tTimeStepProperties.rMaxChange = 0.05;
-            tTimeStepProperties.fMaxStep = this.fTimeStep;
+            tTimeStepProperties.rMaxChange = inf;
+            tTimeStepProperties.fMaxStep = 5 * this.fTimeStep;
             this.toStores.WSTA.toPhases.Urine.setTimeStepProperties(tTimeStepProperties);
                     
             this.setThermalSolvers();
