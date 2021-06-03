@@ -643,7 +643,7 @@ classdef logger < simulation.monitor
             % ticks should be pre-allocated. If the user did not provide
             % this value we use the default value which is currently stored
             % in the iPreAllocatedRows property. 
-            if ~this.bPreAllocationProvided
+            if ~this.bPreAllocationProvided && this.iNumberOfLogItems ~= 0
                 % The default value in iPreAllocatedRows assumes that 100
                 % items will be logged for ten thousand ticks. The actual
                 % number of log items may be smaller, so to keep the total
