@@ -61,6 +61,58 @@ classdef (Abstract) vsys < matter.container & thermal.container & electrical.con
         
     end
     
+    methods (Access = {?simulation.infrastructure, ?matter.container, ?thermal.container, ?electrical.container})
+        
+        function disconnectBranchesForSaving(this)
+            %DISCONNECTBRANCHESFORSAVING Disconnects right side of all branches
+            %   This is necessary to enable large objects to be saved in
+            %   MATLAB 2020b and newer releases. This method is called
+            %   initially from the simulation container when it is being
+            %   saved and then recursively on all subsystems.
+            
+            % Calling the corresponding method in the individual domains.
+            this.disconnectMatterBranchesForSaving();
+            this.disconnectThermalBranchesForSaving();
+            this.disconnectElectricalBranchesForSaving();
+            
+            % Getting the names of all subsystems
+            csChildren = fieldnames(this.toChildren);
+            
+            % Looping through all children and calling the
+            % disconnectBranchesForSaving() method.
+            for iC = 1:length(csChildren)
+                sChild = csChildren{iC};
+                this.toChildren.(sChild).disconnectBranchesForSaving();
+            end
+            
+        end
+        
+        function reconnectBranches(this)
+            %RECONNECTBRANCHES Reconnects the right sides of all branches
+            %   This method reverses the actions from the
+            %   disconnectBranchesForSaving() method. It is initially
+            %   called from the simulation container when it is loaded from
+            %   the MAT file and then recursively on all subsystems.
+            
+            % Calling the corresponding method in the individual domains.
+            this.reconnectMatterBranches();
+            this.reconnectThermalBranches();
+            this.reconnectElectricalBranches();
+            
+            % Getting the names of all subsystems
+            csChildren = fieldnames(this.toChildren);
+            
+            % Looping through all children and calling the
+            % reconnectBranches() method.
+            for iC = 1:length(csChildren)
+                sChild = csChildren{iC};
+                this.toChildren.(sChild).reconnectBranches();
+            end
+            
+        end
+        
+    end
+    
     methods (Access = protected)
         
         function exec(this, ~)

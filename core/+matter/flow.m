@@ -627,4 +627,25 @@ classdef flow < base
             end
         end
     end
+    
+    methods (Access = {?matter.container})
+        function disconnectBranch(this)
+            %DISCONNECTBRANCH Deletes the reference to the connected branch
+            %   This is necessary when the simulation object is saved to a
+            %   MAT file. In large and/or networked systems the number of
+            %   consecutive, unique objects that are referenced in a row
+            %   cannot be larger than 500. In order to break these chains,
+            %   we delete the reference to the branch on all matter flows
+            %   on the right side of all branches. Since the branch object
+            %   retains a reference to this flow, we can easily reconnect
+            %   it on load. 
+            this.oBranch = [];
+        end
+        
+        function reconnectBranch(this, oBranch)
+            %RECONNECTBRANCH Sets branch reference to input object
+            %   This reverses the action performed in disconnectBranch().
+            this.oBranch = oBranch;
+        end
+    end
 end
