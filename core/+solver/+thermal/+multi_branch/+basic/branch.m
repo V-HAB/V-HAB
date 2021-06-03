@@ -175,6 +175,13 @@ classdef branch < base & event.source
             if nargin < 2
                 bChildCall = false;
             end
+            % The solver expects the branches in row formatting, if the
+            % user provides a column vector (1,x) then it is transposed
+            % here
+            aiSizeBranches = size(aoBranches);
+            if aiSizeBranches(1) < aiSizeBranches(2)
+                aoBranches = aoBranches';
+            end
             
             this.aoBranches = aoBranches;
             this.iBranches  = length(this.aoBranches);

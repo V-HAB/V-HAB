@@ -131,9 +131,10 @@ classdef branch < solver.thermal.multi_branch.basic.branch
         % handled.
         mbRadiativeCapacities;
         
-        % An array of thermal capacity objects. This array only contains
-        % the unique capacities.
-        aoUniqueCapacities;
+        % An array containing the indexes of the unique thermal capacity
+        % objects within the aoCapacities property of the basic branch
+        % class.
+        aiUniqueCapacities;
         
         % Number of unique capacities in this solver network.
         iUniqueCapacities;
@@ -144,6 +145,7 @@ classdef branch < solver.thermal.multi_branch.basic.branch
         
         % The time step for the solver
         fTimeStep = 20;
+        
         % If something triggers a solver update before the next solver is
         % scheduled via the time step, a smaller execution time step than
         % time step results.
@@ -151,16 +153,18 @@ classdef branch < solver.thermal.multi_branch.basic.branch
         
         % Boolean to decide if external solvers are used or not
         bExternalSolvers = false;
+        
         % This cell array has the same length as the unique capacities
         % index and contains the non multi solver thermal branches for the
         % corresponding capacity. The solver then handles the external
         % branches like heat sources to the network capacity
         coNonSolverBranches;
-        % cell which conaints the signs for the non solver branches in
+        
+        % Cell which conaints the signs for the non solver branches in
         % relation to their network capacities
         ciNonSolverSigns;
         
-        % 
+        % Rate of change function for ODE solver
         hCalculateTemperatureChangeRate;
         
         % These properties store the last ODE results
@@ -293,9 +297,9 @@ classdef branch < solver.thermal.multi_branch.basic.branch
             
             % Now we have to register this solver with the network
             % capacities:
-            this.aoUniqueCapacities = this.aoCapacities(~this.abNonUniqueCapacity);
-            this.iUniqueCapacities  = length(this.aoUniqueCapacities);
-            arrayfun(@(oCapacity, iIndex) oCapacity.setHandler(this, iIndex), this.aoUniqueCapacities, (1:this.iUniqueCapacities)');
+            this.iUniqueCapacities = sum(~this.abNonUniqueCapacity);
+            this.aiUniqueCapacities = find(~this.abNonUniqueCapacity);
+            arrayfun(@(oCapacity) oCapacity.bind('OutdatedNetworkTimeStep', @this.bindPostTickUpdate), this.aoCapacities(this.aiUniqueCapacities));
             
             % Define rate of change function for ODE solver.
             this.hCalculateTemperatureChangeRate = @(t, m) this.calculateTemperatureChangeRate(m, t);
@@ -326,7 +330,7 @@ classdef branch < solver.thermal.multi_branch.basic.branch
             this.coNonSolverBranches = cell(this.iUniqueCapacities,1);
             this.ciNonSolverSigns    = cell(this.iUniqueCapacities,1);
             for iCapacity = 1:this.iUniqueCapacities
-                aoCapacityBranches = [this.aoUniqueCapacities(iCapacity).aoExmes.oBranch];
+                aoCapacityBranches = [this.aoCapacities(this.aiUniqueCapacities(iCapacity)).aoExmes.oBranch];
                 
                 mbExternalBranch = false(1,length(aoCapacityBranches));
                 for iBranch = 1:length(aoCapacityBranches)
@@ -335,7 +339,7 @@ classdef branch < solver.thermal.multi_branch.basic.branch
                         this.bExternalSolvers = true;
                     end
                 end
-                this.coNonSolverBranches{iCapacity} = {aoCapacityBranches(mbExternalBranch)};
+                this.coNonSolverBranches{iCapacity} = {aoCapacityBranches(mbExternalBranch)'};
                 
                 % Now we have to bind the update of this solver to the
                 % update of the external branches, to ensure the solver
@@ -345,8 +349,7 @@ classdef branch < solver.thermal.multi_branch.basic.branch
                 aoExternalBranches = coBranches{1};
                 for iExternalBranch = 1:sum(mbExternalBranch)
                     aoExternalBranches(iExternalBranch).bind('outdated', @this.bindPostTickUpdate);
-                    
-                    if this.aoUniqueCapacities(iCapacity) == aoExternalBranches(iExternalBranch).coExmes{1}.oCapacity
+                    if this.aoCapacities(this.aiUniqueCapacities(iCapacity)) == aoExternalBranches(iExternalBranch).coExmes{1}.oCapacity
                         ciSigns{iExternalBranch} = aoExternalBranches(iExternalBranch).coExmes{1}.iSign;
                     else
                         ciSigns{iExternalBranch} = aoExternalBranches(iExternalBranch).coExmes{2}.iSign;
@@ -452,8 +455,8 @@ classdef branch < solver.thermal.multi_branch.basic.branch
             
             this.afTemperatures = this.mfSolutionTemperatures(end,:)';
             
-            for iCapacites = 1:this.iUniqueCapacities
-                this.aoUniqueCapacities(iCapacites).updateTemperature();
+            for iCapacity = 1:this.iUniqueCapacities
+                this.aoCapacities(this.aiUniqueCapacities(iCapacity)).updateTemperature(this.afTemperatures(iCapacity));
             end
             
             this.fLastUpdate = this.oTimer.fTime;
