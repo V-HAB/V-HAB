@@ -107,6 +107,7 @@ classdef infrastructure < base & event.source
         
         % A struct that contains the different monitor objects.
         toMonitors = struct();
+        
     end
     
     % It is unknown why this property requires the dependent attribute to
@@ -595,7 +596,66 @@ classdef infrastructure < base & event.source
         end
         
         function setSuppressConsoleOutput(this, bSuppressConsoleOutput)
+            %SETSUPPRESSCONSOLEOUTPUT Set console output mode
+            %   The setting is intended to suppress console output when
+            %   multiple simulations are run in parallel, since they would
+            %   spam the console of the main instance.
             this.bSuppressConsoleOutput = bSuppressConsoleOutput;
+        end
+        
+        function oOutput = saveobj(oInput)
+            %SAVEOBJ Saves modified simulation object
+            %   Starting with MATLAB 2020b a limit exists for the length of
+            %   the object hierarchy tree when they are saved to a MAT
+            %   file. The limit seems to be 500 *unique* objects. Recursive
+            %   pointers (i.e. parent->child and child-> parent) seem to
+            %   have no effect on this limit. When more than 500 objects
+            %   are referenced in a row, a warning is thrown and the object
+            %   cannot be correctly saved. In some cases MATLAB crashes
+            %   completely during the save process. Even though this limit
+            %   can be increased via a MATLAB environment variable, it
+            %   still causes crashes. 
+            %   Part of the solution to this problem is this method. It
+            %   overloads the saveobj() method of the internal MATLAB
+            %   object. Below we loop through all systems and subsystems
+            %   contained in this simulation object and disconnect the
+            %   right side of each matter, thermal and electrical branch.
+            %   This will limit the length of the hierarchy tree. In the
+            %   loadobj() method of this class (see below) this process is
+            %   reversed.
+
+            % Setting the output object to the input object. 
+            oOutput = oInput;
+            
+            % Getting the names of all children (systems)
+            csChildNames = fieldnames(oOutput.oSimulationContainer.toChildren);
+            
+            % Looping throuhg all children and calling the
+            % disconnectedBranchesForSaving() Method of the vsys class.
+            for iI = 1:oOutput.oSimulationContainer.iChildren
+                oOutput.oSimulationContainer.toChildren.(csChildNames{iI}).disconnectBranchesForSaving();
+            end
+            
+        end
+    end
+    
+    methods (Static)
+        function oOutput = loadobj(oInput)
+            %LOADOBJ Loads sim object from file and reconnects branches
+            %   For a detailed discussion see description of saveobj()
+            %   method. 
+            
+            % Setting the output object to the input object. 
+            oOutput = oInput;
+            
+            % Getting the names of all children (systems)
+            csChildNames = fieldnames(oOutput.oSimulationContainer.toChildren);
+            
+            % Looping throuhg all children and calling the
+            % reconnectBranches() Method of the vsys class.
+            for iI = 1:oOutput.oSimulationContainer.iChildren
+                oOutput.oSimulationContainer.toChildren.(csChildNames{iI}).reconnectBranches();
+            end
         end
     end
 end

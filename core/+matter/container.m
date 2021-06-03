@@ -476,4 +476,46 @@ classdef container < sys
             end
         end
     end
+    
+    methods (Access = protected)    
+        function disconnectMatterBranchesForSaving(this)
+            %DISCONNECTMATTERBRANCHESFORSAVING Disconnects right side of all matter branches
+            %   This is necessary when the simulation object is saved to a
+            %   MAT file. In large and/or networked systems the number of
+            %   consecutive, unique objects that are referenced in a row
+            %   cannot be larger than 500. In order to break these chains,
+            %   we delete the reference to the branch on all matter flows
+            %   on the right side of all branches. Since the branch object
+            %   retains a reference to this flow, we can easily reconnect
+            %   it on load. 
+            
+            % Getting the names of all branches
+            csBranchNames = fieldnames(this.toBranches);
+            
+            % Looping through all branches and calling the
+            % disconnectBranch() method on the flows of the ExMes on the
+            % right side of each branch. 
+            for iBranch = 1:length(csBranchNames)
+                this.toBranches.(csBranchNames{iBranch}).coExmes{2}.oFlow.disconnectBranch();
+            end
+            
+        end
+        
+        function reconnectMatterBranches(this)
+            %RECONNECTMATTERBRANCHES Reconnects the right side of all matter branches
+            %   This reverses the action performed in
+            %   disconnectMatterBranchesForSaving().
+            
+            % Getting the names of all branches
+            csBranchNames = fieldnames(this.toBranches);
+            
+            % Looping through all branches and calling the
+            % reconnectBranch() method on the flows of the ExMes on the
+            % right side of each branch, passing in the currently selected
+            % branch as an argument.
+            for iBranch = 1:length(csBranchNames)
+                this.toBranches.(csBranchNames{iBranch}).coExmes{2}.oFlow.reconnectBranch(this.toBranches.(csBranchNames{iBranch}));
+            end
+        end
+    end
 end
