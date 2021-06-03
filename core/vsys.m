@@ -51,7 +51,7 @@ classdef (Abstract) vsys < matter.container & thermal.container & electrical.con
             % Getting the fieldnames
             csChildren = fieldnames(this.toChildren);
             
-            % Looping throuhg all children and calling the
+            % Looping through all children and calling the
             % createSolverStructure() method.
             for iC = 1:length(csChildren)
                 sChild = csChildren{iC};

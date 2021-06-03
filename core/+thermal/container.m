@@ -29,6 +29,7 @@ classdef container < sys
         toThermalBranches = struct();
         
         % Total number of thermal branches inside this thermal container
+        % and all subsystems
         iThermalBranches = 0;
         
         % Total number of capacities inside this thermal container
@@ -156,7 +157,7 @@ classdef container < sys
                 
                 this.toChildren.(sChild).sealThermalStructure();
                 
-                this.iThermalBranches = this.iThermalBranches + length(this.toChildren.(sChild).toThermalBranches);
+                this.iThermalBranches = this.iThermalBranches + length(this.toChildren.(sChild).aoThermalBranches);
             end
             
             this.csConductors = fieldnames(this.toProcsConductor);

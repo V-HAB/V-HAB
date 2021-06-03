@@ -30,10 +30,11 @@ classdef container < sys
         % Reference to the branches, by name as a struct
         toBranches = struct();
         
-        % Number of branches in this container
+        % Number of matter branches in this container, including all
+        % subsystems
         iBranches = 0;
         
-        % Number of phases in this container
+        % Number of phases in this container, including all subsystems
         iPhases = 0;
         
         % Indicator if this container is sealed or not
@@ -102,7 +103,7 @@ classdef container < sys
                 this.toChildren.(sChild).sealMatterStructure();
                 
                 this.iPhases = this.iPhases + this.toChildren.(sChild).iPhases;
-                this.iBranches = this.iBranches + length(this.toChildren.(sChild).toBranches);
+                this.iBranches = this.iBranches + length(this.toChildren.(sChild).aoBranches);
             end
             
             this.csStores = fieldnames(this.toStores);
@@ -393,21 +394,23 @@ classdef container < sys
             % First we make sure, that the calling branch is actually a
             % branch in this container. 
             if any(this.aoBranches == oBranch)
-                % We need to jump through some hoops because the maximum
-                % field name length of MATLAB is only 63 characters, so we 
-                % delete the rest of the actual branch name...
-                % namelengthmax is the MATLAB variable that stores the 
-                % maximum name length, so in case it changes in the future, 
-                % we don't have to change this code!
-                if length(sOldName) > namelengthmax
-                    sOldName = sOldName(1:namelengthmax);
-                end
-                this.toBranches = rmfield(this.toBranches, sOldName);
-                % Now we'll add the branch to the struct again, but with
-                % its new name. 
-                if ~isempty(oBranch.sCustomName)
-                    this.toBranches.(oBranch.sCustomName) = oBranch;
-                else
+                % We only need to do anything if the branch does not have a
+                % custom name, if it does the field name in the toBranches
+                % struct is just the same. 
+                if isempty(oBranch.sCustomName)
+                    % We need to jump through some hoops because the maximum
+                    % field name length of MATLAB is only 63 characters, so we
+                    % delete the rest of the actual branch name...
+                    % namelengthmax is the MATLAB variable that stores the
+                    % maximum name length, so in case it changes in the future,
+                    % we don't have to change this code!
+                    if length(sOldName) > namelengthmax
+                        sOldName = sOldName(1:namelengthmax);
+                    end
+                    this.toBranches = rmfield(this.toBranches, sOldName);
+                    
+                    % Now we'll add the branch to the struct again, but with
+                    % its new name.
                     this.toBranches.(oBranch.sName) = oBranch;
                 end
             else

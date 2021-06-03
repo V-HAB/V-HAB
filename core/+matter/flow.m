@@ -436,6 +436,7 @@ classdef flow < base
             this.fDynamicViscosity = [];
         end
     end
+    
     methods (Access = {?matter.branch})
         % Only branches are allowed to use the setData function. This is
         % done to prevent data corruption

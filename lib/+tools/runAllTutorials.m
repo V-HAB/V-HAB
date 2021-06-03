@@ -79,7 +79,7 @@ for iI = 1:length(tTutorials)
     % of this script. If not, we can just skip this one, because we already
     % know it works. Unless of course the core or the library has changed.
     % In this case, all tutorials will be executed.
-    if checkForChanges(fullfile(sTutorialDirectory, tTutorials(iI).name)) || bLibChanged || bCoreChanged;
+    if checkForChanges(fullfile(sTutorialDirectory, tTutorials(iI).name)) || bLibChanged || bCoreChanged
         
         % Some nice printing for the console output
         fprintf('\n\n======================================\n');
@@ -249,7 +249,7 @@ function tOutputStruct = removeIllegalFilesAndFolders(tInputStruct)
         % temporary files with '*.asv' and '*.m~' extensions on Windows and
         % Mac OS respectively. Lastly, we need to exclude this file, the
         % one you are currently reading.
-        if ~isempty(strfind(tInputStruct(iI).name(1),'.')) || ...
+        if contains(tInputStruct(iI).name(1),'.') || ...
            ~isempty(strfind(tInputStruct(iI).name,'~')) || ...
            strcmp(tInputStruct(iI).name,'runAllTutorials.m')
             % First we need to find them

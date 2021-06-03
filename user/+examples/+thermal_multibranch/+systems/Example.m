@@ -9,6 +9,14 @@ classdef Example < vsys
     % The default is using the advanced solver. 
     
     properties (SetAccess = protected, GetAccess = public)
+        % By default we initialize a 1 m^3 Cube of Aluminum, which has
+        % 7 thermal nodes as phases (which are also capacities), and
+        % automatically create the corresponding thermal branches. The
+        % minimum discretization is 3x3x3, so one node without
+        % connection to vaccum always exists. For thermal exchange at
+        % the space boundary, we assume radiative exchange with a space
+        % node. As thermal energy source, a 500 W energy source in the
+        % middle of the cube is modelled.
         % Volume of the cube that is modeled
         fTotalCubeVolume = 1;
         
@@ -46,21 +54,6 @@ classdef Example < vsys
             % cause this object's exec() method to be executed every 120
             % seconds. 
             this@vsys(oParent, sName, 120);
-            
-            % By default we initialize a 1 m^3 Cube of Aluminum, which has
-            % 7 thermal nodes as phases (which are also capacities), and
-            % automatically create the corresponding thermal branches. The
-            % minimum discretization is 3x3x3, so one node without
-            % connection to vaccum always exists. For thermal exchange at
-            % the space boundary, we assume radiative exchange with a space
-            % node. As thermal energy source, a 500 W energy source in the
-            % middle of the cube is modelled.
-            
-            % Setting the default values.
-            this.fTotalCubeVolume    = 1;
-            this.iNodesPerDirection  = 7;
-            this.fHeatFlow           = 500;
-            this.fInitialTemperature = 200;
             
             % By calling the following line, we make this system
             % configurable. By passing a containers.Map variable to the

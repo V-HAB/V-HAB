@@ -136,6 +136,7 @@ classdef (Abstract) branch < base & event.source
             if nargin >= 4
                 this.sCustomName = sCustomName;
             end
+            
             %% Handle the left side of the branch
             sLeftSideName = this.handleSide('left', xLeft);
             
@@ -298,7 +299,16 @@ classdef (Abstract) branch < base & event.source
             % updateConnectedBranches() method.
             if all(this.abIf)
                 sLeftBranchName = strrep(oBranch.sName, this.csNames{2}, '');
-                sNewSubsystemBranchName = [ sLeftBranchName, 'Interface', csRightBranchName{2} ];
+%                 sNewSubsystemBranchName = [ sLeftBranchName, 'Interface', csRightBranchName{2} ];
+                sNewSubsystemBranchName = [ sLeftBranchName, '___if___', csRightBranchName{2} ];
+                
+                % In an effor to keep the branch names short, we check if
+                % there are multiple interfaces in a row, meaning we would
+                % find the string '___if______if___'. We replace the six
+                % underscores with three. That retains legibility and
+                % reduces the length of the string.
+                sNewSubsystemBranchName = strrep(sNewSubsystemBranchName, '______', '___');
+                
             else
                 sNewSubsystemBranchName = '';
                 
@@ -402,7 +412,9 @@ classdef (Abstract) branch < base & event.source
                 % branch, there will be a new Name for this branch. If not,
                 % then the 'sNewBranchName' variable is empty.
                 if ~(strcmp(sNewBranchName,''))
-                    this.sName = sNewBranchName;              
+                    sOldName = this.sName;
+                    this.sName = sNewBranchName;
+                    this.oContainer.updateBranchNames(this, sOldName);
                 end
             end
         end

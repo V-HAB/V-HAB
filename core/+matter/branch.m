@@ -241,6 +241,7 @@ classdef branch < base.branch
             this.oThermalBranch = oThermalBranch;
         end
     end
+    
     methods (Access = {?solver.matter.base.branch, ?base.branch})
         function setFlowRate(this, fFlowRate, afPressureDrops)
             %% matter branch setFlowRate
@@ -299,6 +300,7 @@ classdef branch < base.branch
             end
         end
     end
+    
     methods (Sealed = true)
         function seal(this)
             %% matter branch seal

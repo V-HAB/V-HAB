@@ -52,6 +52,17 @@ classdef infrastructure < base & event.source
         % stored in this property. 
         iParallelSimulationID;
         
+        % If this simulation is being executed using the parallel pool, we
+        % need to update the main MATLAB instance with information about
+        % the status of this individual simulation. By default we send and
+        % update via a data queue after every simulation step. However, if
+        % we are running many fast and simple simulations, the number of
+        % sends is too large and blocks the entire system. So we use this
+        % property to reduce the number of calls to send();
+        iParallelSendInterval = 1;
+    end
+    
+    properties (Transient, SetAccess = protected, GetAccess = public)
         % In order to communicate with the MATLAB client when this
         % simulation is run using the parallel pool, we need a parallel
         % data queue object to send updates to. This property is a handle
@@ -380,13 +391,16 @@ classdef infrastructure < base & event.source
                 this.step();
                 
                 if this.bParallelExecution
-                    if this.bUseTime
-                        fProgress = this.oSimulationContainer.oTimer.fTime / this.fSimTime;
-                    else
-                        fProgress = this.oSimulationContainer.oTimer.iTick / this.iSimTicks;
-                    end
                     
-                    send(this.oDataQueue, [this.iParallelSimulationID, fProgress]);
+                    if mod(this.oSimulationContainer.oTimer.iTick, this.iParallelSendInterval) == 0
+                        if this.bUseTime
+                            fProgress = this.oSimulationContainer.oTimer.fTime / this.fSimTime;
+                        else
+                            fProgress = this.oSimulationContainer.oTimer.iTick / this.iSimTicks;
+                        end
+                        
+                        send(this.oDataQueue, [this.iParallelSimulationID, fProgress]);
+                    end
                 end
             end
             
@@ -602,6 +616,18 @@ classdef infrastructure < base & event.source
             %   spam the console of the main instance.
             this.bSuppressConsoleOutput = bSuppressConsoleOutput;
         end
+        
+        function setParallelSendInterval(this, iInterval)
+            %SETPARALLELSENDINTERVAL Sets update frequency parameter
+            %   When simulations are run in parallel updates are sent to
+            %   the main MATLAB instance to display the simulation progress
+            %   to the user. If simulations run too fast, i.e. the ticks
+            %   are very short, these updates can slow the simulation down
+            %   significantly. So this method allows the updates to be sent
+            %   in intervals other than 1. 
+            this.iParallelSendInterval = iInterval;
+        end
+
         
         function oOutput = saveobj(oInput)
             %SAVEOBJ Saves modified simulation object
