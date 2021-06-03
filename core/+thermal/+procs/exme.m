@@ -78,7 +78,7 @@ classdef exme < base
             % ensures that the phase still has a valid exme etc when it is
             % calculated but that the exme is changed before the solvers
             % are updated
-            this.hReconnectExme = this.oTimer.registerPostTick(@this.reconnectExMePostTick,            'thermal',        'post_capacity_temperatureupdate');
+            this.hReconnectExme = this.oTimer.registerPostTick(@this.reconnectExMePostTick, 'thermal', 'post_capacity_temperatureupdate');
         end
         
         function addBranch(this, oBranch)

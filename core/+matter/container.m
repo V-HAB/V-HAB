@@ -30,10 +30,11 @@ classdef container < sys
         % Reference to the branches, by name as a struct
         toBranches = struct();
         
-        % Number of branches in this container
+        % Number of matter branches in this container, including all
+        % subsystems
         iBranches = 0;
         
-        % Number of phases in this container
+        % Number of phases in this container, including all subsystems
         iPhases = 0;
         
         % Indicator if this container is sealed or not
@@ -102,7 +103,7 @@ classdef container < sys
                 this.toChildren.(sChild).sealMatterStructure();
                 
                 this.iPhases = this.iPhases + this.toChildren.(sChild).iPhases;
-                this.iBranches = this.iBranches + length(this.toChildren.(sChild).toBranches);
+                this.iBranches = this.iBranches + length(this.toChildren.(sChild).aoBranches);
             end
             
             this.csStores = fieldnames(this.toStores);
