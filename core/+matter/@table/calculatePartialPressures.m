@@ -37,7 +37,7 @@ if length(varargin) == 1
             fPressure = varargin{1}.fMass * varargin{1}.fMassToPressure;
         end
         
-    elseif strcmp(varargin{1}.sObjectType, 'flow')
+    elseif any(strcmp(varargin{1}.sObjectType, {'flow','p2p'}))
         oFlow = varargin{1};
         % Calculating the number of mols for each species
         afMols = oFlow.arPartialMass ./ this.afMolarMass;

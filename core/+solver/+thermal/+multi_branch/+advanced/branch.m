@@ -335,7 +335,7 @@ classdef branch < solver.thermal.multi_branch.basic.branch
                         this.bExternalSolvers = true;
                     end
                 end
-                this.coNonSolverBranches{iCapacity} = {aoCapacityBranches(mbExternalBranch)};
+                this.coNonSolverBranches{iCapacity} = {aoCapacityBranches(mbExternalBranch)'};
                 
                 % Now we have to bind the update of this solver to the
                 % update of the external branches, to ensure the solver
