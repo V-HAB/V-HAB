@@ -85,61 +85,34 @@ classdef mixture < matter.phase
         
         
         function afPP = get.afPP(this)
-            if this.oMultiBranchSolver.bUpdateInProgress
-                this.throw('FlowPhase:UnsafeAccess:afPP',                             ...
-                    ['You are trying to access the afPP property of the flow phase ', ...
-                     '%s during an iteration of the multi-branch solver. ',           ...
-                     'This can lead to incorrect results. Please use the flow ',      ...
-                     'information from the appropriate matter.flow object. ',         ...
-                     'It is set by the solver and updated every iteration.'], this.sName);
-            else
-                if ~this.bGasPhase
-                    error('you are trying to access a gas property in a mixture phase that is not set a gas type!')
-                end
-                afPP               = this.oMT.calculatePartialPressures(this);
+            if ~this.bGasPhase
+                error('phase:mixture:invalidAccessPartialPressures', 'you are trying to access a gas property in a mixture phase that is not set a gas type!')
             end
+            afPP               = this.oMT.calculatePartialPressures(this);
         end
         
         function rRelHumidity = get.rRelHumidity(this)
-            if this.oMultiBranchSolver.bUpdateInProgress
-                this.throw('FlowPhase:UnsafeAccess:rRelHumidity',                     ...
-                    ['You are trying to access the afPP property of the flow phase ', ...
-                     '%s during an iteration of the multi-branch solver. ',           ...
-                     'This can lead to incorrect results. Please use the flow ',      ...
-                     'information from the appropriate matter.flow object. ',         ...
-                     'It is set by the solver and updated every iteration.'], this.sName);
+            if ~this.bGasPhase
+                error('phase:mixture:invalidAccessHumidity', 'you are trying to access a gas property in a mixture phase that is not set a gas type!')
+            end
+            % Check if there is water in here at all
+            if this.afPP(this.oMT.tiN2I.H2O)
+                % calculate saturation vapour pressure [Pa];
+                fSaturationVapourPressure = this.oMT.calculateVaporPressure(this.fTemperature, 'H2O');
+                % calculate relative humidity
+                rRelHumidity = this.afPP(this.oMT.tiN2I.H2O) / fSaturationVapourPressure;
             else
-                if ~this.bGasPhase
-                    error('you are trying to access a gas property in a mixture phase that is not set a gas type!')
-                end
-                % Check if there is water in here at all
-                if this.afPP(this.oMT.tiN2I.H2O)
-                    % calculate saturation vapour pressure [Pa];
-                    fSaturationVapourPressure = this.oMT.calculateVaporPressure(this.fTemperature, 'H2O');
-                    % calculate relative humidity
-                    rRelHumidity = this.afPP(this.oMT.tiN2I.H2O) / fSaturationVapourPressure;
-                else
-                    rRelHumidity = 0;
-                end
+                rRelHumidity = 0;
             end
         end
         function afPartsPerMillion = get.afPartsPerMillion(this)
             % Calculates the PPM value on demand.
             % Made this a dependent variable to reduce the computational
             % load during run-time since the value is rarely used. 
-            if this.oMultiBranchSolver.bUpdateInProgress
-                this.throw('FlowPhase:UnsafeAccess:afPartsPerMillion',                     ...
-                    ['You are trying to access the afPartsPerMillion property of the flow phase ', ...
-                     '%s during an iteration of the multi-branch solver. ',           ...
-                     'This can lead to incorrect results. Please use the flow ',      ...
-                     'information from the appropriate matter.flow object. ',         ...
-                     'It is set by the solver and updated every iteration.'], this.sName);
-            else
-                if ~this.bGasPhase
-                    error('you are trying to access a gas property in a mixture phase that is not set a gas type!')
-                end
-                afPartsPerMillion = this.oMT.calculatePartsPerMillion(this);
+            if ~this.bGasPhase
+                error('phase:mixture:invalidAccessPartsPerMillion', 'you are trying to access a gas property in a mixture phase that is not set a gas type!')
             end
+            afPartsPerMillion = this.oMT.calculatePartsPerMillion(this);
         end
     end
     

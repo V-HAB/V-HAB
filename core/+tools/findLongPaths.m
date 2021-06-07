@@ -66,7 +66,16 @@ if bIsObject
         % Calling this function recursively. Note we are setting the
         % bIsObject input argument to false since we don't know the type of
         % this property.
-        [csCompletedUUIDs, csActiveUUIDs, iMaxLevel] = tools.findLongPaths(xInput.(csProperties{iProperty}), csCompletedUUIDs, csActiveUUIDs, false, iLevel, iMaxLevel, sNewPath);
+        try
+            [csCompletedUUIDs, csActiveUUIDs, iMaxLevel] = tools.findLongPaths(xInput.(csProperties{iProperty}), csCompletedUUIDs, csActiveUUIDs, false, iLevel, iMaxLevel, sNewPath);
+        catch oErr
+            if strcmp(oErr.identifier, 'phase:mixture:invalidAccessPartialPressures') ||...
+                 strcmp(oErr.identifier, 'phase:mixture:invalidAccessHumidity') ||...
+                 strcmp(oErr.identifier, 'phase:mixture:invalidAccessPartsPerMillion') 
+            else
+                rethrow(oErr)
+            end
+        end
     end
     
     % We're done with this object so we can add its UUID to the completed

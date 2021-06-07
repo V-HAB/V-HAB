@@ -84,7 +84,7 @@ classdef mixture < matter.phases.flow.flow
                      'It is set by the solver and updated every iteration.'], this.sName);
             else
                 if ~this.bGasPhase
-                    error('you are trying to access a gas property in a mixture phase that is not set a gas type!')
+                    error('phase:mixture:invalidAccessPartialPressures', 'you are trying to access a gas property in a mixture phase that is not set a gas type!')
                 end
                 afPartialMassFlow_In = zeros(this.iProcsEXME, this.oMT.iSubstances);
                 
@@ -122,7 +122,7 @@ classdef mixture < matter.phases.flow.flow
                      'It is set by the solver and updated every iteration.'], this.sName);
             else
                 if ~this.bGasPhase
-                    error('you are trying to access a gas property in a mixture phase that is not set a gas type!')
+                    error('phase:mixture:invalidAccessHumidity', 'you are trying to access a gas property in a mixture phase that is not set a gas type!')
                 end
                 % Check if there is water in here at all
                 if this.afPP(this.oMT.tiN2I.H2O)
@@ -148,7 +148,7 @@ classdef mixture < matter.phases.flow.flow
                      'It is set by the solver and updated every iteration.'], this.sName);
             else
                 if ~this.bGasPhase
-                    error('you are trying to access a gas property in a mixture phase that is not set a gas type!')
+                    error('phase:mixture:invalidAccessPartsPerMillion', 'you are trying to access a gas property in a mixture phase that is not set a gas type!')
                 end
                 afPartsPerMillion = this.oMT.calculatePartsPerMillion(this);
             end
