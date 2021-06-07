@@ -39,8 +39,25 @@ classdef ISS_ARS_MultiStore < vsys
         afDewPointModules = zeros(1,10);
         
     
-        % All the properties for the Plant Module
-        csPlants;
+        % All the properties for the Plant Module. If you want to add one
+        % of the plants, increase the area of the plant to the desired
+        % value in the mfPlantArea struct. Currently an ISPR based PGC with
+        % 4 Lettuce compartments and 4 Tomato compartments where each
+        % compartment has 0.231 m^2 area is modelled.
+        %
+        % The values for lighting etc are based on BVAD table 4-117 and 4.96
+        % Areas are assumed per crew member and are designed to supply a
+        % nearly closed diet for the crew. 0 days emerge time are assumed
+        % because sprouts are assumed to be grown outside the PGC and then
+        % be transplanted once emerged
+        csPlants        = {'Sweetpotato',   'Whitepotato',  'Rice'  , 'Drybean' , 'Soybean' , 'Tomato'  , 'Peanut'  , 'Lettuce' ,	'Wheat'};
+        mfPlantArea     = [ 0           ,   0            ,  0       , 0         , 0         , 0.924     , 0         , 0.924     ,   0];       	% m^2
+        mfHarvestTime   = [ 120         ,   138          ,  88      , 63        , 86        , 80        , 110       , 30        ,   62];        % days
+        miSubcultures   = [ 1           ,   1            ,  1       , 1         , 1         , 4         , 1         , 4         ,   1];       	% -
+        mfPhotoperiod   = [ 18          ,   12           ,  12      , 12        , 12        , 12        , 12        , 16        ,   20];      	% h/day
+        mfPPFD          = [ 650         ,   650          ,  764     , 370       , 650       , 625       , 625       , 295       ,   1330];   	% micromol/m^2 s
+        mfEmergeTime    = [ 0           ,   0            ,  0       , 0         , 0         , 0         , 0         , 0         ,   0];      	% days
+        
         tfPlantControlParameters;
     end
     
@@ -253,34 +270,66 @@ classdef ISS_ARS_MultiStore < vsys
             %%%                   PLANT MODULE                          %%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             if this.tbCases.PlantChamber
-                % Import Culture Setup Inputs
-                Input = load('lib\+components\+matter\+PlantModule\+cultures\VEGGIE\VEGGIELettuceTomato.mat');
+                tInput = struct();
+                abEmptyPlants = false(1, length(this.csPlants));
+                for iPlant = 1:length(this.csPlants)
+                    % The subcultures are evenly spread over the harvest
+                    % time of plants. 
+                    mfFirstSowTimeInit = 0 : this.mfHarvestTime(iPlant) / this.miSubcultures(iPlant) : this.mfHarvestTime(iPlant);
+                    for iSubculture = 1:this.miSubcultures(iPlant)
+                        if this.mfPlantArea(iPlant) == 0
+                            abEmptyPlants(iPlant) = true;
+                            continue
+                        end
+                        % Custom name you want to give this specific culture, select a 
+                        % name that is easy for you to identify
+                        tInput(iPlant, iSubculture).sName            = [this.csPlants{iPlant}, '_', num2str(iSubculture)];
+                        % Name of the plant species, has to fit the names defined in 
+                        % lib/+components/*PlantModule/+plantparameters/PlantParameters.csv
+                        tInput(iPlant, iSubculture).sPlantSpecies    = this.csPlants{iPlant};
+                        % The growth area defines how many plants are used in the
+                        % culture. Please note that depending on your application you
+                        % have to set the area to represent the number of plants (see
+                        % the plant density parameter in lib/+components/*PlantModule/+plantparameters/PlantParameters.csv
+                        % for information on that parameter) and not the actual area.
+                        % The area depends on the density of plants and can vary by
+                        % some degree! (for very high density shadowing effects will
+                        % come into effect)
+                        tInput(iPlant, iSubculture).fGrowthArea      = this.mfPlantArea(iPlant) ./ this.miSubcultures(iPlant); % m^2
+                        % time after which the plants are harvested
+                        tInput(iPlant, iSubculture).fHarvestTime     = this.mfHarvestTime(iPlant); % days
+                        % The time after which the first part of the plant can be seen
+                        tInput(iPlant, iSubculture).fEmergeTime      = this.mfEmergeTime(iPlant); % days
+                        % Particle Photon Flux Density, which is ony value to define
+                        % the intensity of the light the plants receive
+                        tInput(iPlant, iSubculture).fPPFD            = this.mfPPFD(iPlant); % micromol/m^2s
+                        % Photoperiod in hours (time per day that the plants receive
+                        % light)
+                        tInput(iPlant, iSubculture).fPhotoperiod     = this.mfPhotoperiod(iPlant); % h
+                        % This parameter defines how many generations of this culture
+                        % are planted in succession. Here we want continoues
+                        % plantation and therefore divide the mission duration
+                        % with the plant harvest time and roundup
+                        tInput(iPlant, iSubculture).iConsecutiveGenerations      = 1 + ceil(iLengthOfMission / this.mfHarvestTime(iPlant));
+                        tInput(iPlant, iSubculture).mfSowTime        = zeros(1, tInput(iPlant, iSubculture).iConsecutiveGenerations);
+                        tInput(iPlant, iSubculture).mfSowTime(1)  	 = mfFirstSowTimeInit(iSubculture);
 
-                % write to property
-                ttxInput = Input.CultureInput;
-                for iLettuce = 1:5
-                    ttxInput.(['Lettuce', num2str(iLettuce)]).iConsecutiveGenerations = 200;
-                    ttxInput.(['Lettuce', num2str(iLettuce)]).mfSowTime = zeros(1,200);
-                end
-                
-                ttxInput.Tomato1.mfSowTime(2) = 0;
-                ttxInput.Tomato1.mfSowTime(3) = 0;
-                ttxInput.Tomato1.mfSowTime(4) = 0;
-                
-                % Create Culture Objects
-                % write culture names into cell array to be accessed within
-                % loop
-                this.csPlants = fieldnames(ttxInput);
-                % loop over total cultures amount
-                for iI = 1:length(this.csPlants)
-                    % culture object gets assigned using its culture name
                         components.matter.PlantModule.PlantCulture(...
-                        this, ...                                                                           % parent system reference
-                        ttxInput.(this.csPlants{iI}).sCultureName, ...
-                        60,...                                                                              % Time step of the plant module. Plants do not change their properties very quickly which is why a higher time step is sufficient.
-                        ttxInput.(this.csPlants{iI}), ...                                                      % input for specific culture
-                        55);                                                                                % Initialization Time [d] of the plant module: e.g. if only the three last days of lettuce growth shall be analyzed, this needs to be set to 27 (lettuce has a harvest time of 30 days)
+                                this, ...                   % parent system reference
+                                tInput(iPlant, iSubculture).sName,...
+                                this.fControlTimeStep,...          % Time step initially used for this culture in [s]
+                                tInput(iPlant, iSubculture),...
+                                0);          % input for specific culture
+                    end
                 end
+
+                this.csPlants(abEmptyPlants)        = [];
+                this.mfPlantArea(abEmptyPlants)     = [];
+                this.mfHarvestTime(abEmptyPlants)   = [];
+                this.miSubcultures(abEmptyPlants)   = [];
+                this.mfPhotoperiod(abEmptyPlants)   = [];
+                this.mfPPFD(abEmptyPlants)          = [];
+                this.mfEmergeTime(abEmptyPlants)    = [];
             end
             
         end
@@ -742,9 +791,9 @@ classdef ISS_ARS_MultiStore < vsys
                 oInedibleSplit   	= oStore.createPhase(	'mixture',  'flow',    	'Inedible',	'solid', 0.5*oStore.fVolume, struct('H2O', 0),              oCabinPhase.fTemperature,	oCabinPhase.fPressure);
                 oEdibleSplit        = oStore.createPhase(	'mixture',  'flow',    	'Edible',  	'solid', 0.5*oStore.fVolume, struct('H2O', 0),          	oCabinPhase.fTemperature,	oCabinPhase.fPressure);
                 
-                csInedibleBiomass = cell(length(this.csPlants),1);
+                csInedibleBiomass = cell(length(this.csPlants));
                 for iPlant = 1:length(this.csPlants)
-                    csInedibleBiomass{iPlant} = [this.toChildren.(this.csPlants{iPlant}).txPlantParameters.sPlantSpecies, 'Inedible'];
+                    csInedibleBiomass{iPlant} = [this.toChildren.([this.csPlants{iPlant},'_1']).txPlantParameters.sPlantSpecies, 'Inedible'];
                 end
 
                 matter.procs.exmes.mixture(oInedibleSplit,  'Plant_Preparation_Out');
@@ -760,28 +809,29 @@ classdef ISS_ARS_MultiStore < vsys
                 matter.branch(this, oEdibleSplit,        {}, oFoodStore.toPhases.Food, 	'Plants_to_Foodstore');
                 
                 for iPlant = 1:length(this.csPlants)
-                    sCultureName = this.csPlants{iPlant};
+                    for iSubculture = 1:this.miSubcultures(iPlant)
+                        sCultureName = [this.csPlants{iPlant},'_', num2str(iSubculture)];
 
-                    matter.procs.exmes.gas(oCabinPhase,              [sCultureName, '_AtmosphereCirculation_Out']);
-                    matter.procs.exmes.gas(oCabinPhase,              [sCultureName, '_AtmosphereCirculation_In']);
-                    matter.procs.exmes.liquid(oNutrientSupply,       [sCultureName, '_to_NFT']);
-                    matter.procs.exmes.liquid(oNutrientSupply,       [sCultureName, '_from_NFT']);
-                    matter.procs.exmes.mixture(oEdibleSplit,         [sCultureName, '_Biomass_In']);
+                        matter.procs.exmes.gas(oCabinPhase,             [sCultureName, '_AtmosphereCirculation_Out']);
+                        matter.procs.exmes.gas(oCabinPhase,             [sCultureName, '_AtmosphereCirculation_In']);
+                        matter.procs.exmes.liquid(oNutrientSupply,     	[sCultureName, '_to_NFT']);
+                        matter.procs.exmes.liquid(oNutrientSupply,    	[sCultureName, '_from_NFT']);
+                        matter.procs.exmes.mixture(oEdibleSplit,     	[sCultureName, '_Biomass_In']);
 
-                    matter.branch(this, [sCultureName, '_Atmosphere_ToIF_Out'],      {}, [oCabinPhase.oStore.sName,         '.',	sCultureName, '_AtmosphereCirculation_Out']);
-                    matter.branch(this, [sCultureName, '_Atmosphere_FromIF_In'],     {}, [oCabinPhase.oStore.sName,         '.',  	sCultureName, '_AtmosphereCirculation_In']);
-                    matter.branch(this, [sCultureName, '_WaterSupply_ToIF_Out'],     {}, [oNutrientSupply.oStore.sName,     '.',    sCultureName, '_to_NFT']);
-                    matter.branch(this, [sCultureName, '_NutrientSupply_ToIF_Out'],  {}, [oNutrientSupply.oStore.sName,     '.',    sCultureName, '_from_NFT']);
-                    matter.branch(this, [sCultureName, '_Biomass_FromIF_In'],        {}, [oEdibleSplit.oStore.sName,        '.',    sCultureName, '_Biomass_In']);
+                        matter.branch(this, [sCultureName, '_Atmosphere_ToIF_Out'],      {}, [oCabinPhase.oStore.sName,         '.',	sCultureName, '_AtmosphereCirculation_Out']);
+                        matter.branch(this, [sCultureName, '_Atmosphere_FromIF_In'],     {}, [oCabinPhase.oStore.sName,         '.',  	sCultureName, '_AtmosphereCirculation_In']);
+                        matter.branch(this, [sCultureName, '_WaterSupply_ToIF_Out'],     {}, [oNutrientSupply.oStore.sName,     '.',    sCultureName, '_to_NFT']);
+                        matter.branch(this, [sCultureName, '_NutrientSupply_ToIF_Out'],  {}, [oNutrientSupply.oStore.sName,     '.',    sCultureName, '_from_NFT']);
+                        matter.branch(this, [sCultureName, '_Biomass_FromIF_In'],        {}, [oEdibleSplit.oStore.sName,        '.',    sCultureName, '_Biomass_In']);
 
-                    this.toChildren.(sCultureName).setIfFlows(...
-                        [sCultureName, '_Atmosphere_ToIF_Out'], ...
-                        [sCultureName ,'_Atmosphere_FromIF_In'], ...
-                        [sCultureName ,'_WaterSupply_ToIF_Out'], ...
-                        [sCultureName ,'_NutrientSupply_ToIF_Out'], ...
-                        [sCultureName ,'_Biomass_FromIF_In']);
+                        this.toChildren.(sCultureName).setIfFlows(...
+                            [sCultureName, '_Atmosphere_ToIF_Out'], ...
+                            [sCultureName ,'_Atmosphere_FromIF_In'], ...
+                            [sCultureName ,'_WaterSupply_ToIF_Out'], ...
+                            [sCultureName ,'_NutrientSupply_ToIF_Out'], ...
+                            [sCultureName ,'_Biomass_FromIF_In']);
+                    end
                 end
-                
             end
 
             

@@ -25,19 +25,23 @@ classdef setup < simulation.infrastructure
     % the following available strings:
     % 'US_Lab', 'Node1', 'Airlock', 'Node3', 'FGM', 'SM', 'Node2', 'Columbus', 'JEM', 'PMM'
     properties
+        tiPLantLogs;
+        tiLogIndexes;
     end
     
     methods
         function this = setup (ptConfigParams, tSolverParams)
-            ttMonitorConfig = struct('oLogger', struct('cParams', {{ true }}));
             
-            ttMonitorConfig.oTimeStepObserver.sClass = 'simulation.monitors.timestepObserver';
-            ttMonitorConfig.oTimeStepObserver.cParams = { 0 };
+%             ttMonitorConfig.oTimeStepObserver.sClass = 'simulation.monitors.timestepObserver';
+%             ttMonitorConfig.oTimeStepObserver.cParams = { 0 };
 %             fAccuracy = 1e-8;
 %             fMaxMassBalanceDifference = inf;
 %             bSetBreakPoints = false;
 %             ttMonitorConfig.oMassBalanceObserver.cParams = { fAccuracy, fMaxMassBalanceDifference, bSetBreakPoints };
             
+
+            ttMonitorConfig.oLogger.cParams = {true, 20000};
+
             this@simulation.infrastructure('ISS_ARS_MultiStore', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             % Water content of Urine and Feces is based on BVAD, not all
@@ -96,6 +100,8 @@ classdef setup < simulation.infrastructure
                 oLogger.addValue('ISS_ARS_MultiStore', ['afDewPointModules(' ,csNumbers{iModule},')'], 'K',   [csModules{iModule}, ' DewPoint']);
             end
             
+            oLogger.addValue('ISS_ARS_MultiStore.oTimer',                                                              'fTimeStepFinal',            's',   'Timestep');
+            
             %% Tank Masses
             % Water tank masses, currently no differentiation between the
             % russian and US segment is implemented. Would require more
@@ -104,7 +110,6 @@ classdef setup < simulation.infrastructure
             oLogger.addValue('ISS_ARS_MultiStore:s:UrineStorage.aoPhases(1)',   'fMass', 'kg', 'Urine Mass');
             oLogger.addValue('ISS_ARS_MultiStore:s:FecesStorage.aoPhases(1)',   'fMass', 'kg', 'Feces Mass');
             oLogger.addValue('ISS_ARS_MultiStore:s:FoodStore.aoPhases(1)',      'fMass', 'kg', 'Food Mass');
-            
             
             %% CCAAs logging
             if this.oSimulationContainer.toChildren.ISS_ARS_MultiStore.tbCases.ModelInactiveSystems
@@ -118,7 +123,10 @@ classdef setup < simulation.infrastructure
                 oLogger.addValue(['ISS_ARS_MultiStore:c:', csCCAAs{iCCAA}, ':c:CCAA_CHX'],                             'fTotalCondensateHeatFlow',  'W',    ['Condensation Heat Flow ', sLabel]);
                 oLogger.addValue(['ISS_ARS_MultiStore:c:', csCCAAs{iCCAA}],                                            'fTCCV_Angle',               '°',    ['TCCV Angle ', sLabel]);
                 oLogger.addValue(['ISS_ARS_MultiStore:c:', csCCAAs{iCCAA}, '.toStores.CHX.toProcsP2P.CondensingHX'],  	'fFlowRate',                 'kg/s', ['Condensate Flow ', sLabel]);
+                
+                oLogger.addVirtualValue(['cumsum("Condensate Flow ', sLabel, '" .* "Timestep")'], 'kg', ['Condensate Mass ',  sLabel]);
             end
+            
             
             %% SCRA logging
             oLogger.addValue('ISS_ARS_MultiStore:c:SCRA_Node3.toStores.CRA_Accumulator.toPhases.CO2',                  'fPressure',                 'Pa',   'SCRA CO_2 Accumulator Pressure');
@@ -137,12 +145,12 @@ classdef setup < simulation.infrastructure
             
             oLogger.addValue('ISS_ARS_MultiStore:c:SCRA_Node3',                                                        'fCurrentPowerConsumption',  'W',    'SCRA Power Consumption');
             
-            oLogger.addValue('ISS_ARS_MultiStore.oTimer',                                                              'fTimeStepFinal',            's',   'Timestep');
-            
             oLogger.addVirtualValue('cumsum("SCRA Vented CO2"    .* "Timestep")', 'kg', 'SCRA Vented CO2 Mass');
             oLogger.addVirtualValue('cumsum("SCRA Vented H2"     .* "Timestep")', 'kg', 'SCRA Vented H2 Mass');
             oLogger.addVirtualValue('cumsum("SCRA Vented H2O"    .* "Timestep")', 'kg', 'SCRA Vented H2O Mass');
             oLogger.addVirtualValue('cumsum("SCRA Vented CH4"    .* "Timestep")', 'kg', 'SCRA Vented CH4 Mass');
+            
+            oLogger.addVirtualValue('cumsum("SCRA recovered H_2O" .* "Timestep")', 'kg', 'SCRA Recovered H2O Mass');
             
             %% WPA Logging
             oLogger.addValue('ISS_ARS_MultiStore:c:WPA.toStores.WasteWater.toPhases.Water',            'fMass',        'kg',   'WPA Waste Water');
@@ -236,63 +244,127 @@ classdef setup < simulation.infrastructure
             %%%                   PLANT MODULE LOGGING                  %%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             if this.oSimulationContainer.toChildren.ISS_ARS_MultiStore.tbCases.PlantChamber
-                for iLettuce = 1:5
-                    oLogger.addValue(['ISS_ARS_MultiStore.toChildren.Lettuce' num2str(iLettuce) '.toStores.Plant_Culture.toPhases.Plants'], 'fMass',                                   'kg',   ['Lettuce ', num2str(iLettuce), ' Mass']);
-                    oLogger.addValue(['ISS_ARS_MultiStore.toChildren.Lettuce' num2str(iLettuce) '.toStores.Plant_Culture.toPhases.Plants'], 'this.afMass(this.oMT.tiN2I.Lettuce)',     'kg',   ['Lettuce ', num2str(iLettuce), ' Edible Biomass']);
-                    oLogger.addValue(['ISS_ARS_MultiStore.toChildren.Lettuce' num2str(iLettuce)],                                           'fWaterConsumptionRate',                   'kg/s', ['Lettuce ', num2str(iLettuce), ' Water Consumption Rate']);
-                    
-                    oLogger.addValue(['ISS_ARS_MultiStore.toChildren.Lettuce' num2str(iLettuce)],  'this.tfGasExchangeRates.fO2ExchangeRate',          'kg/s', ['Lettuce ', num2str(iLettuce), ' O2 Rate']);
-                    oLogger.addValue(['ISS_ARS_MultiStore.toChildren.Lettuce' num2str(iLettuce)],  'this.tfGasExchangeRates.fCO2ExchangeRate',         'kg/s', ['Lettuce ', num2str(iLettuce), ' CO2 Rate']);
-                    oLogger.addValue(['ISS_ARS_MultiStore.toChildren.Lettuce' num2str(iLettuce)],  'this.tfGasExchangeRates.fTranspirationRate',       'kg/s', ['Lettuce ', num2str(iLettuce), ' Transpiration Rate']);
-                    oLogger.addValue(['ISS_ARS_MultiStore.toChildren.Lettuce' num2str(iLettuce)],  'this.tfBiomassGrowthRates.fGrowthRateInedible',	'kg/s', ['Lettuce ', num2str(iLettuce), ' Inedible Growth Rate']);
-                    oLogger.addValue(['ISS_ARS_MultiStore.toChildren.Lettuce' num2str(iLettuce)],  'this.tfBiomassGrowthRates.fGrowthRateEdible',      'kg/s', ['Lettuce ', num2str(iLettuce), ' Edible Growth Rate']);
-                    
+                oISS = this.oSimulationContainer.toChildren.ISS_ARS_MultiStore;
+                this.tiPLantLogs = struct();
+
+                for iPlant = 1:length(oISS.csPlants)
+                    this.tiPLantLogs(iPlant).miMass                  = zeros(1:length(oISS.miSubcultures(iPlant)),1);
+                    this.tiPLantLogs(iPlant).miEdibleMass            = zeros(1:length(oISS.miSubcultures(iPlant)),1);
+                    this.tiPLantLogs(iPlant).miWaterUptake           = zeros(1:length(oISS.miSubcultures(iPlant)),1);
+                    this.tiPLantLogs(iPlant).miO2                    = zeros(1:length(oISS.miSubcultures(iPlant)),1);
+                    this.tiPLantLogs(iPlant).miCO2                   = zeros(1:length(oISS.miSubcultures(iPlant)),1);
+                    this.tiPLantLogs(iPlant).miTranspiration         = zeros(1:length(oISS.miSubcultures(iPlant)),1);
+                    this.tiPLantLogs(iPlant).miEdibleGrowth          = zeros(1:length(oISS.miSubcultures(iPlant)),1);
+                    this.tiPLantLogs(iPlant).miInedibleGrowth        = zeros(1:length(oISS.miSubcultures(iPlant)),1);
+                    this.tiPLantLogs(iPlant).miNO3UptakeStorage      = zeros(1:length(oISS.miSubcultures(iPlant)),1);
+                    this.tiPLantLogs(iPlant).miNO3UptakeStructure    = zeros(1:length(oISS.miSubcultures(iPlant)),1);
+                    this.tiPLantLogs(iPlant).miNO3UptakeEdible       = zeros(1:length(oISS.miSubcultures(iPlant)),1);
+
+                    csMass                 = cell(1, length(oISS.miSubcultures(iPlant)));
+                    csEdibleMass           = cell(1, length(oISS.miSubcultures(iPlant)));
+                    csWaterUptake          = cell(1, length(oISS.miSubcultures(iPlant)));
+                    csO2                   = cell(1, length(oISS.miSubcultures(iPlant)));
+                    csCO2                  = cell(1, length(oISS.miSubcultures(iPlant)));
+                    csTranspiration        = cell(1, length(oISS.miSubcultures(iPlant)));
+                    csEdibleGrowth         = cell(1, length(oISS.miSubcultures(iPlant)));
+                    csInedibleGrowth       = cell(1, length(oISS.miSubcultures(iPlant)));
+                    csNO3UptakeStorage     = cell(1, length(oISS.miSubcultures(iPlant)));
+                    csNO3UptakeStructure   = cell(1, length(oISS.miSubcultures(iPlant)));
+                    csNO3UptakeEdible      = cell(1, length(oISS.miSubcultures(iPlant)));
+
+                    for iSubculture = 1:oISS.miSubcultures(iPlant)
+                        sCultureName = [oISS.csPlants{iPlant},'_', num2str(iSubculture)];
+
+                        this.tiPLantLogs(iPlant).miMass(iSubculture)                 = oLogger.addValue(['ISS_ARS_MultiStore.toChildren.', sCultureName, '.toStores.Plant_Culture.toPhases.Plants'], 'fMass',                                   'kg',   [sCultureName, ' Mass']);
+                        this.tiPLantLogs(iPlant).miEdibleMass(iSubculture)           = oLogger.addValue(['ISS_ARS_MultiStore.toChildren.', sCultureName, '.toStores.Plant_Culture.toPhases.Plants'], ['this.afMass(this.oMT.tiN2I.', oISS.csPlants{iPlant}, ')'],     'kg',   [sCultureName, ' Edible Biomass']);
+
+                        this.tiPLantLogs(iPlant).miWaterUptake(iSubculture)          = oLogger.addValue(['ISS_ARS_MultiStore.toChildren.', sCultureName],                                            'fWaterConsumptionRate',                   'kg/s', [sCultureName, ' Water Consumption Rate']);
+
+                        this.tiPLantLogs(iPlant).miO2(iSubculture)                   = oLogger.addValue(['ISS_ARS_MultiStore.toChildren.', sCultureName],  'this.tfGasExchangeRates.fO2ExchangeRate',          'kg/s', [sCultureName, ' O2 Rate']);
+                        this.tiPLantLogs(iPlant).miCO2(iSubculture)                  = oLogger.addValue(['ISS_ARS_MultiStore.toChildren.', sCultureName],  'this.tfGasExchangeRates.fCO2ExchangeRate',         'kg/s', [sCultureName, ' CO2 Rate']);
+                        this.tiPLantLogs(iPlant).miTranspiration(iSubculture)        = oLogger.addValue(['ISS_ARS_MultiStore.toChildren.', sCultureName],  'this.tfGasExchangeRates.fTranspirationRate',       'kg/s', [sCultureName, ' Transpiration Rate']);
+                        this.tiPLantLogs(iPlant).miEdibleGrowth(iSubculture)         = oLogger.addValue(['ISS_ARS_MultiStore.toChildren.', sCultureName],  'this.tfBiomassGrowthRates.fGrowthRateInedible',    'kg/s', [sCultureName, ' Inedible Growth Rate']);
+                        this.tiPLantLogs(iPlant).miInedibleGrowth(iSubculture)       = oLogger.addValue(['ISS_ARS_MultiStore.toChildren.', sCultureName],  'this.tfBiomassGrowthRates.fGrowthRateEdible',      'kg/s', [sCultureName, ' Edible Growth Rate']);
+
+                        this.tiPLantLogs(iPlant).miNO3UptakeStorage(iSubculture)     = oLogger.addValue(['ISS_ARS_MultiStore.toChildren.', sCultureName],  'this.tfUptakeRate_Storage.NO3',                     'kg/s', [sCultureName, ' NO3 Uptake Storage']);
+                        this.tiPLantLogs(iPlant).miNO3UptakeStructure(iSubculture)	 = oLogger.addValue(['ISS_ARS_MultiStore.toChildren.', sCultureName],  'this.tfUptakeRate_Structure.NO3',                	'kg/s', [sCultureName, ' NO3 Uptake Structure']);
+                        this.tiPLantLogs(iPlant).miNO3UptakeEdible(iSubculture)      = oLogger.addValue(['ISS_ARS_MultiStore.toChildren.', sCultureName],  'this.tfUptakeRate_Structure.fEdibleUptakeNO3',    	'kg/s', [sCultureName, ' NO3 Uptake Edible']);
+
+                        csMass{iSubculture}                 = ['"', oLogger.tLogValues(this.tiPLantLogs(iPlant).miMass(iSubculture)).sLabel,'" +'];
+                        csEdibleMass{iSubculture}           = ['"', oLogger.tLogValues(this.tiPLantLogs(iPlant).miEdibleMass(iSubculture)).sLabel,'" +'];
+                        csWaterUptake{iSubculture}          = ['"', oLogger.tLogValues(this.tiPLantLogs(iPlant).miWaterUptake(iSubculture)).sLabel,'" +'];
+                        csO2{iSubculture}                   = ['"', oLogger.tLogValues(this.tiPLantLogs(iPlant).miO2(iSubculture)).sLabel,'" +'];
+                        csCO2{iSubculture}                  = ['"', oLogger.tLogValues(this.tiPLantLogs(iPlant).miCO2(iSubculture)).sLabel,'" +'];
+                        csTranspiration{iSubculture}        = ['"', oLogger.tLogValues(this.tiPLantLogs(iPlant).miTranspiration(iSubculture)).sLabel,'" +'];
+                        csEdibleGrowth{iSubculture}         = ['"', oLogger.tLogValues(this.tiPLantLogs(iPlant).miEdibleGrowth(iSubculture)).sLabel,'" +'];
+                        csInedibleGrowth{iSubculture}       = ['"', oLogger.tLogValues(this.tiPLantLogs(iPlant).miInedibleGrowth(iSubculture)).sLabel,'" +'];
+                        csNO3UptakeStorage{iSubculture}     = ['"', oLogger.tLogValues(this.tiPLantLogs(iPlant).miNO3UptakeStorage(iSubculture)).sLabel,'" +'];
+                        csNO3UptakeStructure{iSubculture}   = ['"', oLogger.tLogValues(this.tiPLantLogs(iPlant).miNO3UptakeStructure(iSubculture)).sLabel,'" +'];
+                        csNO3UptakeEdible{iSubculture}      = ['"', oLogger.tLogValues(this.tiPLantLogs(iPlant).miNO3UptakeEdible(iSubculture)).sLabel,'" +'];
+                    end
+
+                    sMass = strjoin(csMass);
+                    sMass(end) = [];
+                    this.tiLogIndexes.Plants.Biomass{iPlant}            = oLogger.addVirtualValue( sMass,   'kg', [oISS.csPlants{iPlant} ' current Biomass']);
+
+                    sEdibleMass = strjoin(csEdibleMass);
+                    sEdibleMass(end) = [];
+                    this.tiLogIndexes.Plants.EdibleBiomass{iPlant}      = oLogger.addVirtualValue( sEdibleMass,   'kg', [oISS.csPlants{iPlant} ' current Edible Biomass']);
+
+                    sWaterUptake = strjoin(csWaterUptake);
+                    sWaterUptake(end) = [];
+                    this.tiLogIndexes.Plants.WaterUptakeRate{iPlant}    = oLogger.addVirtualValue( sWaterUptake,   'kg/s', [oISS.csPlants{iPlant} ' Water Uptake']);
+                    this.tiLogIndexes.Plants.WaterUptake{iPlant}        = oLogger.addVirtualValue(['cumsum((', sWaterUptake,')	.* "Timestep")'], 'kg', [oISS.csPlants{iPlant} ' Water Uptake Mass']);
+
+                    sO2 = strjoin(csO2);
+                    sO2(end) = [];
+                    this.tiLogIndexes.Plants.OxygenRate{iPlant}         = oLogger.addVirtualValue( sO2,   'kg/s', [oISS.csPlants{iPlant} ' O2 Exchange']);
+                    this.tiLogIndexes.Plants.Oxygen{iPlant}             = oLogger.addVirtualValue(['cumsum((', sO2,')	.* "Timestep")'], 'kg', [oISS.csPlants{iPlant} ' O2 Exchange Mass']);
+
+                    sCO2 = strjoin(csCO2);
+                    sCO2(end) = [];
+                    this.tiLogIndexes.Plants.CO2Rate{iPlant}            = oLogger.addVirtualValue( sCO2,   'kg/s', [oISS.csPlants{iPlant} ' CO2 Exchange']);
+                    this.tiLogIndexes.Plants.CO2{iPlant}                = oLogger.addVirtualValue(['cumsum((', sCO2,')	.* "Timestep")'], 'kg', [oISS.csPlants{iPlant} ' CO2 Exchange Mass']);
+
+                    sTranspiration = strjoin(csTranspiration);
+                    sTranspiration(end) = [];
+                    this.tiLogIndexes.Plants.TranspirationRate{iPlant}  = oLogger.addVirtualValue( sTranspiration,   'kg/s', [oISS.csPlants{iPlant} ' Transpiration']);
+                    this.tiLogIndexes.Plants.Transpiration{iPlant}      = oLogger.addVirtualValue(['cumsum((', sTranspiration,')	.* "Timestep")'], 'kg', [oISS.csPlants{iPlant} ' Transpiration Mass']);
+
+                    sEdibleGrowth = strjoin(csEdibleGrowth);
+                    sEdibleGrowth(end) = [];
+                    this.tiLogIndexes.Plants.EdibleGrowthRate{iPlant}   = oLogger.addVirtualValue( sEdibleGrowth,   'kg/s', [oISS.csPlants{iPlant} ' Edible Growth']);
+                    this.tiLogIndexes.Plants.EdibleBiomassCum{iPlant} 	= oLogger.addVirtualValue(['cumsum((', sEdibleGrowth,')	.* "Timestep")'], 'kg', [oISS.csPlants{iPlant} ' total Edible Mass']);
+
+                    sInedibleGrowth = strjoin(csInedibleGrowth);
+                    sInedibleGrowth(end) = [];
+                    this.tiLogIndexes.Plants.InedibleGrowthRate{iPlant} = oLogger.addVirtualValue( sInedibleGrowth,   'kg/s', [oISS.csPlants{iPlant} ' Inedible Growth']);
+                    this.tiLogIndexes.Plants.InedibleBiomassCum{iPlant} = oLogger.addVirtualValue(['cumsum((', sInedibleGrowth,')	.* "Timestep")'], 'kg', [oISS.csPlants{iPlant} ' total Inedible Mass']);
+
+                    sNO3UptakeStorage = strjoin(csNO3UptakeStorage);
+                    sNO3UptakeStorage(end) = [];
+                    this.tiLogIndexes.Plants.NitrateStorageRate{iPlant} = oLogger.addVirtualValue( sNO3UptakeStorage,   'kg/s', [oISS.csPlants{iPlant} ' NO3 Storage Uptake']);
+                    this.tiLogIndexes.Plants.NitrateStorage{iPlant}     = oLogger.addVirtualValue(['cumsum((', sNO3UptakeStorage,')	.* "Timestep")'], 'kg', [oISS.csPlants{iPlant} ' NO3 Storage Uptake Mass']);
+
+                    sNO3UptakeStructure = strjoin(csNO3UptakeStructure);
+                    sNO3UptakeStructure(end) = [];
+                    this.tiLogIndexes.Plants.NitrateStructureRate{iPlant} = oLogger.addVirtualValue( sNO3UptakeStructure,   'kg/s', [oISS.csPlants{iPlant} ' NO3 Structure Uptake']);
+                    this.tiLogIndexes.Plants.Nitratestructure{iPlant}   = oLogger.addVirtualValue(['cumsum((', sNO3UptakeStructure,')	.* "Timestep")'], 'kg', [oISS.csPlants{iPlant} ' NO3 Structure Uptake Mass']);
+
+                    sNO3UptakeEdible = strjoin(csNO3UptakeEdible);
+                    sNO3UptakeEdible(end) = [];
+                    this.tiLogIndexes.Plants.NitrateEdibleRate{iPlant}  = oLogger.addVirtualValue( sNO3UptakeEdible,   'kg/s', [oISS.csPlants{iPlant} ' NO3 Edible Uptake']);
+                    this.tiLogIndexes.Plants.NitrateEdible{iPlant}      = oLogger.addVirtualValue(['cumsum((', sNO3UptakeEdible,')	.* "Timestep")'], 'kg', [oISS.csPlants{iPlant} ' NO3 Edible Uptake Mass']);
                 end
-                oLogger.addVirtualValue('"Lettuce 1 Mass" + "Lettuce 2 Mass" + "Lettuce 3 Mass" + "Lettuce 4 Mass" + "Lettuce 5 Mass"',                                                                                             'kg',	'Lettuce Mass');
-                oLogger.addVirtualValue('"Lettuce 1 Edible Biomass" + "Lettuce 2 Edible Biomass" + "Lettuce 3 Edible Biomass" + "Lettuce 4 Edible Biomass" + "Lettuce 5 Edible Biomass"',                                           'kg',	'Lettuce Edible Biomass');
-                
-                sSumOfLettuceWaterConsumption   = '"Lettuce 1 Water Consumption Rate" + "Lettuce 2 Water Consumption Rate" + "Lettuce 3 Water Consumption Rate" + "Lettuce 4 Water Consumption Rate" + "Lettuce 5 Water Consumption Rate"';
-                sSumOfLettuceO2                 = '"Lettuce 1 O2 Rate" + "Lettuce 2 O2 Rate" + "Lettuce 3 O2 Rate" + "Lettuce 4 O2 Rate" + "Lettuce 5 O2 Rate"';
-                sSumOfLettuceCO2                = '"Lettuce 1 CO2 Rate" + "Lettuce 2 CO2 Rate" + "Lettuce 3 CO2 Rate" + "Lettuce 4 CO2 Rate" + "Lettuce 5 CO2 Rate"';
-                sSumOfLettuceTranspiration      = '"Lettuce 1 Transpiration Rate" + "Lettuce 2 Transpiration Rate" + "Lettuce 3 Transpiration Rate" + "Lettuce 4 Transpiration Rate" + "Lettuce 5 Transpiration Rate"';
-                sSumOfLettuceInedible           = '"Lettuce 1 Inedible Growth Rate" + "Lettuce 2 Inedible Growth Rate" + "Lettuce 3 Inedible Growth Rate" + "Lettuce 4 Inedible Growth Rate" + "Lettuce 5 Inedible Growth Rate"';
-                sSumOfLettuceEdible             = '"Lettuce 1 Edible Growth Rate" + "Lettuce 2 Edible Growth Rate" + "Lettuce 3 Edible Growth Rate" + "Lettuce 4 Edible Growth Rate" + "Lettuce 5 Edible Growth Rate"';
-                
-                oLogger.addVirtualValue(sSumOfLettuceWaterConsumption, 	'kg/s',	'Lettuce Water Consumption Rate');
-                oLogger.addVirtualValue(sSumOfLettuceO2,                'kg/s',	'Lettuce O2 Rate');
-                oLogger.addVirtualValue(sSumOfLettuceCO2,               'kg/s',	'Lettuce CO2 Rate');
-                oLogger.addVirtualValue(sSumOfLettuceTranspiration,     'kg/s',	'Lettuce Transpiration Rate');
-                oLogger.addVirtualValue(sSumOfLettuceInedible,          'kg/s',	'Lettuce Inedible Growth Rate');
-                oLogger.addVirtualValue(sSumOfLettuceEdible,            'kg/s',	'Lettuce Edible Growth Rate');
-
-                oLogger.addVirtualValue(['cumsum((' sSumOfLettuceWaterConsumption ')    .* "Timestep")'], 'kg', 'Lettuce Water Consumption');
-                oLogger.addVirtualValue(['cumsum((' sSumOfLettuceO2 ')                  .* "Timestep")'], 'kg', 'Lettuce O2');
-                oLogger.addVirtualValue(['cumsum((' sSumOfLettuceCO2 ')                 .* "Timestep")'], 'kg', 'Lettuce CO2');
-                oLogger.addVirtualValue(['cumsum((' sSumOfLettuceTranspiration ')       .* "Timestep")'], 'kg', 'Lettuce Transpiration');
-                oLogger.addVirtualValue(['cumsum((' sSumOfLettuceInedible ')            .* "Timestep")'], 'kg', 'Lettuce Inedible');
-                oLogger.addVirtualValue(['cumsum((' sSumOfLettuceEdible ')              .* "Timestep")'], 'kg', 'Lettuce Edible');
-
-                % Tomato Logs
-                oLogger.addValue('ISS_ARS_MultiStore.toChildren.Tomato1.toStores.Plant_Culture.toPhases.Plants', 'fMass',                                          'kg',   'Tomato Mass');
-                oLogger.addValue('ISS_ARS_MultiStore.toChildren.Tomato1.toStores.Plant_Culture.toPhases.Plants', 'this.afMass(this.oMT.tiN2I.Tomato)',             'kg',   'Tomato Edible Biomass');
-                oLogger.addValue('ISS_ARS_MultiStore.toChildren.Tomato1',                                        'fWaterConsumptionRate',                          'kg/s', 'Tomato Water Consumption Rate');
-                oLogger.addValue('ISS_ARS_MultiStore.toChildren.Tomato1',                                        'this.tfGasExchangeRates.fO2ExchangeRate',      	'kg/s', 'Tomato O2 Rate');
-                oLogger.addValue('ISS_ARS_MultiStore.toChildren.Tomato1',                                        'this.tfGasExchangeRates.fCO2ExchangeRate',     	'kg/s', 'Tomato CO2 Rate');
-                oLogger.addValue('ISS_ARS_MultiStore.toChildren.Tomato1',                                        'this.tfGasExchangeRates.fTranspirationRate',  	'kg/s', 'Tomato Transpiration Rate');
-                oLogger.addValue('ISS_ARS_MultiStore.toChildren.Tomato1',                                        'this.tfBiomassGrowthRates.fGrowthRateInedible',	'kg/s', 'Tomato Inedible Growth Rate');
-                oLogger.addValue('ISS_ARS_MultiStore.toChildren.Tomato1',                                        'this.tfBiomassGrowthRates.fGrowthRateEdible',   	'kg/s', 'Tomato Edible Growth Rate');
-
-                oLogger.addVirtualValue('cumsum("Tomato Water Consumption Rate"     .* "Timestep")', 'kg', 'Tomato Water Consumption');
-                oLogger.addVirtualValue('cumsum("Tomato O2 Rate"                    .* "Timestep")', 'kg', 'Tomato O2');
-                oLogger.addVirtualValue('cumsum("Tomato CO2 Rate"                   .* "Timestep")', 'kg', 'Tomato CO2');
-                oLogger.addVirtualValue('cumsum("Tomato Transpiration Rate"         .* "Timestep")', 'kg', 'Tomato Transpiration');
-                oLogger.addVirtualValue('cumsum("Tomato Inedible Growth Rate"       .* "Timestep")', 'kg', 'Tomato Inedible');
-                oLogger.addVirtualValue('cumsum("Tomato Edible Growth Rate"         .* "Timestep")', 'kg', 'Tomato Edible');
             end
             
             %% Simulation length
             %             this.iMassLogInterval = 10000;
-            this.fSimTime = 3600 * 220 ; % e.g. 321 hours
+            if isKey(this.oSimulationContainer.oCfgParams.ptConfigParams, 'fSimTime')
+                this.fSimTime = this.oSimulationContainer.oCfgParams.ptConfigParams('fSimTime');
+            else
+                this.fSimTime = 3600 * 24 * 7; % e.g. 321 hours
+            end
             this.iSimTicks = 600;
             this.bUseTime = true;
         end
@@ -378,23 +450,23 @@ classdef setup < simulation.infrastructure
                 
                 switch csPlots{iPlot}
                     case 'Temperature'
-                        csLegend = {'Temperature in K'};
+                        csLegend = {"y-axis: Temperature / K" + newline + "x-axis: Time / h"};
                     case 'Pressure'
-                        csLegend = {'Absolute Pressure in Pa'};
+                        csLegend = {"y-axis: Absolute Pressure / Pa" + newline + "x-axis: Time / h"};
                     case 'RelativeHumidity'
-                        csLegend = {'Relative Humidity'};
+                        csLegend = {"y-axis: Relative Humidity / -" + newline + "x-axis: Time / h"};
                     case 'CO2'
-                        csLegend = {'Partial Pressure CO_2 in Pa'};
+                        csLegend = {"y-axis: Partial Pressure CO_2 / Pa" + newline + "x-axis: Time / h"};
                     case 'O2'
-                        csLegend = {'Partial Pressure O_2 in Pa'};
+                        csLegend = {"y-axis: Partial Pressure O_2 / Pa" + newline + "x-axis: Time / h"};
                     case 'DewPoint'
-                        csLegend = {'Dew Point in K'};
+                        csLegend = {"y-axis: Dew Point / K" + newline + "x-axis: Time / h"};
                 end
                 
                 annotation(figure1,'textbox',...
                     [0.15 0.9 0.15 0.03],...
                     'String',csLegend,...
-                    'FitBoxToText','off',...
+                    'FitBoxToText','on',...
                     'EdgeColor',[1 1 1]);
                 
                 for iModule = 1:length(csModules)
@@ -466,16 +538,19 @@ classdef setup < simulation.infrastructure
                 coPlotsHeatFlows{       mSubplotNumber(iCCAA,1), mSubplotNumber(iCCAA,2)} = oPlotter.definePlot(csNames,                                      ['Heatflows ' ,csCCAAs{iCCAA}],       tPlotOptions);
                 coPlotsTCCVAngles{      mSubplotNumber(iCCAA,1), mSubplotNumber(iCCAA,2)} = oPlotter.definePlot({['"TCCV Angle ', csCCAAs{iCCAA}, '"']},        ['TCCV Angle ' ,csCCAAs{iCCAA}],      tPlotOptions);
                 coPlotsCondensateFlow{  mSubplotNumber(iCCAA,1), mSubplotNumber(iCCAA,2)} = oPlotter.definePlot({['"Condensate Flow ', csCCAAs{iCCAA}, '"']},   ['Condensate Flow ' ,csCCAAs{iCCAA}], tPlotOptions);
+                coPlotsCondensateMass{  mSubplotNumber(iCCAA,1), mSubplotNumber(iCCAA,2)} = oPlotter.definePlot({['"Condensate Mass ', csCCAAs{iCCAA}, '"']},   ['Condensate Mass ' ,csCCAAs{iCCAA}], tPlotOptions);
+                
             end
             
             oPlotter.defineFigure(coPlotsHeatFlows,         'CCAA Heat Flows',          tFigureOptions);
             oPlotter.defineFigure(coPlotsTCCVAngles,        'CCAA Anlges',              tFigureOptions);
             oPlotter.defineFigure(coPlotsCondensateFlow,    'CCAA Condensate Flows',    tFigureOptions);
+            oPlotter.defineFigure(coPlotsCondensateMass,    'CCAA Condensate Mass',    tFigureOptions);
             
             %% SCRA plotting
             csSCRAFlowRates     = {'"SCRA CO_2 Inlet"', '"SCRA H_2 Inlet"', '"SCRA CO_2 flow to Reactor"', '"SCRA H_2 flow to Reactor"', '"SCRA H_2 flow to Vent"', '"SCRA recovered H_2O"'};
             csVentedFlowRates   = {'"SCRA Vented CO2"', '"SCRA Vented H2"', '"SCRA Vented H2O"', '"SCRA Vented CH4"'};
-            csVentedMasses      = {'"SCRA Vented CO2 Mass"', '"SCRA Vented H2 Mass"', '"SCRA Vented H2O Mass"', '"SCRA Vented CH4 Mass"'};
+            csVentedMasses      = {'"SCRA Vented CO2 Mass"', '"SCRA Vented H2 Mass"', '"SCRA Vented H2O Mass"', '"SCRA Vented CH4 Mass"', '"SCRA Recovered H2O Mass"'};
             coPlots = cell.empty();
             coPlots{1,1} = oPlotter.definePlot({'"SCRA CO_2 Accumulator Pressure"'}, 	'Sabatier Accumulator Pressure',  	tPlotOptions);
             coPlots{1,2} = oPlotter.definePlot(csSCRAFlowRates,                         'Sabatier Reactor Flow Rates',  	tPlotOptions);
@@ -531,19 +606,41 @@ classdef setup < simulation.infrastructure
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Plots the total water that was consumed by the plants
             if this.oSimulationContainer.toChildren.ISS_ARS_MultiStore.tbCases.PlantChamber
-                coPlot{1,1} = oPlotter.definePlot({'"Lettuce Water Consumption Rate"', '"Tomato Water Consumption Rate"', '"Lettuce Transpiration Rate"', '"Tomato Transpiration Rate"'}, 'H2O Flowrate Plant Plots', tPlotOptions);
-                coPlot{1,2} = oPlotter.definePlot({'"Lettuce O2 Rate"', '"Tomato O2 Rate"'}, 'O2 Flowrate Plant Plots', tPlotOptions);
-                coPlot{2,1} = oPlotter.definePlot({'"Lettuce Inedible Growth Rate"', '"Lettuce Edible Growth Rate"', '"Tomato Inedible Growth Rate"', '"Tomato Edible Growth Rate"'}, 'Biomass Flowrate Plant Plots', tPlotOptions);
-                coPlot{2,2} = oPlotter.definePlot({'"Lettuce CO2 Rate"','"Tomato CO2 Rate"'}, 'CO2 Flowrate Plant Plots', tPlotOptions);
-                oPlotter.defineFigure(coPlot,       'Plant Plots');
-                coPlot = cell(0);
+                oISS = this.oSimulationContainer.toChildren.ISS_ARS_MultiStore;
+                for iPlant = 1:length(oISS.csPlants)
 
-                coPlot{1,1} = oPlotter.definePlot({'"Lettuce Water Consumption"', '"Tomato Water Consumption"', '"Lettuce Transpiration"', '"Tomato Transpiration"'}, 'Cumulative Water Plant Plots', tPlotOptions);
-                coPlot{1,2} = oPlotter.definePlot({'"Lettuce O2"', '"Tomato O2"'}, 'Cumulative O2 Plant Plots', tPlotOptions);
-                coPlot{2,1} = oPlotter.definePlot({'"Lettuce Inedible"', '"Lettuce Edible"', '"Tomato Inedible"', '"Tomato Edible"'}, 'Cumulative Biomass Plant Plots', tPlotOptions);
-                coPlot{2,2} = oPlotter.definePlot({'"Lettuce CO2"', '"Tomato CO2"'}, 'Cumulative CO2 Plant Plots', tPlotOptions);
-                oPlotter.defineFigure(coPlot,       'Cumulative Plant Plots');
-                coPlot = cell(0);
+                    coPlot = cell(0);
+                    coPlot{1,1} = oPlotter.definePlot(this.tiLogIndexes.Plants.Biomass(iPlant),             'Current Biomass',              tPlotOptions);
+                    coPlot{1,2} = oPlotter.definePlot(this.tiLogIndexes.Plants.EdibleBiomassCum(iPlant),    'Cumulative Edible Biomass',    tPlotOptions);
+                    coPlot{1,3} = oPlotter.definePlot(this.tiLogIndexes.Plants.InedibleBiomassCum(iPlant),  'Cumulative Inedible Biomass',	tPlotOptions);
+                    coPlot{2,1} = oPlotter.definePlot(this.tiLogIndexes.Plants.EdibleBiomass(iPlant),       'Current Edible Biomass',       tPlotOptions);
+                    coPlot{2,2} = oPlotter.definePlot(this.tiLogIndexes.Plants.EdibleGrowthRate(iPlant),  	'Current Edible Growth Rate',   tPlotOptions);
+                    coPlot{2,3} = oPlotter.definePlot(this.tiLogIndexes.Plants.InedibleGrowthRate(iPlant), 	'Current Inedible Growth Rate', tPlotOptions);
+
+                    oPlotter.defineFigure(coPlot,       ['Plant Biomass ', oISS.csPlants{iPlant}]);
+
+                    coPlot = cell(0);
+                    coPlot{1,1} = oPlotter.definePlot(this.tiLogIndexes.Plants.WaterUptakeRate(iPlant),  	'Current Water Uptake',     	tPlotOptions);
+                    coPlot{1,2} = oPlotter.definePlot(this.tiLogIndexes.Plants.TranspirationRate(iPlant),  	'Current Transpiration',     	tPlotOptions);
+                    coPlot{1,3} = oPlotter.definePlot(this.tiLogIndexes.Plants.OxygenRate(iPlant),          'Current Oxygen Production',    tPlotOptions);
+                    coPlot{1,4} = oPlotter.definePlot(this.tiLogIndexes.Plants.CO2Rate(iPlant),             'Curent CO_2 Consumption',      tPlotOptions);
+                    coPlot{2,1} = oPlotter.definePlot(this.tiLogIndexes.Plants.WaterUptake(iPlant),         'Cumulative Water Uptake',      tPlotOptions);
+                    coPlot{2,2} = oPlotter.definePlot(this.tiLogIndexes.Plants.Transpiration(iPlant),      	'Cumulative Transpiration',     tPlotOptions);
+                    coPlot{2,3} = oPlotter.definePlot(this.tiLogIndexes.Plants.Oxygen(iPlant),              'Cumulative Oxygen',            tPlotOptions);
+                    coPlot{2,4} = oPlotter.definePlot(this.tiLogIndexes.Plants.CO2(iPlant),                 'Cumulative CO_2',              tPlotOptions);
+
+                    oPlotter.defineFigure(coPlot,       ['Plant Exchange Rates ', oISS.csPlants{iPlant}]);
+
+                    coPlot = cell(0);
+                    coPlot{1,1} = oPlotter.definePlot(this.tiLogIndexes.Plants.NitrateStorageRate(iPlant), 	'Current Storage Nitrate Uptake',	tPlotOptions);
+                    coPlot{1,2} = oPlotter.definePlot(this.tiLogIndexes.Plants.NitrateStructureRate(iPlant),'Current Structure Nitrate Uptake', tPlotOptions);
+                    coPlot{1,3} = oPlotter.definePlot(this.tiLogIndexes.Plants.NitrateEdibleRate(iPlant),	'Current Edible Nitrate Uptake',    tPlotOptions);
+                    coPlot{2,1} = oPlotter.definePlot(this.tiLogIndexes.Plants.NitrateStorage(iPlant),  	'Cumulative Storage Nitrate',       tPlotOptions);
+                    coPlot{2,2} = oPlotter.definePlot(this.tiLogIndexes.Plants.Nitratestructure(iPlant), 	'Cumulative Structure Nitrate',     tPlotOptions);
+                    coPlot{2,3} = oPlotter.definePlot(this.tiLogIndexes.Plants.NitrateEdible(iPlant),     	'Cumulative Edible Nitrate',      	tPlotOptions);
+
+                    oPlotter.defineFigure(coPlot,       ['Plant Nutrients ', oISS.csPlants{iPlant}]);
+                end
             end
             
             
