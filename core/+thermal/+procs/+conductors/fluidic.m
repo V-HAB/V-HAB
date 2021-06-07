@@ -145,7 +145,12 @@ classdef fluidic < thermal.procs.conductor
                         this.iFailedHeatCapacityUpdates = 0;
                     catch
                         if this.iFailedHeatCapacityUpdates > 2
-                            this.throw('FlowHeatCapacityUpdateError', ['In the branch: ',this.oMatterObject.sCustomName,' with the Flow Rate: ', num2str(this.oMatterObject.fFlowRate), ' [kg/s] and Heat Capactiy: ', num2str(this.fSpecificHeatCapacity),' [J/(kgK)] the update of the heat capacity failed']);
+                            if isempty(this.oMatterObject.sCustomName)
+                                sBranchName = this.oMatterObject.sName;
+                            else
+                                sBranchName = this.oMatterObject.sCustomName;
+                            end
+                            this.throw('FlowHeatCapacityUpdateError', ['In the branch: ',sBranchName,' with the Flow Rate: ', num2str(this.oMatterObject.fFlowRate), ' [kg/s] and Heat Capactiy: ', num2str(this.fSpecificHeatCapacity),' [J/(kgK)] the update of the heat capacity failed']);
                         end
                         this.iFailedHeatCapacityUpdates = this.iFailedHeatCapacityUpdates + 1;
                     end
