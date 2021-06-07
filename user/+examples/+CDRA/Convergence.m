@@ -213,6 +213,7 @@ function Convergence()
         % closing of the waitbar. 
         try
             tools.multiWaitbar(['Number of Cells: ', num2str(miCells(xInput(1)))], xInput(2));
+            disp(['Number of Cells ', num2str(miCells(xInput(1))), ': ' , num2str(xInput(2), 3),'%'])
         catch %#ok<CTCH>
             tools.multiWaitbar(['Number of Cells: ', num2str(miCells(xInput(1)))], 'Close');
         end
