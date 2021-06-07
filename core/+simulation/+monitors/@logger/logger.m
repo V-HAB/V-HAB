@@ -914,7 +914,13 @@ classdef logger < simulation.monitor
             
             % Actually saving the object into the mat file.
             save(sFileName, 'oLastSimObj');
+            
+            % To prevent MATLAB from crashing during saves, the saveobj()
+            % method of the infrastructure class will disconnect all
+            % branches on the right side. See that class for a more
+            % detailed discussion of the issue. In order to remain
+            % functional, we need to reconnect these branches here.
+            this.oSimulationInfrastructure.reconnectBranches();
         end
-        
     end
 end

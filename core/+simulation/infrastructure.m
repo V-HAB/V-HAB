@@ -119,6 +119,15 @@ classdef infrastructure < base & event.source
         % A struct that contains the different monitor objects.
         toMonitors = struct();
         
+        % A boolean indicating if the branches (all domains) have been
+        % disconnected on the right side in order to save the simulation
+        % object as a .mat file without exceeding the recursion limit. This
+        % property is set to true when the object is saved and to false
+        % when loaded. See the saveobj() and loadobj() method of this
+        % class. The property is also queried during the calls to
+        % advanceFor(), advanceTo(), tickFor() and tickTo() methods. 
+        bBranchesDisconnected  = false;
+        
     end
     
     % It is unknown why this property requires the dependent attribute to
@@ -362,6 +371,18 @@ classdef infrastructure < base & event.source
             % run that method. 
             if this.oSimulationContainer.oTimer.iTick == -1 && ~this.bInitialized
                 this.initialize();
+            end
+            
+            % If the simualtion object was saved as part of the dumpToMat()
+            % method in the logger, the saveobj() method of this class will
+            % have disconnected all branches on the right side. This is
+            % done to prevent MATLAB from crashing due to the recursion
+            % limit being exceeded. In that case the bBranchesDisconnected
+            % property will be true and we need to reconnect all branches.
+            if this.bBranchesDisconnected
+                fprintf('Hold on, need to reconnect all branches...  ');
+                this.reconnectBranches();
+                fprintf('Done!\n');
             end
             
             % Some information for the users so they know what's going on
@@ -650,18 +671,42 @@ classdef infrastructure < base & event.source
             %   loadobj() method of this class (see below) this process is
             %   reversed.
 
-            % Setting the output object to the input object. 
+            % Setting the output object handle to the input object handle.
+            % The example in the MATLAB documentation does this as well,
+            % otherwise I don't know if this is really necessary.
             oOutput = oInput;
             
             % Getting the names of all children (systems)
             csChildNames = fieldnames(oOutput.oSimulationContainer.toChildren);
             
-            % Looping throuhg all children and calling the
+            % Looping through all children and calling the
             % disconnectedBranchesForSaving() Method of the vsys class.
             for iI = 1:oOutput.oSimulationContainer.iChildren
                 oOutput.oSimulationContainer.toChildren.(csChildNames{iI}).disconnectBranchesForSaving();
             end
             
+            % Now that we are finished, we set the bBranchesDisconnected
+            % property to true so future calls for execution know to
+            % reconnect them.
+            oOutput.bBranchesDisconnected = true;
+            
+        end
+    end
+    
+    methods (Access = {?simulation.monitors.logger})
+        function reconnectBranches(this)
+            % Getting the names of all children (systems)
+            csChildNames = fieldnames(this.oSimulationContainer.toChildren);
+            
+            % Looping throuhg all children and calling the
+            % reconnectBranches() Method of the vsys class.
+            for iI = 1:this.oSimulationContainer.iChildren
+                this.oSimulationContainer.toChildren.(csChildNames{iI}).reconnectBranches();
+            end
+            
+            % Now that we are finished, we can set the
+            % bBranchesDisconnected property to false.
+            this.bBranchesDisconnected = false;
         end
     end
     
@@ -671,7 +716,9 @@ classdef infrastructure < base & event.source
             %   For a detailed discussion see description of saveobj()
             %   method. 
             
-            % Setting the output object to the input object. 
+            % Setting the output object handle to the input object handle.
+            % The example in the MATLAB documentation does this as well,
+            % otherwise I don't know if this is really necessary.
             oOutput = oInput;
             
             % Getting the names of all children (systems)
@@ -682,6 +729,10 @@ classdef infrastructure < base & event.source
             for iI = 1:oOutput.oSimulationContainer.iChildren
                 oOutput.oSimulationContainer.toChildren.(csChildNames{iI}).reconnectBranches();
             end
+            
+            % Now that we are finished, we can set the
+            % bBranchesDisconnected property to false.
+            oOutput.bBranchesDisconnected = false;
         end
     end
 end
