@@ -65,13 +65,28 @@ if bIsObject
         
         % Calling this function recursively. Note we are setting the
         % bIsObject input argument to false since we don't know the type of
-        % this property.
+        % this property. There are a few cases where the property cannot be
+        % accessed without the simulation actually running. To catch these,
+        % we enclose the recursive call in a try-catch-block and do some
+        % error handling. 
         try
             [csCompletedUUIDs, csActiveUUIDs, iMaxLevel] = tools.findLongPaths(xInput.(csProperties{iProperty}), csCompletedUUIDs, csActiveUUIDs, false, iLevel, iMaxLevel, sNewPath);
         catch oErr
             if strcmp(oErr.identifier, 'phase:mixture:invalidAccessPartialPressures') ||...
                  strcmp(oErr.identifier, 'phase:mixture:invalidAccessHumidity') ||...
-                 strcmp(oErr.identifier, 'phase:mixture:invalidAccessPartsPerMillion') 
+                 strcmp(oErr.identifier, 'phase:mixture:invalidAccessPartsPerMillion')
+             continue;
+            elseif strcmp(oErr.identifier, 'MATLAB:structRefFromNonStruct')
+                % This catches dependent properties. We don't need those
+                % for the purpose of this function anyway, we are only
+                % interested in objects and dependent properties usually
+                % return only numeric or logical values. 
+                xProperty = findprop(xInput, csProperties{iProperty});
+                if xProperty.Dependent
+                    continue;
+                else
+                    keyboard();
+                end
             else
                 rethrow(oErr)
             end
@@ -121,6 +136,18 @@ else
                             continue;
                         case {'struct','cell'}
                             [csCompletedUUIDs, csActiveUUIDs, iMaxLevel] = tools.findLongPaths(xInput.(csFieldNames{iField}), csCompletedUUIDs, csActiveUUIDs, false, iLevel, iMaxLevel, sNewPath);
+                        case 'base'
+                            if length(xInput.(csFieldNames{iField})) > 1
+                                for iJ = 1:length(xInput.(csFieldNames{iField}))
+                                    % This is an object array, so we append the path with
+                                    % the item number in parentheses.
+                                    sBrandNewPath = [sNewPath, sprintf('(%i)',iJ)];
+                                    
+                                    [csCompletedUUIDs, csActiveUUIDs, iMaxLevel] = tools.findLongPaths(xInput.(csFieldNames{iField})(iJ), csCompletedUUIDs, csActiveUUIDs, true, iLevel, iMaxLevel, sBrandNewPath);
+                                end
+                            else
+                                [csCompletedUUIDs, csActiveUUIDs, iMaxLevel] = tools.findLongPaths(xInput.(csFieldNames{iField}), csCompletedUUIDs, csActiveUUIDs, true, iLevel, iMaxLevel, sNewPath);
+                            end
                         otherwise
                             [csCompletedUUIDs, csActiveUUIDs, iMaxLevel] = tools.findLongPaths(xInput.(csFieldNames{iField}), csCompletedUUIDs, csActiveUUIDs, true, iLevel, iMaxLevel, sNewPath);
                     end
@@ -145,12 +172,11 @@ else
                             for iJ = 1:length(xInput{iI})
                                 % This is an object array, so we append the path with
                                 % the item number in parentheses.
-                                sNewPath = [sPath, sprintf('(%i)',iI)];
+                                sBrandNewPath = [sNewPath, sprintf('(%i)',iJ)];
                                 
-                                [csCompletedUUIDs, csActiveUUIDs, iMaxLevel] = tools.findLongPaths(xInput{iI}(iJ), csCompletedUUIDs, csActiveUUIDs, true, iLevel, iMaxLevel, sNewPath);
+                                [csCompletedUUIDs, csActiveUUIDs, iMaxLevel] = tools.findLongPaths(xInput{iI}(iJ), csCompletedUUIDs, csActiveUUIDs, true, iLevel, iMaxLevel, sBrandNewPath);
                             end
                         else
-                            sNewPath = sPath;
                             [csCompletedUUIDs, csActiveUUIDs, iMaxLevel] = tools.findLongPaths(xInput{iI}, csCompletedUUIDs, csActiveUUIDs, true, iLevel, iMaxLevel, sNewPath);
                         end
                     otherwise
