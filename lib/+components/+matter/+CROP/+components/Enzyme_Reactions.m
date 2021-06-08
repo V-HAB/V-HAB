@@ -73,9 +73,19 @@ classdef Enzyme_Reactions < matter.manips.substance.stationary
            
            this.fEnzymeVolume = fEnzymeVolume;
            % Rate constants
-           load('lib\+components\+matter\+CROP\+components\Parameter.mat', 'tReaction');
-           load('lib\+components\+matter\+CROP\+components\pH_model.mat', 'tpH_Diagram');
-
+           f = filesep;
+           load(['lib',  f, '+components',  f, '+matter',  f, '+CROP',  f, '+components',  f, 'Parameter.mat'], 'tReaction');
+           % load('lib\+components\+matter\+CROP\+components\pH_model.mat', 'tpH_Diagram');
+           
+           tpH_Diagram = struct();
+           tpH_Diagram.A.fpH        = [4 5 6 7 8 9 10 11 12 13 14];
+           tpH_Diagram.A.rFactor    = [0 0 0 1 1 1 1 1 1 1 0];
+           tpH_Diagram.B.fpH        = [4 5 6 7 8 9 10 11 12 13 14];
+           tpH_Diagram.B.rFactor    = [0 0 1 1 1 1 1 1 1 0 0];
+           tpH_Diagram.C.fpH        = [4 5 6 7 8 9 10 11 12 13 14];
+           tpH_Diagram.C.rFactor    = [0 1 1 1 0.4000 0.2000 0.1000 0.0500 0.0250 0 0];
+           
+           
            % Note that Schalz wrongly assumed that reaction D should no
            % longer occur. But just because we switched the modelling from
            % NH4OH to NH4 the reaction still exists!

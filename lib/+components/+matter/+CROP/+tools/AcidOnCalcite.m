@@ -50,9 +50,10 @@ classdef AcidOnCalcite < matter.manips.substance.stationary
            % calcium carbonate and magnesium carbonate in rainwater and nitric 
            % acid solutions", 2006, [] in the thesis. The curve depicts the
            % dissolution of calcium in acidic water depending on the pH value
-           sFullpath = mfilename('fullpath');
-           [sFile,~,~] = fileparts(sFullpath);
-           tfPolynomialData = load([sFile '\+pHCurve\fit.mat']);
+           %sFullpath = mfilename('fullpath');
+           %[sFile,~,~] = fileparts(sFullpath);
+           %tfPolynomialData = load([sFile '\+pHCurve\fit.mat']);
+           tfPolynomialData.fit = struct('type', 'polynomial degree 10', 'coeff',  [1.5845e-04 -0.0123 0.4128 -7.9503 96.7064 -774.4675 4.1295e+03 -1.4478e+04 3.2032e+04 -4.0637e+04 2.2722e+04]);
            afPolynomialCoeff = tfPolynomialData.fit.coeff;
            
            this.afPolynomialCoeff = afPolynomialCoeff;
