@@ -447,7 +447,7 @@ classdef infrastructure < base & event.source
             this.trigger('pause');
         end
         
-        function advanceTo(this, fTime)
+        function advanceTo(this, fTime, oDataQueue, iParallelSimulationID)
             %ADVANCETO Runs the simulation to a specific time in seconds
             %   This can be used if a simulation has been stopped or paused
             
@@ -458,6 +458,13 @@ classdef infrastructure < base & event.source
             % simulation
             this.bUseTime = true;
             
+            if nargin > 2
+                % if a parellel execution for the advancement of the
+                % simulation is used, then store the required paremeters
+                % here_
+                this.oDataQueue             = oDataQueue;
+                this.iParallelSimulationID  = iParallelSimulationID;
+            end
             % Running the simulation
             this.run();
         end
@@ -690,6 +697,12 @@ classdef infrastructure < base & event.source
             % reconnect them.
             oOutput.bBranchesDisconnected = true;
             
+            % The data queue object must be deleted because the queue can
+            % only be loaded by the sam parallel pool that created it,
+            % which is not possible Instead the generalParallelExecution
+            % tool will assign a new data queue if the simulation is
+            % continued in a parallel execution.
+            oOutput.oDataQueue = [];
         end
     end
     
