@@ -630,23 +630,57 @@ classdef flow < base
     end
     
     methods (Access = {?matter.container})
-        function disconnectBranch(this)
-            %DISCONNECTBRANCH Deletes the reference to the connected branch
+        function disconnectBranch(this, sSide)
+            %DISCONNECTBRANCH Deletes references to the parent branch
             %   This is necessary when the simulation object is saved to a
             %   MAT file. In large and/or networked systems the number of
             %   consecutive, unique objects that are referenced in a row
             %   cannot be larger than 500. In order to break these chains,
             %   we delete the reference to the branch on all matter flows
-            %   on the right side of all branches. Since the branch object
-            %   retains a reference to this flow, we can easily reconnect
-            %   it on load. 
+            %   on the right and left sides of all branches. We also need
+            %   to delete the references to the ExMes that are stored in
+            %   the oIn and oOut properties of a flow at the beginning and
+            %   end of a branch. Since the branch object retains a
+            %   reference to this flow, we can easily reconnect it on load.
+            
+            % First we delete the branch reference.
             this.oBranch = [];
+            
+            % Now we need to delete the reference to the connected ExMe.
+            % The sSide argument indicates on which side of the branch this
+            % flow is located. Depending on that we delete either the oIn
+            % or oOut property. We should only call this on the flows at
+            % the beginning and end of a branch so we can be sure, that oIn
+            % and oOut are actually ExMes. But just to be safe, we verify
+            % it first. 
+            switch sSide
+                case 'right'
+                    if isa(this.oOut, 'matter.procs.exme')
+                        this.oOut = [];
+                    else
+                        error('VHAB:oOutNotAnExMe', ['The object referenced by the oOut property of this flow is not an ExMe.\n', ...
+                            'It is a %s.\n'], class(this.oOut));
+                    end
+                case 'left'
+                    if isa(this.oIn, 'matter.procs.exme')
+                        this.oIn = [];
+                    else
+                        error('VHAB:oInNotAnExMe', ['The object referenced by the oIn property of this flow is not an ExMe.\n', ...
+                            'It is a %s.\n'], class(this.oOut));
+                    end
+            end
         end
         
-        function reconnectBranch(this, oBranch)
-            %RECONNECTBRANCH Sets branch reference to input object
+        function reconnectBranch(this, oBranch, oExMe, sSide)
+            %RECONNECTBRANCH Restores references to the parent branch
             %   This reverses the action performed in disconnectBranch().
             this.oBranch = oBranch;
+            switch sSide
+                case 'right'
+                    this.oOut = oExMe;
+                case 'left'
+                    this.oIn = oExMe;
+            end
         end
     end
 end

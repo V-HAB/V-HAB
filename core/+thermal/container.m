@@ -663,30 +663,30 @@ classdef container < sys
     
     methods (Access = protected)
         function disconnectThermalBranchesForSaving(this)
-            %DISCONNECTTHERMALBRANCHESFORSAVING Disconnects right side of all thermal branches
+            %DISCONNECTTHERMALBRANCHESFORSAVING Disconnects all thermal branches
             %   This is necessary when the simulation object is saved to a
             %   MAT file. In large and/or networked systems the number of
             %   consecutive, unique objects that are referenced in a row
             %   cannot be larger than 500. In order to break these chains,
             %   we delete the reference to the branch on all thermal ExMes
-            %   on the right side of all branches. Since the branch object
-            %   retains a reference to this flow, we can easily reconnect
-            %   it on load. 
+            %   on both sides of all branches. Since the branch object
+            %   retains references to the ExMes, we can easily reconnect
+            %   them on load. 
             
             % Getting the names of all branches
             csBranchNames = fieldnames(this.toThermalBranches);
             
             % Looping through all branches and calling the
-            % disconnectBranch() method on the ExMes on the right side of
-            % each branch.
+            % disconnectBranch() method on the ExMes.
             for iBranch = 1:length(csBranchNames)
+                this.toThermalBranches.(csBranchNames{iBranch}).coExmes{1}.disconnectBranch();
                 this.toThermalBranches.(csBranchNames{iBranch}).coExmes{2}.disconnectBranch();
             end
             
         end
         
         function reconnectThermalBranches(this)
-            %RECONNECTTHERMALBRANCHES Reconnects the right side of all thermal branches
+            %RECONNECTTHERMALBRANCHES Reconnects all thermal branches
             %   This reverses the action performed in
             %   disconnectThermalBranchesForSaving().
             
@@ -694,10 +694,10 @@ classdef container < sys
             csBranchNames = fieldnames(this.toThermalBranches);
             
             % Looping through all branches and calling the
-            % reconnectBranch() method on the ExMes on the right side of
-            % each branch, passing in the currently selected branch as an
-            % argument.
+            % reconnectBranch() method on the ExMes, passing in the
+            % currently selected branch as an argument.
             for iBranch = 1:length(csBranchNames)
+                this.toThermalBranches.(csBranchNames{iBranch}).coExmes{1}.reconnectBranch(this.toThermalBranches.(csBranchNames{iBranch}));
                 this.toThermalBranches.(csBranchNames{iBranch}).coExmes{2}.reconnectBranch(this.toThermalBranches.(csBranchNames{iBranch}));
             end
         end

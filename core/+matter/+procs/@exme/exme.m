@@ -318,5 +318,26 @@ classdef exme < base
             
         end
     end
+    
+    methods (Access = {?matter.container})
+        function disconnectFlow(this)
+            %DISCONNECTFLOW Deletes the reference to the connected flow
+            %   This is necessary when the simulation object is saved to a
+            %   MAT file. In large and/or networked systems the number of
+            %   consecutive, unique objects that are referenced in a row
+            %   cannot be larger than 500. In order to break these chains,
+            %   we delete the link to the branch on all matter ExMes. This
+            %   link is the oFlow property. Since the branch object retains
+            %   a reference to this flow and the ExMe it is connected to,
+            %   we can easily reconnect it on load.
+            this.oFlow = [];
+        end
+        
+        function reconnectFlow(this, oFlow)
+            %RECONNECTFLOW Restores the reference to the connected flow
+            %   Reverses the action from disconnectFlow().
+            this.oFlow = oFlow;
+        end
+    end
 end
 

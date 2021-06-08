@@ -673,7 +673,7 @@ classdef infrastructure < base & event.source
             %   overloads the saveobj() method of the internal MATLAB
             %   object. Below we loop through all systems and subsystems
             %   contained in this simulation object and disconnect the
-            %   right side of each matter, thermal and electrical branch.
+            %   both sides of each matter, thermal and electrical branch.
             %   This will limit the length of the hierarchy tree. In the
             %   loadobj() method of this class (see below) this process is
             %   reversed.
