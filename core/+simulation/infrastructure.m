@@ -696,13 +696,6 @@ classdef infrastructure < base & event.source
             % property to true so future calls for execution know to
             % reconnect them.
             oOutput.bBranchesDisconnected = true;
-            
-            % The data queue object must be deleted because the queue can
-            % only be loaded by the sam parallel pool that created it,
-            % which is not possible Instead the generalParallelExecution
-            % tool will assign a new data queue if the simulation is
-            % continued in a parallel execution.
-            oOutput.oDataQueue = [];
         end
     end
     
