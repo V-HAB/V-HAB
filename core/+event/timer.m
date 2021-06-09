@@ -706,6 +706,9 @@ classdef timer < base
                 % fNextExecutionTime is an absolute time, so subtract the
                 % current time to get the time step for this tick
                 this.fTimeStepFinal = fNextExecutionTime - this.fTime;
+                if this.fTimeStepFinal < this.fMinimumTimeStep
+                    this.fTimeStepFinal = this.fMinimumTimeStep;
+                end
             end
         end
     end
