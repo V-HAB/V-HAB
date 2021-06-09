@@ -171,7 +171,7 @@ function generalParallelExecution(sSimulationPath, cmInputs, csSimulationNames, 
                oLastSimObj = value;
                
                % Actually saving the object into the mat file.
-               save(sFileName, 'oLastSimObj');
+               save(sFileName, 'oLastSimObj', '-v7.3');
                
                % No matter the reason, this simulation is done, so
                % we can delete the wait bar for it.

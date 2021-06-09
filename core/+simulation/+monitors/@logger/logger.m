@@ -913,7 +913,7 @@ classdef logger < simulation.monitor
             oLastSimObj = this.oSimulationInfrastructure;
             
             % Actually saving the object into the mat file.
-            save(sFileName, 'oLastSimObj');
+            save(sFileName, 'oLastSimObj', '-v7.3');
             
             % To prevent MATLAB from crashing during saves, the saveobj()
             % method of the infrastructure class will disconnect all
