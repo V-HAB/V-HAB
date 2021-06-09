@@ -50,6 +50,7 @@ classdef ISS_ARS_MultiStore < vsys
         % nearly closed diet for the crew. 0 days emerge time are assumed
         % because sprouts are assumed to be grown outside the PGC and then
         % be transplanted once emerged
+        iAssumedPreviousPlantGrowthDays = 78;
         csPlants        = {'Sweetpotato',   'Whitepotato',  'Rice'  , 'Drybean' , 'Soybean' , 'Tomato'  , 'Peanut'  , 'Lettuce' ,	'Wheat'};
         mfPlantArea     = [ 0           ,   0            ,  0       , 0         , 0         , 0.924     , 0         , 0.924     ,   0];       	% m^2
         mfHarvestTime   = [ 120         ,   138          ,  88      , 63        , 86        , 80        , 110       , 30        ,   62];        % days
@@ -276,6 +277,13 @@ classdef ISS_ARS_MultiStore < vsys
                     % The subcultures are evenly spread over the harvest
                     % time of plants. 
                     mfFirstSowTimeInit = 0 : this.mfHarvestTime(iPlant) / this.miSubcultures(iPlant) : this.mfHarvestTime(iPlant);
+                    mfFirstSowTimeInit = mfFirstSowTimeInit - this.iAssumedPreviousPlantGrowthDays;
+                    mfFirstSowTimeInit(end) = [];
+                    mfPlantTimeInit     = zeros(length(mfFirstSowTimeInit),1);
+                    mfPlantTimeInit(mfFirstSowTimeInit < 0) = -mfFirstSowTimeInit(mfFirstSowTimeInit < 0);
+
+                    mfPlantTimeInit = mod(mfPlantTimeInit, this.mfHarvestTime(iPlant));
+                    
                     for iSubculture = 1:this.miSubcultures(iPlant)
                         if this.mfPlantArea(iPlant) == 0
                             abEmptyPlants(iPlant) = true;
@@ -312,14 +320,13 @@ classdef ISS_ARS_MultiStore < vsys
                         % with the plant harvest time and roundup
                         tInput(iPlant, iSubculture).iConsecutiveGenerations      = 1 + ceil(iLengthOfMission / this.mfHarvestTime(iPlant));
                         tInput(iPlant, iSubculture).mfSowTime        = zeros(1, tInput(iPlant, iSubculture).iConsecutiveGenerations);
-                        tInput(iPlant, iSubculture).mfSowTime(1)  	 = mfFirstSowTimeInit(iSubculture);
-
+                        
                         components.matter.PlantModule.PlantCulture(...
                                 this, ...                   % parent system reference
                                 tInput(iPlant, iSubculture).sName,...
                                 this.fControlTimeStep,...          % Time step initially used for this culture in [s]
                                 tInput(iPlant, iSubculture),...
-                                0);          % input for specific culture
+                                mfPlantTimeInit(iSubculture)); % Time at which the growth of this culture is intialized
                     end
                 end
 

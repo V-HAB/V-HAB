@@ -227,12 +227,58 @@ classdef PlantCulture < vsys
             % (basically a storeroom? where you can simply put stuff in)
             
             
-            try
-                 fEdibleMass = this.txInput.mfPlantMassInit(1);
-                 fInedibleMass = this.txInput.mfPlantMassInit(2);
-            catch
-                 fEdibleMass = 1e-3;
-                 fInedibleMass = 1e-3;
+            if this.fPlantTimeInit > 0
+                
+                fStepSize = 3600;
+                mfTime = 0:fStepSize:this.fPlantTimeInit*86400;
+                
+                iInitTicks = length(mfTime);
+                
+                mfGrowthRateEdible          = zeros(iInitTicks, 1);
+                mfGrowthRateInedible        = zeros(iInitTicks, 1);
+                mfStructuralNitrateUptake   = zeros(iInitTicks, 1);
+                
+                for iTime = 1:iInitTicks
+                    % in order to calculate the plant biomass values up to the
+                    % time initialized for this culture, the MEC model is used
+                    % with a standard atmosphere composition which does not
+                    % change:
+                    tfInitMMECRates = this.CalculateMMECRates(mfTime(iTime), 1.01325e5, 1.2021, 0.7, 1.0204, 998.21, 330);
+                    
+                    mfGrowthRateEdible(iTime)   = (tfInitMMECRates.fCGR * this.txInput.fGrowthArea *       this.txPlantParameters.fXFRT)   * (this.txPlantParameters.fFBWF_Edible + 1);
+                    mfGrowthRateInedible(iTime) = (tfInitMMECRates.fCGR * this.txInput.fGrowthArea * (1 -  this.txPlantParameters.fXFRT))  * (this.txPlantParameters.fFBWF_Inedible + 1);
+                    
+                    fEdibleMass     = sum(mfGrowthRateEdible .* fStepSize);
+                    fInedibleMass   = sum(mfGrowthRateInedible .* fStepSize);
+                    
+                    % Now we use the structural nitrogen uptake calculation
+                    % to also calculate the structural nitrate uptake for
+                    % the plant:
+                    fPlantMass = fInedibleMass + fEdibleMass;
+                    fPlantYield_equivalent = (fPlantMass / this.txInput.fGrowthArea) * this.txPlantParameters.fDRY_Fraction; % [kg_dryweight/m²]
+
+                    if fPlantYield_equivalent < this.fYieldTreshhold               % for a young crop
+                        mfStructuralNitrateUptake(iTime) = this.fCropCoeff_a_red * (tfInitMMECRates.fCGR/3600) * this.txInput.fGrowthArea; % [kgN/s]
+                    elseif fPlantYield_equivalent >= this.fYieldTreshhold          % for an older crop
+                        mfStructuralNitrateUptake(iTime) = this.fCropCoeff_a_red * (1 - this.fCropCoeff_b_red) * ((fPlantMass * this.txPlantParameters.fDRY_Fraction)^(-this.fCropCoeff_b_total)) * (tfInitMMECRates.fCGR/3600) * this.txInput.fGrowthArea; % [kgN/s]
+                    end
+                    
+                end
+                fEdibleMass             = sum(mfGrowthRateEdible .* fStepSize);
+                fInedibleMass           = sum(mfGrowthRateInedible .* fStepSize);
+                fStructuralNitrateMass 	= sum(mfStructuralNitrateUptake .* fStepSize);
+                % The storage nitrate can not exceed the structural nitrate
+                % by more than 60%. Since we assume luxurious supply, we
+                % assume this value for the storage nitrate mass:
+                fStorageNitrateMass     = 1.6 * fStructuralNitrateMass;
+                
+                this.fInternalTime = this.fPlantTimeInit;
+                this.fSowTime = 0;
+            else
+                fEdibleMass = 1e-3;
+                fInedibleMass = 1e-3;
+                fStructuralNitrateMass 	= 1e-8;
+                fStorageNitrateMass     = 1e-8;
             end
             
             
@@ -242,7 +288,8 @@ classdef PlantCulture < vsys
                 'solid',...                                             % primary phase of the mixture phase
                 struct(...                                              % phase contents    [kg]
                 this.txPlantParameters.sPlantSpecies, fEdibleMass,...
-                [this.txPlantParameters.sPlantSpecies, 'Inedible'], fInedibleMass), ...
+                [this.txPlantParameters.sPlantSpecies, 'Inedible'], fInedibleMass,...
+                'NO3', fStructuralNitrateMass), ...
                 293.15, ...                                             % phase temperature [K]
                 101325);
             
@@ -294,7 +341,7 @@ classdef PlantCulture < vsys
             oStorage = matter.phases.liquid(...
                 this.toStores.Plant_Culture,...                         % store containing phase
                 'StorageNitrate',...                                    % phase name
-                struct('NO3', 1e-8),...                                 % phase contents    [kg]
+                struct('NO3', fStorageNitrateMass),...                                 % phase contents    [kg]
                 293.15,...                                              % phase temperature [K]
                 101325);                                                % phase pressure    [Pa]
             
@@ -377,6 +424,13 @@ classdef PlantCulture < vsys
                 % be zero, but that just means that it will occure
                 % immediatly after the previous generation!)
                 this.txInput.mfSowTime = zeros(1,this.txInput.iConsecutiveGenerations);
+            end
+            
+            % Check if user provided plant time initialization, if so the
+            % first sow time is fixed to 0, otherwise the internal time of
+            % the plants is off:
+            if this.fPlantTimeInit > 0
+                this.txInput.mfSowTime(1) = 0;
             end
         end
         

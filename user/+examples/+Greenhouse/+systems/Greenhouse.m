@@ -25,6 +25,7 @@ classdef Greenhouse < vsys
             this@vsys(oParent, sName, 3600*5);
             
             %% Set Culture Setup Inputs
+            this.txPlants.iAssumedPreviousPlantGrowthDays = 0;
             this.txPlants.csPlants        = {'Sweetpotato',   'Whitepotato',  'Rice'  , 'Drybean' , 'Soybean' , 'Tomato'  , 'Peanut'  , 'Lettuce',  'Wheat',    'Wheat_I',	'Whitepotato_I',    'Soybean_I'};
             this.txPlants.mfPlantArea     = [ 20          ,   20           ,  20      , 20        , 20        , 20        , 20        , 20,         20,         20,         20,                 20];          % m^2 / CM
             this.txPlants.mfHarvestTime   = [ 85          ,   132          ,  85      , 85        , 97        , 85        , 104       , 28,         70,         85,         138,                97];          % days
@@ -38,7 +39,15 @@ classdef Greenhouse < vsys
             
             tInput = struct();
             for iPlant = 1:length(this.txPlants.csPlants)
-                mfPlantTimeInit = 0 : this.txPlants.mfHarvestTime(iPlant) / this.txPlants.miSubcultures(iPlant) : this.txPlants.mfHarvestTime(iPlant);
+                
+                mfFirstSowTimeInit = 0 : this.txPlants.mfHarvestTime(iPlant) / this.txPlants.miSubcultures(iPlant) : this.txPlants.mfHarvestTime(iPlant);
+                mfFirstSowTimeInit = mfFirstSowTimeInit - this.txPlants.iAssumedPreviousPlantGrowthDays;
+                mfFirstSowTimeInit(end) = [];
+                mfPlantTimeInit     = zeros(length(mfFirstSowTimeInit),1);
+                mfPlantTimeInit(mfFirstSowTimeInit < 0) = -mfFirstSowTimeInit(mfFirstSowTimeInit < 0);
+                
+                mfPlantTimeInit = mod(mfPlantTimeInit, this.txPlants.mfHarvestTime(iPlant));
+                
                 for iSubculture = 1:this.txPlants.miSubcultures(iPlant)
                     % Custom name you want to give this specific culture, select a 
                     % name that is easy for you to identify

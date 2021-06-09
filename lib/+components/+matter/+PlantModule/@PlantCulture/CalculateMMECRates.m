@@ -1,4 +1,4 @@
-function CalculateMMECRates(this, fPressureAtmosphere, fDensityAtmosphere, fRelativeHumidityAtmosphere, fHeatCapacityAtmosphere, fDensityH2O, fCO2)
+function tfMMECRates = CalculateMMECRates(this, fInternalTime, fPressureAtmosphere, fDensityAtmosphere, fRelativeHumidityAtmosphere, fHeatCapacityAtmosphere, fDensityH2O, fCO2)
     
     %% WARNING!! -- FILE CONTENT NOT IN SI UNITS!!! %%%%%%%%%%%%%%%%%%%%%%%
     
@@ -25,7 +25,7 @@ function CalculateMMECRates(this, fPressureAtmosphere, fDensityAtmosphere, fRela
     % TODO: improve later after system is running as it is one (the?)
     % reason photoperiod is linked to planting time and not a more general
     % setting
-    if mod(this.fInternalTime, 86400) < (this.txInput.fPhotoperiod * 3600)
+    if mod(fInternalTime, 86400) < (this.txInput.fPhotoperiod * 3600)
         bI = 1;
         
         if this.bLight == 0
@@ -45,12 +45,12 @@ function CalculateMMECRates(this, fPressureAtmosphere, fDensityAtmosphere, fRela
     % CUE_24 constant for non-legumes, different for legumes
     if this.txPlantParameters.bLegume == 1
         % before time of onset of canopy senescence
-        if this.fInternalTime <= (this.txPlantParameters.fT_Q * 86400)
+        if fInternalTime <= (this.txPlantParameters.fT_Q * 86400)
             fCUE_24 = this.txPlantParameters.fCUE_Max;
             % after time of onset of canopy senescence but before time of
             % crop maturity
-        elseif (this.txPlantParameters.fT_Q * 86400) < this.fInternalTime <= (this.txPlantParameters.fT_M * 86400)
-            fCUE_24 = this.txPlantParameters.fCUE_Max - (this.txPlantParameters.fCUE_Max - this.txPlantParameters.fCUE_Min) * ((this.fInternalTime / 86400) - this.txPlantParameters.fT_Q) * (this.txPlantParameters.fT_M - this.txPlantParameters.fT_Q)^-1;
+        elseif (this.txPlantParameters.fT_Q * 86400) < fInternalTime <= (this.txPlantParameters.fT_M * 86400)
+            fCUE_24 = this.txPlantParameters.fCUE_Max - (this.txPlantParameters.fCUE_Max - this.txPlantParameters.fCUE_Min) * ((fInternalTime / 86400) - this.txPlantParameters.fT_Q) * (this.txPlantParameters.fT_M - this.txPlantParameters.fT_Q)^-1;
         end
     % CUE_24 constant for non-legumes
     else
@@ -81,10 +81,10 @@ function CalculateMMECRates(this, fPressureAtmosphere, fDensityAtmosphere, fRela
     
     % calculate fraction of PPFD absorbed by canopy (A)
     % before time of canopy closure
-    if this.fInternalTime < fT_A
-        fA = this.txPlantParameters.fA_Max * (this.fInternalTime / fT_A)^this.txPlantParameters.fN;
+    if fInternalTime < fT_A
+        fA = this.txPlantParameters.fA_Max * (fInternalTime / fT_A)^this.txPlantParameters.fN;
     % after time of canopy closure
-    elseif this.fInternalTime >= fT_A
+    elseif fInternalTime >= fT_A
         fA = this.txPlantParameters.fA_Max;
     end
     
@@ -100,12 +100,12 @@ function CalculateMMECRates(this, fPressureAtmosphere, fDensityAtmosphere, fRela
     % [µmol_Carbon.Fixed * µmol_Absorbed.PPFD)^-1] 
     % CQY description: canopy gross photosynthesis divided by absorbed PAR
     % before time of onset of canopy senescence
-    if (this.fInternalTime <= (this.txPlantParameters.fT_Q * 86400))
+    if (fInternalTime <= (this.txPlantParameters.fT_Q * 86400))
         fCQY = fCQY_Max;
     % after time of onset of canopy senescence but before time of
      % crop maturity    
-    elseif this.txPlantParameters.fT_Q < (this.fInternalTime / 86400) && (this.fInternalTime / 86400) <= (this.txPlantParameters.fT_M)
-        fCQY = fCQY_Max - (fCQY_Max - this.txPlantParameters.fCQY_Min) * ((this.fInternalTime / 86400) - this.txPlantParameters.fT_Q) * (this.txPlantParameters.fT_M - this.txPlantParameters.fT_Q)^-1;
+    elseif this.txPlantParameters.fT_Q < (fInternalTime / 86400) && (fInternalTime / 86400) <= (this.txPlantParameters.fT_M)
+        fCQY = fCQY_Max - (fCQY_Max - this.txPlantParameters.fCQY_Min) * ((fInternalTime / 86400) - this.txPlantParameters.fT_Q) * (this.txPlantParameters.fT_M - this.txPlantParameters.fT_Q)^-1;
     else
         fCQY = 0;
     end
@@ -128,7 +128,7 @@ function CalculateMMECRates(this, fPressureAtmosphere, fDensityAtmosphere, fRela
     % HWCGR = HCGR * (1 - WBF)^-1 (Eq. 7)
     % if T_E exceeded -> use total water fraction, if not only inedible
     % biomass is produced -> water fraction = 0.9 (BVAD 2015, table 4.98)
-    if this.fInternalTime >= (this.txPlantParameters.fT_E * 86400)
+    if fInternalTime >= (this.txPlantParameters.fT_E * 86400)
         fHWCGR = fHCGR * (1 - this.txPlantParameters.fWBF_Edible) ^-1;   % [kg m^-2 s-^1]
     else
         fHWCGR = fHCGR * (1 - this.txPlantParameters.fWBF_Inedible)^-1;	% [kg m^-2 s-^1]
@@ -238,12 +238,12 @@ function CalculateMMECRates(this, fPressureAtmosphere, fDensityAtmosphere, fRela
     fET_0 = a/b; 
     
     % Crop Coefficient development during plant growth
-    if this.fInternalTime < fT_A  
-        fKC = this.txPlantParameters.fKC_Mid * (this.fInternalTime / fT_A) ^ this.txPlantParameters.fN;
-    elseif (fT_A <= this.fInternalTime) && (this.fInternalTime <= (this.txPlantParameters.fT_Q * 86400))   
+    if fInternalTime < fT_A  
+        fKC = this.txPlantParameters.fKC_Mid * (fInternalTime / fT_A) ^ this.txPlantParameters.fN;
+    elseif (fT_A <= fInternalTime) && (fInternalTime <= (this.txPlantParameters.fT_Q * 86400))   
         fKC = this.txPlantParameters.fKC_Mid;
     else   
-        fKC = this.txPlantParameters.fKC_Mid + (((this.fInternalTime / 86400) - this.txPlantParameters.fT_Q) / ((this.txPlantParameters.fT_M) - (this.txPlantParameters.fT_Q))) * (this.txPlantParameters.fKC_Late - this.txPlantParameters.fKC_Mid);
+        fKC = this.txPlantParameters.fKC_Mid + (((fInternalTime / 86400) - this.txPlantParameters.fT_Q) / ((this.txPlantParameters.fT_M) - (this.txPlantParameters.fT_Q))) * (this.txPlantParameters.fKC_Late - this.txPlantParameters.fKC_Mid);
         
         if fKC < 0.01 * this.txPlantParameters.fKC_Mid 
             fKC = 0.01 * this.txPlantParameters.fKC_Mid;
@@ -279,28 +279,28 @@ function CalculateMMECRates(this, fPressureAtmosphere, fDensityAtmosphere, fRela
     % because more water is consumed than transpired while no crop growth
     % rate occurs
     if fHCGR == 0
-        this.tfMMECRates.fWC    = fHTR;
-        this.tfMMECRates.fTR    = fHTR;
-        this.tfMMECRates.fOC    = 0;
-        this.tfMMECRates.fOP    = 0;
-        this.tfMMECRates.fCO2C  = 0;
-        this.tfMMECRates.fCO2P  = 0;
-        this.tfMMECRates.fNC    = 0;
-        this.tfMMECRates.fCGR   = 0;
-        this.tfMMECRates.fWCGR  = 0;
+        tfMMECRates.fWC    = fHTR;
+        tfMMECRates.fTR    = fHTR;
+        tfMMECRates.fOC    = 0;
+        tfMMECRates.fOP    = 0;
+        tfMMECRates.fCO2C  = 0;
+        tfMMECRates.fCO2P  = 0;
+        tfMMECRates.fNC    = 0;
+        tfMMECRates.fCGR   = 0;
+        tfMMECRates.fWCGR  = 0;
     else
-        this.tfMMECRates.fWC    = fHWC;
-        this.tfMMECRates.fTR    = fHTR;
-        this.tfMMECRates.fOC    = fHOC;
-        this.tfMMECRates.fOP    = fHOP;
-        this.tfMMECRates.fCO2C  = fHCO2C;
-        this.tfMMECRates.fCO2P  = fHCO2P;
-        this.tfMMECRates.fNC    = fHNC;
+        tfMMECRates.fWC    = fHWC;
+        tfMMECRates.fTR    = fHTR;
+        tfMMECRates.fOC    = fHOC;
+        tfMMECRates.fOP    = fHOP;
+        tfMMECRates.fCO2C  = fHCO2C;
+        tfMMECRates.fCO2P  = fHCO2P;
+        tfMMECRates.fNC    = fHNC;
 
         % growth rate on dry basis because edible and inedible biomass parts
         % have different water contents
-        this.tfMMECRates.fCGR   = fHCGR;
-        this.tfMMECRates.fWCGR  = fHWCGR;
+        tfMMECRates.fCGR   = fHCGR;
+        tfMMECRates.fWCGR  = fHWCGR;
     end
     
 	% For debugging, if the mass balance is no longer correct

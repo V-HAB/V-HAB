@@ -37,7 +37,8 @@ function PlantGrowth( this, fSimTime)
             if (fCO2 >= 330) && (fCO2 <= 1300)
 
                 % get the 8 parameters via MMEC and FAO model equations
-                this.CalculateMMECRates(...
+                this.tfMMECRates = this.CalculateMMECRates(...
+                        this.fInternalTime,...              % Internal time for the MMEC calculation of the plant culture
                         fPressureAtmosphere, ...            % atmosphere pressure
                         fDensityAtmosphere, ...             % atmosphere density
                         fRelativeHumidityAtmosphere, ...    % atmosphere relative humidity
@@ -49,7 +50,8 @@ function PlantGrowth( this, fSimTime)
             % still, using maximum value
             elseif (fCO2 > 1300) 
                % get the 8 parameters via MMEC and FAO model equations
-               this.CalculateMMECRates(...
+               this.tfMMECRates = this.CalculateMMECRates(...
+                        this.fInternalTime,...                      % Internal time for the MMEC calculation of the plant culture
                         fPressureAtmosphere, ...                    % atmosphere pressure
                         fDensityAtmosphere, ...                     % atmosphere density
                         fRelativeHumidityAtmosphere, ...            % atmosphere relative humidity
@@ -61,7 +63,8 @@ function PlantGrowth( this, fSimTime)
             % still, using minimum value
             elseif (fCO2 < 330) && (fCO2 > 150)
                 % get the 8 parameters via MMEC and FAO model equations
-                this.CalculateMMECRates(...
+                this.tfMMECRates = this.CalculateMMECRates(...
+                        this.fInternalTime,...                      % Internal time for the MMEC calculation of the plant culture
                         fPressureAtmosphere, ...                    % atmosphere pressure
                         fDensityAtmosphere, ...                     % atmosphere density
                         fRelativeHumidityAtmosphere, ...            % atmosphere relative humidity
@@ -192,15 +195,24 @@ function PlantGrowth( this, fSimTime)
     % For I_max some more wild guesses, assuming that it is reached at a solution concentration of 1mM (= 1 mol/m³)
     fI_max = 1.25e-4;% [mol s^-1 kg_dryweight^-1)] original value from MA of Alexandra Nikic was 1.25e-6
     
-    fNO3Flow = -this.toBranches.WaterSupply_In.fFlowRate * this.toBranches.WaterSupply_In.aoFlows(1).arPartialMass(this.oMT.tiN2I.NO3);
+    if this.toBranches.WaterSupply_In.fFlowRate == 0 && this.toBranches.WaterSupply_In.oHandler.fRequestedFlowRate ~= 0
+        fWaterFlow = -this.toBranches.WaterSupply_In.oHandler.fRequestedFlowRate;
+        rNO3        = this.toBranches.WaterSupply_In.coExmes{2}.oPhase.arPartialMass(this.oMT.tiN2I.NO3);
+        fDensity    = this.toBranches.WaterSupply_In.coExmes{2}.oPhase.fDensity;
+    else
+        fWaterFlow  = -this.toBranches.WaterSupply_In.fFlowRate;
+        rNO3        = this.toBranches.WaterSupply_In.aoFlows(1).arPartialMass(this.oMT.tiN2I.NO3);
+        fDensity    = this.toBranches.WaterSupply_In.aoFlows(1).getDensity;
+    end
+    fNO3Flow = fWaterFlow * rNO3;
 
     fSolutionNO3MolarFlow = fNO3Flow / this.oMT.afMolarMass(this.oMT.tiN2I.NO3);
 
     % converting the nitrate concentration to mol/m³
-    if this.toBranches.WaterSupply_In.fFlowRate == 0
+    if fWaterFlow == 0
         fSolutionConcentration_NO3 = 0;
     else
-        fSolutionConcentration_NO3 = (fSolutionNO3MolarFlow/(-this.toBranches.WaterSupply_In.fFlowRate/ this.toBranches.WaterSupply_In.aoFlows(1).getDensity));
+        fSolutionConcentration_NO3 = (fSolutionNO3MolarFlow/(fWaterFlow/ fDensity));
     end
     
     % C_min abolished here because it was rendered unimportant. Values for
@@ -349,7 +361,11 @@ function PlantGrowth( this, fSimTime)
     this.fNutrientConsumptionRate = this.tfUptakeRate_Structure.NO3;
     
     if fCurrentStorageMass >= fMaxStorageMass
-        this.tfUptakeRate_Storage.NO3 = this.tfUptakeRate_Structure.NO3_Total;
+        if fNO3Flow > this.tfUptakeRate_Structure.NO3_Total
+            this.tfUptakeRate_Storage.NO3 = this.tfUptakeRate_Structure.NO3_Total;
+        else
+            this.tfUptakeRate_Storage.NO3 = fNO3Flow;
+        end
     end
     
     % For debugging, if the mass balance is no longer correct
