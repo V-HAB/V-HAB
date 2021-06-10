@@ -128,6 +128,16 @@ classdef infrastructure < base & event.source
         % advanceFor(), advanceTo(), tickFor() and tickTo() methods. 
         bBranchesDisconnected  = false;
         
+        % A boolean to decide if a zip with the name "SimulationOutput.zip"
+        % shall be created in the V-HAB base directory everytime new data
+        % is dumped. This is usefull when V-HAB is executed on high
+        % performance computers in batch mode, as the zip with fixed name
+        % can be set as output file for the batch job
+        bCreateSimulationOutputZIP = false;
+        % In addition since batch jobs would overwrite the specific file if
+        % multiple jobs all produce the same .ZIP file, a batch specific
+        % output name, which the HPC also recognizes is necessary
+        sOutputName;
     end
     
     % It is unknown why this property requires the dependent attribute to
@@ -253,6 +263,13 @@ classdef infrastructure < base & event.source
                 % This simulation is being run individually, so we can just
                 % call the matter table constructor directly.
                 oMT = matter.table();
+            end
+            
+            if isKey(ptConfigParams, 'BatchExecution')
+                cConfigParams = ptConfigParams('BatchExecution');
+                this.bCreateSimulationOutputZIP = cConfigParams{1};
+                
+                this.sOutputName = cConfigParams{2};
             end
             
             % Showing the user how long it took to create the matter table

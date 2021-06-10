@@ -854,7 +854,13 @@ classdef logger < simulation.monitor
                 oLastSimObj = this.oSimulationInfrastructure; 
                 
                 % Actually saving the object into the mat file.
-                save(sFileName, 'oLastSimObj');
+                save(sFileName, 'oLastSimObj', '-v7.3');
+                
+                if this.oSimulationInfrastructure.bCreateSimulationOutputZIP
+                    % create the zip data in the batch specific output file
+                    sZipFolderName = sprintf('data/runs/%s', this.sStorageDirectory);
+                    zip(['SimulationOutput_', this.oSimulationInfrastructure.sOutputName], sZipFolderName)
+                end
             end
         end
         
@@ -915,6 +921,12 @@ classdef logger < simulation.monitor
             % Actually saving the object into the mat file.
             save(sFileName, 'oLastSimObj', '-v7.3');
             
+            if this.oSimulationInfrastructure.bCreateSimulationOutputZIP
+                % create the zip data in the batch specific output file
+                sZipFolderName = sprintf('data/runs/%s', this.sStorageDirectory);
+                zip(['SimulationOutput_', this.oSimulationInfrastructure.sOutputName], sZipFolderName)
+            end
+                
             % To prevent MATLAB from crashing during saves, the saveobj()
             % method of the infrastructure class will disconnect all
             % branches on the right side. See that class for a more
