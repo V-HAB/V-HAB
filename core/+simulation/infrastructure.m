@@ -694,6 +694,17 @@ classdef infrastructure < base & event.source
             %   This will limit the length of the hierarchy tree. In the
             %   loadobj() method of this class (see below) this process is
             %   reversed.
+            
+            % For some weird reason the entire simulation object is saved
+            % when tools.postprocessing.plotter.saveFigureAs is used. That
+            % can lead to extremely large file sizes. To catch this we look
+            % at the debug stack here, if this save method was invoked by
+            % the savefig() function, we just return an empty variable. 
+            tDBStack = dbstack;
+            if strcmp(tDBStack(3).name, 'savefig')
+                oOutput = [];
+                return;
+            end
 
             % Setting the output object handle to the input object handle.
             % The example in the MATLAB documentation does this as well,
