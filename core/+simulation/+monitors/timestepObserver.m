@@ -127,9 +127,6 @@ classdef timestepObserver < simulation.monitor
                 elseif isa(oCaller, 'solver.matter.fdm_liquid.branch_liquid')
                     csReports{iIndex} = ['The compressible liquid matter solver in the system ', oCaller.oBranch.oContainer.sName, ' used a minimal time step of ', num2str(fMinStep), ' seconds in Simulation Tick ', num2str(this.oTimer.iTick)];
                 
-                elseif isa(oCaller, 'solver.matter.incompressible_liquid.branch_incompressible_liquid')
-                    csReports{iIndex} = ['The compressible liquid matter solver in the system ', oCaller.oBranch.oContainer.sName, ' used a minimal time step of ', num2str(fMinStep), ' seconds in Simulation Tick ', num2str(this.oTimer.iTick)];
-                
                 elseif isa(oCaller, 'matter.phase')
                     csReports{iIndex} = ['In the system ', oCaller.oStore.oContainer.sName, ' in Store ''', oCaller.oStore.sName, ''', Phase ''', oCaller.sName,''', a minimal time step of ' num2str(fMinStep), ' seconds was used in Simulation Tick ', num2str(this.oTimer.iTick)];
 

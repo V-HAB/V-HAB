@@ -39,7 +39,6 @@ cParentRefs = {
     'solver.matter.base.branch', 'Branch', 'Handler';
     'solver.matter.equalizer.branch', 'Branch', 'Handler';
     'solver.matter.fdm_liquid.branch_liquid', 'Branch', 'Handler';
-    'solver.matter.incompressible_liquid.branch_incompressible_liquid', 'Branch', 'Handler';
     'solver.matter.interval.branch', 'Branch', 'Handler';
     'solver.matter.linear.branch', 'Branch', 'Handler';
     'solver.matter.manual.branch', 'Branch', 'Handler';
