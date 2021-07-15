@@ -44,6 +44,44 @@ classdef RCA_FilterProc_sorp < components.matter.filter.FilterProc_sorp_old
             this.oParentSys = oParentSys;
         end
         
+        % Desorption function after generic filter
+        % Delete also the values for the plotting
+        function desorption(this, rDesorptionRatio)
+            desorption@components.matter.filter.FilterProc_sorp_old(this, rDesorptionRatio)
+            
+            % Reset plotting values
+            this.q_plot        = zeros(3,this.iNumSubstances);
+            this.c_plot        = zeros(3,this.iNumSubstances);
+            this.q_plot_H2O    = zeros(3,1);
+            this.q_plot_O2     = zeros(3,1);
+            this.q_plot_CO2    = zeros(3,1);
+            this.c_plot_H2O    = zeros(3,1);
+            this.c_plot_O2     = zeros(3,1);
+            this.c_plot_CO2    = zeros(3,1);
+            this.rRH_in        = 0;
+            this.fDewPoint_in  = 0;
+            this.rRH_out       = 0;
+            this.fDewPoint_out = 0;
+            this.fC_CO2Out     = 0;
+
+            % Set flow rates in the inactive bed to zero
+            this.setMatterProperties(0, this.arPartials_ads);
+            this.DesorptionProc.setMatterProperties(0, this.arPartials_des);
+            
+            this.oOut.oPhase.desorb();
+            
+        end
+        
+        function reset_timer(this, fTime)
+            % Set the timer for the new bed to the time of the bed switch
+            % (as the new filterproc hasn't been called the values remained at the initial value)
+            this.fLastExec            = fTime;
+            this.fTimeDifference      = 0;
+            this.fCurrentSorptionTime = fTime;
+        end
+    end
+    
+    methods (Access = protected)
         function update(this)
                         
             % Execute only for the active bed
@@ -125,41 +163,5 @@ classdef RCA_FilterProc_sorp < components.matter.filter.FilterProc_sorp_old
             
             
         end
-        % Desorption function after generic filter
-        % Delete also the values for the plotting
-        function desorption(this, rDesorptionRatio)
-            desorption@components.matter.filter.FilterProc_sorp_old(this, rDesorptionRatio)
-            
-            % Reset plotting values
-            this.q_plot        = zeros(3,this.iNumSubstances);
-            this.c_plot        = zeros(3,this.iNumSubstances);
-            this.q_plot_H2O    = zeros(3,1);
-            this.q_plot_O2     = zeros(3,1);
-            this.q_plot_CO2    = zeros(3,1);
-            this.c_plot_H2O    = zeros(3,1);
-            this.c_plot_O2     = zeros(3,1);
-            this.c_plot_CO2    = zeros(3,1);
-            this.rRH_in        = 0;
-            this.fDewPoint_in  = 0;
-            this.rRH_out       = 0;
-            this.fDewPoint_out = 0;
-            this.fC_CO2Out     = 0;
-
-            % Set flow rates in the inactive bed to zero
-            this.setMatterProperties(0, this.arPartials_ads);
-            this.DesorptionProc.setMatterProperties(0, this.arPartials_des);
-            
-            this.oOut.oPhase.desorb();
-            
-        end
-        
-        function reset_timer(this, fTime)
-            % Set the timer for the new bed to the time of the bed switch
-            % (as the new filterproc hasn't been called the values remained at the initial value)
-            this.fLastExec            = fTime;
-            this.fTimeDifference      = 0;
-            this.fCurrentSorptionTime = fTime;
-        end
-        
     end
 end

@@ -112,14 +112,8 @@ classdef timestepObserver < simulation.monitor
                 elseif isa(oCaller, 'solver.thermal.lumpedparameter')
                     csReports{iIndex} = ['The lumped parameter thermal solver in the system ', oCaller.oVSys.sName, ' used a minimal time step of ', num2str(fMinStep), ' seconds in Simulation Tick ', num2str(this.oTimer.iTick)];
                 
-                elseif isa(oCaller, 'solver.matter.iterative.branch')
-                    csReports{iIndex} = ['The iterative matter solver in the system ', oCaller.oBranch.oContainer.sName, ' used a minimal time step of ', num2str(fMinStep), ' seconds in Simulation Tick ', num2str(this.oTimer.iTick)];
-                    
                 elseif isa(oCaller, 'solver.matter.interval.branch')
                     csReports{iIndex} = ['The interval matter solver in the system ', oCaller.oBranch.oContainer.sName, ' used a minimal time step of ', num2str(fMinStep), ' seconds in Simulation Tick ', num2str(this.oTimer.iTick)];
-                   
-                elseif isa(oCaller, 'solver.matter.linear.branch')
-                    csReports{iIndex} = ['The linear matter solver in the system ', oCaller.oBranch.oContainer.sName, ' used a minimal time step of ', num2str(fMinStep), ' seconds in Simulation Tick ', num2str(this.oTimer.iTick)];
                    
                 elseif isa(oCaller, 'solver.matter_multibranch.iterative.branch')
                     csReports{iIndex} = ['The multibranch matter solver in the system ', oCaller.aoBranches(1).oContainer.sName, ' used a minimal time step of ', num2str(fMinStep), ' seconds in Simulation Tick ', num2str(this.oTimer.iTick)];

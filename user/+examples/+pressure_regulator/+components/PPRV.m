@@ -100,6 +100,7 @@ classdef PPRV < matter.procs.f2f
             this.fHydrLength = this.fHeightCone / cos(deg2rad(this.fThetaCone / 2));
             
             this.supportSolver('hydraulic', this.fHydrDiam, this.fHydrLength, true, @this.update);
+            this.supportSolver('callback',  @this.solverDeltas);
         end
         
         function setEnvironmentReference(this, oGasPhaseEnvRef)
@@ -177,6 +178,25 @@ classdef PPRV < matter.procs.f2f
             end
             
             this.toSolve.hydraulic.fHydrDiam = this.fHydrDiam;
+        end
+        
+        function fDeltaPressure = solverDeltas(this, fFlowRate)
+            
+            this.update();
+            fCoeff = this.fHydrDiam * 0.00000133 * 20 ./ this.fHydrLength;
+            
+            oPhaseLeft = this.oBranch.coExmes{1}.oPhase;
+            fChamberPressureLeft = oPhaseLeft.fMass * oPhaseLeft.fMassToPressure;
+            oPhaseRight = this.oBranch.coExmes{2}.oPhase;
+            fChamberPressureRight = oPhaseRight.fMass * oPhaseRight.fMassToPressure;
+            
+            fTargetFlowRate = fCoeff * (fChamberPressureLeft - fChamberPressureRight);
+            
+            % if the flowrate is too small, reduce the pressure drop to
+            % allow higher flowrates. If it is too large increase the
+            % pressure drop to enforce lower flowrates
+            fDeltaPressure = (fFlowRate / fTargetFlowRate) * (fChamberPressureLeft - fChamberPressureRight);
+            
         end
     end
 end

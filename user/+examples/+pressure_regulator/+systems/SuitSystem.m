@@ -71,7 +71,7 @@ classdef SuitSystem < vsys
             matter.store(this, 'O2Tank', 0.1);
             % add phase to store oxygen tank, pressure 50 bar
             oGasPhaseTank = this.toStores.O2Tank.createPhase(this.sAtmosphereHelper, 0.1, 293.15, 0, 50e5);
-            oGasPhaseTank.bSynced = true;
+%             oGasPhaseTank.bSynced = true;
             
             % create store suit tank, acts as a reference for the
             % space suit working pressure,
@@ -160,13 +160,11 @@ classdef SuitSystem < vsys
             this.oManual.setFlowRate(this.fLeakageSuit);
             
             % add environment reference branch to solver
-            this.oReference = solver.matter.iterative.branch(this.toBranches.ReferenceBranch);
-            this.oReference.fFixedTS = this.fFixedTimeStep;
+            this.oReference = solver.matter.interval.branch(this.toBranches.ReferenceBranch);
             
             if this.bPPRVExists
                 % add pressure relief branch to solver
-                this.oRelief = solver.matter.linear.branch(this.toBranches.PPRVBranch);
-                this.oRelief.fFixedTS = this.fFixedTimeStep;
+                this.oRelief = solver.matter.interval.branch(this.toBranches.PPRVBranch);
             end
             
             this.setThermalSolvers();

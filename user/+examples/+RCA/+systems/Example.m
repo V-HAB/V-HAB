@@ -33,8 +33,8 @@ classdef Example < vsys
             cAirHelper = matter.helper.phase.create.N2Atmosphere(this.toStores.SpaceSuit, 0.015, fInitialTemperature);
             oAir = matter.phases.flow.gas(this.toStores.SpaceSuit, 'N2Atmosphere',  cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             
-            special.matter.const_press_exme(oAir, 'Out', 28900);
-            special.matter.const_press_exme(oAir, 'In', 28300);
+            solver.matter.special_exmes.const_press_exme(oAir, 'Out', 28900);
+            solver.matter.special_exmes.const_press_exme(oAir, 'In', 28300);
             matter.procs.exmes.gas(oAir, 'H2OInlet');
             matter.procs.exmes.gas(oAir, 'CO2Inlet');
             matter.procs.exmes.gas(oAir, 'N2Inlet');
@@ -67,12 +67,12 @@ classdef Example < vsys
             matter.branch(this, 'N2Store.N2Port', {'Pipe_N2'}, 'SpaceSuit.N2Inlet');
             
             % Adding pipes to connect the components
-            components.matter.pipe(this, 'Pipe_1', this.fPipeLength, this.fPipeDiameter);
-            components.matter.pipe(this, 'Pipe_2', this.fPipeLength, this.fPipeDiameter);
+            components.matter.pipe(this, 'Pipe_Out', this.fPipeLength, this.fPipeDiameter);
+            components.matter.pipe(this, 'Pipe_In', this.fPipeLength, this.fPipeDiameter);
             
             % Creating flow branches to connect to the RCA
-            matter.branch(this, 'RCA_In', {'Pipe_1'}, 'SpaceSuit.Out');
-            matter.branch(this, 'RCA_Out', {'Pipe_2'}, 'SpaceSuit.In');
+            matter.branch(this, 'RCA_In', {'Pipe_Out'}, 'SpaceSuit.Out');
+            matter.branch(this, 'RCA_Out', {'Pipe_In'}, 'SpaceSuit.In');
             
             % Setting the in and out flow for the RCA
             this.toChildren.RCA.setInterfaces('RCA_In', 'RCA_Out');
