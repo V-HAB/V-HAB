@@ -103,7 +103,7 @@ classdef ManualP2P < matter.procs.p2ps.stationary
     end
     methods (Access = protected)
         function checkMassTransfer(this,~)
-            if this.bMassTransferActive && abs(this.oTimer.fTime - this.fMassTransferFinishTime) < this.oTimer.fMinimumTimeStep
+            if this.bMassTransferActive && this.fMassTransferFinishTime - this.oTimer.fTime < this.oTimer.fMinimumTimeStep
                 
                 this.afFlowRates = zeros(1,this.oMT.iSubstances);
                 
@@ -117,7 +117,7 @@ classdef ManualP2P < matter.procs.p2ps.stationary
                 this.oIn.oPhase.registerMassupdate();
                 this.oOut.oPhase.registerMassupdate();
                 
-            elseif this.bMassTransferActive && abs(this.oTimer.fTime - this.fMassTransferFinishTime) > this.oTimer.fMinimumTimeStep
+            elseif this.bMassTransferActive && this.fMassTransferFinishTime - this.oTimer.fTime > this.oTimer.fMinimumTimeStep
                 % If the branch is called before the set mass transfer time
                 % step, the afLastExec property in the timer for this
                 % branch is updated, while the timestep remains. This can

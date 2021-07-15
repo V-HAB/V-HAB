@@ -118,15 +118,17 @@ classdef SCRA < vsys
             components.matter.SCRA.components.CondenserCounterpart(this, 'CRA_CHXCoolant', oCondenser, oP2P);
             components.matter.SCRA.components.CondenserTemperatureChange(this, 'CondenserTempChange', oCondenser);
             
-            %Finally the flowpaths between all components
-            matter.branch(this, oH2,                        {'Pipe_001', 'CRA_H2_Regulator'},                 	'SCRA_H2_In',           'CRA_H2_In');
-            matter.branch(this, oAccumulatorCO2,            {'Pipe_002'},                                       'SCRA_CO2_In',          'CRA_CO2_In');
-            matter.branch(this, oAccumulatorCO2,            {'Pipe_003'},                                       oCRA_SabatierPhase, 	'Accumulator_To_CRA');
+            components.matter.SCRA.components.const_press_exme(oAccumulatorCO2, 'SCRA_CO2_Inlet', 10);
             
-            matter.branch(this, oCRA_SabatierPhase,         {'Pipe_004', 'CRA_CHX', 'Checkvalve'},	oCRA_WaterRecGasPhase,	'CRA_ProductstoWaterRecbranch');
-            matter.branch(this, oCRA_WaterRecGasPhase,      {'Pipe_005', 'CondenserTempChange', 'VacuumOutlet'},  	'SCRA_DryGas_Out',   	'CRA_DryGastoVent');
-            matter.branch(this, oCRA_WaterRecLiquidPhase,	{'Pipe_006'},                                       'SCRA_Condensate_Out',	'CRA_RecWaterOut');
-            matter.branch(this, oCRA_CHXPhase,              {'Pipe_007'},                                       'SCRA_CoolantIn',     	'CRA_CoolantLoopIn');
+            %Finally the flowpaths between all components
+            matter.branch(this, oH2,                                {'Pipe_001', 'CRA_H2_Regulator'},                 	'SCRA_H2_In',           'CRA_H2_In');
+            matter.branch(this, 'CRA_Accumulator.SCRA_CO2_Inlet',  	{'Pipe_002'},                                       'SCRA_CO2_In',          'CRA_CO2_In');
+            matter.branch(this, oAccumulatorCO2,                    {'Pipe_003'},                                       oCRA_SabatierPhase, 	'Accumulator_To_CRA');
+            
+            matter.branch(this, oCRA_SabatierPhase,                 {'Pipe_004', 'CRA_CHX', 'Checkvalve'},	oCRA_WaterRecGasPhase,	'CRA_ProductstoWaterRecbranch');
+            matter.branch(this, oCRA_WaterRecGasPhase,              {'Pipe_005', 'CondenserTempChange', 'VacuumOutlet'},  	'SCRA_DryGas_Out',   	'CRA_DryGastoVent');
+            matter.branch(this, oCRA_WaterRecLiquidPhase,           {'Pipe_006'},                                       'SCRA_Condensate_Out',	'CRA_RecWaterOut');
+            matter.branch(this, oCRA_CHXPhase,                      {'Pipe_007'},                                       'SCRA_CoolantIn',     	'CRA_CoolantLoopIn');
             % As can be seen in the Schematic of the SCRA (Figure 3 in
             % "Integrated Test and Evaluation of a 4-Bed Molecular Sieve
             % (4BMS) Carbon Dioxide Removal System (CDRA), Mechanical

@@ -366,7 +366,21 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                         mfFlowRatesAdsorption(abLimitP2PFlows) = this.afPartialInFlows(abLimitP2PFlows);
                     end
                 end
-
+                
+                if this.bDesorption
+                    if this.oOut.oPhase.afMass(this.oMT.tiN2I.H2O) > this.oOut.oPhase.afMass(this.oMT.tiN2I.CO2) 
+                        if this.oOut.oPhase.fTemperature <= 285 || this.oIn.oPhase.fPressure > 0.9e5
+                            % prevent desorpption if the temperature becomes too
+                            % low (freezing conditions) as during these conditions
+                            % the current calculation will not work correctly. This
+                            % basically makes the CDRA more conservative, at no
+                            % desorption for the beds means that it requires longer
+                            % to release mass during these times.
+                            mfFlowRatesDesorption = zeros(1, this.oMT.iSubstances);
+                        end
+                    end
+                end
+                
                 %% get the final adsorption and desorption flowrates and partials
                 fDesorptionFlowRate                             = sum(mfFlowRatesDesorption);
                 arPartialsDesorption                            = zeros(1,this.oMT.iSubstances);

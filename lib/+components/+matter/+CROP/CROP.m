@@ -105,6 +105,8 @@ classdef CROP < vsys
             
             components.matter.P2Ps.ManualP2P(this.toStores.CROP_Tank, 'Calcite_to_TankSolution',  oCalcite , oTankSolution);
             
+            components.matter.Manips.ManualManipulator(this.toStores.CROP_Tank, 'UrineConversion', oTankSolution);
+            
             % Two branches to realize the wastewater circulation between
             % the two stores
             matter.branch(this, 'CROP_Tank.Tank_Out',       { }, oFlow,                     'Tank_to_BioFilter');
@@ -211,16 +213,36 @@ classdef CROP < vsys
         function exec(this, ~)
             exec@vsys(this);
             
+            % Check if urine must be converted
+            if  this.toStores.CROP_Tank.toPhases.TankSolution.afMass(this.oMT.tiN2I.Urine) > 0 && ~this.toBranches.CROP_Urine_Inlet.oHandler.bMassTransferActive && ~this.toStores.CROP_Tank.toPhases.TankSolution.toManips.substance.bMassTransferActive
+                afUrineMass = zeros(1, this.oMT.iSubstances);
+                if this.toStores.CROP_Tank.toPhases.TankSolution.afMass(this.oMT.tiN2I.Urine) > 1e-2
+                    afUrineMass(this.oMT.tiN2I.Urine) = this.toStores.CROP_Tank.toPhases.TankSolution.afMass(this.oMT.tiN2I.Urine) - 1e-2;
+                elseif this.toStores.CROP_Tank.toPhases.TankSolution.afMass(this.oMT.tiN2I.Urine) < 1e-8
+                    afUrineMass(this.oMT.tiN2I.Urine) = this.toStores.CROP_Tank.toPhases.TankSolution.afMass(this.oMT.tiN2I.Urine);
+                else
+                    afUrineMass(this.oMT.tiN2I.Urine) = 0.99 * this.toStores.CROP_Tank.toPhases.TankSolution.afMass(this.oMT.tiN2I.Urine);
+                end
+                afResolvedCompoundMass = this.oMT.resolveCompoundMass(afUrineMass, this.toStores.CROP_Tank.toPhases.TankSolution.arCompoundMass);
+
+                afResolvedCompoundMass(this.oMT.tiN2I.Urine) = - afUrineMass(this.oMT.tiN2I.Urine);
+
+                this.toStores.CROP_Tank.toPhases.TankSolution.toManips.substance.setMassTransfer(afResolvedCompoundMass, 60);
+            end
+
             if ~this.bManualUrineSupply
                 % This part is only performed if crop should automatically
                 % refill and this is not handled by the parent system
                 if this.toStores.CROP_Tank.toPhases.TankSolution.afMass(this.oMT.tiN2I.CH4N2O) < 2e-3 &&...
-                    ~this.toBranches.CROP_Solution_Outlet.oHandler.bMassTransferActive
+                    ~this.toBranches.CROP_Solution_Outlet.oHandler.bMassTransferActive && ...
+                    ~this.toStores.CROP_Tank.toPhases.TankSolution.toManips.substance.bMassTransferActive
                     % In this case the urea within the CROP system has been
                     % converted to ammonium or ammonia and can be used in plant
                     % systems. Therefore we first empty the tank and then
                     % refill it with fresh urine
-                    if this.toStores.CROP_Tank.toPhases.TankSolution.fMass > 0.02 * sum(this.afInitialMasses)
+                    if (this.toStores.CROP_Tank.toPhases.TankSolution.fMass > 0.02 * sum(this.afInitialMasses)) &&...
+                            this.toStores.CROP_Tank.toPhases.TankSolution.fMass > 0.001 && this.toStores.CROP_Tank.toPhases.TankSolution.afMass(this.oMT.tiN2I.Urine) < 0.1
+
                         this.toBranches.CROP_Solution_Outlet.oHandler.setMassTransfer(0.99 * this.toStores.CROP_Tank.toPhases.TankSolution.fMass, 60);
 
                         tTimeStepProperties = struct();
@@ -233,7 +255,26 @@ classdef CROP < vsys
 
                     elseif ~this.toBranches.CROP_Urine_Inlet.oHandler.bMassTransferActive
                         if this.toBranches.CROP_Urine_Inlet.coExmes{2}.oPhase.fMass > this.fCapacity
-                            this.toBranches.CROP_Urine_Inlet.oHandler.setMassTransfer(-( this.fCapacity - this.toStores.CROP_Tank.toPhases.TankSolution.fMass), 60);
+
+                            csChilds = fieldnames(this.oParent.toChildren);
+                            bOtherCROP_ReceivingUrine = false;
+                            for iChild = 1:length(csChilds)
+                                if isa(this.oParent.toChildren.(csChilds{iChild}), 'components.matter.CROP.CROP')
+                                    if this.oParent.toChildren.(csChilds{iChild}).toBranches.CROP_Urine_Inlet.oHandler.bMassTransferActive
+                                        bOtherCROP_ReceivingUrine = true;
+                                    end
+                                end
+                            end
+                            if ~bOtherCROP_ReceivingUrine
+                            
+                                tTimeStepProperties = struct();
+                                tTimeStepProperties.rMaxChange = inf;
+                                this.toStores.CROP_Tank.toPhases.TankSolution.oCapacity.setTimeStepProperties(tTimeStepProperties);
+                                tTimeStepProperties.arMaxChange = zeros(1, this.oMT.iSubstances);
+                                this.toStores.CROP_Tank.toPhases.TankSolution.setTimeStepProperties(tTimeStepProperties);
+
+                                this.toBranches.CROP_Urine_Inlet.oHandler.setMassTransfer(-( this.fCapacity - this.toStores.CROP_Tank.toPhases.TankSolution.fMass), 60);
+                            end
                         end
                     end
                     this.bResetInitialMass = true;
@@ -241,8 +282,8 @@ classdef CROP < vsys
 
                 % Check if we have to reset the initial mass since we refilled
                 % the tank:
-                if this.bResetInitialMass && ~this.toBranches.CROP_Urine_Inlet.oHandler.bMassTransferActive && ~this.toBranches.CROP_Solution_Outlet.oHandler.bMassTransferActive &&...
-                    this.toStores.CROP_Tank.toPhases.TankSolution.fMass > 0.5 * this.fCapacity
+                if this.bResetInitialMass && ~this.toBranches.CROP_Urine_Inlet.oHandler.bMassTransferActive && ~this.toStores.CROP_Tank.toPhases.TankSolution.toManips.substance.bMassTransferActive &&...
+                        ~this.toBranches.CROP_Solution_Outlet.oHandler.bMassTransferActive && this.toStores.CROP_Tank.toPhases.TankSolution.fMass > 0.5 * this.fCapacity
                     this.afInitialMasses = this.toStores.CROP_Tank.toPhases.TankSolution.afMass;
                     this.toBranches.Tank_to_BioFilter.oHandler.setVolumetricFlowRate(1 / 3600);
 
@@ -264,24 +305,31 @@ classdef CROP < vsys
                     this.bResetInitialMass = false;
                 end
             end
-            % If the calcite mass within CROP drops below 50g resupply new
-            % calcite:
-            if this.toStores.CROP_Tank.toPhases.Calcite.afMass(this.oMT.tiN2I.CaCO3) < 0.05 && ~this.toBranches.CROP_Calcite_Inlet.oHandler.bMassTransferActive
-                fRequiredCalcite = 0.5 - this.toStores.CROP_Tank.toPhases.Calcite.afMass(this.oMT.tiN2I.CaCO3);
-                this.toBranches.CROP_Calcite_Inlet.oHandler.setMassTransfer(- fRequiredCalcite, 60)
-            end
             
-            % Check crop tank temperature and regulate it:
-            oCapacity = this.toStores.CROP_Tank.toPhases.TankSolution.oCapacity;
-            fHeatFlow = 0;
-            if ~this.bResetInitialMass 
-                fTemperatureDifference = 298.15 - oCapacity.fTemperature;
-                fHeatFlow = (fTemperatureDifference * oCapacity.fTotalHeatCapacity) / (5*this.fTimeStep);
-                oCapacity.toHeatSources.Heater.setHeatFlow(fHeatFlow);
+            if this.toStores.CROP_Tank.toPhases.TankSolution.fMass < 1
+                this.toBranches.Tank_to_BioFilter.oHandler.setVolumetricFlowRate(0);
+                oCapacity = this.toStores.CROP_Tank.toPhases.TankSolution.oCapacity;
+                oCapacity.toHeatSources.Heater.setHeatFlow(0);
             else
-                oCapacity.toHeatSources.Heater.setHeatFlow(fHeatFlow);
+                % If the calcite mass within CROP drops below 50g resupply new
+                % calcite:
+                if this.toStores.CROP_Tank.toPhases.Calcite.afMass(this.oMT.tiN2I.CaCO3) < 0.05 && ~this.toBranches.CROP_Calcite_Inlet.oHandler.bMassTransferActive
+                    fRequiredCalcite = 0.5 - this.toStores.CROP_Tank.toPhases.Calcite.afMass(this.oMT.tiN2I.CaCO3);
+                    this.toBranches.CROP_Calcite_Inlet.oHandler.setMassTransfer(- fRequiredCalcite, 60)
+                end
+
+                % Check crop tank temperature and regulate it:
+                oCapacity = this.toStores.CROP_Tank.toPhases.TankSolution.oCapacity;
+                fHeatFlow = 0;
+                if ~this.bResetInitialMass 
+                    fTemperatureDifference = 298.15 - oCapacity.fTemperature;
+                    fHeatFlow = (fTemperatureDifference * oCapacity.fTotalHeatCapacity) / (5*this.fTimeStep);
+                    oCapacity.toHeatSources.Heater.setHeatFlow(fHeatFlow);
+                else
+                    oCapacity.toHeatSources.Heater.setHeatFlow(fHeatFlow);
+                end
+                this.fCurrentPowerConsumption = 7 + abs(fHeatFlow);
             end
-            this.fCurrentPowerConsumption = 7 + abs(fHeatFlow);
         end
     end
 end

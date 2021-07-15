@@ -134,7 +134,7 @@ classdef ManualManipulator < matter.manips.substance.stationary
             % manip was bound
             this.setMassTransferTimeStep(fTime, true);
             
-            if nargin > 2
+            if nargin > 3
                 this.aarManualFlowsToCompound = aarFlowsToCompound;
             else
                 this.aarManualFlowsToCompound = zeros(this.oPhase.oMT.iSubstances, this.oPhase.oMT.iSubstances);
@@ -147,7 +147,7 @@ classdef ManualManipulator < matter.manips.substance.stationary
     end
     methods (Access = protected)
         function checkMassTransfer(this,~)
-            if this.bMassTransferActive && abs(this.oTimer.fTime - this.fMassTransferFinishTime) < this.oTimer.fMinimumTimeStep
+            if this.bMassTransferActive && this.fMassTransferFinishTime - this.oTimer.fTime < this.oTimer.fMinimumTimeStep
                 
                 this.afManualFlowRates = zeros(1,this.oMT.iSubstances);
                 this.aarManualFlowsToCompound = zeros(this.oPhase.oMT.iSubstances, this.oPhase.oMT.iSubstances);
@@ -159,7 +159,7 @@ classdef ManualManipulator < matter.manips.substance.stationary
                 % we trigger the updates of the manipulators in the post tick!
                 this.oPhase.registerMassupdate();
                 
-            elseif this.bMassTransferActive && abs(this.oTimer.fTime - this.fMassTransferFinishTime) > this.oTimer.fMinimumTimeStep
+            elseif this.bMassTransferActive && this.fMassTransferFinishTime - this.oTimer.fTime > this.oTimer.fMinimumTimeStep
                 % If the branch is called before the set mass transfer time
                 % step, the afLastExec property in the timer for this
                 % branch is updated, while the timestep remains. This can
