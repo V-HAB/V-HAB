@@ -133,7 +133,7 @@ classdef PlantCulture < vsys
         
         fLastUpdate = 0;
         
-        fNutrientSolutionFlowPerSquareMeter = 0.01; % kg/s
+        fNutrientSolutionFlowPerSquareMeter = 0.1; % kg/s
         
         % Electricity consumption of the plant culture in W
         fPower = 0;
@@ -757,10 +757,10 @@ classdef PlantCulture < vsys
                         % the inedible biomass of each plant. It only requires the
                         % addition of that mass to the base composition struct
                         for iField = 1:length(csInedibleComposition)
-                            if strcmp(csInedibleComposition{iField}, 'H2O')
+                            if strcmp(csInedibleComposition{iField}, 'H2O') || strcmp(csInedibleComposition{iField}, 'NO3')
                                 continue
                             end
-                            rMassRatioWithoutWater = (trBaseCompositionInedible.(csInedibleComposition{iField}) / (1 - trBaseCompositionInedible.H2O));
+                            rMassRatioWithoutWater = (trBaseCompositionInedible.(csInedibleComposition{iField}) / (1 - trBaseCompositionInedible.H2O - trBaseCompositionInedible.NO3));
                             aarManipCompoundMassRatios(this.iInedibleBiomass, this.oMT.tiN2I.(csInedibleComposition{iField}))   = rMassRatioWithoutWater * (afPartialFlows(1, this.iInedibleBiomass) - fWaterConsumptionInedible) / (afPartialFlows(1, this.iInedibleBiomass));
                         end
                     end
@@ -773,7 +773,6 @@ classdef PlantCulture < vsys
                     aarManipCompoundMassRatios(this.iInedibleBiomass, this.oMT.tiN2I.Biomass)   = fInedibleBiomassFlow / afPartialFlows(1, this.iInedibleBiomass);
                     aarManipCompoundMassRatios(this.iInedibleBiomass, this.oMT.tiN2I.NO3)       = fInedibleUptakeNO3 / afPartialFlows(1, this.iInedibleBiomass);
                 end
-            
             
                 this.toStores.Plant_Culture.toPhases.Balance.toManips.substance.setFlowRate(afPartialFlows, aarManipCompoundMassRatios);
 

@@ -344,7 +344,7 @@ function PlantGrowth( this, fSimTime)
     % Since we combine the MEC model with a new model for nutrient uptake,
     % we have to adjust the biomass growth rate by removing the MEC
     % nutrient growth rate:
-    fDifferenceMassFlow = this.tfUptakeRate_Structure.NO3 - this.rGlobalGrowthLimitationFactor * this.fNutrientConsumptionRate;
+    fDifferenceMassFlow = this.tfUptakeRate_Structure.NO3 - this.fNutrientConsumptionRate;
     if (this.tfBiomassGrowthRates.fGrowthRateInedible + fDifferenceMassFlow) < 0
         if this.tfBiomassGrowthRates.fGrowthRateInedible == 0
             this.tfBiomassGrowthRates.fGrowthRateEdible = this.tfBiomassGrowthRates.fGrowthRateEdible + fDifferenceMassFlow;

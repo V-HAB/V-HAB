@@ -40,7 +40,7 @@ classdef setup < simulation.infrastructure
 %             ttMonitorConfig.oMassBalanceObserver.cParams = { fAccuracy, fMaxMassBalanceDifference, bSetBreakPoints };
             
 
-            ttMonitorConfig.oLogger.cParams = {true, 20000};
+            ttMonitorConfig.oLogger.cParams = {true, 2500};
 
             this@simulation.infrastructure('ISS_ARS_MultiStore', ptConfigParams, tSolverParams, ttMonitorConfig);
             
@@ -283,8 +283,8 @@ classdef setup < simulation.infrastructure
                         this.tiPLantLogs(iPlant).miO2(iSubculture)                   = oLogger.addValue(['ISS_ARS_MultiStore.toChildren.', sCultureName],  'this.tfGasExchangeRates.fO2ExchangeRate',          'kg/s', [sCultureName, ' O2 Rate']);
                         this.tiPLantLogs(iPlant).miCO2(iSubculture)                  = oLogger.addValue(['ISS_ARS_MultiStore.toChildren.', sCultureName],  'this.tfGasExchangeRates.fCO2ExchangeRate',         'kg/s', [sCultureName, ' CO2 Rate']);
                         this.tiPLantLogs(iPlant).miTranspiration(iSubculture)        = oLogger.addValue(['ISS_ARS_MultiStore.toChildren.', sCultureName],  'this.tfGasExchangeRates.fTranspirationRate',       'kg/s', [sCultureName, ' Transpiration Rate']);
-                        this.tiPLantLogs(iPlant).miEdibleGrowth(iSubculture)         = oLogger.addValue(['ISS_ARS_MultiStore.toChildren.', sCultureName],  'this.tfBiomassGrowthRates.fGrowthRateInedible',    'kg/s', [sCultureName, ' Inedible Growth Rate']);
-                        this.tiPLantLogs(iPlant).miInedibleGrowth(iSubculture)       = oLogger.addValue(['ISS_ARS_MultiStore.toChildren.', sCultureName],  'this.tfBiomassGrowthRates.fGrowthRateEdible',      'kg/s', [sCultureName, ' Edible Growth Rate']);
+                        this.tiPLantLogs(iPlant).miEdibleGrowth(iSubculture)         = oLogger.addValue(['ISS_ARS_MultiStore.toChildren.', sCultureName],  'this.tfBiomassGrowthRates.fGrowthRateEdible',       'kg/s', [sCultureName, ' Inedible Growth Rate']);
+                        this.tiPLantLogs(iPlant).miInedibleGrowth(iSubculture)       = oLogger.addValue(['ISS_ARS_MultiStore.toChildren.', sCultureName],  'this.tfBiomassGrowthRates.fGrowthRateInedible',    	'kg/s', [sCultureName, ' Edible Growth Rate']);
 
                         this.tiPLantLogs(iPlant).miNO3UptakeStorage(iSubculture)     = oLogger.addValue(['ISS_ARS_MultiStore.toChildren.', sCultureName],  'this.tfUptakeRate_Storage.NO3',                     'kg/s', [sCultureName, ' NO3 Uptake Storage']);
                         this.tiPLantLogs(iPlant).miNO3UptakeStructure(iSubculture)	 = oLogger.addValue(['ISS_ARS_MultiStore.toChildren.', sCultureName],  'this.tfUptakeRate_Structure.NO3',                	'kg/s', [sCultureName, ' NO3 Uptake Structure']);
@@ -605,44 +605,40 @@ classdef setup < simulation.infrastructure
             %%%                   PLANT MODULE PLOTTING                 %%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Plots the total water that was consumed by the plants
+              
             if this.oSimulationContainer.toChildren.ISS_ARS_MultiStore.tbCases.PlantChamber
-                oISS = this.oSimulationContainer.toChildren.ISS_ARS_MultiStore;
-                for iPlant = 1:length(oISS.csPlants)
+                coPlotBiomasses = cell(0);
+                coPlotBiomasses{1,1} = oPlotter.definePlot(this.tiLogIndexes.Plants.Biomass(:),             'Current Biomass',              tPlotOptions);
+                coPlotBiomasses{1,2} = oPlotter.definePlot(this.tiLogIndexes.Plants.EdibleBiomassCum(:),    'Cumulative Edible Biomass',    tPlotOptions);
+                coPlotBiomasses{1,3} = oPlotter.definePlot(this.tiLogIndexes.Plants.InedibleBiomassCum(:),  'Cumulative Inedible Biomass',	tPlotOptions);
+                coPlotBiomasses{2,1} = oPlotter.definePlot(this.tiLogIndexes.Plants.EdibleBiomass(:),       'Current Edible Biomass',       tPlotOptions);
+                coPlotBiomasses{2,2} = oPlotter.definePlot(this.tiLogIndexes.Plants.EdibleGrowthRate(:),  	'Current Edible Growth Rate',   tPlotOptions);
+                coPlotBiomasses{2,3} = oPlotter.definePlot(this.tiLogIndexes.Plants.InedibleGrowthRate(:), 	'Current Inedible Growth Rate', tPlotOptions);
 
-                    coPlot = cell(0);
-                    coPlot{1,1} = oPlotter.definePlot(this.tiLogIndexes.Plants.Biomass(iPlant),             'Current Biomass',              tPlotOptions);
-                    coPlot{1,2} = oPlotter.definePlot(this.tiLogIndexes.Plants.EdibleBiomassCum(iPlant),    'Cumulative Edible Biomass',    tPlotOptions);
-                    coPlot{1,3} = oPlotter.definePlot(this.tiLogIndexes.Plants.InedibleBiomassCum(iPlant),  'Cumulative Inedible Biomass',	tPlotOptions);
-                    coPlot{2,1} = oPlotter.definePlot(this.tiLogIndexes.Plants.EdibleBiomass(iPlant),       'Current Edible Biomass',       tPlotOptions);
-                    coPlot{2,2} = oPlotter.definePlot(this.tiLogIndexes.Plants.EdibleGrowthRate(iPlant),  	'Current Edible Growth Rate',   tPlotOptions);
-                    coPlot{2,3} = oPlotter.definePlot(this.tiLogIndexes.Plants.InedibleGrowthRate(iPlant), 	'Current Inedible Growth Rate', tPlotOptions);
+                coPlotExchange = cell(0);
+                coPlotExchange{1,1} = oPlotter.definePlot(this.tiLogIndexes.Plants.WaterUptakeRate(:),  	'Current Water Uptake',     	tPlotOptions);
+                coPlotExchange{1,2} = oPlotter.definePlot(this.tiLogIndexes.Plants.TranspirationRate(:),  	'Current Transpiration',     	tPlotOptions);
+                coPlotExchange{1,3} = oPlotter.definePlot(this.tiLogIndexes.Plants.OxygenRate(:),          'Current Oxygen Production',    tPlotOptions);
+                coPlotExchange{1,4} = oPlotter.definePlot(this.tiLogIndexes.Plants.CO2Rate(:),             'Curent CO_2 Consumption',      tPlotOptions);
+                coPlotExchange{2,1} = oPlotter.definePlot(this.tiLogIndexes.Plants.WaterUptake(:),         'Cumulative Water Uptake',      tPlotOptions);
+                coPlotExchange{2,2} = oPlotter.definePlot(this.tiLogIndexes.Plants.Transpiration(:),      	'Cumulative Transpiration',     tPlotOptions);
+                coPlotExchange{2,3} = oPlotter.definePlot(this.tiLogIndexes.Plants.Oxygen(:),              'Cumulative Oxygen',            tPlotOptions);
+                coPlotExchange{2,4} = oPlotter.definePlot(this.tiLogIndexes.Plants.CO2(:),                 'Cumulative CO_2',              tPlotOptions);
 
-                    oPlotter.defineFigure(coPlot,       ['Plant Biomass ', oISS.csPlants{iPlant}]);
+                coPlotNutrients = cell(0);
+                coPlotNutrients{1,1} = oPlotter.definePlot(this.tiLogIndexes.Plants.NitrateStorageRate(:), 	'Current Storage Nitrate Uptake',	tPlotOptions);
+                coPlotNutrients{1,2} = oPlotter.definePlot(this.tiLogIndexes.Plants.NitrateStructureRate(:),'Current Structure Nitrate Uptake', tPlotOptions);
+                coPlotNutrients{1,3} = oPlotter.definePlot(this.tiLogIndexes.Plants.NitrateEdibleRate(:),	'Current Edible Nitrate Uptake',    tPlotOptions);
+                coPlotNutrients{2,1} = oPlotter.definePlot(this.tiLogIndexes.Plants.NitrateStorage(:),  	'Cumulative Storage Nitrate',       tPlotOptions);
+                coPlotNutrients{2,2} = oPlotter.definePlot(this.tiLogIndexes.Plants.Nitratestructure(:), 	'Cumulative Structure Nitrate',     tPlotOptions);
+                coPlotNutrients{2,3} = oPlotter.definePlot(this.tiLogIndexes.Plants.NitrateEdible(:),     	'Cumulative Edible Nitrate',      	tPlotOptions);
 
-                    coPlot = cell(0);
-                    coPlot{1,1} = oPlotter.definePlot(this.tiLogIndexes.Plants.WaterUptakeRate(iPlant),  	'Current Water Uptake',     	tPlotOptions);
-                    coPlot{1,2} = oPlotter.definePlot(this.tiLogIndexes.Plants.TranspirationRate(iPlant),  	'Current Transpiration',     	tPlotOptions);
-                    coPlot{1,3} = oPlotter.definePlot(this.tiLogIndexes.Plants.OxygenRate(iPlant),          'Current Oxygen Production',    tPlotOptions);
-                    coPlot{1,4} = oPlotter.definePlot(this.tiLogIndexes.Plants.CO2Rate(iPlant),             'Curent CO_2 Consumption',      tPlotOptions);
-                    coPlot{2,1} = oPlotter.definePlot(this.tiLogIndexes.Plants.WaterUptake(iPlant),         'Cumulative Water Uptake',      tPlotOptions);
-                    coPlot{2,2} = oPlotter.definePlot(this.tiLogIndexes.Plants.Transpiration(iPlant),      	'Cumulative Transpiration',     tPlotOptions);
-                    coPlot{2,3} = oPlotter.definePlot(this.tiLogIndexes.Plants.Oxygen(iPlant),              'Cumulative Oxygen',            tPlotOptions);
-                    coPlot{2,4} = oPlotter.definePlot(this.tiLogIndexes.Plants.CO2(iPlant),                 'Cumulative CO_2',              tPlotOptions);
+                oPlotter.defineFigure(coPlotBiomasses,       'Plant Biomass');
 
-                    oPlotter.defineFigure(coPlot,       ['Plant Exchange Rates ', oISS.csPlants{iPlant}]);
+                oPlotter.defineFigure(coPlotExchange,        'Plant Exchange Rates');
 
-                    coPlot = cell(0);
-                    coPlot{1,1} = oPlotter.definePlot(this.tiLogIndexes.Plants.NitrateStorageRate(iPlant), 	'Current Storage Nitrate Uptake',	tPlotOptions);
-                    coPlot{1,2} = oPlotter.definePlot(this.tiLogIndexes.Plants.NitrateStructureRate(iPlant),'Current Structure Nitrate Uptake', tPlotOptions);
-                    coPlot{1,3} = oPlotter.definePlot(this.tiLogIndexes.Plants.NitrateEdibleRate(iPlant),	'Current Edible Nitrate Uptake',    tPlotOptions);
-                    coPlot{2,1} = oPlotter.definePlot(this.tiLogIndexes.Plants.NitrateStorage(iPlant),  	'Cumulative Storage Nitrate',       tPlotOptions);
-                    coPlot{2,2} = oPlotter.definePlot(this.tiLogIndexes.Plants.Nitratestructure(iPlant), 	'Cumulative Structure Nitrate',     tPlotOptions);
-                    coPlot{2,3} = oPlotter.definePlot(this.tiLogIndexes.Plants.NitrateEdible(iPlant),     	'Cumulative Edible Nitrate',      	tPlotOptions);
-
-                    oPlotter.defineFigure(coPlot,       ['Plant Nutrients ', oISS.csPlants{iPlant}]);
-                end
+                oPlotter.defineFigure(coPlotNutrients,       'Plant Nutrients');
             end
-            
             
             %% Debugging plots
             

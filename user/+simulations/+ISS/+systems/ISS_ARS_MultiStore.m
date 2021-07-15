@@ -1260,6 +1260,17 @@ classdef ISS_ARS_MultiStore < vsys
                 end
             end
             
+            if this.tbCases.PlantChamber
+                fWaterDifference = this.tfPlantControlParameters.InitialWater - this.toStores.NutrientSupply.toPhases.NutrientSupply.afMass(this.oMT.tiN2I.H2O);
+                fNutrientDifference = this.tfPlantControlParameters.InitialNO3 - this.toStores.NutrientSupply.toPhases.NutrientSupply.afMass(this.oMT.tiN2I.NO3);
+                if fWaterDifference > 0.1 && ~this.toBranches.PotableWater_to_NFT.oHandler.bMassTransferActive
+                    this.toBranches.PotableWater_to_NFT.oHandler.setMassTransfer(fWaterDifference, this.fControlTimeStep);
+                end
+                if fNutrientDifference > 1e-3 && ~this.toBranches.BackupNutrient_to_NFT.oHandler.bMassTransferActive
+                    this.toBranches.BackupNutrient_to_NFT.oHandler.setMassTransfer(fNutrientDifference, this.fControlTimeStep);
+                end
+            end
+            
             this.oTimer.synchronizeCallBacks();
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
