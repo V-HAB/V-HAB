@@ -259,6 +259,11 @@ classdef infrastructure < base & event.source
                 
                 % Setting the parallel execution flag to true.
                 this.bParallelExecution = true;
+                
+                % Remove the ParallelExecution key from ptConfigParams
+                % because it contains a data queue which should not be
+                % saved.
+                remove(ptConfigParams, 'ParallelExecution');
             else
                 % This simulation is being run individually, so we can just
                 % call the matter table constructor directly.
@@ -464,7 +469,7 @@ classdef infrastructure < base & event.source
             this.trigger('pause');
         end
         
-        function advanceTo(this, fTime, oDataQueue, iParallelSimulationID)
+        function advanceTo(this, fTime, oDataQueue, iParallelSimulationID, bCreateSimulationOutputZIP, sOutputName)
             %ADVANCETO Runs the simulation to a specific time in seconds
             %   This can be used if a simulation has been stopped or paused
             
@@ -475,7 +480,10 @@ classdef infrastructure < base & event.source
             % simulation
             this.bUseTime = true;
             
-            if nargin > 2
+            if nargin > 4
+                this.sOutputName                = sOutputName;
+                this.bCreateSimulationOutputZIP = bCreateSimulationOutputZIP;
+            elseif nargin > 2
                 % if a parellel execution for the advancement of the
                 % simulation is used, then store the required paremeters
                 % here_
@@ -673,6 +681,15 @@ classdef infrastructure < base & event.source
             this.iParallelSendInterval = iInterval;
         end
 
+        function disableParallelExecution(this, ~)
+            %DISABLEPARALLELEXECUTION this function can be called on the
+            % oLastSimObj of a simulation created with the parallel
+            % execution script in core\+tools\generalParallelExecution.m
+            % to continue the simulation without parallelization (e.g. for
+            % debugging)
+            this.bParallelExecution = false;
+            this.iParallelSimulationID = [];
+        end
         
         function oOutput = saveobj(oInput)
             %SAVEOBJ Saves modified simulation object
