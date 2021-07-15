@@ -766,6 +766,13 @@ classdef Digestion < vsys
             
             afDelayedTransportFlow(afMass < 1e-8) = 0;
             
+            afPotentialTimeSteps = ones(1, this.oMT.iSubstances) .* inf;
+            afPotentialTimeSteps(afDelayedTransportFlow ~= 0) = this.toStores.Digestion.toPhases.(sIntestine).afMass(afDelayedTransportFlow ~= 0) ./ afDelayedTransportFlow(afDelayedTransportFlow ~= 0);
+            
+            if any(afPotentialTimeSteps < 60)
+                 afDelayedTransportFlow(afPotentialTimeSteps < 60) = this.toStores.Digestion.toPhases.(sIntestine).afMass(afPotentialTimeSteps < 60) ./ 60;
+            end
+            
             % Of these delayed input flows, the corresponding ratios
             % are then passed on to the next compartment. Since the
             % transport flows only contain food water and not secretions
