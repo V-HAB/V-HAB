@@ -1,4 +1,4 @@
-function [  ] = overlayFigures( csFigures )
+function [  ] = overlayFigures( csFigures , csLegendEntries)
 % This is a function that can be used to overlay multiple figures (e.g.
 % from a case study) into one figure, provided they have some common time
 % frame and the same layout of subplots. Some common time frame means that
@@ -22,6 +22,7 @@ function [  ] = overlayFigures( csFigures )
 iTotalFigures   = length(csFigures);
 coFigures       = cell(iTotalFigures,1);
 coAxes          = cell(iTotalFigures,1);
+coLegend        = cell(iTotalFigures,1);
 coDataObjects	= cell(iTotalFigures,1);
 
 for iFigure = 1:iTotalFigures
@@ -30,16 +31,9 @@ for iFigure = 1:iTotalFigures
     coFigures{iFigure} = openfig(csFigures{iFigure}, 'invisible');
     
     % and then we can store the axes of each figure in a cell
-    try
-        % case with subplots
-        coAxes{iFigure} = get(coFigures{iFigure},'children');
+    coAxes{iFigure}     = findobj(coFigures{iFigure}, 'type', 'axes'); 
+    coLegend{iFigure}   = findobj(coFigures{iFigure}, 'type', 'Legend');
         
-        aoAxes = coAxes{iFigure};
-        A = aoAxes(1).YLim;
-    catch
-        % case without subplots
-        coAxes{iFigure} = gca;
-    end
     % and the data objects, which also contain the actual data points of
     % interest for us
     coDataObjects{iFigure} = get(coAxes{iFigure}, 'Children');
@@ -92,6 +86,8 @@ end
 set(0, 'currentfigure', coFigures{1});
 aoAxesFigure1 = coAxes{1};
 
+csBaseColors = {'#e41a1c', '#4daf4a', '#984ea3', '#ff7f00', '#a65628', '#f781bf', '#999999'};
+
 for iFigure = 2:iTotalFigures
     % gets the data object array for the current figure
     aoData = coDataObjects{iFigure};
@@ -105,34 +101,57 @@ for iFigure = 2:iTotalFigures
         
         hold on
         % plots the data
-        if iFigure == 2
-            sLineSpec = '-.';
-        elseif iFigure == 3
+        try
+            iDatasets = length(aoData{iAxes});
+        catch
+            iDatasets = length(aoData);
+        end
+        if iDatasets > 1
+            if iFigure == 2
+                sLineSpec = '-.';
+            elseif iFigure == 3
+                sLineSpec = '--';
+            elseif iFigure >= 4
+                sLineSpec = ':';
+            end
+        else
             sLineSpec = '--';
-        elseif iFigure >= 4
-            sLineSpec = ':';
         end
         try
             % case with subplots
             for iData = 1:length(aoData{iAxes})
                 aoCurrentData = aoData{iAxes};
-                plot(aoCurrentData(iData).XData, aoCurrentData(iData).YData, sLineSpec, 'Color', aoCurrentData(iData).Color);
+                if length(aoData{iAxes}) > 1
+                    plot(aoCurrentData(iData).XData, aoCurrentData(iData).YData, 'LineStyle', sLineSpec, 'Color', aoCurrentData(iData).Color);
+                else
+                    plot(aoCurrentData(iData).XData, aoCurrentData(iData).YData, 'LineStyle', sLineSpec, 'Color', csBaseColors{iFigure-1});
+                end
             end
         catch
             % case without subplots
             for iData = 1:length(aoData)
-                plot(aoData(iData).XData, aoData(iData).YData, sLineSpec, 'Color', aoData(iData).Color);
+                if length(aoData) > 1
+                    plot(aoData(iData).XData, aoData(iData).YData, 'LineStyle', sLineSpec, 'Color', aoCurrentData(iData).Color);
+                else
+                    plot(aoData(iData).XData, aoData(iData).YData, 'LineStyle', sLineSpec, 'Color', csBaseColors{iFigure-1});
+                end
             end
         end
         % set the overall x and y limits
         xlim([fOverallLowerLimit_X, fOverallUpperLimit_X]);
-        ylim([fOverallLowerLimit_Y, fOverallUpperLimit_Y]);
-        
+        %ylim([fOverallLowerLimit_Y, fOverallUpperLimit_Y]);
     end
 end
 
 % Now activates the visibility of the first figure again, which now
 % includes all the data
 coFigures{1}.Visible = 'on';
+
+if nargin > 1
+    aoLegend   = findobj(coFigures{1}.Children, 'type', 'Legend');
+    for iLegend = 1:length(aoLegend)
+        aoLegend(iLegend).String = csLegendEntries;
+    end
+end
 end
 
