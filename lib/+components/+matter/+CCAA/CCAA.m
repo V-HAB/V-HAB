@@ -109,6 +109,8 @@ classdef CCAA < vsys
         % Store the old control logic error to check if the sign changed
         fOldError = 0;
         
+        fOriginalTimeStep = 60;
+        
         tControlLogicParameters = struct('fProportionalPart', 3.42, 'fIntegrativePart', 0.023, 'fDifferentialPart', 0, 'fMinTCCVAngle', 9, 'fMaxTCCVAngle', 84, 'fIntegratedError', 0, 'fDeadBand', 0.5, 'fMaxAngleChange', inf)
     end
     
@@ -117,6 +119,8 @@ classdef CCAA < vsys
             % The time step has to be set since the exec function will not
             % be called frequently otherwise
             this@vsys(oParent, sName, fTimeStep);
+            
+            this.fOriginalTimeStep = fTimeStep;
             
             % CCAA coolant temperature
             this.fCoolantTemperature = fCoolantTemperature;
@@ -721,6 +725,7 @@ classdef CCAA < vsys
                 end
             end
             
+            this.setTimeStep(this.fOriginalTimeStep);
             exec@vsys(this);
         end
 	end

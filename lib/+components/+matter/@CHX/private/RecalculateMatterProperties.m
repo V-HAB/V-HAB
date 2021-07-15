@@ -74,7 +74,16 @@ else
     % No this is not a typo, the Sherwood number can be calculated using the
     % same equations as the nusselt number, by just using Sc instead of Pr. See
     % the VDI heat atlas section which is mentioned in the function!
-    tInput.tDimensionlessQuantitiesGas.fSc = tInput.fKinematicViscosityGas / DiffCoeff_Gas;		
+    tInput.tDimensionlessQuantitiesGas.fSc = tInput.fKinematicViscosityGas / DiffCoeff_Gas;
+    
+    if tInput.tDimensionlessQuantitiesGas.fRe < 10^4 && tInput.tDimensionlessQuantitiesGas.fSc < 0.6
+        if tInput.tDimensionlessQuantitiesGas.fSc > 0.55
+            tInput.tDimensionlessQuantitiesGas.fSc = 0.6 + 1e-8;
+        else
+            warning('The sherwood number in a CHX became too low during transient calculations, redesign heat exchanger or check other values!')
+            tInput.tDimensionlessQuantitiesGas.fSc = 0.6; 
+        end
+    end
     tInput.tDimensionlessQuantitiesGas.fSh = functions.calculateHeatTransferCoefficient.calculateNusseltFlatGap(tInput.tDimensionlessQuantitiesGas.fRe, tInput.tDimensionlessQuantitiesGas.fSc, tInput.fHeight_1 * 2, tInput.fLength, 1);
 
     tInput.tDimensionlessQuantitiesGas.beta_Gas_0 = tInput.tDimensionlessQuantitiesGas.fSh * DiffCoeff_Gas / tInput.fHeight_1 * 2;												% Mass transfer coefficient gas mixture [m/s], (2.45)

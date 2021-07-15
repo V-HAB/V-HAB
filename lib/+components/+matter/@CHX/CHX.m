@@ -210,6 +210,9 @@ classdef CHX < vsys
                 this.fPercentChangeToRecalc = fPercentChangeToRecalc;
             end
             
+            this.txCHX_Parameters.fReynoldsNumberGas    = nan;
+            this.txCHX_Parameters.fSchmidtNumberGas     = nan;
+            this.txCHX_Parameters.fFluid1HeatFlow       = 0;
             %values for phase change enthalpy from http://webbook.nist.gov
             %with molar mass from matter table (just not crosslinked) The
             %index is also from the matter table
@@ -401,7 +404,7 @@ classdef CHX < vsys
                 return
             end
             
-            fNewOutletTemperatureFluid1 = -(this.fTotalHeatFlow - this.fTotalCondensateHeatFlow) / (fMassFlow_1 * oFlows_1.fSpecificHeatCapacity) + fEntryTemp_1;
+            fNewOutletTemperatureFluid1 = -this.txCHX_Parameters.fFluid1HeatFlow / (fMassFlow_1 * oFlows_1.fSpecificHeatCapacity) + fEntryTemp_1;
             fNewOutletTemperatureFluid2 = this.fTotalHeatFlow / (fMassFlow_2 * oFlows_2.fSpecificHeatCapacity) + fEntryTemp_2;
             
             afFlowsRates1 = Fluid_1.arPartialMass * fMassFlow_1;
@@ -468,6 +471,18 @@ classdef CHX < vsys
                 [fTempOut_1, fTempOut_2, fDeltaPress_1, fDeltaPress_2] =...
                     this.(this.sCHX_type)(this.tCHX_Parameters, Fluid_1, Fluid_2, this.fThermalConductivityHeatExchangerMaterial, this.miIncrements);        
 
+                % If an error is encountered, try recalculting the CHX
+                % without initialized values. This can solve some errors
+                if any(isnan([fTempOut_1, fTempOut_2, fDeltaPress_1, fDeltaPress_2])) || fTempOut_1 < 0 || fTempOut_2 < 0
+                    [fTempOut_1, fTempOut_2, fDeltaPress_1, fDeltaPress_2] =...
+                        this.(this.sCHX_type)(this.tCHX_Parameters, Fluid_1, Fluid_2, this.fThermalConductivityHeatExchangerMaterial, this.miIncrements, true);
+                end
+                
+                if any(isnan([fTempOut_1, fTempOut_2, fDeltaPress_1, fDeltaPress_2])) || fTempOut_1 < 0 || fTempOut_2 < 0
+                    % if you encounter this keyboard, something really went
+                    % wrong during the calculation of the CHX
+                    keyboard()
+                end
                 %sets the outlet temperatures into the respective variable
                 %inside the heat exchanger object for plotting purposes
                 this.fTempOut_Fluid1 = fTempOut_1;
@@ -485,7 +500,7 @@ classdef CHX < vsys
                 this.fOldPressureFlow2   = oFlows_2.fPressure;
                 
                 % Calculating the heat flows for both hx_flow objects
-                fHeatFlow_1 = -(this.fTotalHeatFlow - this.fTotalCondensateHeatFlow);
+                fHeatFlow_1 = -this.txCHX_Parameters.fFluid1HeatFlow;
                 fHeatFlow_2 = this.fTotalHeatFlow;
                 
                 % uses the function defined in flowcomps.hx_flow to set the
