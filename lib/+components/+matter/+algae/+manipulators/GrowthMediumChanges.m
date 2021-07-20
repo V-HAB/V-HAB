@@ -58,17 +58,13 @@ classdef GrowthMediumChanges < matter.manips.substance.stationary
             
             
             %% If compound masses for urine are used, split it into its components
-            if any(this.oPhase.afMass(this.oMT.abCompound))
-                aiCompounds = find(this.oPhase.afMass(this.oMT.abCompound));
+            if this.oPhase.afMass(this.oMT.tiN2I.Urine) && this.oMT.abCompound(this.oMT.tiN2I.Urine)
                 
-                afCompoundFlowRates = zeros(1, this.oMT.iSubstances);
-                for iCompound = 1:length(aiCompounds)
-                    afResolvedMass = this.oMT.resolveCompoundMass(this.oPhase.afMass(aiCompounds(iCompound)));
-                    
-                    afCompoundFlowRates(aiCompounds(iCompound)) = -this.oPhase.afMass(aiCompounds(iCompound)) / this.fTimeStep;
-                    
-                    afCompoundFlowRates = afCompoundFlowRates + (afResolvedMass ./ this.fTimeStep);
-                end
+                afCompoundMasses                        = zeros(1, this.oMT.iSubstances);
+                afCompoundMasses(this.oMT.tiN2I.Urine)	= this.oPhase.afMass(this.oMT.tiN2I.Urine);
+                afResolvedMass                          = this.oMT.resolveCompoundMass(afCompoundMasses, this.oPhase.arCompoundMass);
+                
+                afCompoundFlowRates                     = afResolvedMass ./ this.fTimeStep - afCompoundMasses ./ this.fTimeStep;
                 
                 this.afPartialFlowRatesFromFunctions = this.afPartialFlowRatesFromFunctions + afCompoundFlowRates;
             end
@@ -86,7 +82,16 @@ classdef GrowthMediumChanges < matter.manips.substance.stationary
                 afPartialFlowRates = zeros(1, this.oMT.iSubstances); %[kg/s]
             end
             
-            update@matter.manips.substance.stationary(this, afPartialFlowRates);
+            aarFlowsToCompound = zeros(this.oMT.iSubstances, this.oMT.iSubstances);
+            csCompositions = fieldnames(this.oMT.ttxMatter.Chlorella.trBaseComposition);
+            for iField = 1:length(csCompositions)
+                aarFlowsToCompound(this.oMT.tiN2I.Chlorella, this.oMT.tiN2I.(csCompositions{iField})) = this.oMT.ttxMatter.Chlorella.trBaseComposition.(csCompositions{iField});
+            end
+            
+            if abs(sum(afPartialFlowRates)) > 1e-7
+                keyboard()
+            end
+            update@matter.manips.substance.stationary(this, afPartialFlowRates, aarFlowsToCompound);
         end
     end
     

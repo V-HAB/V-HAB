@@ -495,7 +495,7 @@ function update(this)
                 keyboard();
                 this.throw('update', 'too many iterations, error %.12f', rError);
             end
-            if this.iIteration > this.iMaxIterations + 10
+            if this.iIteration > this.iMaxIterations + 10 && ~this.bBranchOscillationSuppressionActive
                 % if you reach this, please view debugging tipps at the
                 % beginning of this file!
                 keyboard();
@@ -640,8 +640,16 @@ function update(this)
                 end
                 if this.mbFlowP2P(iB, iExme)
                     oPhase = this.aoBranches(iB).coExmes{iExme}.oPhase;
-                    [afInFlowRates, aarInPartials] = this.getPhaseInFlows(oPhase);
+                    [afInFlowRates, aarInPartials] = this.getPhaseInFlows(oPhase, false);
                     afPartialInFlows = sum(afInFlowRates .* aarInPartials);
+                    
+                    % Now we add the flow changes from manips, as the logic
+                    % is first branches, then manip and lastly P2Ps are
+                    % placed in the flow cell execution (because P2Ps are
+                    % often adsorption processes)
+                    if oPhase.iSubstanceManipulators > 0
+                        afPartialInFlows = afPartialInFlows + oPhase.toManips.substance.afPartialFlows;
+                    end
                     
                     afP2PFlowsAfter = zeros(1, this.oMT.iSubstances);
                     afP2PFlowsBefore = zeros(1, this.oMT.iSubstances);

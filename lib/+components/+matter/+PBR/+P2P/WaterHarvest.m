@@ -38,7 +38,24 @@ classdef WaterHarvest < matter.procs.p2ps.flow
             %has to be defined positive.
             %flow rate is always equal to waht is flowing into growth
             %medium when urine is supplied.
-            fFlowRate = -this.oSystem.toBranches.Urine_from_PBR.aoFlows.fFlowRate * this.oSystem.toBranches.Urine_from_PBR.aoFlows.arPartialMass(this.oMT.tiN2I.H2O);
+            oFlowUrine              = this.oSystem.toBranches.Urine_from_PBR.aoFlows;
+            arResolvedMassesUrine   = this.oMT.resolveCompoundMass(oFlowUrine.arPartialMass, oFlowUrine.arCompoundMass);
+            
+            oFlowNitrate            = this.oSystem.toBranches.NO3_from_Maintenance.aoFlows;
+            arResolvedMassesNitrate = this.oMT.resolveCompoundMass(oFlowNitrate.arPartialMass, oFlowNitrate.arCompoundMass);
+            
+            fFlowRateUrine          = -oFlowUrine.fFlowRate  	* arResolvedMassesUrine(this.oMT.tiN2I.H2O);
+            fFlowRateNitrate        = -oFlowNitrate.fFlowRate	* arResolvedMassesNitrate(this.oMT.tiN2I.H2O);
+            
+            oChlorella = this.oStore.oContainer.toChildren.ChlorellaInMedia;
+            
+            fWaterSurplus = (oChlorella.toStores.GrowthChamber.toPhases.GrowthMedium.afMass(this.oMT.tiN2I.H2O) - oChlorella.tfGrowthChamberComponents.H2O) / (2 * this.oStore.oContainer.fTimeStep);
+            
+            fFlowRate = fFlowRateUrine + fFlowRateNitrate + fWaterSurplus;
+            if fFlowRate < 0
+                fFlowRate = 0;
+            end
+
             this.setMatterProperties(fFlowRate, this.arExtractPartials);
 
         end

@@ -30,10 +30,11 @@ classdef container < sys
         % Reference to the branches, by name as a struct
         toBranches = struct();
         
-        % Number of branches in this container
+        % Number of matter branches in this container, including all
+        % subsystems
         iBranches = 0;
         
-        % Number of phases in this container
+        % Number of phases in this container, including all subsystems
         iPhases = 0;
         
         % Indicator if this container is sealed or not
@@ -102,7 +103,7 @@ classdef container < sys
                 this.toChildren.(sChild).sealMatterStructure();
                 
                 this.iPhases = this.iPhases + this.toChildren.(sChild).iPhases;
-                this.iBranches = this.iBranches + length(this.toChildren.(sChild).toBranches);
+                this.iBranches = this.iBranches + length(this.toChildren.(sChild).aoBranches);
             end
             
             this.csStores = fieldnames(this.toStores);
@@ -393,21 +394,23 @@ classdef container < sys
             % First we make sure, that the calling branch is actually a
             % branch in this container. 
             if any(this.aoBranches == oBranch)
-                % We need to jump through some hoops because the maximum
-                % field name length of MATLAB is only 63 characters, so we 
-                % delete the rest of the actual branch name...
-                % namelengthmax is the MATLAB variable that stores the 
-                % maximum name length, so in case it changes in the future, 
-                % we don't have to change this code!
-                if length(sOldName) > namelengthmax
-                    sOldName = sOldName(1:namelengthmax);
-                end
-                this.toBranches = rmfield(this.toBranches, sOldName);
-                % Now we'll add the branch to the struct again, but with
-                % its new name. 
-                if ~isempty(oBranch.sCustomName)
-                    this.toBranches.(oBranch.sCustomName) = oBranch;
-                else
+                % We only need to do anything if the branch does not have a
+                % custom name, if it does the field name in the toBranches
+                % struct is just the same. 
+                if isempty(oBranch.sCustomName)
+                    % We need to jump through some hoops because the maximum
+                    % field name length of MATLAB is only 63 characters, so we
+                    % delete the rest of the actual branch name...
+                    % namelengthmax is the MATLAB variable that stores the
+                    % maximum name length, so in case it changes in the future,
+                    % we don't have to change this code!
+                    if length(sOldName) > namelengthmax
+                        sOldName = sOldName(1:namelengthmax);
+                    end
+                    this.toBranches = rmfield(this.toBranches, sOldName);
+                    
+                    % Now we'll add the branch to the struct again, but with
+                    % its new name.
                     this.toBranches.(oBranch.sName) = oBranch;
                 end
             else
@@ -473,6 +476,58 @@ classdef container < sys
                     % one.
                     this.iBranches = this.iBranches - 1;
                 end
+            end
+        end
+    end
+    
+    methods (Access = protected)    
+        function disconnectMatterBranchesForSaving(this)
+            %DISCONNECTMATTERBRANCHESFORSAVING Disconnects all matter branches
+            %   This is necessary when the simulation object is saved to a
+            %   MAT file. In large and/or networked systems the number of
+            %   consecutive, unique objects that are referenced in a row
+            %   cannot be larger than 500. In order to break these chains,
+            %   we delete the reference to the branch on all matter flows
+            %   on the left and right side of all branches. After that we
+            %   also need to delete the reference to the flow in the ExMes.
+            %   Since the branch object retains references to the flows and
+            %   ExMes, we can easily reconnect them on load.
+            
+            % Getting the names of all branches
+            csBranchNames = fieldnames(this.toBranches);
+            
+            % Looping through all branches and calling the
+            % disconnectBranch() method on the flows and the
+            % disconnectFlow() method on the ExMes of each branch.
+            for iBranch = 1:length(csBranchNames)
+                this.toBranches.(csBranchNames{iBranch}).coExmes{1}.oFlow.disconnectBranch('left');
+                this.toBranches.(csBranchNames{iBranch}).coExmes{1}.disconnectFlow();
+                this.toBranches.(csBranchNames{iBranch}).coExmes{2}.oFlow.disconnectBranch('right');
+                this.toBranches.(csBranchNames{iBranch}).coExmes{2}.disconnectFlow();
+            end
+            
+        end
+        
+        function reconnectMatterBranches(this)
+            %RECONNECTMATTERBRANCHES Reconnects the right side of all matter branches
+            %   This reverses the action performed in
+            %   disconnectMatterBranchesForSaving().
+            
+            % Getting the names of all branches
+            csBranchNames = fieldnames(this.toBranches);
+            
+            % Looping through all branches and reconnecting the objects in
+            % the opposite order than in
+            % disconnectMatterBranchesForSaving(). First we reconnect the
+            % flow object with the ExMes by calling reconnectFlow() and
+            % then we call reconnectBranch() on the flows of the ExMes on
+            % both sides of each branch, passing in the currently selected
+            % branch as an argument.
+            for iBranch = 1:length(csBranchNames)
+                this.toBranches.(csBranchNames{iBranch}).coExmes{1}.reconnectFlow(this.toBranches.(csBranchNames{iBranch}).aoFlows(1));
+                this.toBranches.(csBranchNames{iBranch}).coExmes{1}.oFlow.reconnectBranch(this.toBranches.(csBranchNames{iBranch}), this.toBranches.(csBranchNames{iBranch}).coExmes{1}, 'left');
+                this.toBranches.(csBranchNames{iBranch}).coExmes{2}.reconnectFlow(this.toBranches.(csBranchNames{iBranch}).aoFlows(end));
+                this.toBranches.(csBranchNames{iBranch}).coExmes{2}.oFlow.reconnectBranch(this.toBranches.(csBranchNames{iBranch}), this.toBranches.(csBranchNames{iBranch}).coExmes{2}, 'right');
             end
         end
     end

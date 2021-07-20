@@ -15,30 +15,32 @@ classdef PhotobioreactorTutorial< vsys
         cScheduledFoodRequest = cell(0,0);
         fFoodPrepTime = 3*60;
         fInitialFoodPrepMass;
-        iNumberOfCrewMembers;
+        iCrewMembers;
         
     end
     
     methods
         function this = PhotobioreactorTutorial(oParent, sName)
-            this@vsys(oParent, sName, -1);
+            this@vsys(oParent, sName, 3600);
             
             %% Create Photobioreactor
            
+            %Number of CrewMember goes here:
+            this.iCrewMembers = 4;
             %set some important input values. set[] for value if should not
             %be specified. E.g. struct('sLightColor', [])
             this.txPhotobioreactorProperties = ...
                 struct(...
-                'sLightColor',              'RedExperimental', ...  %Radiation energy source (light) of photobioreactor. options:Red, Blue, Yellow, Green, Daylight, RedExperimental
-                'fSurfacePPFD',             400, ...                %[µmol/m2s] irradiance on surface of PBR. best performance when selecting a value at or just below inhibition -> maximum of PBR in saturated growth zone. Above inhibition growth would be inhibited. 
-                'fGrowthVolume',            0.5, ...               %[m3]. Algal growth volume filled with growth medium.
-                'fDepthBelowSurface',       0.0025, ...             %[m]. depth of the photobioreactor below the irradiated surface. Typically has strong influence on growth because of radiation attenuation at high depths.     
-                'fMembraneSurface',         10, ...                 %[m2]. Area of air exchange membrane. can be limiting when pressure gradient is low and surface small
-                'fMembraneThickness',       0.0001, ...             %[m]. Thickness of air exchange membrane.
-                'sMembraneMaterial',        'SSP-M823 Silicone',... %type of air exchange membrane. options: 'none', 'SSP-M823 Silicone' or 'Cole Parmer Silicone' (details see AtmosphericGasExchange P2P of algae module)
-                'fCirculationVolumetricFlowPerFilter', 4.167*10^-7,... %[m3/s] equal to 25ml/min. Volumetric flow to each filter of the harvester. More means higher ciruclation and faster harvesting capability
-                'fNumberOfParallelFilters', 30, ...                 %number of parallel filters since one is not enough for large volumes.
-                'bUseUrine',                true);                  %should urine be used for supply or just nitrate (then set to false).
+                'sLightColor',              'RedExperimental', ...          %Radiation energy source (light) of photobioreactor. options:Red, Blue, Yellow, Green, Daylight, RedExperimental
+                'fSurfacePPFD',             400, ...                        %[µmol/m2s] irradiance on surface of PBR. best performance when selecting a value at or just below inhibition -> maximum of PBR in saturated growth zone. Above inhibition growth would be inhibited. 
+                'fGrowthVolume',            this.iCrewMembers * 0.0625, ... %[m3]. Algal growth volume filled with growth medium.
+                'fDepthBelowSurface',       0.0025, ...                     %[m]. depth of the photobioreactor below the irradiated surface. Typically has strong influence on growth because of radiation attenuation at high depths.     
+                'fMembraneSurface',         10, ...                         %[m2]. Area of air exchange membrane. can be limiting when pressure gradient is low and surface small
+                'fMembraneThickness',       0.0001, ...                     %[m]. Thickness of air exchange membrane.
+                'sMembraneMaterial',        'SSP-M823 Silicone',...         %type of air exchange membrane. options: 'none', 'SSP-M823 Silicone' or 'Cole Parmer Silicone' (details see AtmosphericGasExchange P2P of algae module)
+                'fCirculationVolumetricFlowPerFilter', 4.167*10^-7,...      %[m3/s] equal to 25ml/min. Volumetric flow to each filter of the harvester. More means higher ciruclation and faster harvesting capability
+                'fNumberOfParallelFilters', 30, ...                         %number of parallel filters since one is not enough for large volumes.
+                'bUseUrine',                true);                          %should urine be used for supply or just nitrate (then set to false).
         
          %create photobioreactor object and pass the set properties. If not
          %specified here, the struct does not have to be passed and values
@@ -54,20 +56,19 @@ classdef PhotobioreactorTutorial< vsys
         %% Create CCAA subsystem from V-HAB tutorial for CCAA
         % Initial ratio for amount of flow that is channeled through the
         % CHX
-        rInitialCHX_Ratio = 0.21;
         % temperature for the coolant passing through the CCAA
         fCoolantTemperature = 280;
         % Struct containg basic atmospheric values for the
         % initialization of the CCAA
         tAtmosphere.fTemperature = 295;
-        tAtmosphere.fRelHumidity = 0.8;
+        tAtmosphere.rRelHumidity = 0.8;
         tAtmosphere.fPressure = 101325;
         % name for the asscociated CDRA subsystem, leave empty if CCAA
         % is used as standalone
         sCDRA = [];
         
         % Adding the subsystem CCAA
-        components.matter.CCAA.CCAA(this, 'CCAA', 5, fCoolantTemperature, tAtmosphere, sCDRA);
+        components.matter.CCAA.CCAA(this, 'CCAA', 60, fCoolantTemperature, tAtmosphere, sCDRA);
         
         
         %% Add Human to cabin from V-HAB tutorial for Human Model
@@ -82,17 +83,15 @@ classdef PhotobioreactorTutorial< vsys
         % stops somewhen during the simulation time and the simulation
         % is not usable. So make sure to ajust the parameter properly.
         
-        %Number of CrewMember goes here:
-        this.iNumberOfCrewMembers = 1;
         iLengthOfMission = 200; % [d
-        ctEvents = cell(iLengthOfMission, this.iNumberOfCrewMembers);
+        ctEvents = cell(iLengthOfMission, this.iCrewMembers);
         
         % Nominal Operation
-        tMealTimes.Breakfast = 0*3600;
+        tMealTimes.Breakfast = 0.1*3600;
         tMealTimes.Lunch = 6*3600;
         tMealTimes.Dinner = 15*3600;
         
-        for iCrewMember = 1:this.iNumberOfCrewMembers
+        for iCrewMember = 1:this.iCrewMembers
             
             iEvent = 1;
             
@@ -135,15 +134,13 @@ classdef PhotobioreactorTutorial< vsys
             end
         end
         
-        for iCrewMember = 1:this.iNumberOfCrewMembers
-            
+        for iCrewMember = 1:this.iCrewMembers
+
             txCrewPlaner.ctEvents = ctEvents(:, iCrewMember);
             txCrewPlaner.tMealTimes = tMealTimes;
-            
-            % add human subsystem
-            %Human          (oParent, sName,                       Male,fAge, fHumanMass, fHumanHeight, txCrewPlaner, trInitialFoodComposition)
-            components.matter.Human(this, ['Human_', num2str(iCrewMember)], true, 28, 84.5, 1.84, txCrewPlaner);
-            
+
+            components.matter.DetailedHuman.Human(this, ['Human_', num2str(iCrewMember)], txCrewPlaner, 60);
+
             clear txCrewPlaner;
         end
         
@@ -175,19 +172,19 @@ classdef PhotobioreactorTutorial< vsys
             
             % store for urine
             matter.store(this, 'UrineStorage', 1);
-            oUrinePhase = matter.phases.mixture(this.toStores.UrineStorage, 'Urine', 'liquid', struct('C2H6O2N2', 0.059, 'H2O', 1.6), 295, 101325);
+            oUrinePhase = matter.phases.mixture(this.toStores.UrineStorage, 'Urine', 'liquid', struct('Urine', 16), 295, 101325);
             
             % store for  feces storage
             matter.store(this, 'FecesStorage', 1);
-            oFecesPhase = matter.phases.mixture(this.toStores.FecesStorage, 'Feces', 'solid', struct('C42H69O13N5', 0.032, 'H2O', 0.1), 295, 101325);
+            oFecesPhase = matter.phases.mixture(this.toStores.FecesStorage, 'Feces', 'solid', struct('Feces', 1), 295, 101325);
             
-            % food store
+            % Nitrate Supply
+            oStore = matter.store(this,     'NutrientSupply',    0.1);
+            
+            oNutrientSupply 	= oStore.createPhase(	'liquid',   'boundary', 'NutrientSupply',   	oStore.fVolume,	struct('H2O', 0.1, 'NO3', 0.9),	oCabinPhase.fTemperature,	oCabinPhase.fPressure);
+            
             % Adds a food store to the system
-            %10 kg carrots additional to normal food (could add algae)
-            %can fill food store with algae from harvest through exme
-            %make sure enough food is in the store for entire time
-            %should be per person around 1.5kg/d (from V-HAB Human Model Tutorial)
-            tfFood = struct('Food', 100, 'Carrots', 10);
+            tfFood = struct('Food', 1000);
             oFoodStore = components.matter.FoodStore(this, 'FoodStore', 100, tfFood);
             
             
@@ -200,7 +197,9 @@ classdef PhotobioreactorTutorial< vsys
             
             %interface from PBR for produced water
             matter.procs.exmes.liquid(this.toStores.PotableWaterStorage.toPhases.PotableWater, 'Water_from_PBR');
+            matter.procs.exmes.liquid(this.toStores.PotableWaterStorage.toPhases.PotableWater, 'Water_to_PBR');
             matter.branch(this, 'Water_Inlet',{} ,'PotableWaterStorage.Water_from_PBR');
+            matter.branch(this, 'Water_Outlet',{} ,'PotableWaterStorage.Water_to_PBR');
             
             % interface to PBR for urine processing
             matter.procs.exmes.mixture(this.toStores.UrineStorage.toPhases.Urine, 'Urine_to_PBR');
@@ -210,47 +209,48 @@ classdef PhotobioreactorTutorial< vsys
             matter.procs.exmes.mixture(this.toStores.FoodStore.toPhases.Food, 'Chlorella_from_PBR');
             matter.branch(this, 'Chlorella_Inlet',{} ,'FoodStore.Chlorella_from_PBR');
             
-            %set interfaces in photobioreactor child system
-            this.toChildren.Photobioreactor.setIfFlows('Cabin_Outlet', 'Cabin_Inlet', 'Water_Inlet', 'Urine_PBR', 'Chlorella_Inlet');
+            matter.branch(this, 'Nitrate_PBR',{}, oNutrientSupply);
             
-            %% human model connections
-            for iHuman = 1:this.iNumberOfCrewMembers
-                % Add Exmes for each human (from V-HAB Human Model Tutorial)
+            %set interfaces in photobioreactor child system
+            this.toChildren.Photobioreactor.setIfFlows('Cabin_Outlet', 'Cabin_Inlet', 'Water_Inlet', 'Urine_PBR', 'Chlorella_Inlet', 'Nitrate_PBR', 'Water_Outlet');
+            
+            
+            %% CREW SYSTEM 
+            
+            for iHuman = 1:this.iCrewMembers
+                % Add Exmes for each human
                 matter.procs.exmes.gas(oCabinPhase,             ['AirOut',      num2str(iHuman)]);
                 matter.procs.exmes.gas(oCabinPhase,             ['AirIn',       num2str(iHuman)]);
                 matter.procs.exmes.liquid(oPotableWaterPhase,   ['DrinkingOut', num2str(iHuman)]);
                 matter.procs.exmes.mixture(oFecesPhase,         ['Feces_In',    num2str(iHuman)]);
                 matter.procs.exmes.mixture(oUrinePhase,         ['Urine_In',    num2str(iHuman)]);
-                
-                % Add interface branches for each human (from V-HAB Human Model Tutorial)
-                matter.branch(this, ['Air_Out',         num2str(iHuman)],  	{}, ['Cabin.AirOut',                    num2str(iHuman)]);
-                matter.branch(this, ['Air_In',          num2str(iHuman)], 	{}, ['Cabin.AirIn',                     num2str(iHuman)]);
-                matter.branch(this, ['Feces',           num2str(iHuman)],  	{}, ['FecesStorage.Feces_In',           num2str(iHuman)]);
-                matter.branch(this, ['PotableWater',    num2str(iHuman)], 	{}, ['PotableWaterStorage.DrinkingOut', num2str(iHuman)]);
-                matter.branch(this, ['Urine',           num2str(iHuman)], 	{}, ['UrineStorage.Urine_In',           num2str(iHuman)]);
-                
-                % register each human at the food store (from V-HAB Human Model Tutorial)
+                matter.procs.exmes.gas(oCabinPhase,             ['Perspiration',num2str(iHuman)]);
+
+                % Add interface branches for each human
+                matter.branch(this, ['Air_Out',         num2str(iHuman)],  	{}, [oCabinPhase.oStore.sName,             '.AirOut',      num2str(iHuman)]);
+                matter.branch(this, ['Air_In',          num2str(iHuman)], 	{}, [oCabinPhase.oStore.sName,             '.AirIn',       num2str(iHuman)]);
+                matter.branch(this, ['Feces',           num2str(iHuman)],  	{}, [oFecesPhase.oStore.sName,             '.Feces_In',    num2str(iHuman)]);
+                matter.branch(this, ['PotableWater',    num2str(iHuman)], 	{}, [oPotableWaterPhase.oStore.sName,      '.DrinkingOut', num2str(iHuman)]);
+                matter.branch(this, ['Urine',           num2str(iHuman)], 	{}, [oUrinePhase.oStore.sName,             '.Urine_In',    num2str(iHuman)]);
+                matter.branch(this, ['Perspiration',    num2str(iHuman)], 	{}, [oCabinPhase.oStore.sName,             '.Perspiration',num2str(iHuman)]);
+
+
+                % register each human at the food store
                 requestFood = oFoodStore.registerHuman(['Solid_Food_', num2str(iHuman)]);
-                this.toChildren.(['Human_', num2str(iHuman)]).bindRequestFoodFunction(requestFood);
-                
-                % Set the interfaces for each human (from V-HAB Human Model Tutorial)
+                this.toChildren.(['Human_', num2str(iHuman)]).toChildren.Digestion.bindRequestFoodFunction(requestFood);
+
+                % Set the interfaces for each human
                 this.toChildren.(['Human_',         num2str(iHuman)]).setIfFlows(...
-                    ['Air_Out',         num2str(iHuman)],...
-                    ['Air_In',          num2str(iHuman)],...
-                    ['PotableWater',    num2str(iHuman)],...
-                    ['Solid_Food_',     num2str(iHuman)],...
-                    ['Feces',           num2str(iHuman)],...
-                    ['Urine',           num2str(iHuman)]);
+                                ['Air_Out',         num2str(iHuman)],...
+                                ['Air_In',          num2str(iHuman)],...
+                                ['PotableWater',    num2str(iHuman)],...
+                                ['Solid_Food_',     num2str(iHuman)],...
+                                ['Feces',           num2str(iHuman)],...
+                                ['Urine',           num2str(iHuman)],...
+                                ['Perspiration',    num2str(iHuman)]);
             end
             
-            
-            
             %% CCAA  (from V-HAB CCAA Tutorial)
-            % Adding extract/merge processors to the phase
-            matter.procs.exmes.gas(oCabinPhase, 'Port_1');
-            matter.procs.exmes.gas(oCabinPhase, 'Port_2');
-            matter.procs.exmes.gas(oCabinPhase, 'Port_3');
-            
             % Coolant store for the coolant water supplied to CCAA
             matter.store(this, 'CoolantStore', 1);
             
@@ -260,9 +260,6 @@ classdef PhotobioreactorTutorial< vsys
                 struct('H2O', 1), ...      Phase contents
                 280.15, ...                Phase temperature
                 101325);                 % Phase pressure
-            
-            matter.procs.exmes.liquid(oCoolantPhase, 'Port_1');
-            matter.procs.exmes.liquid(oCoolantPhase, 'Port_2');
             
             % Store to gather the condensate from CCAA
             matter.store(this, 'CondensateStore', 1);
@@ -274,20 +271,17 @@ classdef PhotobioreactorTutorial< vsys
                 280.15, ...                Phase temperature
                 101325);                 % Phase pressure
             
-            matter.procs.exmes.liquid(oCondensatePhase, 'Port_1');
-            
             %define branches for CCAA
-            matter.branch(this, 'CCAAinput', {}, 'Cabin.Port_1');
-            matter.branch(this, 'CCAA_CHX_Output', {}, 'Cabin.Port_2');
-            matter.branch(this, 'CCAA_TCCV_Output', {}, 'Cabin.Port_3');
-            matter.branch(this, 'CCAA_CondensateOutput', {}, 'CondensateStore.Port_1');
-            matter.branch(this, 'CCAA_CoolantInput', {}, 'CoolantStore.Port_1');
-            matter.branch(this, 'CCAA_CoolantOutput', {}, 'CoolantStore.Port_2');
+            matter.branch(this, 'CCAA_Air_In',              {}, oCabinPhase);
+            matter.branch(this, 'CCAA_Air_Out',             {}, oCabinPhase);
+            matter.branch(this, 'CCAA_CondensateOutput',    {}, oCondensatePhase);
+            matter.branch(this, 'CCAA_CoolantInput',        {}, oCoolantPhase);
+            matter.branch(this, 'CCAA_CoolantOutput',       {}, oCoolantPhase);
             
             
             % now the interfaces between this system and the CCAA subsystem
             % are defined
-            this.toChildren.CCAA.setIfFlows('CCAAinput', 'CCAA_CHX_Output', 'CCAA_TCCV_Output', 'CCAA_CondensateOutput', 'CCAA_CoolantInput', 'CCAA_CoolantOutput');
+            this.toChildren.CCAA.setIfFlows('CCAA_Air_In', 'CCAA_Air_Out', 'CCAA_CondensateOutput', 'CCAA_CoolantInput', 'CCAA_CoolantOutput');
             
         end
         
@@ -302,10 +296,15 @@ classdef PhotobioreactorTutorial< vsys
             oHeatSource = components.thermal.heatsources.ConstantTemperature('Coolant_Constant_Temperature');
             this.toStores.CoolantStore.toPhases.Coolant_Phase.oCapacity.addHeatSource(oHeatSource);
             
-            for iHuman = 1:this.iNumberOfCrewMembers
-                this.toChildren.(['Human_', num2str(iHuman)]).createHumanHeatSource();
+            oCabinPhase = this.toStores.Cabin.toPhases.CabinAir;
+            for iHuman = 1:this.iCrewMembers
+                % Add thermal IF for humans
+                thermal.procs.exme(oCabinPhase.oCapacity, ['SensibleHeatOutput_Human_',    num2str(iHuman)]);
+                
+                thermal.branch(this, ['SensibleHeatOutput_Human_',    num2str(iHuman)], {}, [oCabinPhase.oStore.sName '.SensibleHeatOutput_Human_',    num2str(iHuman)], ['SensibleHeatOutput_Human_',    num2str(iHuman)]);
+                
+                this.toChildren.(['Human_',         num2str(iHuman)]).setThermalIF(['SensibleHeatOutput_Human_',    num2str(iHuman)]);
             end
-            
         end
         
         
@@ -313,11 +312,33 @@ classdef PhotobioreactorTutorial< vsys
             createSolverStructure@vsys(this);
             
             % For storage phases we set a fixed time step of 20 seconds
-            tTimeStepProperties.fFixedTimeStep = 20;
+            tTimeStepProperties.fMaxStep = this.fTimeStep;
+                    
+            % set time steps
+            csStoreNames = fieldnames(this.toStores);
+            for iStore = 1:length(csStoreNames)
+                for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
+                    oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
+                    oPhase.setTimeStepProperties(tTimeStepProperties);
+                    oPhase.oCapacity.setTimeStepProperties(tTimeStepProperties);
+                end
+            end
+            
+            tTimeStepProperties = struct();
+            tTimeStepProperties.rMaxChange = inf;
+            
+            this.toStores.CondensateStore.toPhases.Condensate_Phase.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.CondensateStore.toPhases.Condensate_Phase.oCapacity.setTimeStepProperties(tTimeStepProperties);
             
             this.toStores.UrineStorage.toPhases.Urine.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.UrineStorage.toPhases.Urine.oCapacity.setTimeStepProperties(tTimeStepProperties);
+            
             this.toStores.FecesStorage.toPhases.Feces.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.FecesStorage.toPhases.Feces.oCapacity.setTimeStepProperties(tTimeStepProperties);
+            
             this.toStores.PotableWaterStorage.toPhases.PotableWater.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.PotableWaterStorage.toPhases.PotableWater.oCapacity.setTimeStepProperties(tTimeStepProperties);
+            
             
             this.setThermalSolvers();
         end
@@ -328,8 +349,8 @@ classdef PhotobioreactorTutorial< vsys
         function exec(this, ~)
             exec@vsys(this);
             
+            % This code synchronizes everything once a day
+            this.oTimer.synchronizeCallBacks();
         end
     end
-    
 end
-

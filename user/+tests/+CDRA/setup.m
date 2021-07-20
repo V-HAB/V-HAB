@@ -65,7 +65,7 @@ classdef setup < simulation.infrastructure
                 end
             end
             
-            oLog.addValue('Example.toStores.Cabin.toProcsP2P.CrewCO2Prod',       'fFlowRate',  'kg/s', 'CO2 Production');
+            oLog.addValue('Example.toStores.Cabin.toProcsP2P.CrewCO2',       'fFlowRate',  'kg/s', 'CO2 Production');
             
             % CDRA In
             oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_In_1.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'CDRA CO2 Inlet Flow 1');

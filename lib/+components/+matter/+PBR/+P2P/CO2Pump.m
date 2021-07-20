@@ -2,7 +2,7 @@ classdef CO2Pump < matter.procs.p2ps.stationary
     %CO2PUMP moves CO2 from the cabin air intrface into the high CO2
     %content chamber of the PBR that supplies the algae. 
     
-    properties (SetAccess=public, GetAccess=public)
+    properties (SetAccess=protected, GetAccess=public)
         arExtractPartials
         oSystem
         fCurrentPP;         %[Pa], current partial pressure in the high carbon dioxide content phase

@@ -4,12 +4,7 @@ classdef network < thermal.capacity
     % handles the temperature calculation and everything else. 
     
     properties (GetAccess = public, SetAccess = protected)
-        % Reference to the thermal multi branch solver solving the
-        % temperature of this capacity
-        oHandler;
         
-        % Index of this capacity in the 
-        iHandlerCapacityIndex;
     end
     
     methods
@@ -21,12 +16,11 @@ classdef network < thermal.capacity
                 this.bBoundary = bBoundary;
             end
             
-            this.oHandler.hBindPostTickUpdate = @this.PlaceHolder;
             this.setTimeStep(inf,true);
         end
         
         
-        function updateTemperature(this, ~)
+        function updateTemperature(this, fTemperature)
             % Overloaded function, calculates some time step values and
             % sets the current one outdated. 
             
@@ -35,17 +29,17 @@ classdef network < thermal.capacity
             
             this.fLastTemperatureUpdate     = fTime;
             this.fTemperatureUpdateTimeStep = fLastStep;
-            
-            this.setTemperature(this.oHandler.afTemperatures(this.iHandlerCapacityIndex));
+            % Since the advanced multi branch solver is the only thing
+            % which actually knows the new temperature, and the solver
+            % calls with a temperature value, we only set this if the
+            % temperature is provided
+            if nargin > 1
+                this.setTemperature(fTemperature);
+            end
             
             if this.bTriggerSetUpdateTemperaturePostCallbackBound
             	this.trigger('updateTemperature_post');
             end
-        end
-        
-        function PlaceHolder(~)
-            % Does nothing, just a place holder so we do not require an if
-            % query in the setOutdatedTS function
         end
         
         function setOutdatedTS(this)
@@ -68,25 +62,13 @@ classdef network < thermal.capacity
                 this.setTimeStep(inf,true);
             end
             
-            if this.oHandler.bPostTickUpdateNotBound
-                this.oHandler.hBindPostTickUpdate();
-            end
+            this.trigger('OutdatedNetworkTimeStep');
         end
     end
     
     methods (Access = protected)
         function calculateTimeStep(~)
             
-        end
-    end
-    
-    methods (Access = {?solver.thermal.multi_branch.advanced.branch})
-        function setHandler(this, oHandler, iIndex)
-            % THis function is called by the thermal multi branch solver to
-            % register itself as solver for the capacity and provide the
-            % index of the capacity in the solvers afTemperatures vector.
-            this.oHandler = oHandler;
-            this.iHandlerCapacityIndex = iIndex;
         end
     end
 end

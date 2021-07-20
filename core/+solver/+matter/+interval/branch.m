@@ -181,7 +181,7 @@ classdef branch < solver.matter.base.branch
                 fFlowRate   = iDir * fFlowRate;
                 afDeltaP    = mfData(:, 1);
                 return
-            elseif any(isinf(mfData(mfData>0)))
+            elseif any(isinf(mfData))
                 % an infinite pressure drop occurs e.g. if a valve closes
                 % to ensure that nothing flows through. Therefore, do not
                 % iterate but simply set flowrate to 0
@@ -206,6 +206,16 @@ classdef branch < solver.matter.base.branch
 
                         [fSecondError, ~, ~, ~] = this.calculatePressureDrops(iDir, fSecondFlowRate, fPressureDifference);
                         
+                        if isinf(fSecondError)
+                            % Catch the case if checkvalves are used, which
+                            % can set a inf pressure drop for zero flow due
+                            % to the fact that they would otherwise always
+                            % open after beeing closed
+                            fSecondFlowRate = iDir * 1e-12;
+
+                            [fSecondError, ~, ~, ~] = this.calculatePressureDrops(iDir, fSecondFlowRate, fPressureDifference);
+                            
+                        end
                     elseif sign(fPressureDifference + fPressureRise) ~= sign(iDir)
                         % in this case the possible solution is at the
                         % opposite flow direction than the initial guess

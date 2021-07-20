@@ -9,8 +9,14 @@ classdef mixture < matter.phases.boundary.boundary
         sType = 'mixture';
     end
     
+    properties (SetAccess = protected, GetAccess = public)
+        % Actual phase type of the matter in the phase, e.g. 'liquid',
+        % 'solid' or 'gas'.
+        sPhaseType;
+    end
+    
     methods
-        function this = mixture(oStore, sName, tfMass, fTemperature, fPressure)
+        function this = mixture(oStore, sName, sPhaseType, tfMass, fTemperature, fPressure)
             %% mixture boundary class constructor
             %
             % creates a mixture boundary phase with the specifid conditions.
@@ -27,6 +33,7 @@ classdef mixture < matter.phases.boundary.boundary
 
             this@matter.phases.boundary.boundary(oStore, sName, tfMass, fTemperature);
             
+            this.sPhaseType = sPhaseType;
             this.fMassToPressure =  fPressure / sum(this.afMass);
             
             tProperties.afMass = this.afMass;

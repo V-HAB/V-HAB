@@ -38,14 +38,14 @@ classdef branch < solver.thermal.base.branch
             % branch will be calculated to have both capacities change
             % their temperature by the same amount per second.
             fExmeHeatFlowLeft = 0;
-            for iExme = 1:length(oCapacityLeft.aoExmes)
+            for iExme = 1:oCapacityLeft.iProcsEXME
                 if oCapacityLeft.aoExmes(iExme) ~= this.oBranch.coExmes{1}
                     fExmeHeatFlowLeft = fExmeHeatFlowLeft + (oCapacityLeft.aoExmes(iExme).iSign * oCapacityLeft.aoExmes(iExme).fHeatFlow);
                 end
             end
             
             fExmeHeatFlowRight = 0;
-            for iExme = 1:length(oCapacityRight.aoExmes)
+            for iExme = 1:oCapacityRight.iProcsEXME
                 if oCapacityRight.aoExmes(iExme) ~= this.oBranch.coExmes{2}
                     fExmeHeatFlowRight = fExmeHeatFlowRight + (oCapacityRight.aoExmes(iExme).iSign * oCapacityRight.aoExmes(iExme).fHeatFlow);
                 end
@@ -109,15 +109,15 @@ classdef branch < solver.thermal.base.branch
             % ensure that not both capacities are flow capacities, as that
             % would break the calculation
             if bFlow && oNormalCapacity.oPhase.bFlow
-                error('it is not possible to use an infinite conduction solver with two flow capacities! Currently both %s and %s are flow capacities', oCapacityLeft.sName, oCapacityRight.sName)
+                error('It is not possible to use an infinite conduction solver with two flow capacities! Currently both %s and %s are flow capacities', oCapacityLeft.sName, oCapacityRight.sName)
             end
             
             if bBoundary && oNormalCapacity.oPhase.bBoundary
-                error('it is not possible to use an infinite conduction solver with two boundary capacities! Currently both %s and %s are boundary capacities', oCapacityLeft.sName, oCapacityRight.sName)
+                error('It is not possible to use an infinite conduction solver with two boundary capacities! Currently both %s and %s are boundary capacities', oCapacityLeft.sName, oCapacityRight.sName)
             end
             
             if bBoundary && bFlow
-                error('it is currently not possible to use an infinite conduction solver with a boundary  and a flow capacity! Currently both %s and %s are either flow orboundary capacities', oCapacityLeft.sName, oCapacityRight.sName)
+                error('It is currently not possible to use an infinite conduction solver with a boundary and a flow capacity! Currently both %s and %s are either flow or boundary capacities', oCapacityLeft.sName, oCapacityRight.sName)
             end
             
             if bFlow

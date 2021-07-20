@@ -20,6 +20,8 @@ classdef MicrobialCheckValve < matter.procs.f2f
         
         bOpen = true;
         
+        bAlwaysOpen = false;
+        
         abContaminants;
         
         afCarbonAtomsInMolecule;
@@ -55,7 +57,9 @@ classdef MicrobialCheckValve < matter.procs.f2f
             this.supportSolver('callback',  @this.solverDeltas);
         end
         
-        
+        function switchAlwaysOpen(this, bAlwaysOpen)
+            this.bAlwaysOpen = bAlwaysOpen;
+        end
         
         function fPressureDrop = solverDeltas(this, fFlowRate)
             
@@ -77,7 +81,9 @@ classdef MicrobialCheckValve < matter.procs.f2f
             if fFlowRate <= 0
                 this.fPressureDrop = 0;
                 this.bOpen = true;
-                
+            elseif this.bAlwaysOpen
+                this.fPressureDrop = 0;
+                this.bOpen = true;
             % if we have a flow through the valve, check the flow for the
             % Total Organic Concentration (TOC) and for the ppm values of
             % other contaminants

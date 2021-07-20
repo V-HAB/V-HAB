@@ -95,6 +95,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             
             this.tOldValues.afInFlowRates = 0;
             this.tOldValues.aarInPartials = zeros(1, this.oMT.iSubstances);
+            this.tOldValues.fTemperature = 0;
         end
         
         function calculateFlowRate(this, afInFlowRates, aarInPartials, ~, ~)
@@ -103,7 +104,8 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             % themselves should not be used for that we cannot use the gas
             % flow node values directly otherwise the P2P influences itself)
             
-            if this.bDesorption || length(afInFlowRates) ~= length(this.tOldValues.afInFlowRates) || any(this.tOldValues.afInFlowRates ~= afInFlowRates) || any(any(this.tOldValues.aarInPartials ~= aarInPartials))
+            if this.bDesorption || length(afInFlowRates) ~= length(this.tOldValues.afInFlowRates) || any(this.tOldValues.afInFlowRates ~= afInFlowRates) ||...
+                    any(any(this.tOldValues.aarInPartials ~= aarInPartials)) || this.oOut.oPhase.fTemperature ~= this.tOldValues.fTemperature
                 
                 this.tOldValues.afInFlowRates = afInFlowRates;
                 this.tOldValues.aarInPartials = aarInPartials;
@@ -210,10 +212,17 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 % dq/dt = k(q*-q)
                 % Here the solution to this differential equation is used:
                 % q(t + dt) = q* - (q* - q(t)) * exp( - k * dt)
-                % Here we assume that a fixed time step of the CDRA parent system is used (as it
-                % is diffcult to calculate the future correct V-HAB time step
-                % for this...
-                this.mfFlowRates = (mfEquilibriumLoading - (mfEquilibriumLoading - mfCurrentLoading) .* exp(- this.mfMassTransferCoefficient * this.oStore.oContainer.fTimeStep) - mfCurrentLoading) ./ this.oStore.oContainer.fTimeStep;
+                % And solved for the time the gas is in contact with the
+                % zeolith of this cell:
+                if ~this.bDesorption
+                    fEmptyBedContactTime = this.oIn.oPhase.fVolume / (sum(this.afPartialInFlows) ./ this.oIn.oPhase.fDensity); % this.oStore.oContainer.fTimeStep
+                else
+                    % During desorption we have no flow through the bed and
+                    % therefore must use a different time step, otherwise
+                    % no desorption occurs.
+                    fEmptyBedContactTime = this.oStore.oContainer.fTimeStep;
+                end
+                this.mfFlowRates = (mfEquilibriumLoading - (mfEquilibriumLoading - mfCurrentLoading) .* exp(- this.mfMassTransferCoefficient * fEmptyBedContactTime) - mfCurrentLoading) ./ fEmptyBedContactTime;
 
                 %% Seperate the calculate flowrates into adsorption and desorption flowrates
                 mfFlowRatesAdsorption = zeros(1,this.oMT.iSubstances);
@@ -357,7 +366,21 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                         mfFlowRatesAdsorption(abLimitP2PFlows) = this.afPartialInFlows(abLimitP2PFlows);
                     end
                 end
-
+                
+                if this.bDesorption
+                    if this.oOut.oPhase.afMass(this.oMT.tiN2I.H2O) > this.oOut.oPhase.afMass(this.oMT.tiN2I.CO2) 
+                        if this.oOut.oPhase.fTemperature <= 285 || this.oIn.oPhase.fPressure > 0.9e5
+                            % prevent desorpption if the temperature becomes too
+                            % low (freezing conditions) as during these conditions
+                            % the current calculation will not work correctly. This
+                            % basically makes the CDRA more conservative, at no
+                            % desorption for the beds means that it requires longer
+                            % to release mass during these times.
+                            mfFlowRatesDesorption = zeros(1, this.oMT.iSubstances);
+                        end
+                    end
+                end
+                
                 %% get the final adsorption and desorption flowrates and partials
                 fDesorptionFlowRate                             = sum(mfFlowRatesDesorption);
                 arPartialsDesorption                            = zeros(1,this.oMT.iSubstances);
@@ -394,6 +417,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 this.mfFlowRates = mfFlowRatesAdsorption - mfFlowRatesDesorption;
                 this.fAdsorptionHeatFlow = - sum((this.mfFlowRates ./ this.oMT.afMolarMass) .* this.mfAbsorptionEnthalpy);
 
+                this.tOldValues.fTemperature = this.oOut.oPhase.fTemperature;
                 % sets the heat flow to the absorber capacity
                 this.oOut.oPhase.oCapacity.toHeatSources.(['AbsorberHeatSource', this.sCell]).setHeatFlow(this.fAdsorptionHeatFlow)
             end

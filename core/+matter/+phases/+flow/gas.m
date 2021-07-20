@@ -104,6 +104,22 @@ classdef gas < matter.phases.flow.flow
                 end
             end
         end
+        
+        function afPartsPerMillion = get.afPartsPerMillion(this)
+            % Calculates the PPM value on demand.
+            % Made this a dependent variable to reduce the computational
+            % load during run-time since the value is rarely used. 
+            if this.oMultiBranchSolver.bUpdateInProgress
+                this.throw('FlowPhase:UnsafeAccess:afPartsPerMillion',                     ...
+                    ['You are trying to access the afPartsPerMillion property of the flow phase ', ...
+                     '%s during an iteration of the multi-branch solver. ',           ...
+                     'This can lead to incorrect results. Please use the flow ',      ...
+                     'information from the appropriate matter.flow object. ',         ...
+                     'It is set by the solver and updated every iteration.'], this.sName);
+            else
+                afPartsPerMillion = this.oMT.calculatePartsPerMillion(this);
+            end
+        end
     end
 end
 

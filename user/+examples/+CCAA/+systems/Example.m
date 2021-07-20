@@ -35,6 +35,9 @@ classdef Example < vsys
             % well!).
             this@vsys(oParent, sName);
             
+            if nargin < 3
+                tParameters = struct();
+            end
             %
             % temperature for the coolant passing through the CCAA
             tProtoTestSetpoints(1).fCoolantTemperature  = 273.15 + 6.44;

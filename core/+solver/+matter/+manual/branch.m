@@ -31,14 +31,11 @@ classdef branch < solver.matter.base.branch
         fMassTransferFinishTime;
     end
     
-    properties (SetAccess = private, GetAccess = private) %, Transient = true)
-        %TODO These properties should be transient. That requires a static
-        % method (loadobj) to be implemented in this class, so when the
-        % simulation is re-loaded from a .mat file, the properties are
-        % reset to their proper values.
-        
+    properties (SetAccess = private, GetAccess = protected)
+        % function handle registered at the timer object that allows this
+        % phase to set a time step, which is then enforced by the timer
+        setMassTransferTimeStep;
     end
-    
     
     methods
         function this = branch(oBranch)
@@ -56,6 +53,13 @@ classdef branch < solver.matter.base.branch
             
             this.setTimeStep(this.fTimeStep);
             
+            this.setMassTransferTimeStep = this.oBranch.oTimer.bind(@(~) this.checkMassTransfer(), 0, struct(...
+                'sMethod', 'checkMassTransfer', ...
+                'sDescription', 'The .checkMassTransfer method of a manual solver', ...
+                'oSrcObj', this ...
+            ));
+            % initialize the time step to inf
+            this.setMassTransferTimeStep(inf, true);
         end
         
         
@@ -123,7 +127,7 @@ classdef branch < solver.matter.base.branch
             if isempty(fMass) || isempty(fTime)
                 this.throw('Setting an empty mass transfer for manual branch %s in system %s', this.oBranch.sName, this.oBranch.oContainer.sName);
             end
-            this.fTimeStep = fTime;
+            fMassTransferTimeStep = fTime;
             this.bMassTransferActive = true;
             this.fMassTransferStartTime  = this.oBranch.oTimer.fTime;
             this.fMassTransferFinishTime = this.oBranch.oTimer.fTime + fTime;
@@ -131,19 +135,15 @@ classdef branch < solver.matter.base.branch
             this.fRequestedFlowRate = fMass / fTime;
             this.fRequestedVolumetricFlowRate = [];
             
-            this.setTimeStep(this.fTimeStep, true);
+            this.setMassTransferTimeStep(fMassTransferTimeStep, true);
             
             this.registerUpdate();
         end
     end
     
     methods (Access = protected)
-        function update(this)
-            % We can't set the flow rate directly on this.fFlowRate or on
-            % the branch, but have to provide that value to the parent
-            % update method.
-            
-            %TODO distribute pressure drops equally over flows?
+        
+        function checkMassTransfer(this,~)
             
             % In the case of a fixed mass transfer the flowrate is reset to
             % zero once it is finished (which should occur within one tick)
@@ -151,8 +151,10 @@ classdef branch < solver.matter.base.branch
                 this.bMassTransferActive = false;
                 this.fRequestedFlowRate = 0;
                 
-                this.fTimeStep = inf;
-                this.setTimeStep(this.fTimeStep);
+                fMassTransferTimeStep = inf;
+                this.setMassTransferTimeStep(fMassTransferTimeStep);
+                
+                this.registerUpdate();
             elseif this.bMassTransferActive && abs(this.oBranch.oTimer.fTime - this.fMassTransferFinishTime) > this.oBranch.oTimer.fMinimumTimeStep
                 % If the branch is called before the set mass transfer time
                 % step, the afLastExec property in the timer for this
@@ -161,10 +163,18 @@ classdef branch < solver.matter.base.branch
                 % every update that occurs during a mass transfer that
                 % does not fullfill the above conditions we have to reduce
                 % the time step:
-                this.fTimeStep = this.fMassTransferFinishTime - this.oBranch.oTimer.fTime;
+                fMassTransferTimeStep = this.fMassTransferFinishTime - this.oBranch.oTimer.fTime;
                 
-                this.setTimeStep(this.fTimeStep, true);
-            elseif ~isempty(this.fRequestedVolumetricFlowRate)
+                this.setMassTransferTimeStep(fMassTransferTimeStep, true);
+            end
+        end
+        
+        function update(this)
+            % We can't set the flow rate directly on this.fFlowRate or on
+            % the branch, but have to provide that value to the parent
+            % update method.
+            
+            if ~this.bMassTransferActive && ~isempty(this.fRequestedVolumetricFlowRate)
                 
                 if this.fRequestedVolumetricFlowRate >= 0
                     oPhase = this.oBranch.coExmes{1}.oPhase;

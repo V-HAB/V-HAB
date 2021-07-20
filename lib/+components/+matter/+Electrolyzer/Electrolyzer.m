@@ -18,15 +18,23 @@ classdef Electrolyzer < vsys
         fMembraneArea       = 0.01;	% m^2
              
         % Thickness of the membrane in one cell
-        fMembraneThickness  = 2*10^-6;      % m
+        fMembraneThickness  = 2.1e-4;      % m
         
         % The maximum current that can can pass through the membrane
-        fMaxCurrentDensity  = 20000;       % A/m^2
+        % See Fig. 5 from http://dx.doi.org/10.1016/j.electacta.2016.06.120
+        fMaxCurrentDensity  = 40000;       % A/m^2
         
         % Charge transfer coefficient of anode and cathode. Base values are
-        % from http://www.electrochemsci.org/papers/vol7/7054143.pdf table 2
-        fChargeTransferAnode = 0.5;
-        fChargeTransferCatode = 1;
+        % from  http://www.electrochemsci.org/papers/vol7/7054143.pdf table 2
+        % and match the kinetic losses shown in figure 6 from 
+        % http://dx.doi.org/10.1016/j.electacta.2016.06.120
+        fChargeTransferAnode = 1;
+        fChargeTransferCatode = 0.5;
+        
+        % Properties of internal values of the Electrolyzer:
+        fOhmicOverpotential         = 0; % V
+        fKineticOverpotential       = 0; % V
+        fMassTransportOverpotential = 0; % V
     end
     
     methods
@@ -71,16 +79,17 @@ classdef Electrolyzer < vsys
         function createMatterStructure(this)
             createMatterStructure@vsys(this);
             
-            matter.store(this, 'Electrolyzer', 0.5);
+            matter.store(this, 'Electrolyzer', 0.4 * this.iCells * this.fMembraneArea + 0.01334 * this.iCells * this.fMembraneArea + 0.1 + 0.0002);
             
             fInitialTemperature = 293;
             
-            oMembrane   = matter.phases.mixture(this.toStores.Electrolyzer, 'Membrane', 'solid', struct('H2O',0.5,'H2',0.1,'O2',0.1), fInitialTemperature, 1e5);
+            oMembrane   = this.toStores.Electrolyzer.createPhase(  'mixture',         	'Membrane', 'liquid', 0.4 * this.iCells * this.fMembraneArea, struct('H2O', 0.5, 'H2', 0.25, 'O2', 0.25),  fInitialTemperature, 1e5);
+            
             
             oH2         = this.toStores.Electrolyzer.createPhase(  'gas',    'flow',    'H2_Channel',       0.05, struct('H2', 1e5),  fInitialTemperature, 0.8);
             oO2         = this.toStores.Electrolyzer.createPhase(  'gas',    'flow',    'O2_Channel',       0.05, struct('O2', 1e5),  fInitialTemperature, 0.8);
             
-            oWater      = this.toStores.Electrolyzer.createPhase(  'liquid',            'ProductWater',     0.0001, struct('H2O', 1),  fInitialTemperature, 1e5);
+            oWater      = this.toStores.Electrolyzer.createPhase(  'liquid',            'ProductWater',     0.01334 * this.iCells * this.fMembraneArea, struct('H2O', 1),  fInitialTemperature, 1e5);
             
             oCooling    = this.toStores.Electrolyzer.createPhase(  'liquid', 'flow', 	'CoolingSystem',    0.0001, struct('H2O', 1),  340, 1e5);
             
@@ -147,8 +156,7 @@ classdef Electrolyzer < vsys
             oSolver = solver.matter_multibranch.iterative.branch(aoMultiSolverBranches, 'complex');
             oSolver.setSolverProperties(tSolverProperties);
             
-            
-            oWaterInlet = solver.matter.residual.branch(this.toBranches.Water_Inlet);
+            solver.matter.residual.branch(this.toBranches.Water_Inlet);
             
             solver.matter.manual.branch(this.toBranches.Cooling_Inlet);
             solver.matter.manual.branch(this.toBranches.Cooling_Outlet);
@@ -187,73 +195,70 @@ classdef Electrolyzer < vsys
             % through each cell
             fMaxCurrent = this.fMaxCurrentDensity * this.fMembraneArea;
             
-            rError = 1;
-            iIteration = 1;
-            while rError > 1e-4 && iIteration < 500
-                this.fStackCurrent = this.fPower / this.fStackVoltage;
-
-                if this.fStackCurrent > fMaxCurrent
-                    this.fStackCurrent = fMaxCurrent;
-                end
-                this.fPower = this.fStackCurrent * this.fStackVoltage;
-
-                fCurrentDensity = this.fStackCurrent / this.fMembraneArea;
-
-                % Nernst Equation e.g. from "Efficiency Calculationand
-                % Configuration Design of a PEM Electrolyzer System for Hydrogen Production"
-                % http://www.electrochemsci.org/papers/vol7/7054143.pdf (Eq. 5)
-                % This is the "optimal" voltage where the electrolyzer would
-                % operate at 100% efficiency
-                fReversibleVoltage = 1.229 - 8.5*10^-4*(fTemperature-298) + 4.3085*10^-5 * fTemperature * log(fPressureH2 * sqrt(fPressureO2) / fPressureH2O);
-
-                if this.fPower == 0
-                    % If the power is 0, nothing is reacted and the cell
-                    % voltage is the reversible voltage without losses
-                    % (efficiency of 100%)
-                    this.fCellVoltage = fReversibleVoltage;
+            fOpenCircuitCellVoltage = this.calculateOpenCircuitCellVoltage(fTemperature, fPressureH2, fPressureO2, fPressureH2O);
             
-                else
-                    %% Calculation of losses
-                    % activation losses (Eq 6) from the source above
-                    fActivationLossVoltage = ((this.fChargeTransferAnode + this.fChargeTransferCatode)/(this.fChargeTransferAnode * this.fChargeTransferCatode)) * ...
-                                            (this.oMT.Const.fUniversalGas * fTemperature / (2 * this.oMT.Const.fFaraday)) * ...
-                                            log(fCurrentDensity / (1.08*10^-17 * exp(0.086 * fTemperature)));
+            if this.fPower == 0
+                % If the power is 0, nothing is reacted and the cell
+                % voltage is the reversible voltage without losses
+                % (efficiency of 100%)
+                this.fCellVoltage = fOpenCircuitCellVoltage;
 
-                    % Ohmic Losses
-                    % Equation 7 from the paper, conducivitiy and water content is 
-                    % explained in the text below:
-                    % a calculation for the membrane humidity could also be added,
-                    % but the text states that PEM elys usually operate at this
-                    % value. If the calculation for this is implemented, the model
-                    % must also be improved to correctly model the water content of
-                    % the membrane!
-                    fWaterSaturationPressure = this.oMT.calculateVaporPressure(fTemperature, 'H2O');
-                    fMembraneHumidity       = 14;
-                    fMembraneConducivity    = (0.005139 * fMembraneHumidity + 0.00326) * exp(1267 * (1/303 - 1/fTemperature));
-                    fOhmicLossVoltage       = fCurrentDensity * (this.fMembraneThickness/fMembraneConducivity);
-
-                    % Concentration Losses (Eq. 8)
-                    fPressureX = fPressureO2 / (0.1173 * 101325) + (fWaterSaturationPressure / 101325);
-                    if fPressureX > 2
-                        fBetaOne = (8.66*10^-5 * fTemperature - 0.068) * fPressureX - 1.6*10^-4 * fTemperature + 0.54;
+            else
+                % Since the original iterative approach did not work for all
+                % configurations of ELYs a nested intervall approach is used
+                % instead. The current of the electrolyzer must be between 0
+                % and the maximum current, therefore these values are used as
+                % initial intervall
+                mfCurrent = [1e-8, fMaxCurrent];
+                
+                mfError         = zeros(2,1);
+                mfVoltage       = zeros(2,1);
+                mfVoltage(1)    = this.calculateStackValues(mfCurrent(1), fTemperature, fPressureO2, fOpenCircuitCellVoltage);
+                mfError(1)      = mfCurrent(1) - (this.fPower / (this.iCells * mfVoltage(1)));
+                
+                mfVoltage(2)    = this.calculateStackValues(mfCurrent(2), fTemperature, fPressureO2, fOpenCircuitCellVoltage);
+                mfError(2)      = mfCurrent(2) - (this.fPower / (this.iCells * mfVoltage(2)));
+                
+                fError = inf;
+                iCounter = 0;
+                fIntervallSize = abs(mfCurrent(2) - mfCurrent(1));
+                
+                while abs(fError) > 1e-4 && fIntervallSize > 1e-18 && iCounter < 500
+            
+                    fCurrent = (mfCurrent(2) + mfCurrent(1)) / 2;
+                    fNewCellVoltage = this.calculateStackValues(fCurrent, fTemperature, fPressureO2, fOpenCircuitCellVoltage);
+                
+                    fNewCurrent = this.fPower / (this.iCells * fNewCellVoltage);
+                    
+                    fError = fCurrent - fNewCurrent;
+                    
+                    if sign(fError) == sign(mfError(1))
+                        iReplace = 1;
                     else
-                        fBetaOne = (7.16*10^-4 * fTemperature - 0.622) * fPressureX - 1.45*10^-3 * fTemperature + 1.68;
+                        iReplace = 2;
                     end
-                    fConcentrationLossVoltage = fCurrentDensity * (fBetaOne * fCurrentDensity/this.fMaxCurrentDensity)^2;
-
-                    this.fCellVoltage = (fReversibleVoltage + fActivationLossVoltage + fOhmicLossVoltage + fConcentrationLossVoltage);
+                    mfCurrent(iReplace) = fCurrent;
+                    mfError(iReplace)   = fError;
+                
+                    fIntervallSize = abs(mfCurrent(2) - mfCurrent(1));
+                    
+                    iCounter = iCounter + 1;
                 end
-                this.rEfficiency = fReversibleVoltage / this.fCellVoltage;
-
-                this.fStackVoltage = this.iCells * this.fCellVoltage;
-
-                fCurrent = this.fPower / this.fStackVoltage;
                 
-                rError = abs(this.fStackCurrent - fCurrent);
-                this.fStackCurrent = fCurrent;
-                
-                iIteration = iIteration + 1;
+                this.fCellVoltage = fNewCellVoltage;
             end
+            
+            this.rEfficiency = fOpenCircuitCellVoltage / this.fCellVoltage;
+
+            this.fStackVoltage = this.iCells * this.fCellVoltage;
+            
+            this.fStackCurrent = this.fPower / this.fStackVoltage;
+
+            if this.fStackCurrent > fMaxCurrent
+                this.fStackCurrent = fMaxCurrent;
+            end
+            this.fPower = this.fStackCurrent * this.fStackVoltage;
+                
             % Reset the power value because it might be lowered from the
             % set value because of limits in the electrolyzer
             this.fPower = this.fStackCurrent * this.fStackVoltage;
@@ -268,7 +273,17 @@ classdef Electrolyzer < vsys
             
             this.toBranches.Cooling_Inlet.oHandler.setFlowRate(-fCoolantFlow);
             this.toBranches.Cooling_Outlet.oHandler.setFlowRate(fCoolantFlow);
+                
         end
+        
+        function fOpenCircuitVoltage = calculateOpenCircuitCellVoltage(this, fTemperature, fPressureH2, fPressureO2, fPressureH2O)
+            % Nernst Equation e.g. from https://doi.org/10.1016/j.jclepro.2020.121184
+            % using the reversible cell voltage of equation 13
+            % This is the "optimal" voltage where the electrolyzer would
+            % operate at 100% efficiency, or also the open circuit voltage.
+            fOpenCircuitVoltage = 1.229 - 0.9*10^-3 * (fTemperature-298)  + (this.oMT.Const.fUniversalGas * fTemperature / (2 * this.oMT.Const.fFaraday)) * log(fPressureH2 * sqrt(fPressureO2) / fPressureH2O);
+        end
+        
         
         function setPower(this, fPower)
             this.fPower = fPower;
@@ -294,6 +309,100 @@ classdef Electrolyzer < vsys
     end
     
     methods (Access = protected)
+        
+        function fNewCellVoltage = calculateStackValues(this, fCurrent, fTemperature, fPressureO2, fReversibleVoltage)
+            % This function can be used to calculate the cell voltage of
+            % the electrolyzer for a specific desired current
+
+            fCurrentDensity = fCurrent / this.fMembraneArea;
+
+            %% Calculation of losses
+            % Activiation losses/kinetic losses according to 
+            % http://www.electrochemsci.org/papers/vol7/7054143.pdf
+            % The losses also match the curve for kinetic losses from
+            % http://dx.doi.org/10.1016/j.electacta.2016.06.120
+            %
+            % pressure factor is introduced and adjusted to match the
+            % behavior from
+            % http://dx.doi.org/10.1016/j.electacta.2016.06.120 
+            % figure 6
+            fPressureFactor = 1 / ((fPressureO2/1e5)^0.025);
+            fActivationLossVoltage = fPressureFactor * ((this.fChargeTransferAnode + this.fChargeTransferCatode)/(this.fChargeTransferAnode * this.fChargeTransferCatode)) * ...
+                                    (this.oMT.Const.fUniversalGas * fTemperature / (2 * this.oMT.Const.fFaraday)) * ...
+                                    log((fCurrentDensity / 10000) / (1.08*10^-17 * exp(0.086 * fTemperature)));
+
+            % Ohmic Losses
+            % Equation 7 from the paper, conducivitiy and water content is 
+            % explained in the text below:
+            % a calculation for the membrane humidity could also be added,
+            % but the text states that PEM elys usually operate at this
+            % value. If the calculation for this is implemented, the model
+            % must also be improved to correctly model the water content of
+            % the membrane!
+            fMembraneHumidity       = 14;
+            % Note that this equation is from
+            % https://doi.org/10.1149/1.2085971 and is provided in cm!
+            % Therefore the membrane thickness must be provided in cm and
+            % the current density in A/cm^2
+            fMembraneConducivity    = (0.005139 * fMembraneHumidity + 0.00326) * exp(1267 * (1/303 - 1/fTemperature));
+            fOhmicLossVoltage       = (fCurrentDensity / 10000) * ((this.fMembraneThickness * 100) /fMembraneConducivity);
+            
+            % Mass transport overpotential according to 
+            % https://doi.org/10.1016/j.jclepro.2020.121184
+            % equation 21, but using the transfer coefficient adjustment
+            % from https://doi.org/10.1016/j.est.2016.06.006 to match the
+            % results of http://dx.doi.org/10.1016/j.electacta.2016.06.120
+            fTransferCoefficient = 0.075;
+            % Therefore a sigmoid function is used to better approximate
+            % the behavior. The sigmoid function goes from 0 to 1 between
+            % -6 and 6 in a s-shaped curve, we want the behavior from 0 to
+            % 6 for the later area, but before that the behavior is better
+            % approximated by a linear curve. Therefore we set a linear
+            % approximation for low current densities (up to basically a
+            % sigmoidX value of 0.5) and then use the sigmoid function.
+            fInflectionCurrentDensity = 15000;
+            if fCurrentDensity < fInflectionCurrentDensity
+                %fSigmoidX = ((fCurrentDensity ./ (2 * fPlateuCurrentDensity)) .* 12) - 6; 
+                % For values below
+                fMassTransportVoltage = (this.oMT.Const.fUniversalGas * fTemperature / (fTransferCoefficient * 2 * this.oMT.Const.fFaraday)) .* (fCurrentDensity ./ fInflectionCurrentDensity) .* 0.5;
+            else
+            	fSigmoidX = (((fCurrentDensity - (fInflectionCurrentDensity)) ./ (2 * (this.fMaxCurrentDensity - (fInflectionCurrentDensity)))) .* 12); 
+            
+                fMassTransportVoltage = (this.oMT.Const.fUniversalGas * fTemperature / (fTransferCoefficient * 2 * this.oMT.Const.fFaraday)) .* exp(fSigmoidX) ./ (exp(fSigmoidX) +1);
+            end
+            % Now we again adjust the value using a pressure factor to
+            % match behavior from figure 6 of 
+            % http://dx.doi.org/10.1016/j.electacta.2016.06.120
+            % Since no data above 100 bar is available, no further
+            % beneficial effects past that value are assumed
+            fPressureFactor = 1 - ((fPressureO2) ./ (100e5) / 3.84);
+            % The mass transport overpotential temperature behavior is
+            % reflected by the following adjustments
+            fTemperatureFactor = 0.65 + 0.6 * ((343.1500 - fTemperature) / 40);
+            if fTemperatureFactor < 0.55
+                fTemperatureFactor = 0.55;
+            end
+            fAdjustmentCurrentDensities = 25000;
+            if fCurrentDensity < fAdjustmentCurrentDensities
+                fTemperatureAdjustment = -(1/20) * (fTemperature - 323.15);
+                if fTemperatureAdjustment > 1
+                    fTemperatureAdjustment = 1;
+                elseif fTemperatureAdjustment < 0
+                    fTemperatureAdjustment = 0;
+                end
+                fAdjustmentFactor = (abs((abs(fCurrentDensity - (fAdjustmentCurrentDensities/2)) ./ (fAdjustmentCurrentDensities/2)) - 1)  .* 0.44 + 1)^fTemperatureAdjustment;
+                fTemperatureFactor = fAdjustmentFactor * fTemperatureFactor;
+            end
+            
+            fMassTransportVoltage = fPressureFactor * fTemperatureFactor * fMassTransportVoltage;
+            
+            fNewCellVoltage = (fReversibleVoltage + fActivationLossVoltage + fOhmicLossVoltage + fMassTransportVoltage);
+            
+            % Store properties:
+            this.fOhmicOverpotential            = fOhmicLossVoltage;
+            this.fKineticOverpotential          = fActivationLossVoltage;
+            this.fMassTransportOverpotential    = fMassTransportVoltage;
+        end
         
         function exec(this, ~)
             % exec(ute) function for this system

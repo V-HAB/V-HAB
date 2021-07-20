@@ -436,6 +436,7 @@ classdef Digestion < vsys
             % are not important for it --> rMaxChange can be set to inf:
             tTimeStepProperties = struct();
             tTimeStepProperties.rMaxChange = inf;
+            this.toStores.Digestion.toPhases.Rectum.oCapacity.setTimeStepProperties(tTimeStepProperties);
             arMaxChange = zeros(1,this.oMT.iSubstances);
             tTimeStepProperties.arMaxChange = arMaxChange;
             this.toStores.Digestion.toPhases.Rectum.setTimeStepProperties(tTimeStepProperties);
@@ -560,8 +561,10 @@ classdef Digestion < vsys
             % compound masses, not the base nutrients like fats,
             % carbohydrates and proteins
             fTotalUndigestedFoodInStomach = sum(afMass(this.oMT.abEdibleSubstances));
+            afEdibleMass                              = zeros(1, this.oMT.iSubstances);
+            afEdibleMass(this.oMT.abEdibleSubstances) = afMass(this.oMT.abEdibleSubstances);
             
-            afNutrientMassInUndigestedFood = this.oMT.resolveCompoundMass(afMass, oStomachPhase.arCompoundMass);
+            afNutrientMassInUndigestedFood = this.oMT.resolveCompoundMass(afEdibleMass, oStomachPhase.arCompoundMass);
             
             afNutrientMassInUndigestedFood(this.oMT.tiN2I.Naplus) = afNutrientMassInUndigestedFood(this.oMT.tiN2I.Na) + afNutrientMassInUndigestedFood(this.oMT.tiN2I.Naplus);
             afNutrientMassInUndigestedFood(this.oMT.tiN2I.Na) = 0;
@@ -571,8 +574,8 @@ classdef Digestion < vsys
             % subtract the current water and sodium content of the food.
             % The other nutrients are directly transfered out of the
             % stomache once they are converted
-            afNutrientMassInUndigestedFood(this.oMT.tiN2I.H2O)      = afNutrientMassInUndigestedFood(this.oMT.tiN2I.H2O)    - afMass(this.oMT.tiN2I.H2O);
-            afNutrientMassInUndigestedFood(this.oMT.tiN2I.Naplus)   = afNutrientMassInUndigestedFood(this.oMT.tiN2I.Naplus) - afMass(this.oMT.tiN2I.Naplus);
+            afNutrientMassInUndigestedFood(this.oMT.tiN2I.H2O)      = afNutrientMassInUndigestedFood(this.oMT.tiN2I.H2O)    - afEdibleMass(this.oMT.tiN2I.H2O);
+            afNutrientMassInUndigestedFood(this.oMT.tiN2I.Naplus)   = afNutrientMassInUndigestedFood(this.oMT.tiN2I.Naplus) - afEdibleMass(this.oMT.tiN2I.Naplus);
                     
             % The secretion mass ratio must be larger than 20% before
             % anything is converted into basic nutrients:
@@ -594,7 +597,7 @@ classdef Digestion < vsys
                 % calculate the digestion flowrate of each food stuff we have
                 % to calculate the contribution of that food stuff to the total
                 % undigested nutritions:
-                aiEdibleSubstanceIndices = find(afMass(this.oMT.abEdibleSubstances));
+                aiEdibleSubstanceIndices = find(afEdibleMass(this.oMT.abEdibleSubstances));
                 iTotalEdibleSubstancesInStomach = sum(aiEdibleSubstanceIndices ~= 0);
                 for iEdibleSubstance = 1:iTotalEdibleSubstancesInStomach
 
@@ -603,7 +606,7 @@ classdef Digestion < vsys
                     % Now we get the nutrient composition for this specific
                     % edible substance
                     afIndividualSubstanceMass = zeros(1, this.oMT.iSubstances);
-                    afIndividualSubstanceMass(this.oMT.tiN2I.(sEdibleSubstance)) = afMass(this.oMT.tiN2I.(sEdibleSubstance));
+                    afIndividualSubstanceMass(this.oMT.tiN2I.(sEdibleSubstance)) = afEdibleMass(this.oMT.tiN2I.(sEdibleSubstance));
                     afIndividualUndigestedNutrients = this.oMT.resolveCompoundMass(afIndividualSubstanceMass , oStomachPhase.arCompoundMass);
 
                     
@@ -631,7 +634,6 @@ classdef Digestion < vsys
             else
                 afFoodConversionFlowRates = zeros(1, this.oMT.iSubstances);
             end
-            
             
             % now we set the calculated flowrate
             oStomachPhase.toManips.substance.setFlowRate(afFoodConversionFlowRates);
@@ -762,7 +764,14 @@ classdef Digestion < vsys
             end
             afDelayedTransportFlow = tfIntestinePreviousFlowRate.mfPastInputFlowRates(iTimeIndex, :);
             
-            afDelayedTransportFlow(afMass == 0) = 0;
+            afDelayedTransportFlow(afMass < 1e-8) = 0;
+            
+            afPotentialTimeSteps = ones(1, this.oMT.iSubstances) .* inf;
+            afPotentialTimeSteps(afDelayedTransportFlow ~= 0) = this.toStores.Digestion.toPhases.(sIntestine).afMass(afDelayedTransportFlow ~= 0) ./ afDelayedTransportFlow(afDelayedTransportFlow ~= 0);
+            
+            if any(afPotentialTimeSteps < 60)
+                 afDelayedTransportFlow(afPotentialTimeSteps < 60) = this.toStores.Digestion.toPhases.(sIntestine).afMass(afPotentialTimeSteps < 60) ./ 60;
+            end
             
             % Of these delayed input flows, the corresponding ratios
             % are then passed on to the next compartment. Since the

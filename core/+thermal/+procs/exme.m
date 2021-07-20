@@ -78,7 +78,7 @@ classdef exme < base
             % ensures that the phase still has a valid exme etc when it is
             % calculated but that the exme is changed before the solvers
             % are updated
-            this.hReconnectExme = this.oTimer.registerPostTick(@this.reconnectExMePostTick,            'thermal',        'post_capacity_temperatureupdate');
+            this.hReconnectExme = this.oTimer.registerPostTick(@this.reconnectExMePostTick, 'thermal', 'post_capacity_temperatureupdate');
         end
         
         function addBranch(this, oBranch)
@@ -198,6 +198,27 @@ classdef exme < base
             % to prevent confusion, empty the new phase property
             this.oNewCapacity = [];
             
+        end
+    end
+    
+    methods (Access = {?thermal.container})
+        function disconnectBranch(this)
+            %DISCONNECTBRANCH Deletes the reference to the connected branch
+            %   This is necessary when the simulation object is saved to a
+            %   MAT file. In large and/or networked systems the number of
+            %   consecutive, unique objects that are referenced in a row
+            %   cannot be larger than 500. In order to break these chains,
+            %   we delete the reference to the branch on all thermal exmes
+            %   on the right side of all branches. Since the branch object
+            %   retains a reference to this flow, we can easily reconnect
+            %   it on load. 
+            this.oBranch = [];
+        end
+        
+        function reconnectBranch(this, oBranch)
+            %RECONNECTBRANCH Sets branch reference to input object
+            %   This reverses the action performed in disconnectBranch().
+            this.oBranch = oBranch;
         end
     end
 end

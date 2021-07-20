@@ -53,7 +53,7 @@ classdef PressureRegulator < vsys
             matter.store(this, 'InterStage', 0.01);
             % add phase to store interstage
             oGasPhaseInter = this.toStores.InterStage.createPhase(this.sAtmosphereHelper, 0.01, 293.15, 0, this.tFirstStageParameters.fPressureSetpoint);
-            oGasPhaseInter.bSynced = true;
+%             oGasPhaseInter.bSynced = true;
             
             % Adding Valves for the first and second stages
             components.matter.PressureRegulator.valve(this, 'FirstStageValve', this.tFirstStageParameters); 
@@ -74,13 +74,11 @@ classdef PressureRegulator < vsys
             createSolverStructure@vsys(this);
             
             % add branches to solver
-            oBranch = solver.matter.linear.branch(this.toBranches.InletBranch);
-            oBranch.fFixedTS = this.fFixedTimeStep;
-            oBranch.iDampFR = this.iFlowRateDampeningFactor;
+            solver.matter.interval.branch(this.toBranches.InletBranch);
             
-            oBranch = solver.matter.linear.branch(this.toBranches.OutletBranch);
-            oBranch.fFixedTS = this.fFixedTimeStep;
-            oBranch.iDampFR = this.iFlowRateDampeningFactor;
+            solver.matter.interval.branch(this.toBranches.OutletBranch);
+            
+            this.setThermalSolvers();
         end
         
         function setIfFlows(this, sInlet, sOutlet)

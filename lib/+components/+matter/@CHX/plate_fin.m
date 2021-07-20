@@ -1,5 +1,5 @@
 function [fOutlet_Temp_1, fOutlet_Temp_2, fDelta_P_1, fDelta_P_2] = ...
-    plate_fin(oCHX, tCHX_Parameters, Fluid_1, Fluid_2, fThermalConductivitySolid, miIncrements)
+    plate_fin(oCHX, tCHX_Parameters, Fluid_1, Fluid_2, fThermalConductivitySolid, miIncrements, bResetInit)
 
 % Function used to calculate the outlet temperatures and pressure drop of a
 % plate and fin cross counter flow heat exchanger with a single air pass
@@ -86,6 +86,10 @@ function [fOutlet_Temp_1, fOutlet_Temp_2, fDelta_P_1, fDelta_P_2] = ...
 iIncrementsAir      = miIncrements(1);
 iIncrementsCoolant  = miIncrements(2);
 
+if nargin < 7
+    bResetInit = false;
+end
+
 %calculates the further needed variables for the heat exchanger from the
 %given values
 
@@ -144,11 +148,16 @@ fInletSpecificHeatCapacityCoolant   = Fluid_2.fSpecificHeatCapacity;
 %locations. This is achieved by splitting the heat exchanger into several
 %smaller heat exchangers and calculating their respective outlet
 %temperatures.
-if ~isfield(oCHX.txCHX_Parameters, 'mOutlet_Temp_2')
+if ~isfield(oCHX.txCHX_Parameters, 'mOutlet_Temp_2') || bResetInit
     % In case this is the first time the CHX is calculate, we do not yet
     % have a good estimation for the coolant temperatures. Therefore we
     % initialize the coolant to have the same temperature everywhere and no
-    % condensation occuring
+    % condensation occuring.
+    %
+    % As a second case, the CHX can decide to reset its initialization e.g.
+    % if the changes that occured compared to the last calculation where
+    % sever and caused NaN values because the previous values as estimates
+    % are too bad
     oCHX.txCHX_Parameters.mOutlet_Temp_2        = ones(iIncrementsAir, iIncrementsCoolant,tCHX_Parameters.iBaffles+1,tCHX_Parameters.iLayers+1) * Fluid_2.fEntry_Temperature; 
     oCHX.txCHX_Parameters.mOutlet_Temp_1        = ones(iIncrementsAir, iIncrementsCoolant,tCHX_Parameters.iBaffles+1,tCHX_Parameters.iLayers) * Fluid_1.fEntry_Temperature; 
     oCHX.txCHX_Parameters.mCondensateFlowRate   = zeros(iIncrementsAir, iIncrementsCoolant,tCHX_Parameters.iBaffles+1,tCHX_Parameters.iLayers); 
@@ -559,8 +568,9 @@ end
 % calculated using the input specific heat capacity. Since the discretized
 % solution is more accurate, we use the inlet specific heat capacities to
 % calculate the heat flows based on the outlet temperatures:
-oCHX.fTotalHeatFlow             =                       (fOutlet_Temp_2 - Fluid_2.fEntry_Temperature) * fInletSpecificHeatCapacityCoolant  * Fluid_2.fMassflow;
-oCHX.fTotalCondensateHeatFlow   = oCHX.fTotalHeatFlow - (Fluid_1.fEntry_Temperature - fOutlet_Temp_1) * fInletSpecificHeatCapacityGas      * Fluid_1.fMassflow;
+oCHX.fTotalHeatFlow                     = (fOutlet_Temp_2 - Fluid_2.fEntry_Temperature) * fInletSpecificHeatCapacityCoolant  * Fluid_2.fMassflow;
+oCHX.txCHX_Parameters.fFluid1HeatFlow   = (Fluid_1.fEntry_Temperature - fOutlet_Temp_1) * fInletSpecificHeatCapacityGas      * Fluid_1.fMassflow;
+
 
 % Outcomment this code and run it to get the data formatted into 2D for
 % each layer, which makes plotting easier. Note that the coolant flow
@@ -604,8 +614,9 @@ oCHX.fTotalCondensateHeatFlow   = oCHX.fTotalHeatFlow - (Fluid_1.fEntry_Temperat
 % ylabel('y Cell Number')
 % zlabel('Temperature / K')
 
-
 oCHX.afCondensateMassFlow(oCHX.oMT.tiN2I.(tCHX_Parameters.Vapor)) = sum(sum(sum(sum(mCondensateFlowRate))));
+
+oCHX.fTotalCondensateHeatFlow   = sum(oCHX.afCondensateMassFlow .* oCHX.mPhaseChangeEnthalpy);
 
 % We store the calculate coolant flows, to use them as the initialization
 % parameter for the next calculation of the CHX
@@ -613,13 +624,6 @@ oCHX.txCHX_Parameters.mOutlet_Temp_1        = mOutlet_Temp_1;
 oCHX.txCHX_Parameters.mOutlet_Temp_2        = mOutlet_Temp_2;
 oCHX.txCHX_Parameters.mCondensateFlowRate   = mCondensateFlowRate;
 
-% If you encounter any of these keyboards the CHX calculation went wrong at
-% some point
-if isnan(fOutlet_Temp_1) || isnan(fOutlet_Temp_2)
-    keyboard()
-elseif isinf(fOutlet_Temp_1) || isinf(fOutlet_Temp_2)
-    keyboard()
-elseif (0>fOutlet_Temp_1) || (0>fOutlet_Temp_2)
-    keyboard()
-end
+oCHX.txCHX_Parameters.fReynoldsNumberGas    = tCHX_Parameters.tDimensionlessQuantitiesGas.fRe;
+oCHX.txCHX_Parameters.fSchmidtNumberGas     = tCHX_Parameters.tDimensionlessQuantitiesGas.fSc;
 end

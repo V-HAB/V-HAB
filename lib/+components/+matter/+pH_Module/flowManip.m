@@ -12,6 +12,8 @@ classdef flowManip < matter.manips.substance.flow & components.matter.pH_Module.
     % charge balance, mass balance and molar balances of inidivual ion
     % groups (e.g. PO4^(3-) in all forms like H3PO4 etc)
     properties (SetAccess = protected, GetAccess = public)
+        % Current pH Value of the phase, at the inlet of the phase
+        fpH_Inlet;
     end
     
     
@@ -25,7 +27,7 @@ classdef flowManip < matter.manips.substance.flow & components.matter.pH_Module.
             end
             
         end
-        function calculateConversionRate(this, afInFlowRates, aarInPartials)
+        function calculateConversionRate(this, afInFlowRates, aarInPartials, ~)
             %getting inflowrates
             afPartialInFlows = sum((afInFlowRates .* aarInPartials),1);
             % Since we also consider P2P flowrates for these in flows, we
@@ -36,7 +38,7 @@ classdef flowManip < matter.manips.substance.flow & components.matter.pH_Module.
                 afFlows = afPartialInFlows(this.abRelevantSubstances);
                 arPartials = afFlows ./ sum(afFlows);
                 
-                if all(abs(((this.arLastPartials - arPartials) ./ (this.arLastPartials + 1e-8))) < this.rMaxChange)
+                if all(abs(((this.arLastPartials - arPartials) ./ (this.arLastPartials + 1e-18))) < this.rMaxChange)
                     return
                 end
                 this.arLastPartials = arPartials;
@@ -47,44 +49,25 @@ classdef flowManip < matter.manips.substance.flow & components.matter.pH_Module.
                 % Concentrations in mol/L!
                 afInitialConcentrations = ((afPartialInFlows ./ this.oMT.afMolarMass) ./ fVolumetricFlowRate);
 
-                if this.fpH > 8
-                    % For high pH Values it is more stable to use the OH
-                    % concentration for the pH Calculation
-                    this.fpH = (-log10(this.oMT.afDissociationConstant(this.oMT.tiN2I.H2O)) - -log10(afInitialConcentrations(this.oMT.tiN2I.OH)));
-                elseif this.fpH < 6
-                    this.fpH = -log10(afInitialConcentrations(this.oMT.tiN2I.Hplus));
-                else
-                    fpH_OH = (-log10(this.oMT.afDissociationConstant(this.oMT.tiN2I.H2O)) - -log10(afInitialConcentrations(this.oMT.tiN2I.OH)));
-                    fpH_H  = -log10(afInitialConcentrations(this.oMT.tiN2I.Hplus));
-                    
-                    if isinf(fpH_OH) && isinf(fpH_H)
-                        this.fpH = 7;
-                    else
-                        % Since we do not know exactly at what point the
-                        % calculation becomes more stable, we check here
-                        % what calculation has the smaller difference
-                        if abs(fpH_OH - this.fpH) < abs(fpH_H - this.fpH)
-                            this.fpH = fpH_OH;
-                        else
-                            this.fpH = fpH_H;
-                        end
-                    end
-                end
-                
-                if isinf(this.fpH)
-                    this.fpH = 7;
-                end
+                this.fpH_Inlet = calculate_pHValue(this, afInitialConcentrations);
                 
                 fInitialMassSum = sum(afPartialInFlows(this.abRelevantSubstances)) / fVolumetricFlowRate; % [kg/L]
                 
-                afConcentrations = this.calculateNewConcentrations(afInitialConcentrations, fInitialMassSum, this.fpH);
-                
-                afConcentrationDifference = afConcentrations' - afInitialConcentrations;
+                if fInitialMassSum == 0
+                    afConcentrationDifference = zeros(1, this.oMT.iSubstances);
+                else
+                    afConcentrations = this.calculateNewConcentrations(afInitialConcentrations, fInitialMassSum, this.fpH_Inlet);
 
+                    afConcentrationDifference = afConcentrations' - afInitialConcentrations;
+                end
                 % Set very small concentration changes to 0
                 afConcentrationDifference(abs(afConcentrationDifference) < 1e-16) = 0;
 
                 this.afConversionRates = afConcentrationDifference .* fVolumetricFlowRate .* this.oMT.afMolarMass;
+                
+                afFinalConcentrations = (((afPartialInFlows + this.afConversionRates) ./ this.oMT.afMolarMass) ./ fVolumetricFlowRate);
+                
+                this.fpH = calculate_pHValue(this, afFinalConcentrations);
             else
                 this.afConversionRates = zeros(1, this.oMT.iSubstances); %[kg/s]
             end

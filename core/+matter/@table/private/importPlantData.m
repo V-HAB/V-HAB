@@ -2,7 +2,7 @@ function importPlantData(this)
 % importPlantData Imports data for the plant matter composition from the
 % plant model and creates the corresponding compound masses
 
-    [ ttxImportPlantParameters ] = components.matter.PlantModuleV2.plantparameters.importPlantParameters();
+    [ ttxImportPlantParameters ] = components.matter.PlantModule.plantparameters.importPlantParameters();
     
     csPlants = fieldnames(ttxImportPlantParameters);
     
@@ -14,7 +14,11 @@ function importPlantData(this)
         
         % Inedible is just assume to have this composition for all plants
         trBaseCompositionInedible.Biomass   = 0.1;
-        trBaseCompositionInedible.H2O       = 0.9;
+        % For the base nitrate content 3 mg / kg of dry weight are
+        % assumed. So if 1 kg of wet weight has 0.1 kg of dry mass, then it
+        % should contain 0.3 mg or 3e-4 kg
+        trBaseCompositionInedible.NO3       = 3e-4;
+        trBaseCompositionInedible.H2O       = 0.9 - trBaseCompositionInedible.NO3;
         
         % Now we define a compound mass in the matter table with the
         % corresponding composition. Note that the base composition can be

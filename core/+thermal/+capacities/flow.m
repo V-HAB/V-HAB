@@ -29,12 +29,6 @@ classdef flow < thermal.capacity
             fTime     = this.oTimer.fTime;
             fLastStep = fTime - this.fLastTemperatureUpdate;
             
-            % Return if no time has passed
-            if fLastStep == 0
-                if ~base.oDebug.bOff, this.out(2, 1, 'skip', 'Skipping temperatureupdate in %s-%s-%s', { this.oPhase.oStore.oContainer.sName, this.oPhase.oStore.sName, this.sName }); end
-                return;
-            end
-            
             % To ensure that we calculate the new energy with the correct
             % total heat capacity we have to get the current mass and the
             % possible mass that was added since the last mass update (in
@@ -157,6 +151,12 @@ classdef flow < thermal.capacity
             this.fLastTemperatureUpdate     = fTime;
             this.fTemperatureUpdateTimeStep = fLastStep;
             
+            if fTemperatureNew ~= this.fTemperature
+                bSetBranchesOutdated = true;
+            else
+                bSetBranchesOutdated = false;
+            end
+            
             % The temperature is not set directly, because we want to
             % ensure that the phase and capacity have the exact same
             % temperature at all times
@@ -168,7 +168,9 @@ classdef flow < thermal.capacity
             end
             
             % Trigger branch solver updates in post tick for all branches
-            this.setBranchesOutdated();
+            if bSetBranchesOutdated
+                this.setBranchesOutdated();
+            end
             
             % Capacity sets new time step (registered with parent store, used
             % for all phases of that store)

@@ -19,9 +19,11 @@ classdef setup < simulation.infrastructure
             
             % Possible to change the constructor paths and params for the
             % monitors
-            ttMonitorConfig.oTimeStepObserver.sClass = 'simulation.monitors.timestepObserver';
-            ttMonitorConfig.oTimeStepObserver.cParams = { 0 };
-            ttMonitorConfig.oLogger.cParams = {true};
+            ttMonitorConfig = struct();
+%             ttMonitorConfig.oLogger.cParams = {true, 10000};
+            
+%             ttMonitorConfig.oTimeStepObserver.sClass = 'simulation.monitors.timestepObserver';
+%             ttMonitorConfig.oTimeStepObserver.cParams = { 0 };
             
 %             ttMonitorConfig.oMassBalanceObserver.sClass = 'simulation.monitors.massbalanceObserver';
 %             fAccuracy = 1e-8;
@@ -49,6 +51,8 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'rRelHumidity',              '-',    'Relative Humidity Cabin');
             oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'afPP(this.oMT.tiN2I.CO2)',  'Pa',   'Partial Pressure CO2');
             oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'fTemperature',              'K',    'Temperature Atmosphere');
+            
+            oLog.addValue('Example.oTimer',                                 'fTimeStepFinal',                 's',   'Timestep');
             
             oLog.addValue('Example:c:CCAA:s:CHX.toPhases.CHX_PhaseIn',      'fTemperature',                             'K',    'Temperature CHX');
             oLog.addValue('Example:c:CCAA:s:CHX.toPhases.CHX_PhaseIn',      'this.fMass * this.fMassToPressure',        'Pa',   'Pressure CHX');
@@ -95,7 +99,7 @@ classdef setup < simulation.infrastructure
             
             oLog.addValue('Example.toStores.CCAA_CDRA_Connection.aoPhases',      'fPressure',  'Pa',   'Connection Pressure CCAA to CDRA');
             
-            oLog.addValue('Example.toStores.Cabin.toProcsP2P.CrewCO2Prod',       'fFlowRate',  'kg/s', 'CO2 Production');
+            oLog.addValue('Example.toStores.Cabin.toProcsP2P.CrewCO2',       'fFlowRate',  'kg/s', 'CO2 Production');
             
             % CDRA In
             oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_In_1.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'CDRA CO2 Inlet Flow 1');
@@ -186,8 +190,17 @@ classdef setup < simulation.infrastructure
             mfCO2OutletFlow(isnan(mfCO2OutletFlow)) = [];
             mfCO2OutletFlow(end) = [];
             
-            afTimeSteps = oLogger.afTime(2:end) - oLogger.afTime(1:end-1);
-            fAveragedCO2Outlet = sum(mfCO2OutletFlow .* afTimeSteps') ./ sum(afTimeSteps);
+            csLogVariableNames = {'Timestep'};
+            [aiLogIndices, ~] = tools.findLogIndices(oLogger, csLogVariableNames);
+            try
+                afTimeSteps =  oLogger.mfLog(:,aiLogIndices(1));
+                afTimeSteps(isnan(afTimeSteps)) = [];
+                fAveragedCO2Outlet = sum(mfCO2OutletFlow .* afTimeSteps(1:length(mfCO2OutletFlow))) ./ sum(afTimeSteps);
+            catch
+                afTimeSteps = oLogger.afTime(2:end) - oLogger.afTime(1:end-1);
+                fAveragedCO2Outlet = sum(mfCO2OutletFlow .* afTimeSteps') ./ sum(afTimeSteps);
+            end
+            
             
             disp(' ')
             disp(['Averaged CO2 Outlet Flow:       ', num2str(fAveragedCO2Outlet)])
@@ -441,7 +454,7 @@ classdef setup < simulation.infrastructure
             afTime = (oLogger.afTime./3600)';
             afTime(isnan(afTime)) = [];
             
-            plot(afTime, mfCO2PartialPressure);
+            plot(afTime(1:length(mfCO2PartialPressure)), mfCO2PartialPressure);
             legend('Test Data','Simulation');
             
             [afTimeDataUnique, ia, ~] = unique(mfTestData(:,1));
@@ -465,10 +478,12 @@ classdef setup < simulation.infrastructure
             fMinDiff  = min(abs(mfCO2PartialPressure - InterpolatedTestData));
             fMeanDiff = mean(mfCO2PartialPressure - InterpolatedTestData);
             rPercentualError = 100 * fMeanDiff / mean(InterpolatedTestData);
+            fMeanSquaredError = mean((mfCO2PartialPressure - InterpolatedTestData).^2);
             
             disp(['Maximum   Difference between Simulation and Test:     ', num2str(fMaxDiff), ' Torr'])
             disp(['Minimum   Difference between Simulation and Test:     ', num2str(fMinDiff), ' Torr'])
             disp(['Mean      Difference between Simulation and Test:     ', num2str(fMeanDiff), ' Torr'])
+            disp(['MSE       Difference between Simulation and Test:     ', num2str(fMeanSquaredError), ' Torr'])
             disp(['Percent   Difference between Simulation and Test:     ', num2str(rPercentualError), ' %'])
             
         end

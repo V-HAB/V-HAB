@@ -31,26 +31,21 @@ classdef liquid < matter.phases.flow.flow
             % fTemperature  : Temperature of matter in phase
             % fPressure     : Pressure of the phase
             
-            
-            % The constructor of the flow phase base class requires the
-            % volume, so we need to calculate that here. First we get the
-            % density. Since we can't use 'this' before calling the parent
-            % constructor, we use the parent store's matter table object.
-            fDensity = oStore.oMT.calculateDensity('liquid', tfMasses, fTemperature, fPressure);
-            
-            % Now calculating the mass by summing up all entries in the
-            % tfMass struct. We have to convert it to a cell first. 
-            cfMasses = struct2cell(tfMasses);
-            fMass = sum([cfMasses{:}]);
-            
-            % And now we get the volume by simple division. 
-            fVolume = fMass / fDensity;
-            
             % Calling the parent constructor
-            this@matter.phases.flow.flow(oStore, sName, tfMasses, fVolume, fTemperature);
+            % Note that the volume passed on here of 1e-6 is only a
+            % momentary volume to enable the definition of the phase. This
+            % value is overwriten by the calculation:
+            % this.fVolume = this.fMass / this.fDensity;
+            % within this constructor!
+            this@matter.phases.flow.flow(oStore, sName, tfMasses, 1e-6, fTemperature);
             
             % Setting the pressure.
             this.fVirtualPressure = fPressure;
+            this.updatePressure();
+            
+            this.fDensity = this.oMT.calculateDensity(this);
+            this.fVolume = this.fMass / this.fDensity;
+            
         end
     end
 end

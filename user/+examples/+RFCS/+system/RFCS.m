@@ -30,7 +30,7 @@ classdef RFCS < vsys
             this.afPower(:,2) = this.afPower(:,2) .* this.rSolarpanelEfficiency .* this.fSolarPanelArea;
             
             tInputsEly.iCells               = 30;
-            tInputsEly.fMembraneArea        = 1e-3;
+            tInputsEly.fMembraneArea        = 1e-2;
             tInputsEly.fMembraneThickness   = 50e-6;
             tInputsEly.fMaxCurrentDensity   = 20000;
             

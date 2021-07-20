@@ -115,14 +115,14 @@ classdef branch < base & event.source
         fLastUpdate = -10;
         
         % A flag to decide if the solver is already outdated or not
-        bRegisteredOutdated = false;
+        bRegisteredOutdated = true;
         
         % In recursive calls within the post tick where the solver itself
         % triggers outdated calls up to the point where it is set outdated
         % again itself it is possible for the solver to get stuck with a
         % true bRegisteredOutdated flag. To prevent this we also store the
         % last time at which we registered an update
-        fLastSetOutdated = -1;
+        fLastSetOutdated = 0;
         
         % Reference to the timer object
         oTimer;
@@ -175,6 +175,13 @@ classdef branch < base & event.source
             if nargin < 2
                 bChildCall = false;
             end
+            % The solver expects the branches in row formatting, if the
+            % user provides a column vector (1,x) then it is transposed
+            % here
+            aiSizeBranches = size(aoBranches);
+            if aiSizeBranches(1) < aiSizeBranches(2)
+                aoBranches = aoBranches';
+            end
             
             this.aoBranches = aoBranches;
             this.iBranches  = length(this.aoBranches);
@@ -196,6 +203,8 @@ classdef branch < base & event.source
 
                 % and update the solver to initialize everything
                 this.update();
+                
+                this.hBindPostTickUpdate();
             end
         end
         
@@ -274,7 +283,7 @@ classdef branch < base & event.source
             this.abRadiationBranches = [this.aoBranches.bRadiative]';
             aoConductiveBranches = this.aoBranches(~this.abRadiationBranches);
             aoRadiativeBranches  = this.aoBranches(this.abRadiationBranches);
-            this.aoBranches = [aoConductiveBranches, aoRadiativeBranches];
+            this.aoBranches = [aoConductiveBranches; aoRadiativeBranches];
             this.abRadiationBranches = [this.aoBranches.bRadiative]';
             
             % Since the lower part of the mfConnectivityMatrix may contain

@@ -13,7 +13,7 @@ classdef solid < matter.phases.boundary.boundary
         function this = solid(oStore, sName, tfMass, fTemperature, fPressure)
             %% solid boundary class constructor
             %
-            % creates a solid boundary phase with the specifid conditions.
+            % creates a solid boundary phase with the specific conditions.
             % These will remain constant throughout the simulation unless
             % they are directly changed using the setBoundaryProperties
             % function!

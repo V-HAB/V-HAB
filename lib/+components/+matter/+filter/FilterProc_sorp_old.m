@@ -1,4 +1,4 @@
-classdef FilterProc_sorp_old < matter.procs.p2ps.flow
+classdef FilterProc_sorp_old < matter.procs.p2ps.stationary
     
     % This is a p2p processor that numerically simulates the sorption and
     % desorption process in an airstream through a filter. 
@@ -96,7 +96,7 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function [this] = FilterProc_sorp_old(oStore, sName, sPhaseIn, sPhaseOut, sType)
-            this@matter.procs.p2ps.flow(oStore, sName, sPhaseIn, sPhaseOut);
+            this@matter.procs.p2ps.stationary(oStore, sName, sPhaseIn, sPhaseOut);
             
             % Link sorption processor to desorption processor 
             this.DesorptionProc = this.oStore.toProcsP2P.DesorptionProcessor;
@@ -187,6 +187,84 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
             this.arPartials_ads   = zeros(1, this.oMT.iSubstances);
             this.arPartials_des   = zeros(1, this.oMT.iSubstances);
         end
+        
+        %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Simulation Helper Functions %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+         
+        
+        function [mfMatrix_Transport_A1, afVektor_Transport_b1] = buildMatrix(this, fAxialDispersion_D_l, fTransportTimeStep, mfMatrix_A,mfMatrix_B, mfMatrix_Transport_A1, afVektor_Transport_b1)
+            % Build an advection diffusion massbalance matrix
+            % Extended Upwind scheme
+            fNumericDispersion_D_num = this.fFluidVelocity / 2 * (this.fDeltaX - this.fFluidVelocity * fTransportTimeStep);
+            fEntry_a = fTransportTimeStep * this.fFluidVelocity / this.fDeltaX;
+            fEntry_b = fTransportTimeStep * (fAxialDispersion_D_l - fNumericDispersion_D_num) / this.fDeltaX^2;
+            
+            stencilA = [0, 1, 0];
+            stencilB = [fEntry_a + fEntry_b, 1 - fEntry_a-2 * fEntry_b, fEntry_b];
+            
+            for i = 2 : (length(this.afDiscreteLength) - 1)
+                mfMatrix_A(i, i-1:i+1) = stencilA;
+                mfMatrix_B(i, i-1:i+1) = stencilB;
+            end
+            
+            % Left boundary condition
+            mfMatrix_A(1, 1:end-2)     = 1;
+            mfMatrix_A(1, end-1:end)   = 0;
+            mfMatrix_B(1, 1:end-3)     = 1;
+            mfMatrix_B(1, end-2)       = 1 - fEntry_a;
+            mfMatrix_B(1, end-1:end)   = 0;
+            afVektor_Transport_b1(:,1) = fEntry_a * this.afConcentration';
+            
+            % Right boundary condition
+            mfMatrix_A(end,[end-1,end]) = [1,-1];
+            
+            % Inverse
+            mfMatrix_Transport_A1(:, :) = (mfMatrix_A \ mfMatrix_B)';
+            afVektor_Transport_b1(:, :) = afVektor_Transport_b1 * inv(mfMatrix_A)';
+            
+        end
+        
+        function desorption(this, rDesorptionRatio)
+            % Simplified desorption model
+            % Called from the superclass
+            % Through a desorption ratio lower than 1 a not complete desorption
+            % can be simulated.
+            this.mfC_current = (1 - rDesorptionRatio) * this.mfC_current;
+            this.mfQ_current = (1 - rDesorptionRatio) * this.mfQ_current;  
+            
+            this.fFlowPhaseMass = 0;
+            
+        end
+        
+        function setNumericalValues(this, iNumGridPoints, fTimeFactor_1, fTimeFactor_2)
+            
+            % Overwrite the numerical values
+            this.iNumGridPoints = iNumGridPoints;
+            this.fTimeFactor_1  = fTimeFactor_1;
+            this.fTimeFactor_2  = fTimeFactor_2;
+              
+        end
+        
+        function setInitialConcentration(this)
+            % Phase pressure
+            this.fSorptionPressure    = this.oIn.oPhase.fMass * this.oIn.oPhase.fMassToPressure;
+            % Phase temperature
+            this.fSorptionTemperature = this.oIn.oPhase.fTemperature;
+            % Phase mass fractions
+            arMassFractions           = this.oIn.oPhase.arPartialMass(this.aiPositions);
+            % Calculating the mol fraction [-]
+            arMolFractions            = arMassFractions * this.oIn.oPhase.fMolarMass ./ this.afMolarMass;
+            % Calculation of phase concentrations in [mol/m^3]
+            this.afConcentration      = arMolFractions * this.fSorptionPressure / (this.fUnivGasConst_R * this.fSorptionTemperature);
+            
+            for iI = 1:this.iNumGridPoints
+                this.mfC_current(:,iI) = this.afConcentration';
+            end
+            
+        end
+    end
+    methods (Access = protected)
         
         %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%% Update Method %%%%%%%%%
@@ -567,81 +645,5 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
             
         end
         
-        
-        %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % Simulation Helper Functions %
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-         
-        
-        function [mfMatrix_Transport_A1, afVektor_Transport_b1] = buildMatrix(this, fAxialDispersion_D_l, fTransportTimeStep, mfMatrix_A,mfMatrix_B, mfMatrix_Transport_A1, afVektor_Transport_b1)
-            % Build an advection diffusion massbalance matrix
-            % Extended Upwind scheme
-            fNumericDispersion_D_num = this.fFluidVelocity / 2 * (this.fDeltaX - this.fFluidVelocity * fTransportTimeStep);
-            fEntry_a = fTransportTimeStep * this.fFluidVelocity / this.fDeltaX;
-            fEntry_b = fTransportTimeStep * (fAxialDispersion_D_l - fNumericDispersion_D_num) / this.fDeltaX^2;
-            
-            stencilA = [0, 1, 0];
-            stencilB = [fEntry_a + fEntry_b, 1 - fEntry_a-2 * fEntry_b, fEntry_b];
-            
-            for i = 2 : (length(this.afDiscreteLength) - 1)
-                mfMatrix_A(i, i-1:i+1) = stencilA;
-                mfMatrix_B(i, i-1:i+1) = stencilB;
-            end
-            
-            % Left boundary condition
-            mfMatrix_A(1, 1:end-2)     = 1;
-            mfMatrix_A(1, end-1:end)   = 0;
-            mfMatrix_B(1, 1:end-3)     = 1;
-            mfMatrix_B(1, end-2)       = 1 - fEntry_a;
-            mfMatrix_B(1, end-1:end)   = 0;
-            afVektor_Transport_b1(:,1) = fEntry_a * this.afConcentration';
-            
-            % Right boundary condition
-            mfMatrix_A(end,[end-1,end]) = [1,-1];
-            
-            % Inverse
-            mfMatrix_Transport_A1(:, :) = (mfMatrix_A \ mfMatrix_B)';
-            afVektor_Transport_b1(:, :) = afVektor_Transport_b1 * inv(mfMatrix_A)';
-            
-        end
-        
-        function desorption(this, rDesorptionRatio)
-            % Simplified desorption model
-            % Called from the superclass
-            % Through a desorption ratio lower than 1 a not complete desorption
-            % can be simulated.
-            this.mfC_current = (1 - rDesorptionRatio) * this.mfC_current;
-            this.mfQ_current = (1 - rDesorptionRatio) * this.mfQ_current;  
-            
-            this.fFlowPhaseMass = 0;
-            
-        end
-        
-        function setNumericalValues(this, iNumGridPoints, fTimeFactor_1, fTimeFactor_2)
-            
-            % Overwrite the numerical values
-            this.iNumGridPoints = iNumGridPoints;
-            this.fTimeFactor_1  = fTimeFactor_1;
-            this.fTimeFactor_2  = fTimeFactor_2;
-              
-        end
-        
-        function setInitialConcentration(this)
-            % Phase pressure
-            this.fSorptionPressure    = this.oIn.oPhase.fMass * this.oIn.oPhase.fMassToPressure;
-            % Phase temperature
-            this.fSorptionTemperature = this.oIn.oPhase.fTemperature;
-            % Phase mass fractions
-            arMassFractions           = this.oIn.oPhase.arPartialMass(this.aiPositions);
-            % Calculating the mol fraction [-]
-            arMolFractions            = arMassFractions * this.oIn.oPhase.fMolarMass ./ this.afMolarMass;
-            % Calculation of phase concentrations in [mol/m^3]
-            this.afConcentration      = arMolFractions * this.fSorptionPressure / (this.fUnivGasConst_R * this.fSorptionTemperature);
-            
-            for iI = 1:this.iNumGridPoints
-                this.mfC_current(:,iI) = this.afConcentration';
-            end
-            
-        end
     end
 end

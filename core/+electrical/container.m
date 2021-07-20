@@ -93,5 +93,27 @@ classdef (Abstract) container < sys
         
     end
     
+    methods (Access = protected)    
+        function disconnectElectricalBranchesForSaving(this)
+            %%% PLACEHOLDER 
+            % This method is just here to prevent the save process from
+            % failing. It needs to be adapted to the actual architecture in
+            % the electrical domain. It already works for matter and
+            % thermal.
+%             csBranchNames = fieldnames(this.toBranches);
+%             for iBranch = 1:length(csBranchNames)
+%                 this.toBranches.(csBranchNames{iBranch}).coExMes{2}.oFlow.disconnectBranch();
+%             end
+        end
+        
+        function reconnectElectricalBranches(this)
+            %%% PLACEHOLDER 
+            % This method is just here to prevent the load process from
+            % failing. It needs to be adapted to the actual architecture in
+            % the electrical domain. It already works for matter and
+            % thermal.
+        end
+    end
+    
 end
 

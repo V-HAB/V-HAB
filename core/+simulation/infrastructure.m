@@ -52,6 +52,17 @@ classdef infrastructure < base & event.source
         % stored in this property. 
         iParallelSimulationID;
         
+        % If this simulation is being executed using the parallel pool, we
+        % need to update the main MATLAB instance with information about
+        % the status of this individual simulation. By default we send and
+        % update via a data queue after every simulation step. However, if
+        % we are running many fast and simple simulations, the number of
+        % sends is too large and blocks the entire system. So we use this
+        % property to reduce the number of calls to send();
+        iParallelSendInterval = 1;
+    end
+    
+    properties (Transient, SetAccess = protected, GetAccess = public)
         % In order to communicate with the MATLAB client when this
         % simulation is run using the parallel pool, we need a parallel
         % data queue object to send updates to. This property is a handle
@@ -107,6 +118,26 @@ classdef infrastructure < base & event.source
         
         % A struct that contains the different monitor objects.
         toMonitors = struct();
+        
+        % A boolean indicating if the branches (all domains) have been
+        % disconnected on the right side in order to save the simulation
+        % object as a .mat file without exceeding the recursion limit. This
+        % property is set to true when the object is saved and to false
+        % when loaded. See the saveobj() and loadobj() method of this
+        % class. The property is also queried during the calls to
+        % advanceFor(), advanceTo(), tickFor() and tickTo() methods. 
+        bBranchesDisconnected  = false;
+        
+        % A boolean to decide if a zip with the name "SimulationOutput.zip"
+        % shall be created in the V-HAB base directory everytime new data
+        % is dumped. This is usefull when V-HAB is executed on high
+        % performance computers in batch mode, as the zip with fixed name
+        % can be set as output file for the batch job
+        bCreateSimulationOutputZIP = false;
+        % In addition since batch jobs would overwrite the specific file if
+        % multiple jobs all produce the same .ZIP file, a batch specific
+        % output name, which the HPC also recognizes is necessary
+        sOutputName;
     end
     
     % It is unknown why this property requires the dependent attribute to
@@ -228,10 +259,22 @@ classdef infrastructure < base & event.source
                 
                 % Setting the parallel execution flag to true.
                 this.bParallelExecution = true;
+                
+                % Remove the ParallelExecution key from ptConfigParams
+                % because it contains a data queue which should not be
+                % saved.
+                remove(ptConfigParams, 'ParallelExecution');
             else
                 % This simulation is being run individually, so we can just
                 % call the matter table constructor directly.
                 oMT = matter.table();
+            end
+            
+            if isKey(ptConfigParams, 'BatchExecution')
+                cConfigParams = ptConfigParams('BatchExecution');
+                this.bCreateSimulationOutputZIP = cConfigParams{1};
+                
+                this.sOutputName = cConfigParams{2};
             end
             
             % Showing the user how long it took to create the matter table
@@ -352,6 +395,18 @@ classdef infrastructure < base & event.source
                 this.initialize();
             end
             
+            % If the simualtion object was saved as part of the dumpToMat()
+            % method in the logger, the saveobj() method of this class will
+            % have disconnected all branches on the right side. This is
+            % done to prevent MATLAB from crashing due to the recursion
+            % limit being exceeded. In that case the bBranchesDisconnected
+            % property will be true and we need to reconnect all branches.
+            if this.bBranchesDisconnected
+                fprintf('Hold on, need to reconnect all branches...  ');
+                this.reconnectBranches();
+                fprintf('Done!\n');
+            end
+            
             % Some information for the users so they know what's going on
             % and also to visually structure the console output a bit. We
             % only output this, if we want to and the first time this is
@@ -379,13 +434,16 @@ classdef infrastructure < base & event.source
                 this.step();
                 
                 if this.bParallelExecution
-                    if this.bUseTime
-                        fProgress = this.oSimulationContainer.oTimer.fTime / this.fSimTime;
-                    else
-                        fProgress = this.oSimulationContainer.oTimer.iTick / this.iSimTicks;
-                    end
                     
-                    send(this.oDataQueue, [this.iParallelSimulationID, fProgress]);
+                    if mod(this.oSimulationContainer.oTimer.iTick, this.iParallelSendInterval) == 0
+                        if this.bUseTime
+                            fProgress = this.oSimulationContainer.oTimer.fTime / this.fSimTime;
+                        else
+                            fProgress = this.oSimulationContainer.oTimer.iTick / this.iSimTicks;
+                        end
+                        
+                        send(this.oDataQueue, [this.iParallelSimulationID, fProgress]);
+                    end
                 end
             end
             
@@ -411,7 +469,7 @@ classdef infrastructure < base & event.source
             this.trigger('pause');
         end
         
-        function advanceTo(this, fTime)
+        function advanceTo(this, fTime, oDataQueue, iParallelSimulationID, bCreateSimulationOutputZIP, sOutputName)
             %ADVANCETO Runs the simulation to a specific time in seconds
             %   This can be used if a simulation has been stopped or paused
             
@@ -422,6 +480,16 @@ classdef infrastructure < base & event.source
             % simulation
             this.bUseTime = true;
             
+            if nargin > 4
+                this.sOutputName                = sOutputName;
+                this.bCreateSimulationOutputZIP = bCreateSimulationOutputZIP;
+            elseif nargin > 2
+                % if a parellel execution for the advancement of the
+                % simulation is used, then store the required paremeters
+                % here_
+                this.oDataQueue             = oDataQueue;
+                this.iParallelSimulationID  = iParallelSimulationID;
+            end
             % Running the simulation
             this.run();
         end
@@ -595,7 +663,127 @@ classdef infrastructure < base & event.source
         end
         
         function setSuppressConsoleOutput(this, bSuppressConsoleOutput)
+            %SETSUPPRESSCONSOLEOUTPUT Set console output mode
+            %   The setting is intended to suppress console output when
+            %   multiple simulations are run in parallel, since they would
+            %   spam the console of the main instance.
             this.bSuppressConsoleOutput = bSuppressConsoleOutput;
+        end
+        
+        function setParallelSendInterval(this, iInterval)
+            %SETPARALLELSENDINTERVAL Sets update frequency parameter
+            %   When simulations are run in parallel updates are sent to
+            %   the main MATLAB instance to display the simulation progress
+            %   to the user. If simulations run too fast, i.e. the ticks
+            %   are very short, these updates can slow the simulation down
+            %   significantly. So this method allows the updates to be sent
+            %   in intervals other than 1. 
+            this.iParallelSendInterval = iInterval;
+        end
+
+        function disableParallelExecution(this, ~)
+            %DISABLEPARALLELEXECUTION this function can be called on the
+            % oLastSimObj of a simulation created with the parallel
+            % execution script in core\+tools\generalParallelExecution.m
+            % to continue the simulation without parallelization (e.g. for
+            % debugging)
+            this.bParallelExecution = false;
+            this.iParallelSimulationID = [];
+        end
+        
+        function oOutput = saveobj(oInput)
+            %SAVEOBJ Saves modified simulation object
+            %   Starting with MATLAB 2020b a limit exists for the length of
+            %   the object hierarchy tree when they are saved to a MAT
+            %   file. The limit seems to be 500 *unique* objects. Recursive
+            %   pointers (i.e. parent->child and child-> parent) seem to
+            %   have no effect on this limit. When more than 500 objects
+            %   are referenced in a row, a warning is thrown and the object
+            %   cannot be correctly saved. In some cases MATLAB crashes
+            %   completely during the save process. Even though this limit
+            %   can be increased via a MATLAB environment variable, it
+            %   still causes crashes. 
+            %   Part of the solution to this problem is this method. It
+            %   overloads the saveobj() method of the internal MATLAB
+            %   object. Below we loop through all systems and subsystems
+            %   contained in this simulation object and disconnect the
+            %   both sides of each matter, thermal and electrical branch.
+            %   This will limit the length of the hierarchy tree. In the
+            %   loadobj() method of this class (see below) this process is
+            %   reversed.
+            
+            % For some weird reason the entire simulation object is saved
+            % when tools.postprocessing.plotter.saveFigureAs is used. That
+            % can lead to extremely large file sizes. To catch this we look
+            % at the debug stack here, if this save method was invoked by
+            % the savefig() function, we just return an empty variable. 
+            tDBStack = dbstack;
+            if strcmp(tDBStack(3).name, 'savefig')
+                oOutput = [];
+                return;
+            end
+
+            % Setting the output object handle to the input object handle.
+            % The example in the MATLAB documentation does this as well,
+            % otherwise I don't know if this is really necessary.
+            oOutput = oInput;
+            
+            % Getting the names of all children (systems)
+            csChildNames = fieldnames(oOutput.oSimulationContainer.toChildren);
+            
+            % Looping through all children and calling the
+            % disconnectedBranchesForSaving() Method of the vsys class.
+            for iI = 1:oOutput.oSimulationContainer.iChildren
+                oOutput.oSimulationContainer.toChildren.(csChildNames{iI}).disconnectBranchesForSaving();
+            end
+            
+            % Now that we are finished, we set the bBranchesDisconnected
+            % property to true so future calls for execution know to
+            % reconnect them.
+            oOutput.bBranchesDisconnected = true;
+        end
+    end
+    
+    methods (Access = {?simulation.monitors.logger})
+        function reconnectBranches(this)
+            % Getting the names of all children (systems)
+            csChildNames = fieldnames(this.oSimulationContainer.toChildren);
+            
+            % Looping throuhg all children and calling the
+            % reconnectBranches() Method of the vsys class.
+            for iI = 1:this.oSimulationContainer.iChildren
+                this.oSimulationContainer.toChildren.(csChildNames{iI}).reconnectBranches();
+            end
+            
+            % Now that we are finished, we can set the
+            % bBranchesDisconnected property to false.
+            this.bBranchesDisconnected = false;
+        end
+    end
+    
+    methods (Static)
+        function oOutput = loadobj(oInput)
+            %LOADOBJ Loads sim object from file and reconnects branches
+            %   For a detailed discussion see description of saveobj()
+            %   method. 
+            
+            % Setting the output object handle to the input object handle.
+            % The example in the MATLAB documentation does this as well,
+            % otherwise I don't know if this is really necessary.
+            oOutput = oInput;
+            
+            % Getting the names of all children (systems)
+            csChildNames = fieldnames(oOutput.oSimulationContainer.toChildren);
+            
+            % Looping throuhg all children and calling the
+            % reconnectBranches() Method of the vsys class.
+            for iI = 1:oOutput.oSimulationContainer.iChildren
+                oOutput.oSimulationContainer.toChildren.(csChildNames{iI}).reconnectBranches();
+            end
+            
+            % Now that we are finished, we can set the
+            % bBranchesDisconnected property to false.
+            oOutput.bBranchesDisconnected = false;
         end
     end
 end

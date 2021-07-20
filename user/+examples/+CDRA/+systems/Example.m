@@ -7,39 +7,7 @@ classdef Example < vsys
     %   the two branches. The flow through the gas branch is driven by the
     %   pressure difference between the two tanks. The flow through the
     %   liquid branch is set by using a manual solver branch. 
-    properties
-        
-        %Number of Crew Members used for this simulation
-        iCrewMembers = 6
-        
-        %% Crew Planer Properties
-        %struct containing the human metabolic values for O2 consumption,
-        %heat relase, CO2, TC and H2O production
-        tHumanMetabolicValues;
-        
-        %current state the crew is in containing a field for each crew
-        %member that contains a string with the current status for that
-        %crew member. For example if crew member one is sleeping the first
-        %field contains the string 'sleep'
-        cCrewState;
-        
-        %vector with one field for each crew member that contains when the
-        %current state for this crew member began. Necessary for automatic
-        %changes between certain states
-        mCrewStateStartTime; %s
-        
-        %cell array as planer for crew activities that contains one row for
-        %each crew member and one column per event. Each field therefore 
-        %stands for a certain event for a certain crew member. For example
-        %if crew member 2 falls asleep the second row would contain an
-        %event 'sleep'. Each event is a struct containing the fields sName
-        %for the event name (sleep) a start time when this event should
-        %begin and an end time when it should end. It also contains two
-        %boolean variables to keep track if the event has already started
-        %or ended
-        cCrewPlaner = [];
-        
-        fCoolantTemperature;
+    properties 
     end
     
     methods
@@ -57,10 +25,6 @@ classdef Example < vsys
             % well!).
             this@vsys(oParent, sName, 60);
             
-            % temperature for the coolant passing through the CCAA,
-            % according to ICES 2000-01-2345 the setpoint was 43 degree
-            % fahrenheit
-            this.fCoolantTemperature = 279.26;
             % Struct containg basic atmospheric values for the
             % initialization of the CCAA
             tAtmosphere.fTemperature = 295;
@@ -73,7 +37,7 @@ classdef Example < vsys
             sCDRA = 'CDRA';
             
             % Adding the subsystem CCAA
-            components.matter.CCAA.CCAA(this, 'CCAA', 60, this.fCoolantTemperature, tAtmosphere, sCDRA);
+            components.matter.CCAA.CCAA(this, 'CCAA', 60, 277.31, tAtmosphere, sCDRA);
             
             % Adding the subsystem CDRA
             try
@@ -91,7 +55,9 @@ classdef Example < vsys
             createMatterStructure@vsys(this);
             %% Gas System
             % Creating a store, volume 1 m^3
-            matter.store(this, 'Cabin', 577.71);
+            matter.store(this, 'Cabin', 498.71);
+            
+            fCoolantTemperature = 277.31;
             
             % uses the custom air helper to generate an air phase with a
             % defined co2 level and relative humidity
@@ -107,12 +73,6 @@ classdef Example < vsys
             
             matter.procs.exmes.gas( oCabinPhase, 'CDRA_Port_1');
             
-            %Human Exmes
-%             matter.procs.exmes.gas(oCabinPhase, 'O2Out'); 
-%             O2 is not part of the CDRA test case!
-            matter.procs.exmes.gas(oCabinPhase, 'CO2In');
-            matter.procs.exmes.gas(oCabinPhase, 'HumidityIn');
-            
             % Coolant store for the coolant water supplied to CCAA
             matter.store(this, 'CoolantStore', 1);
             
@@ -120,7 +80,7 @@ classdef Example < vsys
             oCoolantPhase = matter.phases.liquid(this.toStores.CoolantStore, ...  Store in which the phase is located
                 'Coolant_Phase', ...        Phase name
                 struct('H2O', 1), ...      Phase contents
-                this.fCoolantTemperature, ...Phase temperature
+                fCoolantTemperature, ...Phase temperature
                 101325);                 % Phase pressure
             
             matter.procs.exmes.liquid(oCoolantPhase, 'Port_1');
@@ -178,133 +138,12 @@ classdef Example < vsys
             
             this.toChildren.CDRA.setIfFlows('CDRA_Input', 'CDRA_Output', 'CDRA_Vent');
             
-            %%
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            %%%                        CREW SYSTEM                      %%%
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            %the model for the crew does not have a mass balance since
-            %there is no food taken into account. Also a lot of the actual
-            %processes are severly simplified.
-            %all values taken from NASA/TP-2015-218570 "Life Support 
-            %Baseline Values and Assumptions Document"
+            oLungPhase          = this.toStores.Cabin.createPhase(  'gas',      'Lung',         400,    struct('CO2', 5e5),    	293,          0);
+            oHumanWaterPhase    = this.toStores.Cabin.createPhase(  'liquid',   'HumanWater',	1,      struct('H2O', 1),     	293,          1e5);
             
-            %these are multiple states for the human metabolic rate taken
-            %from table 3.22 in the above mentioned document saved into a
-            %struct to allow easy access:
-            this.tHumanMetabolicValues = struct();
-            %all values converted to SI units
-            %sleeping state
-            this.tHumanMetabolicValues.sleep.fDryHeat = 224*1000/3600;
-            this.tHumanMetabolicValues.sleep.fWaterVapor = (6.3*10^-4)/60;
-            this.tHumanMetabolicValues.sleep.fSweat = 0;
-            this.tHumanMetabolicValues.sleep.fO2Consumption = (3.6*10^-4)/60;
-            this.tHumanMetabolicValues.sleep.fCO2Production = (4.55*10^-4)/60;
-            %nominal state
-            this.tHumanMetabolicValues.nominal.fDryHeat = 329*1000/3600;
-            this.tHumanMetabolicValues.nominal.fWaterVapor = (11.77*10^-4)/60;
-            this.tHumanMetabolicValues.nominal.fSweat = 0;
-            this.tHumanMetabolicValues.nominal.fO2Consumption = (5.68*10^-4)/60;
-            % THIS VALUE IS DIFFERENT FROM BVAD!
-            % since the CO2 release for the test case was lower than the
-            % value from the BVAD this value has been adapted for this
-            % case.
-            % For the test case a CO2 release of 13.2 lb/day for 6 CM was
-            % assumed which is the same as 6.92986e-05 kg/s for 6 CM
-            this.tHumanMetabolicValues.nominal.fCO2Production = (6.92986e-05)/6;%(7.2*10^-4)/60;
-            %exercise minute 0-15
-            this.tHumanMetabolicValues.exercise015.fDryHeat = 514*1000/3600;
-            this.tHumanMetabolicValues.exercise015.fWaterVapor = (46.16*10^-4)/60;
-            this.tHumanMetabolicValues.exercise015.fSweat = (1.56*10^-4)/60;
-            this.tHumanMetabolicValues.exercise015.fO2Consumption = (39.40*10^-4)/60;
-            this.tHumanMetabolicValues.exercise015.fCO2Production = (49.85*10^-4)/60;
-            %exercise minute 15-30
-            this.tHumanMetabolicValues.exercise1530.fDryHeat = 624*1000/3600;
-            this.tHumanMetabolicValues.exercise1530.fWaterVapor = (128.42*10^-4)/60;
-            this.tHumanMetabolicValues.exercise1530.fSweat = (33.52*10^-4)/60;
-            this.tHumanMetabolicValues.exercise1530.fO2Consumption = (39.40*10^-4)/60;
-            this.tHumanMetabolicValues.exercise1530.fCO2Production = (49.85*10^-4)/60;
-            %recovery minute 0-15
-            this.tHumanMetabolicValues.recovery015.fDryHeat = 568*1000/3600;
-            this.tHumanMetabolicValues.recovery015.fWaterVapor = (83.83*10^-4)/60;
-            this.tHumanMetabolicValues.recovery015.fSweat = (15.16*10^-4)/60;
-            this.tHumanMetabolicValues.recovery015.fO2Consumption = (5.68*10^-4)/60;
-            this.tHumanMetabolicValues.recovery015.fCO2Production = (7.2*10^-4)/60;
-            %recovery minute 15-30
-            this.tHumanMetabolicValues.recovery1530.fDryHeat = 488*1000/3600;
-            this.tHumanMetabolicValues.recovery1530.fWaterVapor = (40.29*10^-4)/60;
-            this.tHumanMetabolicValues.recovery1530.fSweat = (0.36*10^-4)/60;
-            this.tHumanMetabolicValues.recovery1530.fO2Consumption = (5.68*10^-4)/60;
-            this.tHumanMetabolicValues.recovery1530.fCO2Production = (7.2*10^-4)/60;
-            %recovery minute 30-45
-            this.tHumanMetabolicValues.recovery3045.fDryHeat = 466*1000/3600;
-            this.tHumanMetabolicValues.recovery3045.fWaterVapor = (27.44*10^-4)/60;
-            this.tHumanMetabolicValues.recovery3045.fSweat = (0*10^-4)/60;
-            this.tHumanMetabolicValues.recovery3045.fO2Consumption = (5.68*10^-4)/60;
-            this.tHumanMetabolicValues.recovery3045.fCO2Production = (7.2*10^-4)/60;
-            %recovery minute 45-60
-            this.tHumanMetabolicValues.recovery4560.fDryHeat = 455*1000/3600;
-            this.tHumanMetabolicValues.recovery4560.fWaterVapor = (20.4*10^-4)/60;
-            this.tHumanMetabolicValues.recovery4560.fSweat = (0*10^-4)/60;
-            this.tHumanMetabolicValues.recovery4560.fO2Consumption = (5.68*10^-4)/60;
-            this.tHumanMetabolicValues.recovery4560.fCO2Production = (7.2*10^-4)/60;
+            components.matter.P2Ps.ManualP2P(this.toStores.Cabin,          'CrewCO2',       oLungPhase,         oCabinPhase);
+            components.matter.P2Ps.ManualP2P(this.toStores.Cabin,          'CrewHumidity',	oHumanWaterPhase,   oCabinPhase);
             
-            %defines the initial crew conditions as nominal for each crew
-            %member and sets the start time for this event to 0
-            for k = 1:this.iCrewMembers
-                this.cCrewState{k} = 'nominal';
-                this.mCrewStateStartTime(k) = 0;
-            end
-            
-            %This phase is used to simulate the human metabolism on a very
-            %simple level. It takes in Oxygen and transforms it into CO2.
-            %The oxygen intake is simulated by flowing cabin air through
-            %the lung phase and using a p2p proc to remove oxygen from it.
-            %In the carbon dioxide phase this oxygen is then transformed
-            %into carbon dioxide which is then released into the cabin. Of
-            %course this does not result in a closed mass balance for the
-            %human and instead the store will lose mass (for long
-            %simulation times the store volume might have to be increased)
-            tCO2.sSubstance = 'CO2';
-            tCO2.sProperty = 'Density';
-            tCO2.sFirstDepName = 'Pressure';
-            tCO2.fFirstDepValue = 101325;
-            tCO2.sSecondDepName = 'Temperature';
-            tCO2.fSecondDepValue = 309.15;
-            tCO2.sPhaseType = 'gas';
-            fDensityCO2 = this.oMT.findProperty(tCO2);
-               
-            oLungPhase = matter.phases.gas(this.toStores.Cabin, 'Lung', struct(...
-                'CO2', this.iCrewMembers*10*fDensityCO2),...
-                this.iCrewMembers*10, 309.15);
-            
-            %lung volume not realistic but not a direct connection to the
-            %vehicle anyway, the interactions are only through p2p and the
-            %volume has to be large because the mass balance is not closed
-            %and it only contains CO2 because that is the only thing
-            %removed from the phase
-            
-            matter.procs.exmes.gas(oLungPhase, 'CO2_Out');
-%             matter.procs.exmes.gas(oLungPhase, 'O2In');
-%           O2 is not part of the CDRA test case
-            
-            %p2p proc to remove the consumed O2 from the cabin air
-            %p2p proc to put the produced CO2 into the cabin air
-            examples.CDRA.components.Crew_Respiratory_Simulator_CO2(...
-                this.toStores.Cabin, 'CrewCO2Prod', 'Lung.CO2_Out',...
-                'CabinAir.CO2In', [1,1,1,1,1,1], this);
-            
-            %p2p proc to convert O2 taken in by humans to CO2 to somewhat
-            %close the mass balance
-            oHumanWaterPhase = matter.phases.gas(this.toStores.Cabin, 'HumanWater', struct(...
-                'H2O', this.iCrewMembers*70),...
-                this.iCrewMembers*70, 309.15);
-            
-            matter.procs.exmes.gas(oHumanWaterPhase, 'HumidityOut');
-            
-            %p2p proc for the crew humidity generator
-            examples.CDRA.components.Crew_Humidity_Generator(...
-                this.toStores.Cabin,'CrewHumidityGen',...
-                'HumanWater.HumidityOut', 'CabinAir.HumidityIn', this);
             
         end
         
@@ -359,6 +198,13 @@ classdef Example < vsys
             tTimeStepProperties.arMaxChange = arMaxChange;
             this.toStores.Cabin.toPhases.CabinAir.setTimeStepProperties(tTimeStepProperties);
             
+            tTimeStepProperties = struct();
+            tTimeStepProperties.rMaxChange = inf;
+            this.toStores.Cabin.toPhases.Lung.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.Cabin.toPhases.HumanWater.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.Cabin.toPhases.Lung.oCapacity.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.Cabin.toPhases.HumanWater.oCapacity.setTimeStepProperties(tTimeStepProperties);
+            
             %% Assign thermal solvers
             this.setThermalSolvers();
         end
@@ -370,98 +216,40 @@ classdef Example < vsys
             % exec(ute) function for this system
             exec@vsys(this);
             
-            %%
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            %%%              Crew Metabolism Simulator                  %%%
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % this section sets the correct values for the humans according
-            % to their current state and also takes care of automatic
-            % transitions to follow up states (like recovery after
-            % exercise)
-            
-            %%%%%%%%%%%%%% automatic crew state changes %%%%%%%%%%%%%%%%%%% 
-            % switches the crew state between the different time dependant
-            % states automatically
-            for k = 1:this.iCrewMembers
-                if strcmp(this.cCrewState{k}, 'exercise015')
-                    if (this.oTimer.fTime-this.mCrewStateStartTime(k)) > 900
-                        this.cCrewState{k} = 'exercise1530';
-                        this.mCrewStateStartTime(k) = this.oTimer.fTime;
-                    end
-                elseif strcmp(this.cCrewState{k}, 'recovery015')
-                    if (this.oTimer.fTime-this.mCrewStateStartTime(k)) > 900
-                        this.cCrewState{k} = 'recovery1530';
-                        this.mCrewStateStartTime(k) = this.oTimer.fTime;
-                    end
-                elseif strcmp(this.cCrewState{k}, 'recovery1530')
-                    if (this.oTimer.fTime-this.mCrewStateStartTime(k)) > 900
-                        this.cCrewState{k} = 'recovery3045';
-                        this.mCrewStateStartTime(k) = this.oTimer.fTime;
-                    end
-               	elseif strcmp(this.cCrewState{k}, 'recovery3045')
-                    if (this.oTimer.fTime-this.mCrewStateStartTime(k)) > 900
-                        this.cCrewState{k} = 'recovery4560';
-                        this.mCrewStateStartTime(k) = this.oTimer.fTime;
-                    end
-                elseif strcmp(this.cCrewState{k}, 'recovery4560')
-                    if (this.oTimer.fTime-this.mCrewStateStartTime(k)) > 900
-                        this.cCrewState{k} = 'nominal';
-                        this.mCrewStateStartTime(k) = this.oTimer.fTime;
-                    end
-                end
-            end
-            
-            %%%%%%%%%%%%%%%%%%%% crew state planner %%%%%%%%%%%%%%%%%%%%%%%
-            % using the cCrewPlaner variable for this object it is
-            % possible to set different states for each crew member for
-            % different times. This section takes care of all the necessary
-            % allocations
-            
-            % if the variable is empty nothing happens because nothing is
-            % planned for the crew. In that case the initial values remain
-            % valid for the whole simulation.
-            if ~isempty(this.cCrewPlaner)
-                %if the planer is not empty it has to move through each
-                %crew member. The index used for this is iCM (for Crew
-                %Member)
-                miCrewPlanerSize = size(this.cCrewPlaner);
-                for iCM = 1:miCrewPlanerSize(1)
-                    %each CM may have multiple events assigned so it is
-                    %necessary to iterate through all the events as well
-                    for iEvent = 1:miCrewPlanerSize(2)
-                        %if the event start time has been reached and the event
-                        %has not been started yet the crew state has to be
-                        %switched
-                        if (this.cCrewPlaner{iCM,iEvent}.Start < this.oTimer.fTime) && (~this.cCrewPlaner{iCM,iEvent}.Started)
-                            this.cCrewState{iCM} = this.cCrewPlaner{iCM,iEvent}.State;
-                            this.cCrewPlaner{iCM,iEvent}.Started = true;
-                            this.mCrewStateStartTime(iCM) = this.oTimer.fTime;
-                        %if the event end time has been reached and the event
-                        %has not ended yet the crew state has to be switched
-                        elseif (this.cCrewPlaner{iCM,iEvent}.End < this.oTimer.fTime) && (~this.cCrewPlaner{iCM,iEvent}.Ended)
-                            this.cCrewPlaner{iCM,iEvent}.Ended = true;
-                            %if the crew member was sleeping --> enter nominal
-                            %state
-                            if strcmp(this.cCrewPlaner{iCM,iEvent}.State, 'sleep')
-                                this.cCrewState{iCM} = 'nominal';
-                            %of the crew member was working out --> enter
-                            %recovery state
-                            else
-                                this.cCrewState{iCM} = 'recovery015';
-                            end
-                            this.mCrewStateStartTime(iCM) = this.oTimer.fTime;
-                        end
-                    end
-                end
-            end
-            
-            if (this.oTimer.fTime > (19.3*3600)) && (this.oTimer.fTime < (37.8*3600))
-                this.iCrewMembers = 4;
-                this.toStores.Cabin.toProcsP2P.CrewCO2Prod.setCrew([1,1,1,1]);
+            % The values are from  ICES 2000-01-2345 table 1 and model the
+            % test case used for CDRA
+            if (this.oTimer.fTime <= (19.3*3600))
+                fCO2Production   = 13.2 * 0.45359237 / 86400;
+                fWaterVapor      = 12 * 0.45359237 / 86400;
+                fDryHeat         = 940;
+                % temperature for the coolant passing through the CCAA,
+                % according to ICES 2000-01-2345 the setpoint was 40 degree
+                % fahrenheit +3° -2° during the initial 6 person case and then
+                % was increased to 43°F +0° -5°. Therefore initial setpoint is
+                % 39.5°F which is then raised to 40.5°F
+                fCoolantTemperature = 277.31;
+            elseif (this.oTimer.fTime > (19.3*3600)) && (this.oTimer.fTime < (37.8*3600))
+                fCO2Production   = 8.8 * 0.45359237 / 86400;
+                fWaterVapor      = 12 * 0.45359237 / 86400;
+                fDryHeat         = 940;
+                fCoolantTemperature = 277.594;
             elseif (this.oTimer.fTime >= (37.8*3600))
-                this.iCrewMembers = 3;
-                this.toStores.Cabin.toProcsP2P.CrewCO2Prod.setCrew([1,1,1]);
+                fCO2Production   = 6.6 * 0.45359237 / 86400;
+                fWaterVapor      = 12 * 0.45359237 / 86400;
+                fDryHeat         = 940;
+                fCoolantTemperature = 277.594;
             end
+            
+            afCO2Flow = zeros(1, this.oMT.iSubstances);
+            afCO2Flow(this.oMT.tiN2I.CO2) = fCO2Production;
+            this.toStores.Cabin.toProcsP2P.CrewCO2.setFlowRate(afCO2Flow);
+            
+            afH2OFlow = zeros(1, this.oMT.iSubstances);
+            afH2OFlow(this.oMT.tiN2I.H2O) = fWaterVapor;
+            this.toStores.Cabin.toProcsP2P.CrewHumidity.setFlowRate(afH2OFlow)
+                
+            this.toStores.Cabin.toPhases.CabinAir.oCapacity.toHeatSources.Heater.setHeatFlow(fDryHeat);
+        	this.toStores.CoolantStore.toPhases.Coolant_Phase.oCapacity.toHeatSources.Coolant_Constant_Temperature.setTemperature(fCoolantTemperature);
             
             this.oTimer.synchronizeCallBacks();
         end

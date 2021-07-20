@@ -384,9 +384,11 @@ classdef Respiration < vsys
                     tTimeStepProperties.arMaxChange = arMaxChange;
 
                     oPhase.setTimeStepProperties(tTimeStepProperties);
+                    % if the respiration phases update, update the whole
+                    % human model
+                    oPhase.bind('update_post', @this.triggerHumanModelUpdate);
                 end
             end
-            
             
             this.setThermalSolvers();
         end
@@ -1022,6 +1024,10 @@ classdef Respiration < vsys
             this.tfPartialPressure.Tissue.CO2       = fPartialPressureCO2;
             this.tfPartialPressure.Arteries.O2      = fPartialPressureO2_Arteries;
             this.tfPartialPressure.Arteries.CO2     = fPartialPressureCO2_Arteries;
+        end
+        
+        function triggerHumanModelUpdate(this, ~)
+            this.oParent.hBindPostTickUpdate();
         end
     end
     methods (Access = {?components.matter.DetailedHuman.Human})

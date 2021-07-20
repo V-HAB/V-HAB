@@ -21,20 +21,20 @@ classdef ManualP2P < matter.procs.p2ps.stationary
     properties (SetAccess = private, GetAccess = protected)
         % function handle registered at the timer object that allows this
         % phase to set a time step, which is then enforced by the timer
-        setTimeStep;
+        setMassTransferTimeStep;
     end
     
     methods
         function this = ManualP2P(oStore, sName, sPhaseAndPortIn, sPhaseAndPortOut)
             this@matter.procs.p2ps.stationary(oStore, sName, sPhaseAndPortIn, sPhaseAndPortOut);
             
-            this.setTimeStep = this.oTimer.bind(@(~) this.registerUpdate(), 0, struct(...
-                'sMethod', 'update', ...
-                'sDescription', 'The .update method of a manual P2P', ...
+            this.setMassTransferTimeStep = this.oTimer.bind(@(~) this.checkMassTransfer(), 0, struct(...
+                'sMethod', 'checkMassTransfer', ...
+                'sDescription', 'The .checkMassTransfer method of a manual P2P', ...
                 'oSrcObj', this ...
             ));
             % initialize the time step to inf
-            this.setTimeStep(inf, true);
+            this.setMassTransferTimeStep(inf, true);
         end
         
         function setFlowRate(this, afPartialFlowRates)
@@ -90,7 +90,7 @@ classdef ManualP2P < matter.procs.p2ps.stationary
             
             % we use true to reset the last time the time step for this
             % manip was bound
-            this.setTimeStep(fTime, true);
+            this.setMassTransferTimeStep(fTime, true);
             
             % Connected phases have to do a massupdate before we set the
             % new flow rate - so the mass for the LAST time step, with the
@@ -102,22 +102,22 @@ classdef ManualP2P < matter.procs.p2ps.stationary
         end
     end
     methods (Access = protected)
-        function update(this, ~) 
-            % Since the flowrate is set manually no update required, the
-            % function still has to be here since it is called within V-HAB
-            if this.bMassTransferActive && (this.fMassTransferStartTime + this.fMassTransferTime) < this.oTimer.fTime
-                fTimeStep = (this.fMassTransferStartTime + this.fMassTransferTime) - this.oTimer.fTime;
-                this.setTimeStep(fTimeStep, true);
-            end
-            
-            if this.bMassTransferActive && abs(this.oTimer.fTime - this.fMassTransferFinishTime) < this.oTimer.fMinimumTimeStep
+        function checkMassTransfer(this,~)
+            if this.bMassTransferActive && this.fMassTransferFinishTime - this.oTimer.fTime < this.oTimer.fMinimumTimeStep
                 
                 this.afFlowRates = zeros(1,this.oMT.iSubstances);
                 
                 this.bMassTransferActive = false;
-                this.setTimeStep(inf, true);
+                this.setMassTransferTimeStep(inf, true);
+                % Connected phases have to do a massupdate before we set the
+                % new flow rate - so the mass for the LAST time step, with the
+                % old flow rate, is actually moved from tank to tank. In the
+                % massupdate the update for the P2P will be triggered, which is
+                % then executed in the post tick after the phase massupdates
+                this.oIn.oPhase.registerMassupdate();
+                this.oOut.oPhase.registerMassupdate();
                 
-            elseif this.bMassTransferActive && abs(this.oTimer.fTime - this.fMassTransferFinishTime) > this.oTimer.fMinimumTimeStep
+            elseif this.bMassTransferActive && this.fMassTransferFinishTime - this.oTimer.fTime > this.oTimer.fMinimumTimeStep
                 % If the branch is called before the set mass transfer time
                 % step, the afLastExec property in the timer for this
                 % branch is updated, while the timestep remains. This can
@@ -127,8 +127,13 @@ classdef ManualP2P < matter.procs.p2ps.stationary
                 % the time step:
                 fTimeStep = this.fMassTransferFinishTime - this.oTimer.fTime;
                 
-                this.setTimeStep(fTimeStep, true);
+                this.setMassTransferTimeStep(fTimeStep, true);
             end
+        end
+        function update(this, ~) 
+            % Since the flowrate is set manually no update required, the
+            % function still has to be here since it is called within V-HAB
+            
             
             fFlowRate = sum(this.afFlowRates);
             if fFlowRate == 0

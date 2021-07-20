@@ -1,15 +1,24 @@
 classdef Example < vsys
     
     properties (SetAccess = protected, GetAccess = public)
-        fHourModuloCounter = 0;
+        fTotalVolumePassedThroughWPA = 0;
+        fFlowRateToWPA = 0;
+        
+        fResyncModuloCounter = 0;
+        
+        fLastUpdateVolume = 0;
     end
     methods
         function this = Example(oParent, sName)
-            this@vsys(oParent, sName, 30);
+            this@vsys(oParent, sName, -1);
             eval(this.oRoot.oCfgParams.configCode(this));
             %connecting subystems
             
             components.matter.WPA.WPA(this, 'WPA');
+            
+            % We want to treat a total of x m³
+            fTargetVolumeToTreat = (35000/6.33) * 3600 * 7.98e-4 / 1000;
+            this.fFlowRateToWPA = (fTargetVolumeToTreat*1000)/86400;
         end
         
         function createMatterStructure(this)
@@ -27,7 +36,18 @@ classdef Example < vsys
             % Watermodel
             % pressure between 5.2e4 and 1.5e5- using 1e5
             % waste water composition
-            tfWasteWater = struct('Naplus', 82.725/100,    'Kplus', 11.162/100,    'Ca2plus', 2.2114/100,   'NH4', 7.262/100,    'CMT', 259.505/100,     'Clminus', 76.702/100,   'C4H7O2', 27.597/100,  'C2H3O2', 8.431/100,     'HCO3', 17.27/100,     'SO4', 11.152/100,  'C3H6O3',19.012/100, 'C30H50', 4.700/100,'CH2O2',49.9/100,'C2H6O',39.2/100,'C3H8O2',35.4/100,'CH2O',5.89/100,'C2H6O2',5.51/100,'C3H6O',4.41/100,'CH4N2O',3.55/100,'H2O', 1000*10 );
+            fWaterMass = 1e6;
+            fWaterVolume = fWaterMass/998.24;
+            tfWasteWater = struct(  'Naplus',   251e-6  * 1000 * fWaterVolume,...
+                                    'Kplus',    23.2e-6 * 1000 * fWaterVolume,...
+                                    'Ca2plus',  3.52e-6 * 1000 * fWaterVolume,...
+                                    'CMT',      717e-6  * 1000 * fWaterVolume,...
+                                    'Clminus',  216e-6  * 1000 * fWaterVolume,...
+                                    'C4H7O2',   65.1e-6 * 1000 * fWaterVolume,...
+                                    'C2H3O2',   42.5e-6 * 1000 * fWaterVolume,...
+                                    'HCO3',     38.4e-6 * 1000 * fWaterVolume,...
+                                    'SO4',      25.1e-6 * 1000 * fWaterVolume,...
+                                    'H2O',      1e6 );
             
             csFields = fieldnames (tfWasteWater);
             afWasteWaterMass = zeros(1, this.oMT.iSubstances);
@@ -65,15 +85,16 @@ classdef Example < vsys
             
             this.toChildren.WPA.setIfFlows('Inlet', 'Outlet', 'AirInlet', 'AirOutlet');
             
+            this.toChildren.WPA.setContinousMode(true, this.fFlowRateToWPA)
         end
         
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
-            % We initially fill the WPA with 70% of its waste water
-            % capacity so that it quickly starts processing water
-            fInitialWasteWaterFill = 0.7 * 150 * 0.453592;
             solver.matter.manual.branch(this.toBranches.WasteWaterToWPA);
-            this.toBranches.WasteWaterToWPA.oHandler.setMassTransfer(fInitialWasteWaterFill, 300);
+            
+            this.toBranches.WasteWaterToWPA.oHandler.setFlowRate(this.fFlowRateToWPA);
+            
+            this.toChildren.WPA.switchOffMicrobialCheckValve(true);
             
             this.setThermalSolvers();
         end
@@ -83,16 +104,16 @@ classdef Example < vsys
         function exec(this, ~)
             
             exec@vsys(this);
-            if this.oTimer.fTime > 300 && this.toBranches.WasteWaterToWPA.fFlowRate == 0
-                % Inlet flow represents about 86.4 kg of waste water per day
-                this.toBranches.WasteWaterToWPA.oHandler.setFlowRate(0.001);
-            end
             
-            % This code synchronizes everything once per hour
-            if mod(this.oTimer.fTime, 3600) < this.fHourModuloCounter
+            fTimeStep = this.oTimer.fTime - this.fLastUpdateVolume;
+            this.fTotalVolumePassedThroughWPA = this.fTotalVolumePassedThroughWPA  + (this.toBranches.WasteWaterToWPA.fFlowRate / this.toBranches.WasteWaterToWPA.aoFlows(1).getDensity) * fTimeStep;
+            
+            this.fLastUpdateVolume = this.oTimer.fTime;
+            
+            if mod(this.oTimer.fTime, 1800) < this.fResyncModuloCounter
                 this.oTimer.synchronizeCallBacks();
             end
-            this.fHourModuloCounter = mod(this.oTimer.fTime, 3600);
+            this.fResyncModuloCounter = mod(this.oTimer.fTime, 1800);
         end
     end
 end

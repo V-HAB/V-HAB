@@ -178,8 +178,10 @@ classdef Human < vsys
             %% since a change in the digestion layer impacts the other layers we update the human model if the phases require an update
             this.toChildren.Digestion.toStores.Digestion.toPhases.Stomach.bind(             'update_post', @this.bindUpdate);
             this.toChildren.Digestion.toStores.Digestion.toPhases.Duodenum.bind(           	'update_post', @this.bindUpdate);
+            this.toChildren.Digestion.toStores.Digestion.toPhases.Jejunum.bind(           	'update_post', @this.bindUpdate);
             this.toChildren.Digestion.toStores.Digestion.toPhases.Ileum.bind(             	'update_post', @this.bindUpdate);
             this.toChildren.Digestion.toStores.Digestion.toPhases.LargeIntestine.bind(    	'update_post', @this.bindUpdate);
+            this.toChildren.Digestion.toStores.Digestion.toPhases.Rectum.bind(              'update_post', @this.bindUpdate);
             
             %% For the respiration layer the same holds true.
             % This is necessary because otherwise too large steps between

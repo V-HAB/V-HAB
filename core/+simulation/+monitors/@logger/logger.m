@@ -643,7 +643,7 @@ classdef logger < simulation.monitor
             % ticks should be pre-allocated. If the user did not provide
             % this value we use the default value which is currently stored
             % in the iPreAllocatedRows property. 
-            if ~this.bPreAllocationProvided
+            if ~this.bPreAllocationProvided && this.iNumberOfLogItems ~= 0
                 % The default value in iPreAllocatedRows assumes that 100
                 % items will be logged for ten thousand ticks. The actual
                 % number of log items may be smaller, so to keep the total
@@ -854,7 +854,13 @@ classdef logger < simulation.monitor
                 oLastSimObj = this.oSimulationInfrastructure; 
                 
                 % Actually saving the object into the mat file.
-                save(sFileName, 'oLastSimObj');
+                save(sFileName, 'oLastSimObj', '-v7.3');
+                
+                if this.oSimulationInfrastructure.bCreateSimulationOutputZIP
+                    % create the zip data in the batch specific output file
+                    sZipFolderName = sprintf('data/runs/%s', this.sStorageDirectory);
+                    zip(['SimulationOutput_', this.oSimulationInfrastructure.sOutputName], sZipFolderName)
+                end
             end
         end
         
@@ -913,8 +919,20 @@ classdef logger < simulation.monitor
             oLastSimObj = this.oSimulationInfrastructure;
             
             % Actually saving the object into the mat file.
-            save(sFileName, 'oLastSimObj');
+            save(sFileName, 'oLastSimObj', '-v7.3');
+            
+            if this.oSimulationInfrastructure.bCreateSimulationOutputZIP
+                % create the zip data in the batch specific output file
+                sZipFolderName = sprintf('data/runs/%s', this.sStorageDirectory);
+                zip(['SimulationOutput_', this.oSimulationInfrastructure.sOutputName], sZipFolderName)
+            end
+                
+            % To prevent MATLAB from crashing during saves, the saveobj()
+            % method of the infrastructure class will disconnect all
+            % branches on the right side. See that class for a more
+            % detailed discussion of the issue. In order to remain
+            % functional, we need to reconnect these branches here.
+            this.oSimulationInfrastructure.reconnectBranches();
         end
-        
     end
 end

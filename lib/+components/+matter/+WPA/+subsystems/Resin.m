@@ -12,12 +12,15 @@ classdef Resin < vsys
         bCationResin = true;% Cation or Anionbed
         bStrong = true;     % identifies the resin type, if parameter is true, strong resine is used, otherwise weak resine
         iPresaturant;
+        fEmptyBedContactTime; % in seconds see David Hokanson 2004 Figure 3.2
+        
+        bModelCellMass = false;
         
         abContaminants;
     end
     
     methods
-        function this = Resin(oParent, sName, rVoidFraction, fResinMass, fTotalCapacity, fVolume, bCationResin, bStrong, iCells)
+        function this = Resin(oParent, sName, rVoidFraction, fResinMass, fTotalCapacity, fVolume, bCationResin, bStrong, iCells, fEmptyBedContactTime, bModelCellMass)
             this@vsys(oParent, sName, inf);
             eval(this.oRoot.oCfgParams.configCode(this));
             this.rVoidFraction  = rVoidFraction;
@@ -28,7 +31,11 @@ classdef Resin < vsys
             this.bStrong        = bStrong;
             
             this.iCells         = iCells;
+            this.fEmptyBedContactTime = fEmptyBedContactTime;
             
+            if nargin > 10
+                this.bModelCellMass = bModelCellMass;
+            end
             
         end
     
@@ -52,25 +59,46 @@ classdef Resin < vsys
             % Creates Phases for the cells and the P2Ps between the ion and
             % water phases
             for iCell = 1 : this.iCells
-                % The water phased is defined via the volume and as flow
-                % phase. The volume is assumed the void volume of this
-                % specific filter
-                oWaterPhase = this.toStores.Resin.createPhase('mixture', 'flow', ['Water_', num2str(iCell)], 'liquid', this.rVoidFraction * fVolumeFilter / this.iCells, struct('H2O', 1), 293, 1e5);
                 
                 % The resine is defined with the specific mass, as that is
                 % later on important for the calculations
                 oResinPhase = matter.phases.mixture(this.toStores.Resin, ['Resin_', num2str(iCell)],   'liquid',   tfIonMasses, 	293,    1e5);
                 
-                % Now add a P2P for the flows beeing desorbed (having
-                % the other sign as the ones calculated as the flows above)
-                oDesorptionP2P = components.matter.WPA.components.Desorption_P2P(      this.toStores.Resin, ['Ion_Desorption_P2P', num2str(iCell)], oWaterPhase, oResinPhase);
+                % The water phased is defined via the volume and as flow
+                % phase. The volume is assumed the void volume of this
+                % specific filter
+                if this.bModelCellMass
+                    oWaterPhase = this.toStores.Resin.createPhase('mixture',         ['Water_', num2str(iCell)], 'liquid', this.rVoidFraction * fVolumeFilter / this.iCells, struct('H2O', 1), 293, 1e5);
+                    %components.matter.pH_Module.stationaryManip(['pH_Manipulator_', num2str(iCell)], oWaterPhase);
                     
-                % Now add the P2P
-                if this.bStrong
-                    oP2P = components.matter.WPA.components.MixedBed_P2P(      this.toStores.Resin, ['Ion_P2P', num2str(iCell)], oWaterPhase, oResinPhase, oDesorptionP2P);
+                    % Now add a P2P for the flows beeing desorbed (having
+                    % the other sign as the ones calculated as the flows above)
+                    oDesorptionP2P = components.matter.WPA.components.stationaryDesorption_P2P(      this.toStores.Resin, ['Ion_Desorption_P2P', num2str(iCell)], oWaterPhase, oResinPhase);
+
+                    % Now add the P2P
+                    if this.bStrong
+                        oP2P = components.matter.WPA.components.stationaryMixedBed_P2P(      this.toStores.Resin, ['Ion_P2P', num2str(iCell)], oWaterPhase, oResinPhase, oDesorptionP2P);
+                    else
+                        oP2P = components.matter.WPA.components.stationaryWeakBaseAnion_P2P( this.toStores.Resin, ['Ion_P2P', num2str(iCell)], oWaterPhase, oResinPhase, oDesorptionP2P);
+                    end
+                
                 else
-                    oP2P = components.matter.WPA.components.WeakBaseAnion_P2P( this.toStores.Resin, ['Ion_P2P', num2str(iCell)], oWaterPhase, oResinPhase, oDesorptionP2P);
+                    oWaterPhase = this.toStores.Resin.createPhase('mixture', 'flow', ['Water_', num2str(iCell)], 'liquid', this.rVoidFraction * fVolumeFilter / this.iCells, struct('H2O', 1), 293, 1e5);
+                    %components.matter.pH_Module.flowManip(['pH_Manipulator_', num2str(iCell)], oWaterPhase);
+                    
+                    % Now add a P2P for the flows beeing desorbed (having
+                    % the other sign as the ones calculated as the flows above)
+                    oDesorptionP2P = components.matter.WPA.components.flowDesorption_P2P(      this.toStores.Resin, ['Ion_Desorption_P2P', num2str(iCell)], oWaterPhase, oResinPhase);
+
+                    % Now add the P2P
+                    if this.bStrong
+                        oP2P = components.matter.WPA.components.flowMixedBed_P2P(      this.toStores.Resin, ['Ion_P2P', num2str(iCell)], oWaterPhase, oResinPhase, oDesorptionP2P);
+                    else
+                        oP2P = components.matter.WPA.components.flowWeakBaseAnion_P2P( this.toStores.Resin, ['Ion_P2P', num2str(iCell)], oWaterPhase, oResinPhase, oDesorptionP2P);
+                    end
+                
                 end
+                
                 this.abContaminants = this.abContaminants | oP2P.abIons;
                 
                 % For all defined cells we also define a branch between the
@@ -79,7 +107,6 @@ classdef Resin < vsys
                     matter.branch(this, oPreviousWaterPhase,    {}, oWaterPhase, ['Cell_',num2str(iCell-1),'_to_Cell_',num2str(iCell)]);
                 end
                 
-                components.matter.pH_Module.flowManip(['pH_Manipulator_', num2str(iCell)], oWaterPhase);
                 
                 oPreviousWaterPhase = oWaterPhase;
             end

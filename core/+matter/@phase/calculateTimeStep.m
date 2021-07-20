@@ -104,12 +104,7 @@ else
             %   leading to a negative time step. This however will only happen
             %   if the store would update soon anyways and should therefore not
             %   lead to larger issues.
-            %CHECK use fMassLastUpdate or fMass? The latter leads
-            %      to larger time steps but is logically slightly incorrect.
-            %      [also above, arPartialsChange!]
-            % FOR NOW ... we'll go with fMass, faster and does not seem to
-            % introduce big issues ...
-            rTotalPerSecond = abs(fChange / this.fMass);
+            rTotalPerSecond = abs(tools.round.prec(fChange, this.iTimeStepPrecision) / this.fMass);
         end
         
         %% Partial mass change compared to partial mas

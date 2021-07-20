@@ -14,7 +14,7 @@ classdef baseManip < base
     
     properties (SetAccess = protected, GetAccess = public)
         % Current pH Value of the phase in which this manipulator is
-        % located
+        % located, for flow phases this value is at the outlet of the phase
         fpH = 7;
         
         % Boolean to speed up the decision which substances actually
@@ -78,6 +78,22 @@ classdef baseManip < base
             % property!
             this.miComplex = zeros(this.oMT.iSubstances, this.oMT.iSubstances);
 
+            % HCl
+            this.miComplex(this.oMT.tiN2I.HCl, this.oMT.tiN2I.HCl)          = 1;
+            this.miComplex(this.oMT.tiN2I.HCl, this.oMT.tiN2I.Clminus)  	= 2;
+            
+            % C3H6O3 (Lactic Acid)
+            this.miComplex(this.oMT.tiN2I.C3H6O3, this.oMT.tiN2I.C3H6O3)  	= 1;
+            this.miComplex(this.oMT.tiN2I.C3H6O3, this.oMT.tiN2I.C3H5O3) 	= 2;
+            
+            % C2H4O2 (Acetate)
+            this.miComplex(this.oMT.tiN2I.C2H4O2, this.oMT.tiN2I.C2H4O2)  	= 1;
+            this.miComplex(this.oMT.tiN2I.C2H4O2, this.oMT.tiN2I.C2H3O2) 	= 2;
+            
+            % C4H8O2 (Butyric Acid)
+            this.miComplex(this.oMT.tiN2I.C4H8O2, this.oMT.tiN2I.C4H8O2)  	= 1;
+            this.miComplex(this.oMT.tiN2I.C4H8O2, this.oMT.tiN2I.C4H7O2) 	= 2;
+            
             % EDTA dissocication complex:
             this.miComplex(this.oMT.tiN2I.(this.oMT.tsN2S.EDTA), this.oMT.tiN2I.(this.oMT.tsN2S.EDTA))       = 1;
             this.miComplex(this.oMT.tiN2I.(this.oMT.tsN2S.EDTA), this.oMT.tiN2I.(this.oMT.tsN2S.EDTAminus))  = 2;
@@ -106,8 +122,9 @@ classdef baseManip < base
 
             % Carbon Dioxide
             this.miComplex(this.oMT.tiN2I.CO2, this.oMT.tiN2I.CO2)      = 1;
-            this.miComplex(this.oMT.tiN2I.CO2, this.oMT.tiN2I.HCO3)     = 2;
-            this.miComplex(this.oMT.tiN2I.CO2, this.oMT.tiN2I.CO3)      = 3;
+            this.miComplex(this.oMT.tiN2I.CO2, this.oMT.tiN2I.H2CO3)  	= 2;
+            this.miComplex(this.oMT.tiN2I.CO2, this.oMT.tiN2I.HCO3)     = 3;
+            this.miComplex(this.oMT.tiN2I.CO2, this.oMT.tiN2I.CO3)      = 4;
 
             % NH3
             this.miComplex(this.oMT.tiN2I.NH3, this.oMT.tiN2I.NH3)      = 1;
@@ -121,6 +138,12 @@ classdef baseManip < base
             this.miComplex(this.oMT.tiN2I.KOH, this.oMT.tiN2I.KOH)      = 1;
             this.miComplex(this.oMT.tiN2I.KOH, this.oMT.tiN2I.Kplus)    = 2;
 
+            % H3C6H5O7 (Citric Acid)
+            this.miComplex(this.oMT.tiN2I.H3C6H5O7, this.oMT.tiN2I.H3C6H5O7)  = 1;
+            this.miComplex(this.oMT.tiN2I.H3C6H5O7, this.oMT.tiN2I.H2C6H5O7)  = 2;
+            this.miComplex(this.oMT.tiN2I.H3C6H5O7, this.oMT.tiN2I.HC6H5O7)   = 3;
+            this.miComplex(this.oMT.tiN2I.H3C6H5O7, this.oMT.tiN2I.C6H5O7)    = 4;
+            
             this.aiReactants = find(this.miComplex(logical(eye(this.oMT.iSubstances, this.oMT.iSubstances))));
             this.iReactants  = length(this.aiReactants);
             
@@ -181,7 +204,7 @@ classdef baseManip < base
 
                 afLeftSide = this.afBaseLeftSideVector + this.mfMolarSumMatrix * afInitialConcentrations';
                 afLeftSide(this.oMT.tiN2I.OH) = fInitialMassSum; % [kg/l]
-                afLeftSide(this.oMT.tiN2I.Hplus) = fInitialChargeSum; 
+                afLeftSide(this.oMT.tiN2I.Hplus) = -fInitialChargeSum; 
 
                 mfLinearSystem = this.mfDissociationMatrix +...
                                  this.mfHydrogenMatrix .* afCurrentConcentration(this.oMT.tiN2I.Hplus) +...
@@ -258,7 +281,7 @@ classdef baseManip < base
 
                 afLeftSide = this.afBaseLeftSideVector + this.mfMolarSumMatrix * afInitialConcentrations';
                 afLeftSide(this.oMT.tiN2I.OH) = fInitialMassSum; % [kg/l]
-                afLeftSide(this.oMT.tiN2I.Hplus) = fInitialChargeSum; 
+                afLeftSide(this.oMT.tiN2I.Hplus) = -fInitialChargeSum; 
 
                 mfLinearSystem = this.mfDissociationMatrix +...
                                  this.mfHydrogenMatrix .* afCurrentConcentration(this.oMT.tiN2I.Hplus) +...
@@ -325,7 +348,21 @@ classdef baseManip < base
             if all(abs(afConcentrations(abNegative)) < 1e-10) && iCounter < 1000
                 afConcentrations(abNegative) = 0;
             else
-                error(['something in the pH calculation of phase ', this.oPhase.sName, ' in store ', this.oPhase.oStore.sName, ' went wrong'])
+                % in this case try solving by using a lower bound optimization algorithm:
+                LowerBound = zeros(sum(this.abRelevantSubstances),1);
+                UpperBound = ones(sum(this.abRelevantSubstances),1)*inf;
+                options.Algorithm = 'trust-region-reflective';
+                options.Diagnostics = 'off';
+                options.Display = 'none';
+                options.FunctionTolerance = 1e-18;
+                options.OptimalityTolerance = 1e-18;
+                afConcentrations(this.abRelevantSubstances) = lsqlin(mfLinearSystem(this.abRelevantSubstances,this.abRelevantSubstances),afLeftSide(this.abRelevantSubstances),[],[],[],[],LowerBound,UpperBound, afCurrentConcentration(this.abRelevantSubstances), options);
+                
+                abNegative = afConcentrations < 0;
+                if ~all(abs(afConcentrations(abNegative)) < 1e-10)
+                    error(['something in the pH calculation of phase ', this.oPhase.sName, ' in store ', this.oPhase.oStore.sName, ' went wrong'])
+                end
+                
             end
             
             this.afConcentrations = afConcentrations;
@@ -404,6 +441,41 @@ classdef baseManip < base
             this.abRelevantSubstances(this.oMT.tiN2I.Hplus) = true;
             this.abRelevantSubstances(this.oMT.tiN2I.OH)    = true;
             this.abRelevantSubstances(this.oMT.tiN2I.H2O)   = true;
+        end
+        
+        function fCalculatedpH = calculate_pHValue(this, afConcentrations)
+            % This function can be used to calculate the pH Value at
+            % different concentrations, since the manip changes the pH we
+            % have a different value at the inlet of the phase, than at the
+            % outlet of the phase
+            fCalculatedpH = -log10(afConcentrations(this.oMT.tiN2I.Hplus));
+            if fCalculatedpH > 8
+                % For high pH Values it is more stable to use the OH
+                % concentration for the pH Calculation
+                fCalculatedpH = (-log10(this.oMT.afDissociationConstant(this.oMT.tiN2I.H2O)) - -log10(afConcentrations(this.oMT.tiN2I.OH)));
+            elseif fCalculatedpH < 6
+                fCalculatedpH = -log10(afConcentrations(this.oMT.tiN2I.Hplus));
+            else
+                fCalculatedpH_OH = (-log10(this.oMT.afDissociationConstant(this.oMT.tiN2I.H2O)) - -log10(afConcentrations(this.oMT.tiN2I.OH)));
+                fCalculatedpH_H  = -log10(afConcentrations(this.oMT.tiN2I.Hplus));
+
+                if isinf(fCalculatedpH_OH) && isinf(fCalculatedpH_H)
+                    fCalculatedpH = 7;
+                else
+                    % Since we do not know exactly at what point the
+                    % calculation becomes more stable, we check here
+                    % what calculation has the smaller difference
+                    if abs(fCalculatedpH_OH - this.fpH) < abs(fCalculatedpH_H - this.fpH)
+                        fCalculatedpH = fCalculatedpH_OH;
+                    else
+                        fCalculatedpH = fCalculatedpH_H;
+                    end
+                end
+            end
+
+            if isinf(fCalculatedpH)
+                fCalculatedpH = 7;
+            end
         end
     end
 end

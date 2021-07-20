@@ -51,8 +51,8 @@ classdef Example < vsys
             
 %             oTank2 = matter.phases.liquid(this.toStores.Tank_2, 'Water', struct('H2O', 1994 , 'Naplus', fMassNaplus, 'OH', fMassOHMinus), 293, 1e5);
             
-            oTank2 = matter.phases.liquid(this.toStores.Tank_2, 'Water', struct('H2O', 100*1994 , 'NaOH', 100*fMassNaOH), 293, 1e5);
-            
+            oTank2 = this.toStores.Tank_2.createPhase(  'liquid', 'boundary',   'Water',   this.toStores.Tank_2.fVolume, struct('H2O', 1994/(1994 + fMassNaOH) , 'NaOH', fMassNaOH/(1994 + fMassNaOH)),          293,          1e5);
+           
             % Adding a pipe to connect the tanks, 1.5 m long, 5 mm in
             % diameter. The pipe is in the components library and is
             % derived from the flow-to-flow (f2f) processor class

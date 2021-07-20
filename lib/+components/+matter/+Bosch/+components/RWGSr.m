@@ -58,7 +58,7 @@ classdef RWGSr < matter.manips.substance.flow
             this.afConversionRates = zeros(1, this.oMT.iSubstances);
         end
         
-        function calculateConversionRate(this, afInFlowRates, aarInPartials)
+        function calculateConversionRate(this, afInFlowRates, aarInPartials, ~)
             %getting inflowrates
             afPartialInFlows = sum((afInFlowRates .* aarInPartials),1);
             % Since we also consider P2P flowrates for these in flows, we

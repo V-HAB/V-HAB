@@ -65,7 +65,7 @@ tInterfaces.Human = {'Air_Out', 'Air_In', 'Water_In', 'Food_In', 'Feces_Out', 'U
 tInterfaces.CDRA  = {'Air_In', 'Air_Out', 'CO2_Out'};
 tInterfaces.OGA  =  {'Water_In', 'O2_Out', 'H2_Out'};
 tInterfaces.SCRA  = {'H2_In', 'CO2_In', 'Gas_Out', 'Condensate_Out', 'Coolant_In', 'Coolant_Out'};
-tInterfaces.Plant = {'Air_In', 'Air_Out', 'Water_In', 'Nutrient_In', 'Biomass_Out'};
+tInterfaces.Plant = {'Air_In', 'Air_Out', 'Nutrient_In', 'Nutrient_Out', 'Biomass_Out'};
 tInterfaces.HFC   = {'Air_In', 'Air_Out'};
 tInterfaces.Electrolyzer = {'H2_Out', 'O2_Out', 'Water_In', 'Coolant_Out', 'Coolant_In'};
 tInterfaces.FuelCell     = {'H2_In',  'H2_Out', 'O2_In', 'O2_Out', 'Coolant_In', 'Coolant_Out', 'Water_Out'};
@@ -86,9 +86,9 @@ for iSubsystemType = 1:length(csSystems)
         
         csInterface = cell.empty();
         if strcmp(sSubsystemType, 'Subsystem')
-            if strcmp(tSubsystem.sSubsystemPath, 'components.matter.PlantModuleV2.PlantCulture')
+            if strcmp(tSubsystem.sSubsystemPath, 'components.matter.PlantModule.PlantCulture')
                 csInterfaces = tInterfaces.Plant;
-            elseif strcmp(tSubsystem.sSubsystemPath, 'hojo.ILCO2.subsystems.HFC')
+            elseif strcmp(tSubsystem.sSubsystemPath, 'components.matter.HFC')
                 csInterfaces = tInterfaces.HFC;
             elseif strcmp(tSubsystem.sSubsystemPath, 'components.matter.Electrolyzer.Electrolyzer')
                 csInterfaces = tInterfaces.Electrolyzer;

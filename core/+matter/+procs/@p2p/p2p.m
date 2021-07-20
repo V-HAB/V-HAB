@@ -92,6 +92,10 @@ classdef (Abstract) p2p < matter.flow & event.source
                     this.throw('p2p', 'Provided input for the P2P %s neither a string nor phase', sName)
                 end
                 oPhaseIn = xIn;
+                
+                if oPhaseIn.oStore ~= oStore
+                    error(['The store ', oStore.sName, ' in which the P2P ', sName,' is located and the store ', oPhaseIn.oStore.sName ,' in which the phase ', oPhaseIn.sName,' is located are not identical!'])
+                end
                 matter.procs.exmes.(oPhaseIn.sType)(oPhaseIn,       [sName, '_In']);
                 sExMeIn = ['.' , sName, '_In'];
 
@@ -117,6 +121,9 @@ classdef (Abstract) p2p < matter.flow & event.source
                     this.throw('p2p', 'Provided input for the P2P %s neither a string nor phase', this.sName)
                 end
                 oPhaseOut = xOut;
+                if oPhaseOut.oStore ~= oStore
+                    error(['The store ', oStore.sName, ' in which the P2P ', sName,' is located and the store ', oPhaseOut.oStore.sName ,' in which the phase ', oPhaseOut.sName,' is located are not identical!'])
+                end
                 matter.procs.exmes.(oPhaseOut.sType)(oPhaseOut,       [sName, '_Out']);
                 sExMeOut = ['.' , sName, '_Out'];
             end
@@ -412,20 +419,26 @@ classdef (Abstract) p2p < matter.flow & event.source
                 % Calculating the total number of mols
                 fGasAmount = sum(afMols);
 
-                % Calculating the partial amount of each species by mols
-                arFractions = afMols ./ fGasAmount;
+                % only proceed if there is something here, it may occur at
+                % very small (e-300 kg/s scale) p2p flowrates that this
+                % value becomes zero even though the flowrate is not zero,
+                % then we just keep the old heat capacity
+                if fGasAmount ~= 0
+                    % Calculating the partial amount of each species by mols
+                    arFractions = afMols ./ fGasAmount;
 
-                % Calculating the partial pressures by multiplying with the
-                % total pressure in the phase
-                afPartialPressures = arFractions .* this.fPressure;
-                
-                afMass = this.oMT.resolveCompoundMass(afMass, this.oIn.oPhase.arCompoundMass);
-                
-                this.fSpecificHeatCapacityP2P = this.oMT.calculateSpecificHeatCapacity('mixture', afMass, this.fTemperature, afPartialPressures);
-                
-                this.fPressureLastHeatCapacityUpdate     = this.fPressure;
-                this.fTemperatureLastHeatCapacityUpdate  = this.fTemperature;
-                this.arPartialMassLastHeatCapacityUpdate = this.arPartialMass;
+                    % Calculating the partial pressures by multiplying with the
+                    % total pressure in the phase
+                    afPartialPressures = arFractions .* this.fPressure;
+
+                    afMass = this.oMT.resolveCompoundMass(afMass, this.oIn.oPhase.arCompoundMass);
+
+                    this.fSpecificHeatCapacityP2P = this.oMT.calculateSpecificHeatCapacity('mixture', afMass, this.fTemperature, afPartialPressures);
+
+                    this.fPressureLastHeatCapacityUpdate     = this.fPressure;
+                    this.fTemperatureLastHeatCapacityUpdate  = this.fTemperature;
+                    this.arPartialMassLastHeatCapacityUpdate = this.arPartialMass;
+                end
             end
             
             if this.bTriggersetMatterPropertiesCallbackBound
