@@ -63,6 +63,8 @@ classdef branch < base & event.source
         % See matter.branch, bTriggerSetFlowRate, for more!
         bTriggerUpdateCallbackBound = false;
         bTriggerRegisterUpdateCallbackBound = false;
+        
+        bFluidicSolver = false;
     end
     
     
@@ -158,7 +160,15 @@ classdef branch < base & event.source
             if this.bTriggerRegisterUpdateCallbackBound
                 this.trigger('register_update');
             end
-
+            
+            % Connected capacities have to do a temperature update before we
+            % set the new heat flow - so the thermal energy for the LAST
+            % time step, with the old flow, is actually moved from tank to
+            % tank.
+            for iE = 1:2
+                this.oBranch.coExmes{iE}.oCapacity.registerUpdateTemperature();
+            end
+            
             if ~base.oDebug.bOff, this.out(1, 1, 'registerUpdate', 'Registering .update method on post tick for thermal solver for branch %s', { this.oBranch.sName }); end
             
             this.bRegisteredOutdated = true;
@@ -190,7 +200,7 @@ classdef branch < base & event.source
                     oIn = this.oBranch.coExmes{2}.oCapacity.oPhase;
                 end
 
-                if tools.round.prec(oIn.fMass, oIn.oStore.oTimer.iPrecision) == 0
+                if ~oIn.bFlow && tools.round.prec(oIn.fMass, oIn.oStore.oTimer.iPrecision) == 0
                     fHeatFlow = 0;
                     afTemperatures = zeros(1, this.oBranch.iConductors);
                 end

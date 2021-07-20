@@ -2,6 +2,22 @@ classdef vhab
     %VHAB V-HAB Launch Class
     %   This static class provides methods to initialize the MATLAB
     %   environment and methods to construct and run V-HAB simulations.
+   
+    
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                            %
+%                                                                            %
+%    oooooo     oooo         ooooo   ooooo       .o.       oooooooooo.       %
+%     `888.     .8'          `888'   `888'      .888.      `888'   `Y8b      %
+%      `888.   .8'            888     888      .8"888.      888     888      %
+%       `888. .8'             888ooooo888     .8' `888.     888oooo888'      %
+%        `888.8'     8888888  888     888    .88ooo8888.    888    `88b      %
+%         `888'               888     888   .8'     `888.   888    .88P      %
+%          `8'               o888o   o888o o88o     o8888o o888bood8P'       %
+%                                                                            %
+%                                                                            %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
     
     % All methods in this class are static, meaning they can be called
     % directly from the console using the 'vhab.<method_name>' syntax. It
@@ -110,10 +126,10 @@ classdef vhab
             % about the window classes, that they can't be deleted. These
             % warnings are supressed by turning off all warnings before
             % clearing. They are turned back on afterwards.
-            warning('off','all');
+            %warning('off','all');
             evalin('base','clear all');
             evalin('base','clear classes');
-            warning('on','all');
+            %warning('on','all');
             
             % Ouput to the console using the previously set timer. 
             disp(['Classes cleared in ', num2str(toc(hTimer)), ' seconds!'])

@@ -240,7 +240,13 @@ classdef BBMReactions < base
             if all(abs(mfTargetConcentration(abNegative)) < 1e-10)
                 mfTargetConcentration(abNegative) = 0;
             else
-                keyboard()
+                mfConcentrations = this.solveLinearSystem(fCurrentC_Hplus, fCurrentC_H2O, fCurrentWaterVolume, mfCurrentConcentration(this.miTranslator)');
+                
+                mfTargetConcentration(this.miTranslator) = mfConcentrations;
+                abNegative = mfTargetConcentration < 0;
+                if ~all(abs(mfTargetConcentration(abNegative)) < 1e-10)
+                    keyboard()
+                end
             end
             
             %% Compare Concentrations of present and target in moles / L
@@ -273,7 +279,7 @@ classdef BBMReactions < base
             end
         end
         
-        function mfConcentrations = solveLinearSystem(this, fCurrentC_Hplus, fCurrentC_H2O, fCurrentWaterVolume)
+        function mfConcentrations = solveLinearSystem(this, fCurrentC_Hplus, fCurrentC_H2O, fCurrentWaterVolume, mfCurrentConcentrations)
             
             %% EDTA
             % mfConcentrationEDTAs = [EDTA; EDTA-; EDTA2-; EDTA3-; EDTA4-]
@@ -338,9 +344,24 @@ classdef BBMReactions < base
             %                           [EDTA; EDTA-; EDTA2-; EDTA3-; EDTA4-; PhosphoricAcid;  DihydrogenPhosphate; HydrogenPhosphate; Phosphate; CO2; HCO3; CO3, H2O, OH-, H+]
             mfFullLinearSystem(15,:) = [    0,  -1,     -2,     -3,     -4,      0,                     -1,             -2,                 -3,     0,    -1,       -2,        0,   -1,  +1];
             mfFullLeftSide(15)       = - (this.mfCurrentConcentrationAll(this.oMT.tiN2I.Kplus) + this.mfCurrentConcentrationAll(this.oMT.tiN2I.Naplus)) + this.mfCurrentConcentrationAll(this.oMT.tiN2I.NO3);
-
+            
             warning('OFF', 'all')
             mfConcentrations = mfFullLinearSystem\mfFullLeftSide;
+            
+            if any(mfConcentrations < -1e-10) && nargin > 4
+                % in this case try solving by using a lower bound optimization algorithm:
+                
+                LowerBound = zeros(15,1);
+                UpperBound = ones(15,1)*inf;
+                options.Algorithm = 'trust-region-reflective';
+                options.Diagnostics = 'off';
+                options.Display = 'none';
+                options.FunctionTolerance = 1e-18;
+                options.OptimalityTolerance = 1e-18;
+                mfConcentrations = lsqlin(mfFullLinearSystem,mfFullLeftSide,[],[],[],[],LowerBound,UpperBound, mfCurrentConcentrations, options);
+                
+            end
+            
             warning('ON', 'all')
         end
     end

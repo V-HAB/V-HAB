@@ -5,28 +5,78 @@ classdef fluidic < thermal.procs.conductor
         % Thermal resistance of connection
         fResistance = 0; % [K/W].
         
-        % Reference to the mass branch whose thermal energy transport
+        % Specific heat capacity of the matter flow through the matter
+        % processor associated with this conductor.
+        fSpecificHeatCapacity = 0;
+        
+        % Reference to the matter object whose thermal energy transport
         % should be modelled
-        oMassBranch;
+        oMatterObject;
+        
+        % Reference to the f2f processor associated with this conductor, if
+        % it exists. Matter branches without processors are possible when
+        % using the manual solver.
+        oMatterProcessor;
+        
+        % A boolean indicating if there is a matter processor associated
+        % with this conductor or not. 
+        bNoMatterProcessor;
+        
+        % The following three properties capture the pressure, temperature
+        % and partial mass state of the flow through this phase. This is done
+        % in an effort to reduce the calls to calculateSpecificHeatCapacity
+        % in the matter table. See setMatterProperties() for details.
+        fPressureLastHeatCapacityUpdate;
+        fTemperatureLastHeatCapacityUpdate;
+        arPartialMassLastHeatCapacityUpdate;
+        
+        % Counter for the number of failures to update the heat capacity.
+        % Maximum allowed number of failures is 2
+        iFailedHeatCapacityUpdates = 0;
     end
     
     methods
         
-        function this = fluidic(oContainer, sName, oMassBranch)
+        function this = fluidic(oContainer, sName, oMatterObject)
             % Create a fluidic conductor to model the thermal energy
             % transport asscociated with mass transfer. Required inputs
             % are:
             % oContainer:       The system in which the conductor is placed
             % sName:            A name for the conductor which is not
             %                   shared by other conductors within oContainer
-            % oMassBranch:      The matter branch which models the mass flow
+            % oMatterObject:    The matter object which models the mass
+            %                   flow, can either be a matter branch or a
+            %                   P2P processor.
             
             % Calling the parent constructor
             this@thermal.procs.conductor(oContainer, sName);
             
-            this.oMassBranch = oMassBranch;
+            % Setting the reference to the matter object.
+            this.oMatterObject = oMatterObject;
             
-            % we do not bind the matter branch update to this conductor,
+            % If the oMatterObject is actually a branch and not a P2P, we
+            % try to find the F2F processor associated with this conductor.
+            if strcmp(oMatterObject.sObjectType, 'branch')
+                % Since it is possible to have matter branches without F2F
+                % processors, we check for that first.
+                if ~isempty(this.oMatterObject.aoFlowProcs)
+                    % Getting all processor names
+                    csProcessorNames = {this.oMatterObject.aoFlowProcs.sName};
+                    
+                    % Finding the processor that belongs to this conductor
+                    this.oMatterProcessor = oMatterObject.aoFlowProcs(strcmp(sName, csProcessorNames));
+                    
+                    % Setting the boolean indicating we don't have a
+                    % processor to false.
+                    this.bNoMatterProcessor = false;
+                else
+                    % There is no F2F processor in the branch, so this
+                    % conductor models the entire branch.
+                    this.bNoMatterProcessor = true;
+                end
+            end
+            
+            % We do not bind the matter branch update to this conductor,
             % because the solver handles this as it is necessary in any
             % case and adding additional triggers would slow down the
             % simulation
@@ -35,30 +85,97 @@ classdef fluidic < thermal.procs.conductor
         function fResistance = update(this, ~)
             % Update the thermal resistance of this conductor
             
-            % get the correct exme for the current flow rate
-            if this.oMassBranch.fFlowRate >= 0
-                iExme = 1;
-            else
-                iExme = 2;
+            if this.oMatterObject.fFlowRate == 0
+                fResistance = Inf;
+                return;
             end
+            
+            % We need the specific heat capacity of the the matter flowing
+            % through this conductor. If it is a P2P processor, we can take
+            % its specific heat capacity directly because it is updated
+            % during the call to setMatterProperties(). Otherwise we take
+            % the value from the matter flow into the matter object that
+            % this conductor models, either an entire branch or an
+            % individual F2F processor.
+            if this.oThermalBranch.oHandler.bP2P
+                this.fSpecificHeatCapacity = this.oMatterObject.fSpecificHeatCapacity;
+            else
+                % First we need to check if there is an F2F processor
+                % associated with this conductor.
+                if this.bNoMatterProcessor
+                    % There is no F2F processor associated with this
+                    % conductor, so we want to use the properties of the
+                    % flow at the end of this branch, which depends on the
+                    % flow rate.
+                    if this.oMatterObject.fFlowRate >= 0
+                        iFlowIndex = this.oMatterObject.iFlows;
+                    else
+                        iFlowIndex = 1;
+                    end
+                    
+                    oFlow = this.oMatterObject.aoFlows(iFlowIndex);
+                    
+                else
+                    % There IS an F2F processor associated with this
+                    % conductor, so we look at the flow rate to find out
+                    % which one of its flows we should use.
+                    if this.oMatterObject.fFlowRate > 0
+                        iFlowIndex = 1;
+                    else
+                        iFlowIndex = 2;
+                    end
+                    
+                    oFlow = this.oMatterProcessor.aoFlows(iFlowIndex);
+                end
                 
-            % get specific heat capacity of the corresponding phase (we use
-            % the phase so that we do not have to calculate the specific
-            % heat capacity of the flow individually which would take time
-            fSpecificHeatCapacity = this.oThermalBranch.coExmes{iExme}.oCapacity.fSpecificHeatCapacity;
+                % In order to improve performance, we only recalculate the
+                % specific heat capacity if either the pressure, the
+                % temperature or the composition of the flow or any
+                % combination of these parameters have changed since the
+                % last recalculation. 
+                if isempty(this.fPressureLastHeatCapacityUpdate) ||...
+                        (abs(this.fPressureLastHeatCapacityUpdate - oFlow.fPressure) > 100) ||...
+                        (abs(this.fTemperatureLastHeatCapacityUpdate - oFlow.fTemperature) > 1) ||...
+                        (max(abs(this.arPartialMassLastHeatCapacityUpdate - oFlow.arPartialMass)) > 0.01)
+                    
+                    % Recalculating the specific heat capacity
+                    try
+                        this.fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(oFlow);
+                        
+                        this.iFailedHeatCapacityUpdates = 0;
+                    catch
+                        if this.iFailedHeatCapacityUpdates > 2
+                            if isempty(this.oMatterObject.sCustomName)
+                                sBranchName = this.oMatterObject.sName;
+                            else
+                                sBranchName = this.oMatterObject.sCustomName;
+                            end
+                            this.throw('FlowHeatCapacityUpdateError', ['In the branch: ',sBranchName,' with the Flow Rate: ', num2str(this.oMatterObject.fFlowRate), ' [kg/s] and Heat Capactiy: ', num2str(this.fSpecificHeatCapacity),' [J/(kgK)] the update of the heat capacity failed']);
+                        end
+                        this.iFailedHeatCapacityUpdates = this.iFailedHeatCapacityUpdates + 1;
+                    end
+                    
+                    % Setting the properties for the next check
+                    this.fPressureLastHeatCapacityUpdate     = oFlow.fPressure;
+                    this.fTemperatureLastHeatCapacityUpdate  = oFlow.fTemperature;
+                    this.arPartialMassLastHeatCapacityUpdate = oFlow.arPartialMass;
+                end
+            end
             
-            % flowrate in kg/s * J / (kg K) = W/K --> inverse = K/W
-            fResistance = 1 / abs(this.oMassBranch.fFlowRate * fSpecificHeatCapacity);
+            % Flow rate in kg/s * J / (kg K) = W/K --> inverse = K/W
+            fResistance = 1 / abs(this.oMatterObject.fFlowRate * this.fSpecificHeatCapacity);
             
+            % Storing the current value in a property for logging and
+            % debugging purposes.
             this.fResistance = fResistance;
             
             if ~base.oDebug.bOff
-                this.out(1,1,'Flow Rate: %i [kg/s], Heat Capactiy: %i [J/(kgK)]', {this.oMassBranch.fFlowRate, fSpecificHeatCapacity});
+                this.out(1,1,'Flow Rate: %i [kg/s], Heat Capactiy: %i [J/(kgK)]', {this.oMatterObject.fFlowRate, this.fSpecificHeatCapacity});
             end
         end
         
         function updateConnectedMatterBranch(this, oMassBranch)
-            this.oMassBranch = oMassBranch;
+            this.oMatterObject = oMassBranch;
         end
     end
 end

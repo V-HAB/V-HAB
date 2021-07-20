@@ -1,4 +1,4 @@
-function testVHAB(sCompareToState, bForceExecution, bDebugModeOn)
+function testVHAB(sCompareToState, fSimTime, bForceExecution, bDebugModeOn)
 %TESTVHAB Runs all tests and saves the figures to a folder
 %   This function is a debugging helper. It will run all tests inside
 %   the user/+tests folder and save the resulting figures to
@@ -45,10 +45,14 @@ else
 end
 
 if nargin < 2
-    bForceExecution = false;
+    fSimTime = [];
 end
 
 if nargin < 3
+    bForceExecution = false;
+end
+
+if nargin < 4
     bDebugModeOn = false;
 end
 
@@ -164,7 +168,7 @@ if (bChanged || bForceExecution)
         % Now we can get the number of workers
         iNumberOfWorkers = oPool.NumWorkers;
 
-    catch
+    catch %#ok<CTCH>
         % We can't do parallel execution, so we set this to false.
         bParallelExecution = false;
         
@@ -283,7 +287,7 @@ if (bChanged || bForceExecution)
                 % parfeval() returns a parallel.FevalFuture object from
                 % which the results of the parallel worker can be obtained.
                 % These results are the return values of runTest().
-                aoResultObjects(iTest) = parfeval(oPool, @runTest, 1, tTests(iTest), ptParams, sTestDirectory, sFolderPath, true, bDebugModeOn);
+                aoResultObjects(iTest) = parfeval(oPool, @runTest, 1, tTests(iTest), ptParams, sTestDirectory, sFolderPath, fSimTime, true, bDebugModeOn);
                 
                 % Now that the FevalFuture object hast been added to the
                 % aoResultObjects array, we can update the callback of the
@@ -353,8 +357,7 @@ if (bChanged || bForceExecution)
                         % the following logic in a try catch block. 
                         try
                             tTests(iI) = fetchOutputs(aoResultObjects(iI));
-                            
-                        catch
+                        catch %#ok<CTCH>
                             tTests(iI).sStatus = 'Cancelled';
                         end
                         
@@ -489,7 +492,7 @@ if strcmp(sCompareToState, 'server')
         if strcmp(Msg.identifier, 'MATLAB:load:couldNotReadFile')
             % if the file does not exists we inform the user that something
             % went wrong
-            error('The file user\+tests\ServerTestStatus.mat does not exist. Please check if you accidentially deleted it and if so revert that change.')
+            error('TestVHAB:FileNotFound','The file user\+tests\ServerTestStatus.mat does not exist. Please check if you accidentially deleted it and if so revert that change.')
         else
             rethrow(Msg)
         end
@@ -539,7 +542,7 @@ if ( bChanged || bForceExecution )
         for iOldTest = 1:length(tOldTests.tTests)
             % Check if the name of the old tutorial matches the new tutorial,
             % if it does, compare the tutorials
-            if strcmp(tTests(iI).name, tOldTests.tTests(iOldTest).name) && ~isempty(tTests(iI).run)
+            if strcmp(tTests(iI).name, tOldTests.tTests(iOldTest).name) && ~isempty(tTests(iI).run) && ~isempty(tOldTests.tTests(iOldTest).run)
                 
                 iTickDiff = tTests(iI).run.iTicks - tOldTests.tTests(iOldTest).run.iTicks;
                 mfData(iI,1) = iTickDiff;
@@ -602,7 +605,7 @@ disp(tools.secs2hms(toc(hTimer)));
         % closing of the waitbar. 
         try
             tools.multiWaitbar(tTests(xInput(1)).name, xInput(2));
-        catch
+        catch %#ok<CTCH>
             tools.multiWaitbar(tTests(xInput(1)).name, 'Close');
         end
     end
@@ -881,7 +884,7 @@ for iI = 1:length(tInfo)
 end
 end
 
-function tTest = runTest(tTest, ptParams, sTestDirectory, sFolderPath, bParallelExecution, bDebugModeOn)
+function tTest = runTest(tTest, ptParams, sTestDirectory, sFolderPath, fSimTime, bParallelExecution, bDebugModeOn)
 % This function creates one V-HAB simulation, runs it and returns an
 % updated tTest struct. It can be used for both parallel and serial
 % execution of tests, the key here is the value of the bParallelExecution
@@ -899,7 +902,7 @@ if exist(fullfile(sTestDirectory, tTest.name, 'setup.m'), 'file')
     % errors inside the simulation itself
     try
         % Creating the simulation object.
-        oLastSimObj = vhab.sim(sExecString, ptParams, [], []);
+        oLastSimObj = vhab.sim(sExecString, ptParams, [], [], fSimTime);
         
         % In case the user wants to run the simulations with the debug mode
         % activated, we toggle that switch now.
@@ -910,36 +913,36 @@ if exist(fullfile(sTestDirectory, tTest.name, 'setup.m'), 'file')
         % Actually running the simulation
         oLastSimObj.run();
         
-        % Done! Let's plot stuff!
-        oLastSimObj.plot();
-        
-        % If we are running in parallel, we need to jump through some hoops
-        % to get the figures saved. The plotter knows that it is being run
-        % on a parallel worker, so it has created the aoFigures array in
-        % the base workspace of the worker. So here, if we are running in
-        % parallel, we pull this variable from the base workspace into our
-        % local workspace to save it. If we are running in series, then we
-        % just set it to empty; the saveFigures() function knows how to
-        % deal with that. 
-        if bParallelExecution
-            aoFigures = evalin('base', 'aoFigures');
-        else
-            aoFigures = [];
-        end
-        
-        % Saving the figures to the pre-determined location
-        tools.saveFigures(sFolderPath, strrep(tTest.name,'+',''), aoFigures);
-        
-        % Closing all windows so we can see the console again. The
-        % drawnow() call is necessary, because otherwise MATLAB would just
-        % jump over the close('all') instruction and run the next sim.
-        % Stupid behavior, but this is the workaround. We only need to do
-        % this when running in series, because then the windows are
-        % not visible on the parallel workers anyway.
-        if ~bParallelExecution
-            close('all');
-            drawnow();
-        end
+%         % Done! Let's plot stuff!
+%         oLastSimObj.plot();
+%         
+%         % If we are running in parallel, we need to jump through some hoops
+%         % to get the figures saved. The plotter knows that it is being run
+%         % on a parallel worker, so it has created the aoFigures array in
+%         % the base workspace of the worker. So here, if we are running in
+%         % parallel, we pull this variable from the base workspace into our
+%         % local workspace to save it. If we are running in series, then we
+%         % just set it to empty; the saveFigures() function knows how to
+%         % deal with that. 
+%         if bParallelExecution
+%             aoFigures = evalin('base', 'aoFigures');
+%         else
+%             aoFigures = [];
+%         end
+%         
+%         % Saving the figures to the pre-determined location
+%         tools.saveFigures(sFolderPath, strrep(tTest.name,'+',''), aoFigures);
+%         
+%         % Closing all windows so we can see the console again. The
+%         % drawnow() call is necessary, because otherwise MATLAB would just
+%         % jump over the close('all') instruction and run the next sim.
+%         % Stupid behavior, but this is the workaround. We only need to do
+%         % this when running in series, because then the windows are
+%         % not visible on the parallel workers anyway.
+%         if ~bParallelExecution
+%             close('all');
+%             drawnow();
+%         end
         
         % Store information about the simulation duration and errors. This
         % will be saved later on to allow a comparison between different

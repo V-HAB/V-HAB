@@ -27,15 +27,17 @@ classdef branch < solver.thermal.base.branch
             % phase to phase
             this@solver.thermal.base.branch(oBranch, 'fluidic');
             
+            this.bFluidicSolver = true;
+            
             % Check if the connected matter reference is a branch or a P2P
             % and bind the update of the branch to the corresponding
             % trigger which indicates that the mass flow rate is 
-            if ~isa(this.oBranch.coConductors{1}.oMassBranch, 'matter.branch')
+            if ~isa(this.oBranch.coConductors{1}.oMatterObject, 'matter.branch')
                 this.bP2P = true;
                 
-                this.oBranch.coConductors{1}.oMassBranch.bind('setMatterProperties',@(~)this.update());
+                this.oBranch.coConductors{1}.oMatterObject.bind('setMatterProperties',@(~)this.update());
             else
-                this.oBranch.coConductors{1}.oMassBranch.bind('update',@(~)this.update());
+                this.oBranch.coConductors{1}.oMatterObject.bind('update',@(~)this.update());
             end
             
             % Now we register the solver at the timer, specifying the post
@@ -64,8 +66,7 @@ classdef branch < solver.thermal.base.branch
             
             % Get the temperature difference between the two capacities
             % which this branch connects
-            oMassBranch = this.oBranch.coConductors{1}.oMassBranch;
-            fDeltaTemperature = this.oBranch.coExmes{1}.oCapacity.fTemperature - this.oBranch.coExmes{2}.oCapacity.fTemperature;
+            oMatterObject = this.oBranch.coConductors{1}.oMatterObject;
             
             % Currently for mass bound heat transfer it is not possible to
             % allow different conducitvities in the thermal branch, as that
@@ -76,17 +77,11 @@ classdef branch < solver.thermal.base.branch
             % resistance values in the branch
             fResistance = sum(afResistances) / this.oBranch.iConductors;
             
-            % The (initial) heat flow is simply calculated by dividing the
-            % temperature difference with the resistance (this heat flow
-            % neglects the heat flow from F2F processors, which is handled
-            % hereafter)
-            fHeatFlow = fDeltaTemperature / fResistance;
-            
             if this.bP2P
                 % In this case we have a p2p
                 iFlowProcs = 0;
             else
-                iFlowProcs = oMassBranch.iFlowProcs;
+                iFlowProcs = oMatterObject.iFlowProcs;
             end
              
             % If the resistance is infinite no mass is currently flowing
@@ -97,7 +92,7 @@ classdef branch < solver.thermal.base.branch
                 afTemperatures = ones(1,iFlowProcs + 1) * this.oBranch.coExmes{1}.oCapacity.fTemperature;
                 
                 if this.bP2P
-                    oMassBranch.setTemperature(afTemperatures(1));
+                    oMatterObject.setTemperature(afTemperatures(1));
                 else
                     % In this case it is assumed that the F2Fs also do not
                     % produce/consume any heat, as modelling that would
@@ -107,7 +102,7 @@ classdef branch < solver.thermal.base.branch
                     % could only be modelled if branches were allowed to
                     % store mass)
                     for iFlow = 1: iFlowProcs+1
-                        oMassBranch.aoFlows(iFlow).setTemperature(afTemperatures(iFlow));
+                        oMatterObject.aoFlows(iFlow).setTemperature(afTemperatures(iFlow));
                     end
                 end
                 
@@ -123,13 +118,19 @@ classdef branch < solver.thermal.base.branch
             % in the order of the flow passing through them
             afTemperatures  = zeros(1,iFlowProcs + 1); % there is one more flow than f2f procs
             afF2F_HeatFlows = zeros(1,iFlowProcs);
-            if oMassBranch.fFlowRate >= 0
+            if oMatterObject.fFlowRate >= 0
+                if this.oBranch.coExmes{1}.oCapacity.bFlow
+                    this.oBranch.coExmes{1}.oCapacity.registerUpdateTemperature();
+                end
                 afTemperatures(1) = this.oBranch.coExmes{1}.oCapacity.fTemperature; %temperature of the first flow
                 iFirstFlow = 1;
                 iDirection = 1;
                 iFlowProcShifter = -1;
                 iExme = 2;
             else
+                if this.oBranch.coExmes{2}.oCapacity.bFlow
+                    this.oBranch.coExmes{2}.oCapacity.registerUpdateTemperature();
+                end
                 afTemperatures(end) = this.oBranch.coExmes{2}.oCapacity.fTemperature; %temperature of the first flow
                 iFirstFlow = iFlowProcs + 1;
                 iDirection = -1;
@@ -148,16 +149,16 @@ classdef branch < solver.thermal.base.branch
             % flow temperature is set
             if this.bP2P
                 % A P2P cannot have F2Fs and therefore we can directly set it
-                oMassBranch.setTemperature(afTemperatures(1));
+                oMatterObject.setTemperature(afTemperatures(1));
             else
                 % For actual matter.branch references the branch can
                 % contain multiple F2Fs, we now set the temperatures in the
                 % order of the flow passing through them and update them
                 % after each other so that each F2F does know the correct
                 % flow temperature of the flow before it
-                oMassBranch.aoFlows(iFirstFlow).setTemperature(afTemperatures(iFirstFlow));
+                oMatterObject.aoFlows(iFirstFlow).setTemperature(afTemperatures(iFirstFlow));
                 
-                if oMassBranch.fFlowRate >= 0
+                if oMatterObject.fFlowRate >= 0
                     aiFlows = 2:(iFlowProcs + 1);
                 else
                     aiFlows = (iFlowProcs):-1:1;
@@ -166,31 +167,33 @@ classdef branch < solver.thermal.base.branch
                 % Now loop through the remaining flows
                 for iFlow = aiFlows
                     
-                    if oMassBranch.aoFlowProcs(iFlow + iFlowProcShifter).bThermalActive
-                        oMassBranch.aoFlowProcs(iFlow + iFlowProcShifter).updateThermal();
+                    if oMatterObject.aoFlowProcs(iFlow + iFlowProcShifter).bThermalActive
+                        oMatterObject.aoFlowProcs(iFlow + iFlowProcShifter).updateThermal();
                     end                    
                     
                     % The thermal energy from the f2f is added to the
                     % temperature of the previous flow, thus increasing the
                     % thermal energy
-                    afF2F_HeatFlows(iFlow + iFlowProcShifter) = oMassBranch.aoFlowProcs(iFlow + iFlowProcShifter).fHeatFlow;
+                    afF2F_HeatFlows(iFlow + iFlowProcShifter) = oMatterObject.aoFlowProcs(iFlow + iFlowProcShifter).fHeatFlow;
 
-                    afTemperatures(iFlow) = afTemperatures(iFlow - iDirection) + afF2F_HeatFlows(iFlow + iFlowProcShifter) * fResistance;
+                    afTemperatures(iFlow) = afTemperatures(iFlow - iDirection) + afF2F_HeatFlows(iFlow + iFlowProcShifter) * afResistances(iFlow + iFlowProcShifter);
 
-                    oMassBranch.aoFlows(iFlow).setTemperature(afTemperatures(iFlow))
+                    oMatterObject.aoFlows(iFlow).setTemperature(afTemperatures(iFlow))
 
                 end
             end
+            
             this.afSolverHeatFlow = [0, 0];
+            
             % For matter bound heat transfer only the side receiving the
             % mass receives the heat flow, the energy change on the other
             % side is handled by changing the total heat capacity. The
             % impact of the F2Fs heat flows is simply added to the
             % previously calculated heat flow
-            if iExme == 1
-                this.afSolverHeatFlow(iExme) = fHeatFlow - sum(afF2F_HeatFlows);
+            if iDirection == 1
+                this.afSolverHeatFlow(iExme) = (afTemperatures(end) - this.oBranch.coExmes{2}.oCapacity.fTemperature)   / afResistances(end);
             else
-                this.afSolverHeatFlow(iExme) = fHeatFlow + sum(afF2F_HeatFlows);
+                this.afSolverHeatFlow(iExme) = (this.oBranch.coExmes{1}.oCapacity.fTemperature - afTemperatures(1))     / afResistances(1);
             end
             
             % If the mass transfer is matter bound the heat flow is only
@@ -211,6 +214,17 @@ classdef branch < solver.thermal.base.branch
              
             update@solver.thermal.base.branch(this, fHeatFlow, afTemperatures);
             
+            % For flow capacity we must update the temperatures if the
+            % adjacent branch changed
+            if oMatterObject.fFlowRate >= 0
+                if this.oBranch.coExmes{2}.oCapacity.bFlow
+                    this.oBranch.coExmes{2}.oCapacity.registerUpdateTemperature();
+                end
+            else
+                if this.oBranch.coExmes{1}.oCapacity.bFlow
+                    this.oBranch.coExmes{1}.oCapacity.registerUpdateTemperature();
+                end
+            end
         end
     end
 end

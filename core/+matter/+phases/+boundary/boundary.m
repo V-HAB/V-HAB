@@ -28,7 +28,7 @@ classdef (Abstract) boundary < matter.phase
             % tfMasses      : Struct containing mass value for each species
             % fTemperature  : Temperature of matter in phase
 
-            this@matter.phase(oStore, sName, tfMass, fTemperature, 'boundary');
+            this@matter.phase(oStore, sName, tfMass, fTemperature);
             
             this.fVolume = inf;
             
@@ -36,6 +36,7 @@ classdef (Abstract) boundary < matter.phase
             % case, this enforces V-HAB to make a minimum size time step to
             % keep the error small
             tTimeStepProperties.rMaxChange = inf;
+            tTimeStepProperties.fMaxStep = inf;
             this.setTimeStepProperties(tTimeStepProperties)
             
             this.afMassChange = zeros(1,this.oMT.iSubstances);
@@ -120,12 +121,6 @@ classdef (Abstract) boundary < matter.phase
                 this.arPartialMass   = zeros(1, this.oMT.iSubstances);
                 this.fDensity        = 0;
             end
-            
-            % We also need to reset some thermal values (e.g. total heat
-            % capacity), which is done by calling the
-            % setBoundaryTemperature() method. This method includes the
-            % required calculations. 
-            this.oCapacity.setBoundaryTemperature(this.fTemperature);
             
             this.setBranchesOutdated();
         end

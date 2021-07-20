@@ -8,6 +8,14 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % State of matter in phase (e.g. gas, liquid, solid), used for
         % example by the EXMEs to check compatibility.
         sType;
+        
+    end
+    
+    properties (Constant)
+        % In order to remove the need for numerous calls to isa(),
+        % especially in the matter table, this property can be used to see
+        % if an object is derived from this class. 
+        sObjectType = 'phase';
     end
 
     % These properties (including the mass vlaues) are not private because
@@ -64,6 +72,38 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % Length of the current time step for this phase
         fTimeStep;     % [s]
         
+        % If masses are used that are a composition of different base
+        % masses, these are modelled in arCompoundMass. arCompoundMass is a
+        % matrix with oMT.iSubstances x oMT.iSubstances entries and each
+        % row contains the mass ratio composition for the corresponding
+        % mass if that mass is a compound. (e.g. if the compound has the
+        % matter table entry 234, then row 234 contains its composition.
+        % The current masses of the compounds can be calculated by using
+        % the resolveCompoundMass function of the matter table
+        arCompoundMass;
+        
+        % During the getTotalMassChange in the calculate time step
+        % function, this property is stored to save calculation time. It
+        % contains the mass ratios for all inflowing compound masses
+        % already mass averaged if multiple inflows of the same compound
+        % with different compositions are present
+        arInFlowCompoundMass;
+        
+        % If ions are present in the phase, the charge of the ion is
+        % represented in this struct. The fields correspond to the
+        % respective ion, and the entry in the field is a matrix with the
+        % first row corresponding to the masses for the different charges
+        % and the second row corresponding to the different charges.
+        % Example entries would look like this:
+        % tfIons.H =
+        % 0.1   2.1   0.0001
+        % -1     0    1
+        % To calculate the total charge the following code can be used:
+        % sum(tfIons.H(1,:) .* tfIons.H(2,:))
+        % To get the mass of one specific charge level for the ion use:
+        % tfIons.H(1,tfIons.H(2,:) == -1)
+        tfIons;
+        
         % booleans used to check if anything is bound to the events
         % informing other object/functions about a finished
         % massupdate/update. These properties were implement to improve
@@ -87,6 +127,13 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % property, which is normally false and only set to true by the
         % mixture subclass
         bMixture = false;
+        
+        % If the thermal capacity associated with this matter phase is to
+        % be a node in a thermal network that is solved by the thermal
+        % multi-branch solver, this boolean needs to be set to true in the
+        % createMatterStructure() method of the system. This is done via
+        % the makeThermalNetworkNode() method of this class. 
+        bThermalNetworkNode = false;
         
         % Last time the phase mass was updated. Is NOT an actual update!
         % Only the mass is changed not all other properties, e.g. Pressure
@@ -247,15 +294,27 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % the post tick at the timer and contains all necessary inputs
         % already. The same is true for the other two handles below.
         hBindPostTickMassUpdate
+        
         % Handle to bind a post tick update of this phase
         hBindPostTickUpdate
+        
         % Handle to bind a post tick time step calculation of this phase
         hBindPostTickTimeStep
+        
+        % An empty array that is initialized in the constructor. It is used
+        % to increase the performance of the getTotalMassChange() method.
+        % By having this array pre-defined, it saves a call to zeros() that
+        % is quite slow and since this method is called very often the
+        % small performance improvement has a big impact.
+        afEmptyCompoundMassArray;
+        
+        % Another empty matrix created for the same reason as afEmptyCompoundMassArray
+        mfEmptyTotalFlows;
     end
     
     methods
 
-        function this = phase(oStore, sName, tfMass, fTemperature, sCaller)
+        function this = phase(oStore, sName, tfMass, fTemperature)
             %% Phase Class Constructor
             % Constructor for the |matter.phase| class. Input parameters
             % can be provided to define the contained masses and
@@ -273,7 +332,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             %                   Keys refer to the name of the according substance
             %   fTemperature  - temperature of the initial mass, has to be given
             %                   if  tfMass is provided
-            %   sCaller       - only internally used to decide which
+            %   sCapacity     - only internally used to decide which
             %                   capactiy should be added to the phase
 
             % Parent has to be or derive from matter.store
@@ -292,9 +351,12 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             this.oTimer = this.oStore.oTimer;
             
             % Preset masses
-            this.afMass = zeros(1, this.oMT.iSubstances);
-            this.arPartialMass = zeros(1, this.oMT.iSubstances);
-            this.fMinStep = this.oTimer.fMinimumTimeStep;
+            this.afMass                   = zeros(1, this.oMT.iSubstances);
+            this.arPartialMass            = zeros(1, this.oMT.iSubstances);
+            this.arCompoundMass           = zeros(this.oMT.iSubstances, this.oMT.iSubstances);
+            this.arInFlowCompoundMass     = zeros(this.oMT.iSubstances, this.oMT.iSubstances);
+            this.afEmptyCompoundMassArray = zeros(this.oMT.iSubstances, this.oMT.iSubstances);
+            this.fMinStep                 = this.oTimer.fMinimumTimeStep;
             
             % Mass provided?
             if (nargin >= 3) && ~isempty(tfMass) && ~isempty(fieldnames(tfMass))
@@ -330,6 +392,18 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                     end
 
                     this.afMass(this.oMT.tiN2I.(sKey)) = tfMass.(sName);
+                    
+                    if this.oMT.abCompound(this.oMT.tiN2I.(sKey))
+                        afCompoundMass = zeros(1, this.oMT.iSubstances);
+                        csComposition = this.oMT.ttxMatter.(sKey).csComposition;
+                        for iComponent = 1:length(this.oMT.ttxMatter.(sKey).csComposition)
+                            afCompoundMass(this.oMT.tiN2I.(csComposition{iComponent})) = this.oMT.ttxMatter.(sKey).trBaseComposition.(csComposition{iComponent}) * tfMass.(sName);
+                        end
+                        
+                        for iComponent = 1:length(this.oMT.ttxMatter.(sKey).csComposition)
+                            this.arCompoundMass(this.oMT.tiN2I.(sKey), this.oMT.tiN2I.(csComposition{iComponent})) = this.oMT.ttxMatter.(sKey).trBaseComposition.(csComposition{iComponent});
+                        end
+                    end
                 end
 
                 % Calculate total mass
@@ -349,25 +423,23 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % Partials also to zeros
                 this.arPartialMass = this.afMass;
             end
+            
+            % If the temperature was provided, we set it, otherwise use the
+            % standard temperature from the matter table.
+            if nargin > 3 && isnumeric(fTemperature) && fTemperature > 0
+                this.setTemperature(fTemperature)
+            else
+                this.setTemperature(this.oMT.Standard.Temperature);
+            end
 
             this.fMolarMass = this.oMT.calculateMolarMass(this.afMass);
-             
+            
             % Mass
             this.fMass = sum(this.afMass);
             this.afMassGenerated = zeros(1, this.oMT.iSubstances);
 
             this.fMassToPressure = this.fPressure / this.fMass;
             
-            % add a thermal capacity to this phase to handle thermal
-            % calculations 
-            if nargin > 4 && strcmp(sCaller, 'boundary')
-                this.oCapacity = thermal.capacities.boundary(this, fTemperature);
-            else
-                this.oCapacity = thermal.capacity(this, fTemperature);
-            end
-            % Now update the matter properties
-            this.oCapacity.updateSpecificHeatCapacity();
-               
             % Preset the cached masses (see calculateTimeStep)
             this.fMassLastUpdate  = 0;
             this.afMassLastUpdate = zeros(1, this.oMT.iSubstances);
@@ -378,11 +450,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % bind post tick updates. These functions are stored as
             % properties and can then simply be called with e.g. 
             % this.hBindPostTickMassUpdate();
-            this.hBindPostTickMassUpdate  = this.oTimer.registerPostTick(@this.massupdate,        'matter',        'phase_massupdate');
-            this.hBindPostTickUpdate      = this.oTimer.registerPostTick(@this.update,            'matter',        'phase_update');
-            this.hBindPostTickTimeStep    = this.oTimer.registerPostTick(@this.calculateTimeStep, 'post_physics' , 'timestep');
+            this.hBindPostTickMassUpdate = this.oTimer.registerPostTick(@this.massupdate,        'matter',       'phase_massupdate');
+            this.hBindPostTickUpdate     = this.oTimer.registerPostTick(@this.update,            'matter',       'phase_update');
+            this.hBindPostTickTimeStep   = this.oTimer.registerPostTick(@this.calculateTimeStep, 'post_physics', 'timestep');
         end
-
+        
         function this = registerMassupdate(this, ~)
             %% registerMassupdate
             % To simplify debugging registering a massupdate must be done
@@ -506,7 +578,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % properties the function will overwrite the value,
                 % otherwise it will throw an error
                 if ~any(strcmp(sField, csPossibleFieldNames))
-                    error(['The function setTimeStepProperties was provided the unknown input parameter: ', sField, ' please view the help of the function for possible input parameters']);
+                    error('VHAB:Phase:UnknownTimeStepProperty', ['The function setTimeStepProperties was provided the unknown input parameter: ', sField, ' please view the help of the function for possible input parameters.']);
                 end
                 
 
@@ -515,13 +587,24 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 xProperty = tTimeStepProperties.(sField);
 
                 if ~isfloat(xProperty)
-                    error(['The ', sField,' value provided to the setTimeStepProperties function is not defined correctly as it is not a (scalar, or vector of) float']);
+                    error('VHAB:Phase:IllegalTimeStepPropertyFormat', ['The ', sField,' value provided to the setTimeStepProperties function is not defined correctly as it is not a (scalar, or vector of) float.']);
                 end
 
                 if strcmp(sField, 'arMaxChange') && (length(xProperty) ~= this.oMT.iSubstances)
-                    error('The arMaxChange value provided to the setTimeStepProperties function is not defined correctly. It has the wrong length');
+                    error('VHAB:Phase:arMaxChangeArrayTooLong', 'The arMaxChange value provided to the setTimeStepProperties function is not defined correctly. It has the wrong length.');
                 end
 
+                if strcmp(sField, 'fMaxStep') 
+                    if isfield(tTimeStepProperties, 'fMinStep')
+                        fMinStepLocal = tTimeStepProperties.fMinStep;
+                    else
+                        fMinStepLocal = this.fMinStep;
+                    end
+                    if tTimeStepProperties.(sField) < fMinStepLocal
+                        error('the maximum time step cannot be smaller than the minimum time step!')
+                    end
+                end
+                    
                 this.(sField) = tTimeStepProperties.(sField);
             end
 
@@ -637,7 +720,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % function because it is a thermal domain property!
             csValidProperties = {'fVolume', 'fMassToPressure', 'fDensity'};
             if ~any(strcmp(sPropertyName, csValidProperties))
-                 error(['The function BindSetProperty was provided the unknown input parameter: ', sPropertyName, ' please view the help of the function for possible input parameters']);
+                 error('VHAB:Phase:UnknownPropertyForBind', ['The function BindSetProperty was provided the unknown input parameter: ', sPropertyName, ' please view the help of the function for possible input parameters']);
             end
                 
             hSetProperty = @(xNewValue) this.setProperty(sPropertyName, xNewValue);
@@ -673,9 +756,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             end
 
             this.toProcsEXME.(oProcEXME.sName) = oProcEXME;
+            
+            this.oStore.addExMeName(oProcEXME.sName);
         end
 
-        function [ afTotalInOuts, mfInflowDetails ] = getTotalMassChange(this)
+        function [ afTotalInOuts, mfInflowDetails , arCurrentInFlowCompoundMass] = getTotalMassChange(this)
             %% getTotalMassChange
             % Get vector with total mass change through all EXME flows in
             % [kg/s].
@@ -691,13 +776,20 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
 
             % Total flows - one row (see below) for each EXME, number of
             % columns is the number of substances (partial masses)
-            mfTotalFlows = zeros(this.iProcsEXME, this.oMT.iSubstances);
+            mfTotalFlows = this.mfEmptyTotalFlows;
+            arCurrentInFlowCompoundMass = this.afEmptyCompoundMassArray;
 
             % Each row: flow rate, temperature, heat capacity
             mfInflowDetails = zeros(this.iProcsEXME, 3);
             
             % Creating an array to log which of the flows are not in-flows
             aiOutFlows = ones(this.iProcsEXME, 1);
+            
+            % Just initialize to false to handle the logical check
+            % correctly in case no exmes are defined at all
+            arExMECompoundMass = false; %#ok<NASGU>
+            
+            bCompoundMassPresent = false;
             
             % Get flow rates and partials from EXMEs
             for iI = 1:this.iProcsEXME
@@ -708,7 +800,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % afProperties contains the temperature and heat capacity
                 % of the exme.
                 oExme = this.coProcsEXME{iI};
-                [ fFlowRate, arFlowPartials, afProperties ] = oExme.getFlowData();
+                [ fFlowRate, arFlowPartials, afProperties, arExMECompoundMass ] = oExme.getFlowData();
                 
                 % Now we add the total mass flows per substance to the
                 % mfTotalFlows matrix.
@@ -722,6 +814,24 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                     % This flow is an in-flow, so we set the field in the
                     % array to zero.
                     aiOutFlows(iI) = 0;
+                    
+                    % Only the inflowing exme can actually change the mass
+                    % ratios of the phase. Outflowing exme must only be
+                    % considered as a total mass change before calculating
+                    % the new composition
+                    if any(arExMECompoundMass, 'all')
+                        % Note that here arCurrentInFlowCompoundMass
+                        % actually contains mass flows, but because
+                        % intialising it with zeros already requires quite
+                        % a bit of time we use only one variable!
+                        arCurrentInFlowCompoundMass = arCurrentInFlowCompoundMass + (mfTotalFlows(iI, :)' .* arExMECompoundMass);
+                        
+                        bCompoundMassPresent = true;
+                    else
+                        if ~bCompoundMassPresent
+                            bCompoundMassPresent = false;
+                        end
+                    end
                 end
             end
             
@@ -730,13 +840,28 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             if any(aiOutFlows)
                 mfInflowDetails(logical(aiOutFlows),:) = [];
             end
+            
             % Now sum up in-/outflows over all EXMEs
             afTotalInOuts = sum(mfTotalFlows, 1);
+            
+            % The compound mass flow ratio is stored per compound mass (in
+            % the rows)
+            if bCompoundMassPresent
+                afCompoundMassFlow = sum(arCurrentInFlowCompoundMass,2);
+                arCurrentInFlowCompoundMass = arCurrentInFlowCompoundMass ./ afCompoundMassFlow;
+                arCurrentInFlowCompoundMass(afCompoundMassFlow == 0, :) = 0;
+            end
             
             % Checking for NaNs. It is necessary to do this here so the
             % origin of NaNs can be found easily during debugging.
             if any(isnan(afTotalInOuts))
-                error('Error in phase ''%s''. The flow rate of EXME ''%s'' is NaN.', this.sName, this.coProcsEXME{isnan(afTotalInOuts)}.sName);
+                for iI = 1:this.iProcsEXME
+                    if any(isnan(mfTotalFlows(iI,:)))
+                        iLastError = iI;
+                        disp(['Error in phase ', this.sName, '. The flow rate of EXME ', this.coProcsEXME{iI}.sName, ' is NaN.']);
+                    end
+                end
+                error('VHAB:Phase:ExMeFlowRateIsNaN', 'Error in phase ''%s''. The flow rate of EXME ''%s'' is NaN.', this.sName, this.coProcsEXME{iLastError}.sName);
             end
         end
         
@@ -757,7 +882,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             ));
             
             % Max time step
-            this.fMaxStep = this.oStore.oContainer.tSolverParams.fMaxTimeStep;
+            if ~this.bBoundary
+                this.fMaxStep = this.oStore.oContainer.tSolverParams.fMaxTimeStep;
+            end
             
             if ~this.oStore.bSealed
                 this.coProcsEXME = struct2cell(this.toProcsEXME)';
@@ -781,12 +908,25 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 end
             end
             
+            this.mfEmptyTotalFlows = zeros(this.iProcsEXME, this.oMT.iSubstances);
+            
             % Preset
             [ afChange, mfDetails ] = this.getTotalMassChange();
 
             this.afCurrentTotalInOuts = afChange;
             this.mfCurrentInflowDetails = mfDetails;
-            
+        end
+        
+        function setCapacity(this, oCapacity)
+            this.oCapacity = oCapacity;
+        end
+        
+        function makeThermalNetworkNode(this)
+            if ~this.oStore.bSealed
+                this.bThermalNetworkNode = true;
+            else
+                this.throw('Phase %s is already sealed and cannot be made a thermal network node here. Call makeThermalNetworkNode() within createMatterStructure() of your system to prevent this error.', this.sName);
+            end
         end
     end
 
@@ -833,6 +973,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % their partial mass composition after the solvers are
                 % updated, which is after the initial mass updates)
                 this.setOutdatedTS();
+                this.setP2PsAndManipsOutdated();
                 return;
                 % Note that also setting branches outdated here would lead
                 % to infinite loops within the timer and is therefore not
@@ -860,9 +1001,15 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             if ~base.oDebug.bOff, this.out(1, 2, 'total-fr', 'Total flow rate in %s-%s: %.20f', { this.oStore.sName, this.sName, sum(afTotalInOuts) }); end
             
             % Check manipulator
+            bCompoundManipulator = false;
             if ~isempty(this.toManips.substance) && ~isempty(this.toManips.substance.afPartialFlows)
                 % Add the changes from the manipulator to the total inouts
                 afTotalInOuts = afTotalInOuts + this.toManips.substance.afPartialFlows;
+                
+                % Check if the manipulator creates a compound mass:
+                if any(this.toManips.substance.afPartialFlows(this.oMT.abCompound))
+                    bCompoundManipulator = true;
+                end
                 
                 if ~base.oDebug.bOff, this.out(tools.debugOutput.MESSAGE, 1, 'manip-substance', 'Has substance manipulator'); end % directly follows message above, so don't output name
             end
@@ -872,6 +1019,49 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
             % Multiply with current time step
             afTotalInOuts = afTotalInOuts * fLastStep;
+            
+            % check if a compound mass update is required:
+            if any(this.arInFlowCompoundMass, 'all') || bCompoundManipulator
+                % Update the compound mass. We do this before we update the
+                % total mass because we must use the total mass of the phase
+                % from before, minus all the outflows but not yet plus the
+                % inflows for this
+                % We use this.afCurrentTotalInOuts because that does not
+                % contain the manipulator flowrates yet!
+                afTotalOuts = this.afCurrentTotalInOuts * fLastStep;
+                afTotalIns = afTotalOuts;
+                
+                % Note that for the outflows we set everything larger than
+                % 0 to 0! so the larger than 0 for the outflows and the
+                % smaller than 0 for the inflows are correct!
+                afTotalOuts(afTotalOuts > 0) = 0;
+                afTotalIns(afTotalIns < 0) = 0;
+
+                % The outgoing mass can be subtracted without considering
+                % the composition, as it does not change the current
+                % composition of the compound mass in this phase
+                afCurrentMass = this.afMass + afTotalOuts;
+                afCurrentMass(afCurrentMass < 0) = 0;
+                % Now using the mass without the outflown matter (as that has
+                % the same composition as the matter in the phase) we add the
+                % inflowing mass with the corresponding compound composition to
+                % get the current masses for each compound
+                if bCompoundManipulator
+                    mfNewCompoundMasses = afCurrentMass' .* this.arCompoundMass +...    % current compound mass composition after outflows
+                                          afTotalIns'    .* this.arInFlowCompoundMass +... % plus the total added compound masses from exmes
+                                          fLastStep      .* this.toManips.substance.afPartialFlows' .* this.toManips.substance.aarFlowsToCompound; % plus the total added compound masses from manips
+                else
+                    mfNewCompoundMasses = afCurrentMass' .* this.arCompoundMass +...    % current compound mass composition after outflows
+                                          afTotalIns'    .* this.arInFlowCompoundMass; % plus the total added compound masses from exmes
+                end
+                afNewCompoundMasses = sum(mfNewCompoundMasses, 2);
+                % Masses that became negative are set to 0
+                afNewCompoundMasses(afNewCompoundMasses < 0)    = 0;
+                mfNewCompoundMasses(afNewCompoundMasses < 0, :) = 0;
+
+                this.arCompoundMass = mfNewCompoundMasses ./ afNewCompoundMasses;
+                this.arCompoundMass(afNewCompoundMasses == 0, :) = 0;
+            end
             
             % Do the actual adding/removing of mass.
             this.afMass =  this.afMass + afTotalInOuts;
@@ -900,10 +1090,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             end
             % Update total mass
             this.fMass = sum(this.afMass);
-
+            
             % Now calculate the new total heat capacity for the
             % asscociated capacity (the specific heat capacity is updated
-            % based on changes in pressure/tenperature etc as it is only
+            % based on changes in pressure/temperature etc as it is only
             % indirectly influenced by the mass)
             this.oCapacity.setTotalHeatCapacity(this.fMass * this.oCapacity.fSpecificHeatCapacity);
             
@@ -978,7 +1168,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Now update the matter properties
             this.fMolarMass = this.oMT.calculateMolarMass(this.afMass);
             
-            % we check against the timestep and only do the calculation if
+            % We check against the timestep and only do the calculation if
             % it hasn't been done before. Additional checks if the matter
             % properties changed sufficiently to make a matter table update
             % of the property necessary are performed within the function
@@ -1056,25 +1246,25 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 
                 % Make sure it's not a p2ps.flow - their update method
                 % is called in updateProcessorsAndManipulators method
-                if bUpdateOutFlow
-                    if ~oExme.bFlowIsAProcP2P
+                if ~oExme.bFlowIsAProcP2P
+                    if bUpdateOutFlow
                         if oExme.iSign * oExme.oFlow.fFlowRate <= 0
                             % Tell branch to recalculate flow rate (done after
                             % the current tick, in timer post tick).
                             oBranch.setOutdated();
                         end
+                    else
+                        % We can't directly set this oBranch as outdated if
+                        % it is just connected to an interface, because the
+                        % solver is assigned to the 'leftest' branch.
+                        while ~isempty(oBranch.coBranches{1})
+                            oBranch = oBranch.coBranches{1};
+                        end
+
+                        % Tell branch to recalculate flow rate (done after
+                        % the current tick, in timer post tick).
+                        oBranch.setOutdated();
                     end
-                elseif isa(oBranch, 'matter.branch')
-                    % We can't directly set this oBranch as outdated if
-                    % it is just connected to an interface, because the
-                    % solver is assigned to the 'leftest' branch.
-                    while ~isempty(oBranch.coBranches{1})
-                        oBranch = oBranch.coBranches{1};
-                    end
-                    
-                    % Tell branch to recalculate flow rate (done after
-                    % the current tick, in timer post tick).
-                    oBranch.setOutdated();
                 end
             end
         end
@@ -1122,14 +1312,18 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         function setOutdatedTS(this)
             %% setOutdatedTS
             % INTERNAL FUNCTION! This function is called by the
-            % registerUpdate function
+            % registerUpdate function or the massupdate. Since a massupdate
+            % must be called when flowrates change (which would be the use
+            % case when someone might want to call this function) it is not
+            % possible to access it, as external calls should call the
+            % massupdate anyway!
             %
             % Setting this to true multiple times in the timer is no
             % problem, therefore no check required
             this.hBindPostTickTimeStep();
         end
         
-        % since the fPressure property is accessed by get.fPressure this
+        % Since the fPressure property is accessed by get.fPressure this
         % function should be protected as it should not be used directly.
         % It cannot be private because that prevent the function from
         % beeing overwritten by child classes
@@ -1143,6 +1337,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             fPressure = this.fMassToPressure * (this.fMass + fMassSinceUpdate);
         end
     end
+    
     methods (Access = private)
         % Only the phase itself should have access to this function. Access
         % by other functions is handled through specific bind/unbind
@@ -1200,6 +1395,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             this.toProcsEXME.(oExMe.sName) = oExMe;
             this.coProcsEXME{end + 1} = oExMe;
             this.iProcsEXME = this.iProcsEXME + 1;
+            this.oStore.addExMeName(oExMe.sName);
             
             this.setOutdatedTS();
         end

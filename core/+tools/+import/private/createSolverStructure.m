@@ -20,6 +20,10 @@ for iSolver = 1:length(tCurrentSystem.csSolvers)
         else
             fprintf(sSystemFile, ['          solver.matter.', tCurrentSystem.csSolvers{iSolver},'.branch(this.toBranches.', tCurrentSystem.csBranchNames{iSolver},');\n']);
         end
+        
+        if strcmp(tCurrentSystem.csSolvers{iSolver}, 'manual')
+            
+        end
     end
 end
 

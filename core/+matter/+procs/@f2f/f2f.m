@@ -10,7 +10,7 @@ classdef f2f < base & matlab.mixin.Heterogeneous
     properties (SetAccess = private, GetAccess = public)
         % Connected matter flows first entry aoFlows(1) is considered the
         % left flow while aoFlows(2) is considered the right flow
-        aoFlows = matter.flow.empty();
+        aoFlows;
         
         % Matter table
         oMT;
@@ -45,16 +45,23 @@ classdef f2f < base & matlab.mixin.Heterogeneous
         fHeatFlow = 0;
         
         % Decide if this processor is an active processor which generates a
-        % pressure difference (e.g. a fan).´In this case this property is
+        % pressure difference (e.g. a fan).ï¿½In this case this property is
         % set to true. Or if it is a passive component which only reacts to
         % the mass flow passing through (e.g. a pipe). In this case the
         % property is false
         bActive = false;
         
+        bCheckValve = false;
+        
         % This property is used to check if the implemented class of F2F
         % has the function updateThermal, and is therefore considered
         % thermally active.
         bThermalActive = false;
+        
+        % this boolean can be used to decide in solvers whether the
+        % pressure change over this f2f depends on the flowrate or should
+        % be considered constant
+        bFlowRateDependPressureDrop = true;
         
         % Pressure difference of the f2f component in [Pa]
         fDeltaPressure = 0;
@@ -89,6 +96,8 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             this.oTimer = this.oContainer.oTimer;
             
             this.abSetFlows = [false, false];
+            
+            this.aoFlows = matter.flow.empty();
         end
         
         function seal(this, oBranch)
@@ -143,19 +152,12 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             % Call addProc on the flow, provide function handle to
             % enable removing, returns the sign for the flow rate, throws
             % an error if something went wrong.
-            try
-                % Provide function handle to removeFlow - even though that
-                % method is protected, it can be called from outside
-                % through that! Wrap in anonymous function so no way to
-                % remove another flow.
-                oFlow.addProc(this, @() this.removeFlow(oFlow));
             
-            catch oErr
-                % Reset back to default MF
-                this.aoFlows(iFlowID) = this.oMT.oFlowZero;
-                
-                rethrow(oErr);
-            end
+            % Provide function handle to removeFlow - even though that
+            % method is protected, it can be called from outside
+            % through that! Wrap in anonymous function so no way to
+            % remove another flow.
+            oFlow.addProc(this, @() this.removeFlow(oFlow));
         end
     end
     

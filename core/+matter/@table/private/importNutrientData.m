@@ -1,250 +1,345 @@
 function importNutrientData(this)
-% this function reads the PlantParameters.csv file
-
-    % At first we'll just read the first line of the file, this determines
-    % the width of the actual table. So if more data columns are added in
-    % the future, this code won't have to change so much.
+% this function reads nutrient data that was downloaded from the US Food
+% Composition Database (https://ndb.nal.usda.gov/ndb/search/list) if you
+% want to add additional food to V-HAB search for it in the database,
+% download the corresponding CSV and add it to the folder
+% core/+matter/+data/+NutrientData
+% 
+% Unfortuntly the complete structure of the above mentioned database was
+% changed and therefore it is currently not possible to add new foods this
+% way. It is possible to access data using the descritpion provided here:
+% https://fdc.nal.usda.gov/api-guide.html and for our purposes the demo API
+% key would be sufficient. However, since the whole format of the received
+% data changes, a completly new import script is required to import the
+% data!
+%
+% The skript is able to import both the base and the full data file,
+% however it is recommended to import the full data file. In the base file
+% some parts of the composition are neglected, resulting in the mass not
+% summing up to 100 g (or after the import 1 kg). For the full import the
+% mass balance is correct, however some parts are considered in multiple
+% quantities. A correct mass balance can be achieved by summing water,
+% protein, fat, ash and carbohydrates and neglecting everything else
+%
+% For data that is provided by the manufacturer, errors are likely because
+% they rarely report substances that sum up to 1 in their mass composition!
     
-    %% Import data from PlantParameters.csv file
+    % get the file names for the available nutrient data
+    csFiles = dir(strrep('core/+matter/+data/+NutrientData','/',filesep));
+    csFiles = {csFiles.name};
     
-    % Open the file
-    iFileID = fopen(strrep('+matter/+data/NutrientData.csv','/',filesep), 'r');
-    % Get first row
-    csFirstRow = textscan(iFileID, '%s', 1, 'Delimiter', '\n');
-    % This is a cell array of cells, so we 'unpack' one level to get the
-    % actual string.
-    csFirstRow = csFirstRow{1};
-    sFirstRow  = csFirstRow{1};
-    
-    csColumnNames = textscan(sFirstRow, '%s','Delimiter',';');
-    csColumnNames = csColumnNames{1};
-
-    for iI = 1:length(csColumnNames)
-        if strcmp(csColumnNames{iI},'')
-            csColumnNames(iI) = [];
+    % remove non csv files
+    cfCSV = regexp(csFiles, '.csv');
+    mbCSV = true(1, length(cfCSV));
+    for iFile = 1:length(cfCSV)
+        if isempty(cfCSV{iFile})
+            mbCSV(iFile) = false;
         end
     end
+    csFiles = csFiles(mbCSV);
     
-    iNumberOfColumns = length(csColumnNames);
+    % To convert the units in which the database provides information into
+    % SI units we create a conversion struct:
+    tConversion.g       = 1e-3;
+    tConversion.mg      = 1e-6;
+    tConversion.microg  = 1e-9;
+    tConversion.kcal    = 4184;
+    tConversion.kJ      = 1000;
+    tConversion.IU      = 1;
     
-    % Getting the second row
-    csSecondRow = textscan(iFileID, '%s', 1, 'Delimiter', '\n');
-    % This is a cell array of cells, so we 'unpack' one level to get the
-    % actual string.
-    csSecondRow = csSecondRow{1};
-    sSecondRow  = csSecondRow{1};
-    
-    csVariableNames = textscan(sSecondRow, '%s', iNumberOfColumns, 'Delimiter',';');
-    csVariableNames = csVariableNames{1};
-    
-    for iI = 1:length(csVariableNames)
-        if strcmp(csVariableNames{iI},'')
-            csVariableNames(iI) = [];
-        end
-    end
-    
-    % Getting the third row
-    csThirdRow = textscan(iFileID, '%s', 1, 'Delimiter', '\n');
-    % This is a cell array of cells, so we 'unpack' one level to get the
-    % actual string.
-    csThirdRow = csThirdRow{1};
-    sThirdRow  = csThirdRow{1};
-    
-    csUnits = textscan(sThirdRow, '%s', iNumberOfColumns, 'Delimiter',';');
-    csUnits = csUnits{1};
-    
-    for iI = 1:length(csUnits)
-        if strcmp(csUnits{iI},'')
-            csUnits(iI) = [];
-        end
-    end
-    
-    sFormatString = '';
-    
-    for iI = 1:length(csColumnNames)
-        sFormatString = strcat(sFormatString, '%s');
-    end
-    
-    sFormatString = strcat(sFormatString, '%[^\n\r]');
-    
-    % Get all other rows
-    csImportCell = textscan(iFileID, sFormatString, 'Delimiter', ';', 'ReturnOnError', false);
-    
-    %% Close the text file.
-    fclose(iFileID);
-    
-    %% Convert the contents of columns containing numeric strings to numbers.
-    % Replace non-numeric strings with NaN.
-    % Creating a cell the size of the actual table, since the textscan
-    % command above output a 1-D array of cells.
-    csRawData = repmat({''},length(csImportCell{1}),length(csImportCell));
-    % Copying the data from the imported cell into the raw data cell
-    for iFirstVariableColumn = 1:length(csImportCell)-1
-        csRawData(1:length(csImportCell{iFirstVariableColumn}),iFirstVariableColumn) = csImportCell{iFirstVariableColumn};
-    end
-    % Creating an array full of NaNs
-    afNumericData = NaN(size(csImportCell{1},1),size(csImportCell,2));
-    
-    % The first column is text, so we just have to look at the
-    % columns 2 and later
-    for iFirstVariableColumn = 2:length(csImportCell)
-        % Converts strings in the input cell array to numbers. Replaced non-numeric
-        % strings with NaN.
-        % First we create a cell with just the one column we are currently
-        % looking at
-        csRawDataColumn = csImportCell{iFirstVariableColumn};
-        % Now we go through each of the rows and check, if the value in the
-        % individual element is numeric or not.
-        for iRow=1:size(csRawDataColumn, 1)
-            % Create a regular expression to detect and remove non-numeric prefixes and
-            % suffixes.
-            sRegularExpression = '(?<prefix>.*?)(?<numbers>([-]*(\d+[\,]*)+[\.]{0,1}\d*[eEdD]{0,1}[-+]*\d*[i]{0,1})|([-]*(\d+[\,]*)*[\.]{1,1}\d+[eEdD]{0,1}[-+]*\d*[i]{0,1}))(?<suffix>.*)';
-            tResult  = regexp(csRawDataColumn{iRow}, sRegularExpression, 'names');
-            if isempty(tResult)
-                afNumericData(iRow, iFirstVariableColumn) = NaN;
-                csRawData{iRow, iFirstVariableColumn} = [];
-                continue;
-            else
-                sNumbers = tResult.numbers;
-            end
-            
-            % Detected commas in non-thousand locations.
-            bInvalidThousandsSeparator = false;
-            if any(sNumbers==',')
-                sThousandsRegExp = '^\d+?(\,\d{3})*\.{0,1}\d*$';
-                if isempty(regexp(sThousandsRegExp, ',', 'once'))
-                    sNumbers = NaN;
-                    bInvalidThousandsSeparator = true;
-                end
-            end
-            % Convert numeric strings to numbers.
-            if ~bInvalidThousandsSeparator
-                csNumbers = textscan(strrep(sNumbers, ',', ''), '%f');
-                afNumericData(iRow, iFirstVariableColumn) = csNumbers{1};
-                csRawData{iRow, iFirstVariableColumn} = csNumbers{1};
-            end
-        end
-    end
-    
-    %% Split data into numeric and cell columns.
-    %cfRawNumericColumns = csRawData(:, 4:length(csImportCell)-1);
-    csRawStringColumns  = csRawData(:, 1);
-    
-    
-%     %% Replace non-numeric cells with NaN
-%     % This was in the automatically generated code for csv import. Don't
-%     know if we really need this...
-%     R = cellfun(@(x) ~isnumeric(x) && ~islogical(x),cfRawNumericColumns); % Find non-numeric cells
-%     cfRawNumericColumns(R) = {NaN}; % Replace non-numeric cells
-    
-    
-    % Storing the column of the melting point
-    % ("codename" of first property to store in phase) to
-    % save all properties. The properties to the left of
-    % melting point are considered constant and independent of
-    % phase, temperature, pressure, etc.
-    % while density and heat capacity are not constant the values will be
-    % saved here to be used as standard values with which e.g. adsorber
-    % that contain solids and gases/liquids can be calculated
-    iFirstVariableColumn = find(strcmp(csVariableNames,'iUSDAID'));
-    
-    % Initialize the struct in which all substances are later stored
     ttxImportNutrientData = struct();
     
-    % To improve the matter table performance, by avoinding frequent calls
-    % find() to get the column indices, we add a struct with the property
-    % names as keys and their indices in the ttxMatter struct as values.
-    % While we're at it, we'll also create a struct containing the units.
+    % Add lines with the unique part of the Nutrient Data for: row from the
+    % downloaded CSV file and provide a custom name if you want custom food
+    % names
+    csCustomFoodNames           = {'Beans, snap'; 'SnapBeans'};
+    csCustomFoodNames(:,end+1)  = {'Onions, young green'; 'GreenOnions'};
+    csCustomFoodNames(:,end+1)  = {'ORGANIC WHOLE GROUND TIGERNUT'; 'Chufa'};
     
-    % First create the empty structs
-    tColumns = struct();
-    tUnits   = struct();
+    % Renamings that are necessary to provide consistency to the plant
+    % model
+    csCustomFoodNames(:,end+1)  = {'Beans, kidney'; 'Drybean'};
+    csCustomFoodNames(:,end+1)  = {'Potatoes';      'Whitepotato'};
+    csCustomFoodNames(:,end+1)  = {'Soybeans';      'Soybean'};
+    csCustomFoodNames(:,end+1)  = {'Tomatoes';      'Tomato'};
+    csCustomFoodNames(:,end+1)  = {'Peanuts';       'Peanut'};
+    csCustomFoodNames(:,end+1)  = {'Wild rice';     'Rice'};
+    csCustomFoodNames(:,end+1)  = {'Sweet potato';  'Sweetpotato'};
     
-    % Field names have to be without whitespace, so we remove it here
-    csColumnNames = strrep(csColumnNames,' ','');
-    
-    % Now we go through all columns and create the key/value pairs for the
-    % column names and units accordingly
-    for iI = 1:iNumberOfColumns
-        tColumns.(csColumnNames{iI}) = iI;
-        tUnits.(csColumnNames{iI})   = csUnits{iI};
-    end
-    
-    csSubstances = csRawStringColumns(:,1);
-    
-    % go through all substances
-    for iI = 1:length(csSubstances)
-        % Since there can be multiple rows for a substance, we'll check if
-        % we already did this one and skip the rest if we did. 
-        if isfield(ttxImportNutrientData,csSubstances{iI})
-            continue;
-        end
+    % now loop through the files
+    for iFile = 1:length(csFiles)
+        %% Open File and load the data
+        iFileID = fopen(strrep(['core/+matter/+data/+NutrientData/', csFiles{iFile}],'/',filesep), 'r');
         
-        % set substancename as fieldname
-        ttxImportNutrientData.(csSubstances{iI}) = [];
+        % This is a cell array of cells, so we 'unpack' one level to get the
+        % actual string.
+        csImport = textscan(iFileID, '%s', 'Delimiter', '\n');
+        csImport = csImport{1};
         
-        % select all rows of that substance
-        % substances can have more than one phase
-        aiRows = find(strcmp(csSubstances,csSubstances{iI}));
-        
-        if ~isempty(aiRows)
-            % Store all data of current substance in the sub-struct of
-            % ttxImportNutrientData.
-            
-            % Store the full name of the substance
-            ttxImportNutrientData.(csSubstances{iI}).sPlantSpecies = csRawData{aiRows(1), 1};
-         
-            
-            % go through all phases and save all remaining properties for that specific phase
-            for iJ = 1:length(aiRows)
-                for iK = iFirstVariableColumn:iNumberOfColumns
-                    ttxImportNutrientData.(csSubstances{iI}).(csColumnNames{iK}) = csRawData{aiRows(iJ),iK};
+        % Now we get the type of food for which this data file contains
+        % information
+        acData = cell(length(csImport),1);
+        iHeaderRows = [];
+        iEndRow = [];
+        for iRow = 1:length(csImport)
+            if ~isempty(regexp(csImport{iRow}, 'Nutrient data for:', 'once'))
+                sInitialSplitString = regexp(csImport{iRow}, ': ','split');
+                
+                bCustomFoodName = false;
+                for iCustomFoodName = 1:length(csCustomFoodNames)
+                    if ~isempty(regexp(sInitialSplitString{2}, csCustomFoodNames{1,iCustomFoodName}, 'once'))
+                        bCustomFoodName = true;
+                        sFoodName = csCustomFoodNames{2,iCustomFoodName};
+                    end
                 end
+                if ~bCustomFoodName
+                    splitStr = regexp(sInitialSplitString{2}, ',','split');
+                    sFoodName = splitStr{1};
+                    sFoodName = tools.normalizePath(sFoodName);
+                    if isfield(ttxImportNutrientData, sFoodName)
+                        sFoodName = tools.normalizePath(sInitialSplitString{2});
+                    end
+                end
+            elseif ~isempty(regexp(csImport{iRow}, 'per 100 g', 'once'))
+                sColumnString = regexp(csImport{iRow}, ',','split');
+                for iColumn = 1:length(sColumnString)
+                    if ~isempty(regexp(sColumnString{iColumn}, 'per 100 g', 'once'))
+                        iDataColumn = iColumn;
+                    end
+                end
+            elseif ~isempty(regexp(csImport{iRow}, 'Proximates', 'once'))
+                iHeaderRows = iRow;
             end
             
-            % Since none of the substances in the "Matter Data" worksheet
-            % will enable interpolation of their properties, we can just
-            % set the variable to false here.
-            ttxImportNutrientData.(csSubstances{iI}).bInterpolations = false;
+            if ~isempty(iHeaderRows) && iRow > iHeaderRows
+                cData = cell(1,0);
+                % Unfortunatly the data is not exactly formatted
+                % identically from the database, sometimes there are empty
+                % lines before sources, sometimes there is the term sources
+                % of data and sometimes the sources just start (1,"
+                % identifies this case)
+                if ~isempty(regexp(csImport{iRow}, '1,"', 'once')) || ~isempty(regexp(csImport{iRow}, 'Sources of Data', 'once')) || isempty(csImport{iRow})
+                    iEndRow = iRow - 1;
+                    break
+                end
+                cTempData = regexp(csImport{iRow}, '"','split');
+                if isempty(cTempData{1})
+                    iEntry = 2;
+                else
+                    iEntry = 1;
+                end
+                cData{1, end+1} = cTempData{iEntry}; %#ok<AGROW>
+                if length(cTempData) > 2
+                    cTempData = regexp(cTempData{3}, ',','split');
+                    cData(1, end+1:end+length(cTempData)-1) = cTempData(2:end);
+                end
+                acData{iRow} = cData;
+            end
+        end
+        
+        % Close the text file.
+        fclose(iFileID);
+        
+        %% create a easy to access and read struct array from the data
+        ttxImportNutrientData.(sFoodName) = struct();
+        
+        if isempty(iEndRow)
+            iEndRow = length(acData);
+        end
+        sSubHeader = [];
+        for iRow = (iHeaderRows + 1):iEndRow
+            % First get the name of the row
+            sRowName = acData{iRow};
+            sRowName = sRowName{1};
+            sRowName = regexprep(sRowName, '"', '');
+            sRowName = tools.normalizePath(sRowName);
+            if strcmp(sRowName, 'Footnotes')
+                break
+            end
             
-            % Finally we add the tColumns and tUnits structs to every 
-            % substance
-            ttxImportNutrientData.(csSubstances{iI}).tColumns = tColumns;
-            ttxImportNutrientData.(csSubstances{iI}).tUnits   = tUnits;
+            cData = acData{iRow};
+            % Then check if a new "subheader" line is present (e.g.
+            % Minerals or Vitamins)
+            if length(cData) == 1
+                sSubHeader = sRowName;
+            else
+                % since the data is given with different units, we have to
+                % convert them to standard SI units to be compatible with
+                % V-HAB
+                sUnit = cData{2};
+                
+                if strcmp(sUnit, 'µg')
+                    sUnit = 'microg';
+                end
+                
+                % Times 10 because the data is per 100 g and we want it to
+                % be per kg
+                fData = tConversion.(sUnit) * 10 * str2double(cData{iDataColumn});
+                
+                if strcmp(sUnit, 'IU')
+                    sUnitHeader = 'IU';
+                elseif strcmp(sUnit, 'kcal') || strcmp(sUnit, 'kJ')
+                    sUnitHeader = 'Energy';
+                else
+                    sUnitHeader = 'Mass';
+                end
+                
+                if ~isfield(ttxImportNutrientData.(sFoodName), sUnitHeader)
+                    ttxImportNutrientData.(sFoodName).(sUnitHeader) = struct();
+                end
+                
+                if isempty(sSubHeader)
+                    ttxImportNutrientData.(sFoodName).(sUnitHeader).(sRowName) = fData;
+                else
+                    ttxImportNutrientData.(sFoodName).(sUnitHeader).(sSubHeader).(sRowName) = fData;
+                end
+            end
         end
     end
     
-    % Now that we've gathered all of the information from the CSV file, it
-    % is time to write it to the actual ttxMatterData property of the
-    % matter table object. 
+    % add a general entry for food as it is assumed in the BVAD and HDIH:
+    ttxImportNutrientData.Food.Mass.Water                       = 0.4636; % 0.7 kg / 1.51 see table 3-33 in BVAD
+    % The following values are based on the 12.59 MJ of energy content
+    % mentioned in the BVAD food and the general percentages metioned in
+    % HDIH Marcunutrient Guidelines for Spaceflight (Table 7.2-2 and 7.2-3)
+    ttxImportNutrientData.Food.Mass.Protein                     = ((0.175 * 12.59 * 10^6) / (this.ttxMatter.C4H5ON.fNutritionalEnergy)) / 1.51;
+    ttxImportNutrientData.Food.Mass.Carbohydrate__by_difference	= ((0.525 * 12.59 * 10^6) / (this.ttxMatter.C6H12O6.fNutritionalEnergy)) / 1.51;
+    ttxImportNutrientData.Food.Mass.Total_lipid__fat_           = ((0.3 * 12.59 * 10^6)   / (this.ttxMatter.C16H32O2.fNutritionalEnergy)) / 1.51;
+    ttxImportNutrientData.Food.Mass.Ash                         =  1 - (ttxImportNutrientData.Food.Mass.Water + ttxImportNutrientData.Food.Mass.Protein + ttxImportNutrientData.Food.Mass.Carbohydrate__by_difference + ttxImportNutrientData.Food.Mass.Total_lipid__fat_ );
+    ttxImportNutrientData.Food.Mass.Fiber__total_dietary        = (12e-3 * 4187e3 / 12.59e6);
+    ttxImportNutrientData.Food.Mass.Minerals.Calcium__Ca        = 2e-3      / 1.51;
+    ttxImportNutrientData.Food.Mass.Minerals.Phosphorus__P     	= 0.7e-3    / 1.51;
+    ttxImportNutrientData.Food.Mass.Minerals.Magnesmium__Mg   	= 0.42e-3   / 1.51;
+    ttxImportNutrientData.Food.Mass.Minerals.Sodium__Na        	= 1.9e-3    / 1.51;
+    ttxImportNutrientData.Food.Mass.Minerals.Potassium__K       = 4.7e-3    / 1.51;
+    ttxImportNutrientData.Food.Mass.Minerals.Iron__Fe           = 9e-6      / 1.51;
+    ttxImportNutrientData.Food.Mass.Minerals.Copper__Cu         = 4.65e-6   / 1.51;
+    ttxImportNutrientData.Food.Mass.Minerals.Manganese__Mn     	= 2.3e-6    / 1.51;
+    ttxImportNutrientData.Food.Mass.Minerals.Zinc__Zn           = 11e-6     / 1.51;
+    ttxImportNutrientData.Food.Mass.Minerals.Selenium__Se     	= 227.5e-9  / 1.51;
     
-    % Getting and setting the names of all edible substances
+    ttxImportNutrientData.Food.Mass.Vitamins.Vitamin_A          = 800e-9    / 1.51;
+    ttxImportNutrientData.Food.Mass.Vitamins.Vitamin_D          = 25e-9    	/ 1.51;
+    ttxImportNutrientData.Food.Mass.Vitamins.Vitamin_K          = 120e-9   	/ 1.51;
+    ttxImportNutrientData.Food.Mass.Vitamins.Vitamin_E          = 15e-6    	/ 1.51;
+    ttxImportNutrientData.Food.Mass.Vitamins.Vitamin_C          = 90e-6     / 1.51;
+    ttxImportNutrientData.Food.Mass.Vitamins.Vitamin_B_12       = 2.4e-9    / 1.51;
+    ttxImportNutrientData.Food.Mass.Vitamins.Vitamin_B_6        = 1.7e-6    / 1.51;
+    ttxImportNutrientData.Food.Mass.Vitamins.Thiamin            = 1.2e-9 * 0.33727    / 1.51; % value is given in micromol, therefore multiplied with molar mass
+    ttxImportNutrientData.Food.Mass.Vitamins.Riboflavin         = 1.3e-6    / 1.51;
+    ttxImportNutrientData.Food.Mass.Vitamins.Folate             = 400e-9    / 1.51;
+    ttxImportNutrientData.Food.Mass.Vitamins.Niacin             = 16e-6     / 1.51;
+    ttxImportNutrientData.Food.Mass.Vitamins.Biotin             = 30e-9     / 1.51;
+    ttxImportNutrientData.Food.Mass.Vitamins.Pantothenic_acid  	= 30e-6     / 1.51;
+    
+    % Add chlorella as food, since the food data central only provides a
+    % branded chlorella food, the values from DOI: 10.1016/j.actaastro.2014.04.023
+    % "Physicochemical and biological technologies for future exploration
+    % missions", S. Belz et al 2014 are used here:
+    ttxImportNutrientData.Chlorella.Mass.Water                       = 0;
+    ttxImportNutrientData.Chlorella.Mass.Protein                     = 0.240;
+    ttxImportNutrientData.Chlorella.Mass.Carbohydrate__by_difference = 0.570;
+    ttxImportNutrientData.Chlorella.Mass.Total_lipid__fat_           = 0.190;
+    ttxImportNutrientData.Chlorella.Mass.Ash                         =  1 - (ttxImportNutrientData.Food.Mass.Water + ttxImportNutrientData.Food.Mass.Protein + ttxImportNutrientData.Food.Mass.Carbohydrate__by_difference + ttxImportNutrientData.Food.Mass.Total_lipid__fat_ );
+    ttxImportNutrientData.Chlorella.Mass.Fiber__total_dietary        = 0;
+    ttxImportNutrientData.Chlorella.Mass.Minerals.Calcium__Ca        = 0;
+    ttxImportNutrientData.Chlorella.Mass.Minerals.Phosphorus__P      = 0;
+    ttxImportNutrientData.Chlorella.Mass.Minerals.Magnesmium__Mg   	 = 0;
+    ttxImportNutrientData.Chlorella.Mass.Minerals.Sodium__Na         = 0;
+    ttxImportNutrientData.Chlorella.Mass.Minerals.Potassium__K       = 0;
+    ttxImportNutrientData.Chlorella.Mass.Minerals.Iron__Fe           = 0;
+    ttxImportNutrientData.Chlorella.Mass.Minerals.Copper__Cu         = 0;
+    ttxImportNutrientData.Chlorella.Mass.Minerals.Manganese__Mn      = 0;
+    ttxImportNutrientData.Chlorella.Mass.Minerals.Zinc__Zn           = 0;
+    ttxImportNutrientData.Chlorella.Mass.Minerals.Selenium__Se     	 = 0;
+    
+    ttxImportNutrientData.Chlorella.Mass.Vitamins.Vitamin_A          = 0;
+    ttxImportNutrientData.Chlorella.Mass.Vitamins.Vitamin_D          = 0;
+    ttxImportNutrientData.Chlorella.Mass.Vitamins.Vitamin_K          = 0;
+    ttxImportNutrientData.Chlorella.Mass.Vitamins.Vitamin_E          = 0;
+    ttxImportNutrientData.Chlorella.Mass.Vitamins.Vitamin_C          = 0;
+    ttxImportNutrientData.Chlorella.Mass.Vitamins.Vitamin_B_12       = 0;
+    ttxImportNutrientData.Chlorella.Mass.Vitamins.Vitamin_B_6        = 0;
+    ttxImportNutrientData.Chlorella.Mass.Vitamins.Thiamin            = 0;
+    ttxImportNutrientData.Chlorella.Mass.Vitamins.Riboflavin         = 0;
+    ttxImportNutrientData.Chlorella.Mass.Vitamins.Folate             = 0;
+    ttxImportNutrientData.Chlorella.Mass.Vitamins.Niacin             = 0;
+    ttxImportNutrientData.Chlorella.Mass.Vitamins.Biotin             = 0;
+    ttxImportNutrientData.Chlorella.Mass.Vitamins.Pantothenic_acid   = 0;
+    
+    this.ttxNutrientData = ttxImportNutrientData;
+    
+    %% Create Compound Matter Data entries based on imported nutrient data!
     this.csEdibleSubstances = fieldnames(ttxImportNutrientData);
-    
-    %%%%%%%%%%%%
-    % WARNING! %
-    %%%%%%%%%%%%
-    
-    % right now, Drybean has been substituted with values from
-    % Kidney Beans and Redbeets have been substituted with Beets.
-    % BVAD uses those substances but they are not listed on the
-    % USDA Food Database as of time of writing.
-    % Nutrients are always linked to the USDA NDB No. (iUSDAID in
-    % the file), so check that if unsure!
-    
-    %%%%%%%%%%%%
     
     % loop over all edible substances
     for iJ = 1:length(this.csEdibleSubstances)
-        try
-            if strcmp(this.csEdibleSubstances{iJ}, this.csSubstances{this.tiN2I.(this.csEdibleSubstances{iJ})})
-                this.ttxMatter.(this.csEdibleSubstances{iJ}).txNutrientData = ttxImportNutrientData.(this.csEdibleSubstances{iJ});
-            end
-        catch
-            % substance not represented in matter table, but not an
-            % issue as long as this food type is not used in sim
-            this.warn('importNutrientData','The food type ''%s'' is not in the MatterData.csv file. It''s properties will therfore not be added to the matter table.', this.csEdibleSubstances{iJ});
+        % Currently food is simplified to only consist of Water, Carbohydrates,
+        % Proteins, Fats and Ash (basically the rest e.g. Minerals). From
+        % the database entries the values:
+        % Water, Carbohydrate__by_difference, Protein, Total_lipid__fat_
+        % and Ash sum up to exactly 1! Fibers seem to be included in the
+        % Carbohydrate__by_difference value, therefore we subtract them
+        % here and add them individually
+        trBaseComposition           = struct();
+        
+        trBaseComposition.H2O       = ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Water;
+        trBaseComposition.C6H12O6   = ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Carbohydrate__by_difference - ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Fiber__total_dietary;
+        trBaseComposition.C3H7NO2   = ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Protein;
+        trBaseComposition.C51H98O6  = ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Total_lipid__fat_;
+        
+        % unfortunatly it is not certain that all mineral fields are always
+        % present and contain zero if they are not. Therefore, to only add
+        % which minerals are present we first check which are there
+        csMinerals = fieldnames(ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Minerals);
+        % now we have to derive the V-HAB name for these minerals and add
+        % them to the struct
+        for iMineral = 1:length(csMinerals)
+            csSplitString = strsplit(csMinerals{iMineral}, '__');
+            % the second part of the split string is the element of the
+            % mineral and can be used by V-HAB
+            trBaseComposition.(csSplitString{2}) = ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Minerals.(csMinerals{iMineral});
         end
+        
+        % unfortunatly it is not certain that all vitamin fields are always
+        % present and contain zero if they are not. Therefore, to only add
+        % which minerals are present we first check which are there
+        csVitamins = fieldnames(ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Vitamins);
+        % now we have to derive the V-HAB name for these minerals and add
+        % them to the struct
+        for iVitamin = 1:length(csVitamins)
+            % since a folate total value exists, we skip the partial folate
+            % values
+            if strcmp(csVitamins{iVitamin}, 'Folate__food') || strcmp(csVitamins{iVitamin}, 'Folate__DFE')
+                continue
+            end
+            csSplitString = strsplit(csVitamins{iVitamin}, '__');
+            % the second part of the split string is the element of the
+            % mineral and can be used by V-HAB
+            this.ttxNutrientData.(this.csEdibleSubstances{iJ}).trVitaminMass.(csSplitString{1}) = ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Vitamins.(csVitamins{iMineral});
+        end
+        
+        trBaseComposition.DietaryFiber	= ttxImportNutrientData.(this.csEdibleSubstances{iJ}).Mass.Fiber__total_dietary;
+       
+        csFields = fieldnames(trBaseComposition);
+        rTotal = 0;
+        for iField = 1:length(csFields)
+            rTotal = rTotal + trBaseComposition.(csFields{iField});
+        end
+        trBaseComposition.C	= 1 - rTotal;
+        if trBaseComposition.C < 0
+            if trBaseComposition.C < -0.05
+                error(['in the food composition of food stuff ', this.csEdibleSubstances{iJ}, ' an error occured'])
+            else
+                trBaseComposition.H2O   = trBaseComposition.H2O + trBaseComposition.C;
+                trBaseComposition.C     = 0;
+            end
+        end
+        % Now we define a compound mass in the matter table with the
+        % corresponding composition. Note that the base composition can be
+        % adjusted within a simulation, but for defining matter of this
+        % type, the base composition is used
+        this.defineCompoundMass(this, this.csEdibleSubstances{iJ}, trBaseComposition, true);
+        
     end
 end
-

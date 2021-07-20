@@ -44,9 +44,7 @@ classdef base < handle
             this.sURL = [ '/' strrep(this.sEntity, '.', '/') '/' this.sUUID ];
             
             % Adding this object to the logger
-            if ~isa(this, 'tools.debugOutput')
-                base.oDebug.add(this);
-            end
+            base.oDebug.add(this);
         end
         
     end

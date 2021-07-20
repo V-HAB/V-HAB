@@ -56,15 +56,12 @@ for iI = 1:length(csFieldNames)
         % Getting the file and folder names of the current directory
         csNames = {tDirInfo(:).name};
         
-        % In order to ensure that we find the file we are looking for, we
-        % replace all non-letter characters with '.?' and use the result as
-        % the search pattern in the regular expression in the following
-        % lines. 
-        sExpression = regexprep(sFileName,'[^a-z]','.?','ignorecase');
-        
+        if strcmp(sFileName(1:2), 'p_')
+            sFileName = sFileName(3:end);
+        end
         % Now we look for the file name within all file names in the
         % current folder.
-        cbFoundItems = regexp(csNames, sExpression);
+        cbFoundItems = regexp(csNames, sFileName);
         abFoundItems = ~cellfun(@isempty, cbFoundItems);
         
         % If we cannot find the file, we delete it and let the user know. 

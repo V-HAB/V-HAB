@@ -226,21 +226,21 @@ classdef BBMCompositionCalculation < base
             %OH- reacts directly with H+. Adding it here would result in a
             %higher OH- concentration than is actually  in the solution.
             
-            this.fDisodiumEDTASaltConc = (fDisodiumEDTASaltMass / this.oMT.ttxMatter.(oMT.tsN2S.DisodiumEDTASalt).fMolarMass) / (fMediumVolume*1000); %[moles/m3]
-            this.fDisodiumEDTASaltMoles = fDisodiumEDTASaltMass / this.oMT.ttxMatter.(oMT.tsN2S.DisodiumEDTASalt).fMolarMass; %[moles]
+            this.fDisodiumEDTASaltConc = (fDisodiumEDTASaltMass / this.oMT.afMolarMass(this.oMT.tiN2I.(oMT.tsN2S.DisodiumEDTASalt))) / (fMediumVolume*1000); %[moles/m3]
+            this.fDisodiumEDTASaltMoles = fDisodiumEDTASaltMass / this.oMT.afMolarMass(this.oMT.tiN2I.(oMT.tsN2S.DisodiumEDTASalt)); %[moles]
             
             
-            this.fDibasicPotassiumPhosphateConc = (fDibasicPotassiumPhosphateMass / this.oMT.ttxMatter.(oMT.tsN2S.DibasicPotassiumPhosphate).fMolarMass) / (fMediumVolume*1000); %[moles/m3]
-            this.fDibasicPotassiumPhosphateMoles = fDibasicPotassiumPhosphateMass / this.oMT.ttxMatter.(oMT.tsN2S.DibasicPotassiumPhosphate).fMolarMass; %[moles]
+            this.fDibasicPotassiumPhosphateConc = (fDibasicPotassiumPhosphateMass / this.oMT.afMolarMass(this.oMT.tiN2I.(oMT.tsN2S.DibasicPotassiumPhosphate))) / (fMediumVolume*1000); %[moles/m3]
+            this.fDibasicPotassiumPhosphateMoles = fDibasicPotassiumPhosphateMass / this.oMT.afMolarMass(this.oMT.tiN2I.(oMT.tsN2S.DibasicPotassiumPhosphate)); %[moles]
             
-            this.fMonobasicPotassiumPhosphateConc = (fMonobasicPotassiumPhosphateMass / this.oMT.ttxMatter.(oMT.tsN2S.MonobasicPotassiumPhosphate).fMolarMass) / (fMediumVolume*1000); %[moles/m3]
-            this.fMonobasicPotassiumPhosphateMoles = fMonobasicPotassiumPhosphateMass / this.oMT.ttxMatter.(oMT.tsN2S.MonobasicPotassiumPhosphate).fMolarMass; %[moles]
+            this.fMonobasicPotassiumPhosphateConc = (fMonobasicPotassiumPhosphateMass / this.oMT.afMolarMass(this.oMT.tiN2I.(oMT.tsN2S.MonobasicPotassiumPhosphate))) / (fMediumVolume*1000); %[moles/m3]
+            this.fMonobasicPotassiumPhosphateMoles = fMonobasicPotassiumPhosphateMass / this.oMT.afMolarMass(this.oMT.tiN2I.(oMT.tsN2S.MonobasicPotassiumPhosphate)); %[moles]
             
-            this.fKOHConc = (fPotassiumHydroxideMass / this.oMT.ttxMatter.KOH.fMolarMass) / (fMediumVolume*1000); %[moles/m3]
-            this.fKOHMoles = (fPotassiumHydroxideMass / this.oMT.ttxMatter.KOH.fMolarMass); %[moles]
+            this.fKOHConc = (fPotassiumHydroxideMass / this.oMT.afMolarMass(this.oMT.tiN2I.KOH)) / (fMediumVolume*1000); %[moles/m3]
+            this.fKOHMoles = (fPotassiumHydroxideMass / this.oMT.afMolarMass(this.oMT.tiN2I.KOH)); %[moles]
             
-            this.fSodiumNitrateConc = (fSodiumNitrateMass / this.oMT.ttxMatter.(oMT.tsN2S.SodiumNitrate).fMolarMass) / (fMediumVolume*1000); %[moles/m3]
-            this.fSodiumNitrateMoles = fSodiumNitrateMass / this.oMT.ttxMatter.(oMT.tsN2S.SodiumNitrate).fMolarMass; %[moles]
+            this.fSodiumNitrateConc = (fSodiumNitrateMass / this.oMT.afMolarMass(this.oMT.tiN2I.(oMT.tsN2S.SodiumNitrate))) / (fMediumVolume*1000); %[moles/m3]
+            this.fSodiumNitrateMoles = fSodiumNitrateMass / this.oMT.afMolarMass(this.oMT.tiN2I.(oMT.tsN2S.SodiumNitrate)); %[moles]
             
             this.tfBBMComposition = struct('H2O', fWaterMass + fWaterInConcentrateMass,...
                 'C10H14N2O8', this.fDisodiumEDTASaltMoles * this.oMT.afMolarMass(oMT.tiN2I.C10H14N2O8),...

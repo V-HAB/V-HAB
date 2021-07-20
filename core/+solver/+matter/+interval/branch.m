@@ -34,8 +34,8 @@ classdef branch < solver.matter.base.branch
             % Registering the solver with the timer provides a function as
             % output that can be used to bind the post tick update in a
             % tick resulting in the post tick calculation to be executed
-            this.hBindPostTickUpdate      = this.oBranch.oTimer.registerPostTick(@this.update, 'matter' , 'solver');
-            this.hBindPostTickTimeStepCalculation = this.oBranch.oTimer.registerPostTick(@this.calculateTimeStep,      'post_physics' , 'timestep');
+            this.hBindPostTickUpdate = this.oBranch.oTimer.registerPostTick(@this.update, 'matter', 'solver');
+            this.hBindPostTickTimeStepCalculation = this.oBranch.oTimer.registerPostTick(@this.calculateTimeStep, 'post_physics', 'timestep');
             
             % Sets the flow rate to 0 which sets matter properties
             this.update();
@@ -181,7 +181,7 @@ classdef branch < solver.matter.base.branch
                 fFlowRate   = iDir * fFlowRate;
                 afDeltaP    = mfData(:, 1);
                 return
-            elseif any(isinf(mfData(mfData>0)))
+            elseif any(isinf(mfData))
                 % an infinite pressure drop occurs e.g. if a valve closes
                 % to ensure that nothing flows through. Therefore, do not
                 % iterate but simply set flowrate to 0
@@ -206,6 +206,16 @@ classdef branch < solver.matter.base.branch
 
                         [fSecondError, ~, ~, ~] = this.calculatePressureDrops(iDir, fSecondFlowRate, fPressureDifference);
                         
+                        if isinf(fSecondError)
+                            % Catch the case if checkvalves are used, which
+                            % can set a inf pressure drop for zero flow due
+                            % to the fact that they would otherwise always
+                            % open after beeing closed
+                            fSecondFlowRate = iDir * 1e-12;
+
+                            [fSecondError, ~, ~, ~] = this.calculatePressureDrops(iDir, fSecondFlowRate, fPressureDifference);
+                            
+                        end
                     elseif sign(fPressureDifference + fPressureRise) ~= sign(iDir)
                         % in this case the possible solution is at the
                         % opposite flow direction than the initial guess
@@ -314,7 +324,7 @@ classdef branch < solver.matter.base.branch
                 fPressureRise   =  sum(mfData(mfData < 0));
             end
             fPressureDrop   =  sum(mfData(mfData > 0));
-            fError          =  abs(fPressureDifference + fPressureRise) - abs(fPressureDrop);
+            fError          =  abs(fPressureDifference - fPressureRise) - abs(fPressureDrop);
         end
         
         function [fTimeStep] = calculateTimeStep(this, fFlowRate, afDeltaP)

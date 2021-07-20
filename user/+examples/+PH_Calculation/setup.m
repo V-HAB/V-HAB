@@ -25,7 +25,7 @@ classdef setup < simulation.infrastructure
             
             % Setting the simulation duration to one hour. Time is always
             % in units of seconds in V-HAB.
-            this.fSimTime = 10*3600;
+            this.fSimTime = 12000;
             
         end
         
@@ -36,11 +36,12 @@ classdef setup < simulation.infrastructure
             oLogger = this.toMonitors.oLogger;
 
             % Adding the tank temperatures to the log
-            oLogger.addValue('Example:s:Tank_1:p:Water.toManips.substance.oChemicalReactions', 'fCurrentTotalPhosphate',                        'kg/m^3', 'Concentration Phosphate');
-            oLogger.addValue('Example:s:Tank_1:p:Water.toManips.substance.oChemicalReactions', 'mfCurrentConcentrationAll(this.oMT.tiN2I.OH)',  'kg/m^3', 'Concentration OH-');
-            oLogger.addValue('Example:s:Tank_1:p:Water.toManips.substance.oChemicalReactions', 'mfCurrentConcentrationAll(this.oMT.tiN2I.Naplus)',   'kg/m^3', 'Concentration Naplus');
-            oLogger.addValue('Example:s:Tank_1:p:Water.toManips.substance.oChemicalReactions', 'fCurrentCalculatedPH',                          '-',     'PH');
-            oLogger.addValue('Example:s:Tank_1:p:Water.toManips.substance.oChemicalReactions', 'fCurrentVolume',                                'm^3',   'Volume');
+            
+            oLogger.addValue('Example:s:Tank_1:p:Water.toManips.substance', 'this.afConcentrations(this.oMT.tiN2I.(this.oMT.tsN2S.PhosphoricAcid))	+ this.afConcentrations(this.oMT.tiN2I.(this.oMT.tsN2S.DihydrogenPhosphate)) + this.afConcentrations(this.oMT.tiN2I.(this.oMT.tsN2S.HydrogenPhosphate))	+ this.afConcentrations(this.oMT.tiN2I.(this.oMT.tsN2S.Phosphate))',                        'mol/m^3', 'Concentration Phosphate');
+            oLogger.addValue('Example:s:Tank_1:p:Water.toManips.substance', 'afConcentrations(this.oMT.tiN2I.OH)',      'mol/m^3', 'Concentration OH-');
+            oLogger.addValue('Example:s:Tank_1:p:Water.toManips.substance', 'afConcentrations(this.oMT.tiN2I.Naplus)', 	'mol/m^3', 'Concentration Naplus');
+            oLogger.addValue('Example:s:Tank_1:p:Water.toManips.substance', 'fpH',                                      '-',     'PH');
+            oLogger.addValue('Example:s:Tank_1:p:Water', 'fVolume',                                'm^3',   'Volume');
             
             oLogger.addVirtualValue('"Concentration Naplus" ./ "Concentration Phosphate"', '-', 'OH- to Phosphate');
         end
@@ -67,7 +68,14 @@ classdef setup < simulation.infrastructure
              %% Get Test Data:
              % Data is from "Allgemeine und Anorganische Chemie", 3rd
              % Edition, Michael Binnewies, Maik Finze, Manfred Jäckel, Peer
-             % Schmidt, Helge Willner, Geoff Rayner-Canham page 262
+             % Schmidt, Helge Willner, Geoff Rayner-Canham page 262 Note
+             % that in that source there is also a comparison between the
+             % calculated and measured pH values which shows similar
+             % deviations than the V-HAB calculation (abb 10.8 on page 265)
+             %
+             % It is also mentioned that a third buffer point occurs above
+             % a pH of 12, which can be observed in this simulation if the
+             % simulation time is increased
             iFileID = fopen(strrep('+examples/+PH_Calculation/Titration_Curve.csv','/',filesep), 'r');
             
             [FilePath,~,~,~] = fopen(iFileID);
@@ -100,6 +108,7 @@ classdef setup < simulation.infrastructure
             xlabel('n(OH-)/n(H3PO4)');
             ylabel('PH in [-]');
             hold on
+            mfOHtoPhosphate = mfOHtoPhosphate(1:length(mfPH));
             plot(mfOHtoPhosphate, mfPH);
             legend('Literature', 'V-HAB')
             

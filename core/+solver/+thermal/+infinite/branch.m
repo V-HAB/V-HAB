@@ -38,14 +38,14 @@ classdef branch < solver.thermal.base.branch
             % branch will be calculated to have both capacities change
             % their temperature by the same amount per second.
             fExmeHeatFlowLeft = 0;
-            for iExme = 1:length(oCapacityLeft.aoExmes)
+            for iExme = 1:oCapacityLeft.iProcsEXME
                 if oCapacityLeft.aoExmes(iExme) ~= this.oBranch.coExmes{1}
                     fExmeHeatFlowLeft = fExmeHeatFlowLeft + (oCapacityLeft.aoExmes(iExme).iSign * oCapacityLeft.aoExmes(iExme).fHeatFlow);
                 end
             end
             
             fExmeHeatFlowRight = 0;
-            for iExme = 1:length(oCapacityRight.aoExmes)
+            for iExme = 1:oCapacityRight.iProcsEXME
                 if oCapacityRight.aoExmes(iExme) ~= this.oBranch.coExmes{2}
                     fExmeHeatFlowRight = fExmeHeatFlowRight + (oCapacityRight.aoExmes(iExme).iSign * oCapacityRight.aoExmes(iExme).fHeatFlow);
                 end
@@ -109,15 +109,15 @@ classdef branch < solver.thermal.base.branch
             % ensure that not both capacities are flow capacities, as that
             % would break the calculation
             if bFlow && oNormalCapacity.oPhase.bFlow
-                error('it is not possible to use an infinite conduction solver with two flow capacities! Currently both %s and %s are flow capacities', oCapacityLeft.sName, oCapacityRight.sName)
+                error('It is not possible to use an infinite conduction solver with two flow capacities! Currently both %s and %s are flow capacities', oCapacityLeft.sName, oCapacityRight.sName)
             end
             
             if bBoundary && oNormalCapacity.oPhase.bBoundary
-                error('it is not possible to use an infinite conduction solver with two boundary capacities! Currently both %s and %s are boundary capacities', oCapacityLeft.sName, oCapacityRight.sName)
+                error('It is not possible to use an infinite conduction solver with two boundary capacities! Currently both %s and %s are boundary capacities', oCapacityLeft.sName, oCapacityRight.sName)
             end
             
             if bBoundary && bFlow
-                error('it is currently not possible to use an infinite conduction solver with a boundary  and a flow capacity! Currently both %s and %s are either flow orboundary capacities', oCapacityLeft.sName, oCapacityRight.sName)
+                error('It is currently not possible to use an infinite conduction solver with a boundary and a flow capacity! Currently both %s and %s are either flow or boundary capacities', oCapacityLeft.sName, oCapacityRight.sName)
             end
             
             if bFlow
@@ -134,13 +134,37 @@ classdef branch < solver.thermal.base.branch
                 % the different mass flows entering the flow phase
                 mfFlowRate              = zeros(1,oFlowCapacity.iProcsEXME);
                 mfSpecificHeatCapacity  = zeros(1,oFlowCapacity.iProcsEXME);
+                mfTemperature           = zeros(1,oFlowCapacity.iProcsEXME);
+                
                 for iExme = 1:oFlowCapacity.iProcsEXME
                     if isa(oFlowCapacity.aoExmes(iExme).oBranch.oHandler, 'solver.thermal.basic_fluidic.branch')
-                        fFlowRate = oFlowCapacity.aoExmes(iExme).oBranch.coConductors{1}.oMassBranch.fFlowRate * oFlowCapacity.oPhase.toProcsEXME.(oFlowCapacity.aoExmes(iExme).sName).iSign;
+                        iExMeSign = oFlowCapacity.aoExmes(iExme).iSign;
+                        fFlowRate = oFlowCapacity.aoExmes(iExme).oBranch.oMatterObject.fFlowRate * iExMeSign;
                         
                         if fFlowRate > 0
                             mfFlowRate(iExme) = fFlowRate;
-                            mfSpecificHeatCapacity(iExme) = oFlowCapacity.oPhase.toProcsEXME.(oFlowCapacity.aoExmes(iExme).sName).oFlow.fSpecificHeatCapacity;
+                            oMatterObject = oFlowCapacity.aoExmes(iExme).oBranch.oMatterObject;
+                            try
+                                iBranchSign = sign(oMatterObject.fFlowRate);
+                                if iBranchSign * iExMeSign < 0
+                                    mfSpecificHeatCapacity(iExme) = oMatterObject.aoFlows(1).fSpecificHeatCapacity;
+                                    mfTemperature(iExme)          = oMatterObject.aoFlows(1).fTemperature;
+                                else
+                                    mfSpecificHeatCapacity(iExme) = oMatterObject.aoFlows(end).fSpecificHeatCapacity;
+                                    mfTemperature(iExme)          = oMatterObject.aoFlows(end).fTemperature;
+                                end
+                            catch oFirstError
+                                try
+                                    mfSpecificHeatCapacity(iExme) = oMatterObject.fSpecificHeatCapacity;
+                                    mfTemperature(iExme)          = oMatterObject.fTemperature;
+                                catch oSecondError
+                                    if strcmp(oFirstError.identifier, 'MATLAB:noSuchMethodOrField')
+                                        rethrow(oSecondError);
+                                    else
+                                        rethrow(oFirstError);
+                                    end
+                                end
+                            end
                         end
                     end
                 end
@@ -148,6 +172,11 @@ classdef branch < solver.thermal.base.branch
                 % sum it up to get the total heat capacity flow of the flow
                 % phase
                 fOverallHeatCapacityFlow = sum(mfFlowRate .* mfSpecificHeatCapacity);
+                fFlowTemperature = sum(mfFlowRate .* mfSpecificHeatCapacity .* mfTemperature) ./ fOverallHeatCapacityFlow;
+                
+                if isnan(fFlowTemperature)
+                    fFlowTemperature = oNormalCapacity.fTemperature;
+                end
                 
                 % now we can calculate what the required heat flow is to
                 % enter the flow capacity so that it has the same
@@ -156,7 +185,7 @@ classdef branch < solver.thermal.base.branch
                 % impact of the temperatures of the flows entering the flow
                 % capacity because these are already considered as heat
                 % flows for the corresponding thermal exmes
-                fRequiredFlowHeatFlow = (oNormalCapacity.fTemperature - oFlowCapacity.fTemperature) * fOverallHeatCapacityFlow;
+                fRequiredFlowHeatFlow = (oNormalCapacity.fTemperature - fFlowTemperature) * fOverallHeatCapacityFlow;
                 
                 % if the flow phase is on the left side we subtract the
                 % current heat flow of the left side from the required heat
@@ -168,9 +197,9 @@ classdef branch < solver.thermal.base.branch
                 % the calculation is analogous but with a different sign
                 % and using the current right side heat flow
                 if bLeftFlow
-                    fHeatFlow = -(fRequiredFlowHeatFlow - fCurrentHeatFlowLeft);
+                    fHeatFlow = -(fRequiredFlowHeatFlow);
                 else
-                    fHeatFlow = fRequiredFlowHeatFlow - fCurrentHeatFlowRight;
+                    fHeatFlow = fRequiredFlowHeatFlow;
                 end
                 
             elseif bBoundary

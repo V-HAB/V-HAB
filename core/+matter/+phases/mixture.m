@@ -15,6 +15,28 @@ classdef mixture < matter.phase
         % Actual phase type of the matter in the phase, e.g. 'liquid',
         % 'solid' or 'gas'.
         sPhaseType;
+        
+        % The initial pressure from the phase definition is stored, for
+        % cases where no volume manips are used an no fast pressure
+        % calculation exists. For those cases the pressure is assumed to be
+        % constant
+        fInitialPressure;
+        
+        bGasPhase = false;
+    end
+    
+    properties (Dependent)
+        % Partial pressures [Pa]
+        afPP;
+        
+        % Relative humidity in the phase
+        rRelHumidity;
+    
+        % Substance concentrations in ppm. This is a dependent property because it is
+        % only calculated on demand because it should rarely be used. if
+        % the property is used often, making it not a dependent property or
+        % providing a faster calculation option is suggested
+        afPartsPerMillion;
     end
     
     methods
@@ -46,8 +68,12 @@ classdef mixture < matter.phase
             this@matter.phase(oStore, sName, tfMasses, fTemperature);
             
             this.sPhaseType = sPhaseType;
+            this.fInitialPressure = fPressure;
             if strcmp(this.sPhaseType, 'gas')
-                this.fMassToPressure = this.oMT.Const.fUniversalGas * this.fTemperature / (this.fMolarMass * this.fVolume);
+                this.bGasPhase = true;
+            end
+            if this.fMass == 0
+                this.fMassToPressure = 0;
             else
                 this.fMassToPressure = fPressure / this.fMass;
             end
@@ -55,6 +81,38 @@ classdef mixture < matter.phase
             this.fVolume = this.fMass / this.fDensity;
             
             this.bMixture = true;
+        end
+        
+        
+        function afPP = get.afPP(this)
+            if ~this.bGasPhase
+                error('phase:mixture:invalidAccessPartialPressures', 'you are trying to access a gas property in a mixture phase that is not set a gas type!')
+            end
+            afPP               = this.oMT.calculatePartialPressures(this);
+        end
+        
+        function rRelHumidity = get.rRelHumidity(this)
+            if ~this.bGasPhase
+                error('phase:mixture:invalidAccessHumidity', 'you are trying to access a gas property in a mixture phase that is not set a gas type!')
+            end
+            % Check if there is water in here at all
+            if this.afPP(this.oMT.tiN2I.H2O)
+                % calculate saturation vapour pressure [Pa];
+                fSaturationVapourPressure = this.oMT.calculateVaporPressure(this.fTemperature, 'H2O');
+                % calculate relative humidity
+                rRelHumidity = this.afPP(this.oMT.tiN2I.H2O) / fSaturationVapourPressure;
+            else
+                rRelHumidity = 0;
+            end
+        end
+        function afPartsPerMillion = get.afPartsPerMillion(this)
+            % Calculates the PPM value on demand.
+            % Made this a dependent variable to reduce the computational
+            % load during run-time since the value is rarely used. 
+            if ~this.bGasPhase
+                error('phase:mixture:invalidAccessPartsPerMillion', 'you are trying to access a gas property in a mixture phase that is not set a gas type!')
+            end
+            afPartsPerMillion = this.oMT.calculatePartsPerMillion(this);
         end
     end
     
@@ -69,15 +127,34 @@ classdef mixture < matter.phase
             this.fDensity = this.fMass / this.fVolume;
             
             if strcmp(this.sPhaseType, 'gas')
-                this.fMassToPressure = this.oMT.calculatePressure(this) / this.fMass;
+                if this.fMass == 0
+                    this.fMassToPressur = 0;
+                else
+                    this.fMassToPressure = this.oMT.calculatePressure(this) / this.fMass;
+                end
             end
         end
         
         function fPressure = get_fPressure(this)
             %% get_fPressure
-            % for mixtures we do not want to include the mass change between
-            % updates as a pressure change
-            fPressure = this.fMassToPressure * this.fMass;
+            % defines how to calculate the dependent fPressure property.
+            % Can be overloaded by child classes which require a different
+            % calculation (e.g. flow phases)
+            if this.iVolumeManipulators == 0
+                % In this case no volume manipulator is present at all, for
+                % this case we assume the initial pressure of the liquid to
+                % remain constant
+                fPressure = this.fInitialPressure;
+                
+            else
+                if this.toManips.volume.bCompressible
+                    fMassSinceUpdate = this.fCurrentTotalMassInOut * (this.oStore.oTimer.fTime - this.fLastMassUpdate);
+
+                    fPressure = this.fMassToPressure * (this.fMass + fMassSinceUpdate);
+                else
+                    fPressure = this.toManips.volume.oCompressibleManip.oPhase.fPressure;
+                end
+            end
         end
     end
 end

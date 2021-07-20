@@ -36,7 +36,7 @@ end
 % this function.
 if strcmp(sMatterState, 'gas')
     if tbReference.bNone
-        fPressure = varargin{4};
+        fPressure = sum(varargin{4});
         fMolarMass = sum(arPartialMass .* this.afMolarMass);
     else
         fPressure = varargin{1}.fPressure;

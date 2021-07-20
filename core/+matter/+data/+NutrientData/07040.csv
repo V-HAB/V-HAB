@@ -1,0 +1,87 @@
+Source: USDA National Nutrient Database for Standard Reference 1 April 2018 Software v.3.9.5.3_2019-06-13
+Full Report (All Nutrients)
+Report Run at: September 05 2019 08:27 EDT
+"Nutrient data for: Liver cheese, pork"
+Food Group:  Sausages and Luncheon Meats
+Common Name:
+Carbohydrate Factor: Fat Factor: Protein Factor: Nitrogen to Protein Conversion Factor: 
+Nutrient,Unit,1Value per 100 g,Data points,Std. Error,"1 oz = 28.35g","1 slice = 38.0g",
+Proximates
+"Water",g,53.60,7,0.260,15.20,20.37
+"Energy",kcal,304,--,--,86,116
+"Energy",kJ,1272,--,--,361,483
+"Protein",g,15.20,7,0.110,4.31,5.78
+"Total lipid (fat)",g,25.60,7,0.640,7.26,9.73
+"Ash",g,3.50,7,0.020,0.99,1.33
+"Carbohydrate, by difference",g,2.10,--,--,0.60,0.80
+"Fiber, total dietary",g,0.0,--,--,0.0,0.0
+Minerals
+"Calcium, Ca",mg,8,6,0.000,2,3
+"Iron, Fe",mg,10.83,6,0.680,3.07,4.12
+"Magnesium, Mg",mg,12,6,0.000,3,5
+"Phosphorus, P",mg,207,6,16.000,59,79
+"Potassium, K",mg,226,6,11.000,64,86
+"Sodium, Na",mg,1225,6,40.000,347,466
+"Zinc, Zn",mg,3.70,6,0.230,1.05,1.41
+"Copper, Cu",mg,0.383,6,0.060,0.109,0.146
+"Manganese, Mn",mg,0.200,6,0.014,0.057,0.076
+"Selenium, Se",µg,36.5,--,--,10.3,13.9
+Vitamins
+"Vitamin C, total ascorbic acid",mg,3.0,7,1.200,0.9,1.1
+"Thiamin",mg,0.212,6,0.005,0.060,0.081
+"Riboflavin",mg,2.227,6,0.078,0.631,0.846
+"Niacin",mg,11.768,6,1.510,3.336,4.472
+"Pantothenic acid",mg,3.536,5,0.068,1.002,1.344
+"Vitamin B-6",mg,0.470,6,0.084,0.133,0.179
+"Folate, total",µg,104,1,--,29,40
+"Folic acid",µg,0,--,--,0,0
+"Folate, food",µg,104,1,--,29,40
+"Folate, DFE",µg,104,--,--,29,40
+"Vitamin B-12",µg,24.55,6,1.110,6.96,9.33
+"Vitamin A, RAE",µg,5252,6,122.000,1489,1996
+"Retinol",µg,5252,6,122.000,1489,1996
+"Vitamin A, IU",IU,17490,6,408.000,4958,6646
+Lipids
+"Fatty acids, total saturated",g,8.960,--,--,2.540,3.405
+"4:0",g,0.000,7,--,0.000,0.000
+"6:0",g,0.000,7,--,0.000,0.000
+"8:0",g,0.000,7,--,0.000,0.000
+"10:0",g,0.050,7,--,0.014,0.019
+"12:0",g,0.040,7,--,0.011,0.015
+"14:0",g,0.320,7,--,0.091,0.122
+"16:0",g,5.510,7,--,1.562,2.094
+"18:0",g,3.040,7,--,0.862,1.155
+"Fatty acids, total monounsaturated",g,12.260,--,--,3.476,4.659
+"16:1 undifferentiated",g,0.940,7,--,0.266,0.357
+"18:1 undifferentiated",g,11.320,7,--,3.209,4.302
+"20:1",g,0.000,7,--,0.000,0.000
+"22:1 undifferentiated",g,0.000,7,--,0.000,0.000
+"Fatty acids, total polyunsaturated",g,3.420,--,--,0.970,1.300
+"18:2 undifferentiated",g,3.090,7,--,0.876,1.174
+"18:3 undifferentiated",g,0.330,7,--,0.094,0.125
+"18:4",g,0.000,7,--,0.000,0.000
+"20:4 undifferentiated",g,0.000,7,--,0.000,0.000
+"20:5 n-3 (EPA)",g,0.000,7,--,0.000,0.000
+"22:5 n-3 (DPA)",g,0.000,7,0.000,0.000,0.000
+"22:6 n-3 (DHA)",g,0.000,7,--,0.000,0.000
+"Cholesterol",mg,174,5,21.000,49,66
+Amino Acids
+"Tryptophan",g,0.206,--,--,0.058,0.078
+"Threonine",g,0.651,--,--,0.185,0.247
+"Isoleucine",g,0.631,--,--,0.179,0.240
+"Leucine",g,1.331,--,--,0.377,0.506
+"Lysine",g,1.178,--,--,0.334,0.448
+"Methionine",g,0.342,--,--,0.097,0.130
+"Cystine",g,0.328,--,--,0.093,0.125
+"Phenylalanine",g,0.716,--,--,0.203,0.272
+"Tyrosine",g,0.466,--,--,0.132,0.177
+"Valine",g,0.806,--,--,0.229,0.306
+"Arginine",g,0.828,--,--,0.235,0.315
+"Histidine",g,0.393,--,--,0.111,0.149
+"Alanine",g,0.930,--,--,0.264,0.353
+"Aspartic acid",g,1.350,--,--,0.383,0.513
+"Glutamic acid",g,1.834,--,--,0.520,0.697
+"Glycine",g,0.935,--,--,0.265,0.355
+"Proline",g,0.716,--,--,0.203,0.272
+"Serine",g,0.690,--,--,0.196,0.262
+Other

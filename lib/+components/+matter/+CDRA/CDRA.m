@@ -67,7 +67,11 @@ classdef CDRA < vsys
         % constructor for more information on what field can be set!
         tInitializationOverwrite;
         
+        fCurrentPowerConsumption = 0;
         
+        % Array to store the branches that shall use the multi branch
+        % solver will be stored in
+        aoThermalMultiSolverBranches;
     end
     
     properties (SetAccess = protected, GetAccess = public)
@@ -81,8 +85,11 @@ classdef CDRA < vsys
     end
     
     methods
-        function this = CDRA(oParent, sName, tAtmosphere, tInitializationOverwrite)
-            this@vsys(oParent, sName, 10);
+        function this = CDRA(oParent, sName, tAtmosphere, tInitializationOverwrite, fTimeStep)
+            if nargin < 5
+                fTimeStep = 60;
+            end
+            this@vsys(oParent, sName, fTimeStep);
             
             if isempty(tAtmosphere)
                 this.tAtmosphere.fTemperature = this.oMT.Standard.Temperature;
@@ -129,7 +136,7 @@ classdef CDRA < vsys
             
             % Length for the individual filter material within CDRA
             % according to ICES-2014-160
-            this.tGeometry.Zeolite5A.fLength         =  16.68        *2.54/100;
+            this.tGeometry.Zeolite5A.fLength         =  18.68        *2.54/100;
             this.tGeometry.Sylobead.fLength          =  6.13         *2.54/100;
             this.tGeometry.Zeolite13x.fLength        = (5.881+0.84)  *2.54/100;
             
@@ -138,8 +145,7 @@ classdef CDRA < vsys
             this.tGeometry.Zeolite5A.rVoidFraction       = 0.445;
             this.tGeometry.Sylobead.rVoidFraction        = 0.348;
             
-            % From ICES-2015-160, divided with 2 as the values are given
-            % for the complete 4 BMS
+            % From ICES-2015-160 Table 1. Values from the table are per bed
             fMassZeolite13x     = 5.164;
             fMassSylobead       = 5.38; % + 0.632WS
             fMassZeolite5A      = 12.383;
@@ -147,10 +153,6 @@ classdef CDRA < vsys
             this.tGeometry.Zeolite13x.fAbsorberVolume        =   this.oMT.calculateDensity('solid', struct('Zeolite13x', 1))        * fMassZeolite13x;
             this.tGeometry.Sylobead.fAbsorberVolume          =   this.oMT.calculateDensity('solid', struct('Sylobead_B125', 1))     * fMassSylobead;
             this.tGeometry.Zeolite5A.fAbsorberVolume         =   this.oMT.calculateDensity('solid', struct('Zeolite5A', 1))         * fMassZeolite5A;
-            
-%             this.tGeometry.Zeolite13x.fAbsorberVolume        =   (1-this.tGeometry.Zeolite13x.rVoidFraction)        * fCrossSection * this.tGeometry.Zeolite13x.fLength;
-%             this.tGeometry.Sylobead.fAbsorberVolume          =   (1-this.tGeometry.Sylobead.rVoidFraction)          * fCrossSection * this.tGeometry.Sylobead.fLength;
-%             this.tGeometry.Zeolite5A.fAbsorberVolume         =   (1-this.tGeometry.Zeolite5A.rVoidFraction)         * fCrossSection * this.tGeometry.Zeolite5A.fLength;
             
             % These are the correct estimates for the flow volumes of each
             % bed which are used in the filter adsorber proc for
@@ -238,16 +240,21 @@ classdef CDRA < vsys
             % cell number during the simulation. The adsorbed in the
             % calculation can be reduced since it is both in the
             % denominator and numerator
-            fLoadingFirstCell13x        = (0.16 * 5) / tInitialization.Zeolite13x.iCellNumber;
+            fLoadingFirstCell13x            = 5e-3 / tInitialization.Zeolite13x.iCellNumber;
             tStandardInit.Zeolite13x.mfInitialH2O          = fLoadingFirstCell13x : -fLoadingFirstCell13x/(tInitialization.Zeolite13x.iCellNumber - 1) : 0;
            	
-            fLoadingFirstCellSylobeadAbsorb = (0.28 * 5) / tInitialization.Sylobead.iCellNumber;
+            fLoadingFirstCellSylobeadAbsorb = 0.6 / tInitialization.Sylobead.iCellNumber;
             tStandardInit.Sylobead.mfInitialH2OAbsorb         = fLoadingFirstCellSylobeadAbsorb : -fLoadingFirstCellSylobeadAbsorb/(tInitialization.Sylobead.iCellNumber - 1) : 0;
             
-            fLoadingFirstCellSylobeadDesorb = (0.05 * 5) / tInitialization.Sylobead.iCellNumber;
+            fLoadingFirstCellSylobeadDesorb = 0.01 / tInitialization.Sylobead.iCellNumber;
             tStandardInit.Sylobead.mfInitialH2ODesorb         = fLoadingFirstCellSylobeadDesorb : -fLoadingFirstCellSylobeadDesorb/(tInitialization.Sylobead.iCellNumber - 1) : 0;
             
-        	tStandardInit.Zeolite5A.mfInitialH2O              = zeros(tInitialization.Zeolite5A.iCellNumber,1);
+%            tStandardInit.Zeolite13x.mfInitialH2O           = zeros(tInitialization.Zeolite13x.iCellNumber,1);
+%            tStandardInit.Sylobead.mfInitialH2OAbsorb     	= zeros(tInitialization.Sylobead.iCellNumber,1);
+%            tStandardInit.Sylobead.mfInitialH2ODesorb       = zeros(tInitialization.Sylobead.iCellNumber,1);
+
+            tStandardInit.Zeolite5A.mfInitialH2O            = zeros(tInitialization.Zeolite5A.iCellNumber,1);
+
             
             csTypes = {'Zeolite13x', 'Sylobead', 'Zeolite5A'};
             % Check whether the standard definition for the initial masses
@@ -279,9 +286,9 @@ classdef CDRA < vsys
             
             % this factor times the mass flow^2 will decide the pressure
             % loss.
-            this.tGeometry.Zeolite13x.mfFrictionFactor  = 1e8   /tInitialization.Zeolite13x.iCellNumber * ones(tInitialization.Zeolite13x.iCellNumber,1);
-            this.tGeometry.Sylobead.mfFrictionFactor  	= 1e8   /tInitialization.Sylobead.iCellNumber   * ones(tInitialization.Sylobead.iCellNumber,1);
-            this.tGeometry.Zeolite5A.mfFrictionFactor   = 1e9   /tInitialization.Zeolite5A.iCellNumber  * ones(tInitialization.Zeolite5A.iCellNumber,1);
+            this.tGeometry.Zeolite13x.mfFrictionFactor  = 1e7   /tInitialization.Zeolite13x.iCellNumber * ones(tInitialization.Zeolite13x.iCellNumber,1);
+            this.tGeometry.Sylobead.mfFrictionFactor  	= 1e7   /tInitialization.Sylobead.iCellNumber   * ones(tInitialization.Sylobead.iCellNumber,1);
+            this.tGeometry.Zeolite5A.mfFrictionFactor   = 1e8   /tInitialization.Zeolite5A.iCellNumber  * ones(tInitialization.Zeolite5A.iCellNumber,1);
             
             % The surface area is required to calculate the thermal
             % exchange between the absorber and the gas flow. It is
@@ -439,6 +446,11 @@ classdef CDRA < vsys
                                 oFlowPhase =  matter.phases.flow.gas(this.toStores.(sName), ['Flow_',num2str(iCell)], tfMassesFlow,(fFlowVolume/iCellNumber), this.TargetTemperature);
                             end
                         end
+                        % The absorber material thermal handling uses a
+                        % multi branch solver to allow for larger time
+                        % steps
+                        % oFilterPhase.makeThermalNetworkNode();
+                        
                         % An individual orption and desorption Exme and P2P is
                         % required because it is possible that a few substances are
                         % beeing desorbed at the same time as others are beeing
@@ -578,8 +590,8 @@ classdef CDRA < vsys
             this.tMassNetwork.InternalBranches_Sylobead_2(end+1) = oBranch;
             
             % Interface between 13x and 5A zeolite absorber beds
-            components.matter.Temp_Dummy(this, 'PreCooler_5A1', 285, 1000);
-            components.matter.Temp_Dummy(this, 'PreCooler_5A2', 285, 1000);
+            components.matter.Temp_Dummy(this, 'PreCooler_5A1', 281, 1000);
+            components.matter.Temp_Dummy(this, 'PreCooler_5A2', 281, 1000);
             components.matter.valve(this, 'Valve_13x1_to_5A_1', 0);
             components.matter.valve(this, 'Valve_13x2_to_5A_2', 0);
             components.matter.pipe(this, 'Pipe_13x1_to_5A_1', fPipelength, fPipeDiameter, fFrictionFactor);
@@ -680,6 +692,9 @@ classdef CDRA < vsys
             mfConductivity(2) = this.oMT.ttxMatter.Sylobead_B125.ttxPhases.tSolid.ThermalConductivity;
             mfConductivity(3) = this.oMT.ttxMatter.Zeolite5A_RK38.ttxPhases.tSolid.ThermalConductivity;
             
+            iMultiSolverBranch = 1;
+            this.aoThermalMultiSolverBranches = thermal.branch.empty();
+            
             for iType = 1:3
                 
                 iCellNumber             = this.tGeometry.(csTypes{iType}).iCellNumber;
@@ -707,7 +722,7 @@ classdef CDRA < vsys
                         thermal.procs.exme(oAbsorberPhase.oCapacity,  ['Solid_InfiniteConductor_', num2str(iCell)]);
                         thermal.procs.exme(oFlowPhase.oCapacity,    ['Flow_InfiniteConductor_', num2str(iCell)]);
                         thermal.branch(this, [sName,'.Flow_InfiniteConductor_', num2str(iCell)], {}, [sName,'.Solid_InfiniteConductor_', num2str(iCell)], [sName, '_Infinite_Conductor', num2str(iCell)]);
-                                               
+                                            
                     end
                     
                     for iCell = 1:iCellNumber-1
@@ -722,7 +737,8 @@ classdef CDRA < vsys
                         sConductorName = [sName, '_Material_Conductor_', num2str(iCell), '_', num2str(iCell+1)];
                         thermal.procs.conductors.conductive(this, sConductorName, fMaterialResistivity);
                         
-                        thermal.branch(this, [sName,'.', sPort1], {sConductorName}, [sName,'.', sPort2], [sName, '_Conduction_Cell_', num2str(iCell), '_to_Cell_', num2str(iCell+1)]);
+                        this.aoThermalMultiSolverBranches(iMultiSolverBranch) = thermal.branch(this, [sName,'.', sPort1], {sConductorName}, [sName,'.', sPort2], [sName, '_Conduction_Cell_', num2str(iCell), '_to_Cell_', num2str(iCell+1)]);
+                        iMultiSolverBranch = iMultiSolverBranch + 1;
                     end
                 end
             end
@@ -736,31 +752,15 @@ classdef CDRA < vsys
             % bed specifically, which helps with debugging. Additional the
             % full system results in close to singular matrix, which might
             % lead to issues.
-            tSolverProperties.fMaxError = 1e-6;
-            tSolverProperties.iMaxIterations = 500;
+            tSolverProperties.fMaxError = 1e-4;
+            tSolverProperties.iMaxIterations = 1000;
             tSolverProperties.fMinimumTimeStep = 1;
             tSolverProperties.iIterationsBetweenP2PUpdate = 200;
-
-            oInterfacePhase = this.toBranches.CDRA_Vacuum.coExmes{2}.oPhase;
-            if oInterfacePhase.bFlow
-                % Check if a SCRA is located on the IF and if so add the
-                % branch to the multi branch solver
-                for iExme = 1:oInterfacePhase.iProcsEXME
-                    if oInterfacePhase.coProcsEXME{iExme} ~= this.toBranches.CDRA_Vacuum.coExmes{2}
-                        if isa(oInterfacePhase.coProcsEXME{iExme}.oFlow.oBranch.coExmes{1}.oPhase.oStore.oContainer, 'components.matter.SCRA.SCRA')
-                            aoSCRA_Branches = oInterfacePhase.coProcsEXME{iExme}.oFlow.oBranch.coExmes{1}.oPhase.oStore.oContainer.aoMultiSolverBranches;
-                            
-                            aoMultiSolverBranches = [this.aoBranches; aoSCRA_Branches];
-                        end
-                    end
-                end
-            else
-                aoMultiSolverBranches = this.aoBranches;
-            end
             
-                
-            oSolver = solver.matter_multibranch.iterative.branch(aoMultiSolverBranches, 'complex');
+            oSolver = solver.matter_multibranch.iterative.branch(this.aoBranches, 'complex');
             oSolver.setSolverProperties(tSolverProperties);
+            
+            solver.thermal.multi_branch.basic.branch(this.aoThermalMultiSolverBranches, this.fTimeStep);
             
             csStores = fieldnames(this.toStores);
             % sets numerical properties for the phases of CDRA
@@ -768,14 +768,35 @@ classdef CDRA < vsys
                 for iP = 1:length(this.toStores.(csStores{iS}).aoPhases)
                     oPhase = this.toStores.(csStores{iS}).aoPhases(iP);
                     if ~isempty(regexp(oPhase.sName, 'Absorber', 'once'))
+                        tTimeStepProperties = struct();
                         arMaxChange = zeros(1,this.oMT.iSubstances);
-                        arMaxChange(this.oMT.tiN2I.H2O) = 0.1;
-                        arMaxChange(this.oMT.tiN2I.CO2) = 0.1;
+                        arMaxChange(this.oMT.tiN2I.H2O) = 0.2;
+                        arMaxChange(this.oMT.tiN2I.CO2) = 0.2;
                         tTimeStepProperties.arMaxChange = arMaxChange;
                         tTimeStepProperties.rMaxChange = 0.1;
-                        tTimeStepProperties.fMaxStep = 60;
-                        tTimeStepProperties.fMinStep = 1e-4;
+                        tTimeStepProperties.fMaxStep = this.fTimeStep * 5;
+                        tTimeStepProperties.fMinStep = this.fTimeStep * 0.5;
                         
+                        oPhase.setTimeStepProperties(tTimeStepProperties);
+                        
+                        tTimeStepProperties = struct();
+                        tTimeStepProperties.fMaxStep = this.fTimeStep * 5;
+                        tTimeStepProperties.rMaxChange = 0.1;
+                        tTimeStepProperties.fMaxTemperatureChange = 10;
+                        tTimeStepProperties.fMinimumTemperatureForTimeStep = 275;
+                        oPhase.oCapacity.setTimeStepProperties(tTimeStepProperties);
+                        
+                        % The absorber phase/capacity updates also trigger a solver
+                        % update. The capacity is necessary because the
+                        % temperature influences the adsorption process and
+                        % otherwise unrealistically low temperatures are
+                        % possible
+                        oPhase.bind('update_post', @oSolver.registerUpdate);
+                        oPhase.oCapacity.bind('updateTemperature_post', @oSolver.registerUpdate);
+                        
+                    else
+                        tTimeStepProperties = struct();
+                        tTimeStepProperties.fMaxStep = this.fTimeStep * 5;
                         oPhase.setTimeStepProperties(tTimeStepProperties);
                     end
                 end
@@ -798,15 +819,16 @@ classdef CDRA < vsys
                 this.toProcsF2F.Valve_5A_2_Vacuum.setOpen(false);
             end
             
+            
             this.setThermalSolvers();
         end           
         
         %% Function to connect the system and subsystem level branches with each other
-        function setIfFlows(this, sInterface1, sInterface2, sInterface3)
+        function setIfFlows(this, CDRA_Air_In, CDRA_Air_Out, CDRA_Vacuum)
             if nargin == 4
-                this.connectIF('CDRA_Air_In' ,  sInterface1);
-                this.connectIF('CDRA_Air_Out',  sInterface2);
-                this.connectIF('CDRA_Vacuum',   sInterface3);
+                this.connectIF('CDRA_Air_In' ,  CDRA_Air_In);
+                this.connectIF('CDRA_Air_Out',  CDRA_Air_Out);
+                this.connectIF('CDRA_Vacuum',   CDRA_Vacuum);
             else
                 error('CDRA Subsystem was given a wrong number of interfaces')
             end
@@ -818,9 +840,12 @@ classdef CDRA < vsys
             end
         end
         
-        function setReferencePhase(this, oCabinPhase)
+        function setReferencePhase(this, oCabinPhase, iCDRA)
             this.oAtmosphere = oCabinPhase;
             
+            if nargin < 3
+                iCDRA = 1;
+            end
             % assumed heat transfer cooefficient between CDRA and
             % atmosphere: 0.195
             
@@ -862,7 +887,7 @@ classdef CDRA < vsys
                         % instances (the temperature of the absorber is
                         % then simply set to the same temperature as the
                         % flow)
-                        oAbsorberPhase      = this.toStores.(sName).toPhases.(['Absorber_',num2str(iCell)]);
+                        oAbsorberPhase = this.toStores.(sName).toPhases.(['Absorber_',num2str(iCell)]);
                         
                         sPort1 = ['ConductionCabin_', num2str(iCell)];
                         thermal.procs.exme(oAbsorberPhase.oCapacity, sPort1);
@@ -879,10 +904,10 @@ classdef CDRA < vsys
                         sConductorName3 = [sName, '_Cabin_Conductor_Adsorber_', num2str(iCell), '_', num2str(iCell+1)];
                         thermal.procs.conductors.conductive(this, sConductorName3, mfResistance(iType, 3));
                         
-                        csThermalInterfaces{iIF} = ['CDRA_ThermalIF_', sPort2];
+                        csThermalInterfaces{iIF} = ['CDRA', num2str(iCDRA),'_ThermalIF_', sPort2];
                         thermal.branch(this, [sName,'.', sPort1], {sConductorName1, sConductorName2, sConductorName3}, csThermalInterfaces{iIF}, [sName, '_CabinConduction_Cell_', num2str(iCell)]);
                         
-                        thermal.branch(this.oParent, csThermalInterfaces{iIF}, {}, [oCabinPhase.oStore.sName,'.', sPort2], [sName, '_CabinConduction_Cell_', num2str(iCell)]);
+                        thermal.branch(this.oParent, csThermalInterfaces{iIF}, {}, [oCabinPhase.oStore.sName,'.', sPort2], ['CDRA', num2str(iCDRA),'_', sName, '_CabinConduction_Cell_', num2str(iCell)]);
                         
                         iIF = iIF + 1;
                         
@@ -990,32 +1015,50 @@ classdef CDRA < vsys
                     iBed = 1;
                 end
 
-                % Only start heating the beds after the air save time
+                % Only start heating the beds after the air save time, but
+                % before than prevent freezing conditions
                 if (fCDRA_OperationTime - this.tTimeProperties.fLastCycleSwitch) > this.tTimeProperties.fAirSafeTime
-                    for iCell = 1:this.tGeometry.Zeolite5A.iCellNumber
-                        oCapacity = this.toStores.(['Zeolite5A_', num2str(iBed)]).toPhases.(['Absorber_', num2str(iCell)]).oCapacity;
-                        if oCapacity.fTemperature < this.TargetTemperature
-                            % 10 second time step maximum for this exec: Reduce
-                            % heat flow if target temperature is reached within
-                            % 10 seconds
-                            fRequiredThermalEnergy = oCapacity.fTotalHeatCapacity * (this.TargetTemperature - oCapacity.fTemperature);
-                            fRequiredHeatFlow = fRequiredThermalEnergy / this.fTimeStep;
-                            if fRequiredHeatFlow < (this.fMaxHeaterPower / this.tGeometry.Zeolite5A.iCellNumber)
-                                fHeaterPower = fRequiredHeatFlow;
-                            else
-                                fHeaterPower = (this.fMaxHeaterPower / this.tGeometry.Zeolite5A.iCellNumber);
-                            end
-                            oCapacity.toHeatSources.(['AbsorberHeater_', num2str(iCell)]).setHeatFlow(fHeaterPower);
-                        else
-                            oCapacity.toHeatSources.(['AbsorberHeater_', num2str(iCell)]).setHeatFlow(0);
-                        end
-                    end
-                    
+                    fZeoliteTargetTemperature = this.TargetTemperature;
+                else
+                    fZeoliteTargetTemperature = 285;
                 end
+                for iCell = 1:this.tGeometry.Zeolite5A.iCellNumber
+                    oCapacity = this.toStores.(['Zeolite5A_', num2str(iBed)]).toPhases.(['Absorber_', num2str(iCell)]).oCapacity;
+                    if oCapacity.fTemperature < this.TargetTemperature
+                        % 10 second time step maximum for this exec: Reduce
+                        % heat flow if target temperature is reached within
+                        % 10 seconds
+                        fRequiredThermalEnergy = oCapacity.fTotalHeatCapacity * (fZeoliteTargetTemperature - oCapacity.fTemperature);
+                        fRequiredHeatFlow = fRequiredThermalEnergy / this.fTimeStep;
+                        if fRequiredHeatFlow < (this.fMaxHeaterPower / this.tGeometry.Zeolite5A.iCellNumber)
+                            fHeaterPower = fRequiredHeatFlow;
+                        else
+                            fHeaterPower = (this.fMaxHeaterPower / this.tGeometry.Zeolite5A.iCellNumber);
+                        end
+                        oCapacity.toHeatSources.(['AbsorberHeater_', num2str(iCell)]).setHeatFlow(fHeaterPower);
+                    else
+                        oCapacity.toHeatSources.(['AbsorberHeater_', num2str(iCell)]).setHeatFlow(0);
+                    end
+                end
+                
+                fTotalHeatFlow = 0;
+                for iCell = 1:this.tGeometry.Zeolite5A.iCellNumber
+                    oCapacity = this.toStores.(['Zeolite5A_', num2str(iBed)]).toPhases.(['Absorber_', num2str(iCell)]).oCapacity;
+                    fTotalHeatFlow = fTotalHeatFlow + oCapacity.toHeatSources.(['AbsorberHeater_', num2str(iCell)]).fHeatFlow;
+                end
+                % The CDRA datime power consumption I received from ESA state
+                % 1070 W, since the heater consume at most 960 W we assume here
+                % that the average power demand for the remaining components
+                % from  "Living together in space: the design and operation of the
+                % life support systems on the International Space Station" P.O.
+                % Wieland, 1998, page 132 is necessary in addition to the
+                % heater power
+                this.fCurrentPowerConsumption = fTotalHeatFlow + 107;
             else
                 this.fCDRA_InactiveTime = this.fCDRA_InactiveTime + (this.oTimer.fTime - this.fLastExecutionTime);
+                
+                this.fCurrentPowerConsumption = 0;
             end
-            
             this.fLastExecutionTime = this.oTimer.fTime;
         end
 	end

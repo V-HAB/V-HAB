@@ -14,7 +14,6 @@ classdef branch < solver.matter.base.branch
         
         bMultipleResidualSolvers = false;
         aoAdjacentResidualSolver;
-        fResidualFlowRatePrev = 0;
         
         fRequestedFlowRate = 0;
         
@@ -67,7 +66,7 @@ classdef branch < solver.matter.base.branch
                     elseif ~oExme.bFlowIsAProcP2P && isa(oBranch.oHandler, 'solver.matter.residual.branch')
                         
                         oHandler = oBranch.oHandler;
-                        oBranch.oTimer.bindPostTick(@oHandler.findAdjacentResidualSolvers, -3);
+                        oHandler.hBindPostTickFindAdajcentResiduals();
                     end
                 end
              end
@@ -76,6 +75,7 @@ classdef branch < solver.matter.base.branch
         function setActive(this, bActive)
             this.bActive = bActive;
             this.setPositiveFlowDirection(this.bPositiveFlowDirection);
+            this.registerUpdate();
         end
         
         
@@ -85,7 +85,7 @@ classdef branch < solver.matter.base.branch
             % mass constant (with the flowrate specified here) for negative
             % ones it will allow a mass decrease.
             this.fAllowedFlowRate = fFlowRate;
-            this.update();
+            this.registerUpdate();
         end
     end
     
@@ -153,15 +153,20 @@ classdef branch < solver.matter.base.branch
             if ~this.bActive
                 this.fRequestedFlowRate = 0;
                 this.updateFlowProcs();
+                if this.oBranch.fFlowRate ~= 0
+                    update@solver.matter.base.branch(this, this.fRequestedFlowRate);
+                end
                 return
             end
             
             % CALC GET THE FLOW RATE
             if this.bPositiveFlowDirection
                 iExme = 1;
+                iOtherExme = 2;
                 iDir  = 1;
             else 
                 iExme = 2;
+                iOtherExme = 1;
                 iDir  = -1;
             end
             
@@ -180,15 +185,21 @@ classdef branch < solver.matter.base.branch
             end
             fResidualFlowRate = sum(mfFlowRateExme);
             
-            if fResidualFlowRate > this.fAllowedFlowRate
-                this.fRequestedFlowRate = (fResidualFlowRate - this.fAllowedFlowRate) * iDir;
+            if this.fAllowedFlowRate ~= 0
+                if fResidualFlowRate > this.fAllowedFlowRate
+                    this.fRequestedFlowRate = (fResidualFlowRate - this.fAllowedFlowRate) * iDir;
+                elseif sign(fResidualFlowRate) ~= sign(this.fAllowedFlowRate)
+                    this.fRequestedFlowRate = fResidualFlowRate * iDir;
+                else
+                    this.fRequestedFlowRate = 0;
+                end
             else
-                this.fRequestedFlowRate = 0;
+                this.fRequestedFlowRate = fResidualFlowRate * iDir;
             end
             
             %fprintf('%i\t(%.7fs)\tBranch %s Residual Solver - set Flow Rate %f\n', this.oBranch.oTimer.iTick, this.oBranch.oTimer.fTime, this.oBranch.sName, this.fRequestedFlowRate);
                 
-            if (this.fRequestedFlowRate ~= this.fResidualFlowRatePrev)
+            if (this.fRequestedFlowRate ~= this.oBranch.fFlowRate)
                 update@solver.matter.base.branch(this, this.fRequestedFlowRate);
                 this.updateFlowProcs();
                 this.fLastUpdateTime = this.oBranch.oTimer.fTime;
@@ -215,7 +226,14 @@ classdef branch < solver.matter.base.branch
                 this.fLastUpdateTime = this.oBranch.oTimer.fTime;
             end
             
-            this.fResidualFlowRatePrev = this.fRequestedFlowRate;
+            % Since the residual solver can change the flowrates for
+            % phases, we update the phase partial pressure for flow phases
+            if oPhase.bFlow
+                oPhase.updatePartials();
+            end
+            if this.oBranch.coExmes{iOtherExme}.oPhase.bFlow
+                this.oBranch.coExmes{iOtherExme}.oPhase.updatePartials();
+            end
         end
         
         function updateFlowProcs(this,~)

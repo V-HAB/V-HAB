@@ -77,6 +77,9 @@ classdef PhotosynthesisModule < base
         fHydroxideIonReactionMolesWithNitrate   %[moles] in reaction to produce one (relative) mole chlorella
         fCOH2ReactionMolesWithNitrate           %[moles] in reaction to produce one (relative) mole chlorella
         fNO3AssimilationFactor                  %[-] consumed carbon dioxide in relation to produced oxygen for nitrate as N source
+        
+        
+        fMolarMassChlorella;
     end
     methods
         
@@ -89,6 +92,13 @@ classdef PhotosynthesisModule < base
             this.fCombinedCO2AvailabilityFactor = 0;            %[-] factor between 0 and 1
             this.fCombinedNitrogenAvailabilityFactor = 0;       %[-] factor between 0 and 1, combination of nitrate and urine
             this.fAssimilationCoefficient = 0;                  %[-] consumed carbon dioxide in relation to produced oxygen
+            
+            % Since the thesis worked with a specific molar mass for
+            % chlorella, which however is not the one the algae has if it
+            % is defined as compound mass with the corresponding base food
+            % compound (proteins etc.) we define the assumed molar mass
+            % here
+            this.fMolarMassChlorella = this.oMT.afMolarMass(this.oMT.tiN2I.C) + 1.75 * this.oMT.afMolarMass(this.oMT.tiN2I.H) + 0.42*this.oMT.afMolarMass(this.oMT.tiN2I.O) + 0.15*this.oMT.afMolarMass(this.oMT.tiN2I.N);
             %% stoichiometric relations
             % chemical reaction, set rations of moles in relation to mole of chlorella
             
@@ -97,16 +107,16 @@ classdef PhotosynthesisModule < base
             
             %Urea as N Source
             
-            this.fChlorellaReactionMolesWithUrea = 1;
-            this.fNO3ReactionMolesWithUrea = 0;
-            this.fCO2ReactionMolesWithUrea = 0.925;
-            this.fUrineSolidsReactionMolesWithUrea = 0;
-            this.fUreaReactionMolesWithUrea = 0.075;
-            this.fH2PO4ReactionMolesWithUrea = 0.008;
-            this.fWaterReactionMolesWithUrea = 0.721;
-            this.fO2ReactionMolesWithUrea = 1.125;
-            this.fHydroxideIonReactionMolesWithUrea = 0.008;
-            this.fCOH2ReactionMolesWithUrea = 0;
+            this.fChlorellaReactionMolesWithUrea   	= 1;
+            this.fNO3ReactionMolesWithUrea          = 0;
+            this.fCO2ReactionMolesWithUrea          = 0.925;
+            this.fUrineSolidsReactionMolesWithUrea  = 0;
+            this.fUreaReactionMolesWithUrea         = 0.075;
+            this.fH2PO4ReactionMolesWithUrea        = 0;        % 0.008;
+            this.fWaterReactionMolesWithUrea        = 0.725;    % 0.721;
+            this.fO2ReactionMolesWithUrea           = 1.115;    % 1.125;
+            this.fHydroxideIonReactionMolesWithUrea = 0;        % 0.008;
+            this.fCOH2ReactionMolesWithUrea         = 0;
             
             this.fUreaAssimilationFactor = this.fCO2ReactionMolesWithUrea/this.fO2ReactionMolesWithUrea;
             
@@ -156,11 +166,16 @@ classdef PhotosynthesisModule < base
             
             %% how much chlorella has to be produced?
             fChlorellaMassIncrease = oCallingManip.oPhase.oStore.oContainer.oGrowthRateCalculationModule.fAchievableCurrentBiomassGrowthRate; %[kg/s]
-            fMolesChlorella = fChlorellaMassIncrease / this.oMT.ttxMatter.Chlorella.fMolarMass; %moles/s
+            fMolesChlorella = fChlorellaMassIncrease / this.fMolarMassChlorella; %moles/s
             
             %% production in two separate functions according to fractions of total required production, Urea currently not modelled due to unavailability in V-HAB
+            
             [afPartialsFromUrineSolidsNitrogen,fUrineSolidsAvailability,fUrineSolidsCO2Availability] = this.UrineSolidsNitrogen(fMolesChlorella,oCallingManip); %[kg/s]
-            fMolesChlorellaFromUrineSolids =(afPartialsFromUrineSolidsNitrogen(this.oMT.tiN2I.Chlorella) / this.oMT.ttxMatter.Chlorella.fMolarMass); %[moles/s]
+            
+            [afPartialFlowRatesFromUreaNitrogen,fUreaAvailabilityFactor,fCO2AvailabilityFactor] = this.UreaNitrogen(fMolesChlorella,oCallingManip);
+            
+            fMolesChlorellaFromUrineSolids =(afPartialsFromUrineSolidsNitrogen(this.oMT.tiN2I.Chlorella) / this.fMolarMassChlorella); %[moles/s]
+            fMolesChlorellaFromUrea =(afPartialFlowRatesFromUreaNitrogen(this.oMT.tiN2I.Chlorella) / this.fMolarMassChlorella); %[moles/s]
             
             %only when not enough urine is not available, use nitrate.
             %Initially set to 0 and overwritten if changed.
@@ -169,11 +184,12 @@ classdef PhotosynthesisModule < base
             fNO3CO2Availability = 0;
             afPartialsFromNO3Nitrogen = zeros(1, this.oMT.iSubstances);
             
-            if afPartialsFromUrineSolidsNitrogen(this.oMT.tiN2I.Chlorella) < fChlorellaMassIncrease
+            fTotalChlorellaMassIncreaseFromUrine = afPartialsFromUrineSolidsNitrogen(this.oMT.tiN2I.Chlorella) + afPartialFlowRatesFromUreaNitrogen(this.oMT.tiN2I.Chlorella);
+            if fTotalChlorellaMassIncreaseFromUrine < fChlorellaMassIncrease
                 %how much still has to be produced?
-                fMolesChlorellaNeededAdditionally = fMolesChlorella - (afPartialsFromUrineSolidsNitrogen(this.oMT.tiN2I.Chlorella) / this.oMT.ttxMatter.Chlorella.fMolarMass); %[moles/s]
+                fMolesChlorellaNeededAdditionally = fMolesChlorella - (fTotalChlorellaMassIncreaseFromUrine / this.fMolarMassChlorella); %[moles/s]
                 [afPartialsFromNO3Nitrogen,fNO3Availability, fNO3CO2Availability] = this.NO3Nitrogen(fMolesChlorellaNeededAdditionally,oCallingManip);
-                fMolesChlorellaFromNitrate = (afPartialsFromNO3Nitrogen(this.oMT.tiN2I.Chlorella) / this.oMT.ttxMatter.Chlorella.fMolarMass); %[moles/s]
+                fMolesChlorellaFromNitrate = (afPartialsFromNO3Nitrogen(this.oMT.tiN2I.Chlorella) / this.fMolarMassChlorella); %[moles/s]
             end
             
             %             if isnan(fMolesChlorellaFromNitrate)
@@ -181,16 +197,17 @@ classdef PhotosynthesisModule < base
             %             end
             
             %% determine actual growth rate and fractions
-            fProducedMolesChlorella = fMolesChlorellaFromUrineSolids + fMolesChlorellaFromNitrate; %[moles/s]
+            fProducedMolesChlorella = fMolesChlorellaFromUrineSolids + fMolesChlorellaFromNitrate + fMolesChlorellaFromUrea; %[moles/s]
             
             if fProducedMolesChlorella > 0
                 fUrineSolidsFraction = fMolesChlorellaFromUrineSolids /  fProducedMolesChlorella;
                 fNO3Fraction = fMolesChlorellaFromNitrate /  fProducedMolesChlorella;
+                fUreaFraction = fMolesChlorellaFromUrea /  fProducedMolesChlorella;
             else
                 fUrineSolidsFraction = 0;
                 fNO3Fraction = 0;
+                fUreaFraction = fMolesChlorellaFromUrineSolids /  fProducedMolesChlorella;
             end
-            
             
             if isnan(fNO3Fraction)
                 fNO3Fraction = 0;
@@ -198,21 +215,24 @@ classdef PhotosynthesisModule < base
             if isnan(fUrineSolidsFraction)
                 fUrineSolidsFraction = 0;
             end
+            if isnan(fUreaFraction)
+                fUreaFraction = 0;
+            end
             
-            this.fActualGrowthRate = afPartialsFromUrineSolidsNitrogen(this.oMT.tiN2I.Chlorella) + afPartialsFromNO3Nitrogen(this.oMT.tiN2I.Chlorella); %[kg/s]
+            this.fActualGrowthRate = afPartialsFromUrineSolidsNitrogen(this.oMT.tiN2I.Chlorella) + afPartialFlowRatesFromUreaNitrogen(this.oMT.tiN2I.Chlorella) + afPartialsFromNO3Nitrogen(this.oMT.tiN2I.Chlorella); %[kg/s]
             
             %% combine afPartalFlowRates and calculate plotting parameters
             %afCombinedPartialFlowRates = afPartialsFromUreaNitrogen + afPartialsFromUrineSolidsNitrogen + afPartialsFromNO3Nitrogen;
-            this.afCombinedPartialFlowRates = zeros(1, this.oMT.iSubstances); %[kg/s]
-            this.afCombinedPartialFlowRates =  afPartialsFromUrineSolidsNitrogen + afPartialsFromNO3Nitrogen; %[kg/s]
+            % this.afCombinedPartialFlowRates = zeros(1, this.oMT.iSubstances); %[kg/s]
+            this.afCombinedPartialFlowRates =  afPartialsFromUrineSolidsNitrogen + afPartialFlowRatesFromUreaNitrogen + afPartialsFromNO3Nitrogen; %[kg/s]
             afCombinedPartialFlowRates = this.afCombinedPartialFlowRates; %[kg/s]
             
             %afCombinedPartialFlowRates = afPartialsFromUrineSolidsNitrogen + afPartialsFromNO3Nitrogen;
             %fCombinedH2PO4AvailabilityFactor = fUrineSolidsH2PO4Availability*fUrineSolidsFraction + fNO3H2PO4Availability*fNO3Fraction ;
-            this.fCombinedCO2AvailabilityFactor =  fUrineSolidsCO2Availability*fUrineSolidsFraction + fNO3CO2Availability*fNO3Fraction ; %[-] between 0 and 1
-            this.fCombinedNitrogenAvailabilityFactor = fUrineSolidsAvailability*fUrineSolidsFraction + fNO3Availability*fNO3Fraction ; %[-] between 0 and 1
+            this.fCombinedCO2AvailabilityFactor =  fUrineSolidsCO2Availability*fUrineSolidsFraction + fNO3CO2Availability*fNO3Fraction + fCO2AvailabilityFactor*fUreaFraction; %[-] between 0 and 1
+            this.fCombinedNitrogenAvailabilityFactor = fUrineSolidsAvailability*fUrineSolidsFraction + fNO3Availability*fNO3Fraction + fUreaAvailabilityFactor*fUreaFraction; %[-] between 0 and 1
             
-            this.fAssimilationCoefficient = fUrineSolidsFraction*this.fUrineSolidsAssimilationFactor + fNO3Fraction*this.fNO3AssimilationFactor; %%[-]
+            this.fAssimilationCoefficient = fUrineSolidsFraction*this.fUrineSolidsAssimilationFactor + fUreaFraction*this.fUreaAssimilationFactor + fNO3Fraction*this.fNO3AssimilationFactor; %%[-]
             
             %total produced oxygen and consumed carbon dioxide over entire
             %sim time.
@@ -234,18 +254,18 @@ classdef PhotosynthesisModule < base
             if ~isempty(oCallingManip.fTimeStep) && oCallingManip.fTimeStep > 0 && fMolesChlorella > 0
                 %% Consumed substances in this time step
                 %products
-                fChlorellaChange    = this.fChlorellaReactionMolesWithUrineSolids       * fMolesChlorella  * this.oMT.ttxMatter.Chlorella.fMolarMass;     %[kg/s]
-                fO2Change           = this.fO2ReactionMolesWithUrineSolids              * fMolesChlorella  * this.oMT.ttxMatter.O2.fMolarMass; %[kg/s]
-                fHydroxideIonChange = this.fHydroxideIonReactionMolesWithUrineSolids    * fMolesChlorella  * this.oMT.ttxMatter.(this.oMT.tsN2S.HydroxideIon).fMolarMass; %[kg/s]
-                fCOH2Change         = this.fCOH2ReactionMolesWithUrineSolids            * fMolesChlorella  * this.oMT.ttxMatter.COH2.fMolarMass; %[kg/s]
+                fChlorellaChange    = this.fChlorellaReactionMolesWithUrineSolids       * fMolesChlorella  * this.fMolarMassChlorella;     %[kg/s]
+                fO2Change           = this.fO2ReactionMolesWithUrineSolids              * fMolesChlorella  * this.oMT.afMolarMass(this.oMT.tiN2I.O2); %[kg/s]
+                fHydroxideIonChange = this.fHydroxideIonReactionMolesWithUrineSolids    * fMolesChlorella  * this.oMT.afMolarMass(this.oMT.tiN2I.(this.oMT.tsN2S.HydroxideIon)); %[kg/s]
+                fCOH2Change         = this.fCOH2ReactionMolesWithUrineSolids            * fMolesChlorella  * this.oMT.afMolarMass(this.oMT.tiN2I.COH2); %[kg/s]
                 
                 %reactants
-                fCO2Change          = - this.fCO2ReactionMolesWithUrineSolids           * fMolesChlorella * this.oMT.ttxMatter.CO2.fMolarMass; %[kg/s]
-                fH2OChange          = - this.fWaterReactionMolesWithUrineSolids         * fMolesChlorella * this.oMT.ttxMatter.H2O.fMolarMass; %[kg/s]
-                fNO3Change          = - this.fNO3ReactionMolesWithUrineSolids           * fMolesChlorella * this.oMT.ttxMatter.NO3.fMolarMass;    %[kg/s]
-                fUreaChange         = - this.fUreaReactionMolesWithUrineSolids          * fMolesChlorella * this.oMT.ttxMatter.(this.oMT.tsN2S.Urea).fMolarMass;    %[kg/s]
-                fH2PO4Change        = - this.fH2PO4ReactionMolesWithUrineSolids         * fMolesChlorella * this.oMT.ttxMatter.(this.oMT.tsN2S.DihydrogenPhosphate).fMolarMass;    %[kg/s]
-                fUrineSolidsChange  = - this.fUrineSolidsReactionMolesWithUrineSolids   * fMolesChlorella * this.oMT.ttxMatter.C2H6O2N2.fMolarMass;   %[kg/s]
+                fCO2Change          = - this.fCO2ReactionMolesWithUrineSolids           * fMolesChlorella * this.oMT.afMolarMass(this.oMT.tiN2I.CO2); %[kg/s]
+                fH2OChange          = - this.fWaterReactionMolesWithUrineSolids         * fMolesChlorella * this.oMT.afMolarMass(this.oMT.tiN2I.H2O); %[kg/s]
+                fNO3Change          = - this.fNO3ReactionMolesWithUrineSolids           * fMolesChlorella * this.oMT.afMolarMass(this.oMT.tiN2I.NO3);    %[kg/s]
+                fUreaChange         = - this.fUreaReactionMolesWithUrineSolids          * fMolesChlorella * this.oMT.afMolarMass(this.oMT.tiN2I.(this.oMT.tsN2S.Urea));    %[kg/s]
+                fH2PO4Change        = - this.fH2PO4ReactionMolesWithUrineSolids         * fMolesChlorella * this.oMT.afMolarMass(this.oMT.tiN2I.(this.oMT.tsN2S.DihydrogenPhosphate));    %[kg/s]
+                fUrineSolidsChange  = - this.fUrineSolidsReactionMolesWithUrineSolids   * fMolesChlorella * this.oMT.afMolarMass(this.oMT.tiN2I.C2H6O2N2);   %[kg/s]
                 
                 % check if something would result in negative mass.
                 % problem can be that not enought CO2 is in the media phase to allow for the algae to grow how much they need to in the time step and the growth rate is automatically set to 0 if not enough nutrients are available. should change this to also be able to growth with less than wat is required. problem here is, that the growth rate will be slower due to less nutrients being currently available although in reality the required CO2 could just be drawn from the atmosphere due to the decreased concentration when it is used up.
@@ -290,9 +310,9 @@ classdef PhotosynthesisModule < base
                         %if only a part of what is required for the reaction is
                         %available, then use this part.
                         %determine available moles of nutrients
-                        fAvailableH2O = oCallingManip.oPhase.afMass(this.oMT.tiN2I.H2O) / this.oMT.ttxMatter.H2O.fMolarMass; %[mol]
-                        fAvailableCO2 = oCallingManip.oPhase.afMass(this.oMT.tiN2I.CO2) / this.oMT.ttxMatter.CO2.fMolarMass; %[mol]
-                        fAvailableC2H6O2N2 = oCallingManip.oPhase.afMass(this.oMT.tiN2I.C2H6O2N2) / this.oMT.ttxMatter.C2H6O2N2.fMolarMass;%[mol]
+                        fAvailableH2O = oCallingManip.oPhase.afMass(this.oMT.tiN2I.H2O) / this.oMT.afMolarMass(this.oMT.tiN2I.H2O); %[mol]
+                        fAvailableCO2 = oCallingManip.oPhase.afMass(this.oMT.tiN2I.CO2) / this.oMT.afMolarMass(this.oMT.tiN2I.CO2); %[mol]
+                        fAvailableC2H6O2N2 = oCallingManip.oPhase.afMass(this.oMT.tiN2I.C2H6O2N2) / this.oMT.afMolarMass(this.oMT.tiN2I.C2H6O2N2);%[mol]
                         
                         %calculate limiting factor, which relates the mole availability
                         %to how much is needed for the reaction
@@ -305,18 +325,18 @@ classdef PhotosynthesisModule < base
                         
                         % determine how much chlorella is produced and how much of the nutrients can be
                         % used
-                        fMaximumPossibleChlorellaChange     = fLimitingFactor * this.fChlorellaReactionMolesWithUrineSolids * this.oMT.ttxMatter.Chlorella.fMolarMass;     %[kg]
-                        fMaximumPossibleO2Change            = fLimitingFactor * this.fO2ReactionMolesWithUrineSolids* this.oMT.ttxMatter.O2.fMolarMass; %[kg]
-                        fMaximumPossibleHydroxideIonChange  = fLimitingFactor * this.fHydroxideIonReactionMolesWithUrineSolids * this.oMT.ttxMatter.(this.oMT.tsN2S.HydroxideIon).fMolarMass; %[kg]
-                        fMaximumPossibleCOH2Change          = fLimitingFactor * this.fCOH2ReactionMolesWithUrineSolids * this.oMT.ttxMatter.COH2.fMolarMass; %[kg]
+                        fMaximumPossibleChlorellaChange     = fLimitingFactor * this.fChlorellaReactionMolesWithUrineSolids * this.fMolarMassChlorella;     %[kg]
+                        fMaximumPossibleO2Change            = fLimitingFactor * this.fO2ReactionMolesWithUrineSolids* this.oMT.afMolarMass(this.oMT.tiN2I.O2); %[kg]
+                        fMaximumPossibleHydroxideIonChange  = fLimitingFactor * this.fHydroxideIonReactionMolesWithUrineSolids * this.oMT.afMolarMass(this.oMT.tiN2I.(this.oMT.tsN2S.HydroxideIon)); %[kg]
+                        fMaximumPossibleCOH2Change          = fLimitingFactor * this.fCOH2ReactionMolesWithUrineSolids * this.oMT.afMolarMass(this.oMT.tiN2I.COH2); %[kg]
                         
                         
-                        fMaximumPossibleCO2Change = fLimitingFactor * - this.fCO2ReactionMolesWithUrineSolids * this.oMT.ttxMatter.CO2.fMolarMass; %[kg]
-                        fMaximumPossibleH2OChange = fLimitingFactor * - this.fWaterReactionMolesWithUrineSolids * this.oMT.ttxMatter.H2O.fMolarMass; %[kg]
-                        fMaximumPossibleNO3Change = fLimitingFactor * - this.fNO3ReactionMolesWithUrineSolids * this.oMT.ttxMatter.NO3.fMolarMass;    %[kg]
-                        fMaximumPossibleUreaChange = fLimitingFactor * - this.fUreaReactionMolesWithUrineSolids * this.oMT.ttxMatter.(this.oMT.tsN2S.Urea).fMolarMass;%[kg]
-                        fMaximumPossibleUrineSolidsChange = fLimitingFactor * - this.fUrineSolidsReactionMolesWithUrineSolids * this.oMT.ttxMatter.C2H6O2N2.fMolarMass; %[kg]
-                        fMaximumPossibleH2PO4Change = fLimitingFactor * - this.fH2PO4ReactionMolesWithUrineSolids * this.oMT.ttxMatter.(this.oMT.tsN2S.DihydrogenPhosphate).fMolarMass; %[kg]
+                        fMaximumPossibleCO2Change = fLimitingFactor * - this.fCO2ReactionMolesWithUrineSolids * this.oMT.afMolarMass(this.oMT.tiN2I.CO2); %[kg]
+                        fMaximumPossibleH2OChange = fLimitingFactor * - this.fWaterReactionMolesWithUrineSolids * this.oMT.afMolarMass(this.oMT.tiN2I.H2O); %[kg]
+                        fMaximumPossibleNO3Change = fLimitingFactor * - this.fNO3ReactionMolesWithUrineSolids * this.oMT.afMolarMass(this.oMT.tiN2I.NO3);    %[kg]
+                        fMaximumPossibleUreaChange = fLimitingFactor * - this.fUreaReactionMolesWithUrineSolids * this.oMT.afMolarMass(this.oMT.tiN2I.(this.oMT.tsN2S.Urea));%[kg]
+                        fMaximumPossibleUrineSolidsChange = fLimitingFactor * - this.fUrineSolidsReactionMolesWithUrineSolids * this.oMT.afMolarMass(this.oMT.tiN2I.C2H6O2N2); %[kg]
+                        fMaximumPossibleH2PO4Change = fLimitingFactor * - this.fH2PO4ReactionMolesWithUrineSolids * this.oMT.afMolarMass(this.oMT.tiN2I.(this.oMT.tsN2S.DihydrogenPhosphate)); %[kg]
                         
                         %set flow rates
                         afPartialFlowRates = zeros(1, this.oMT.iSubstances); %?kg/s
@@ -337,8 +357,8 @@ classdef PhotosynthesisModule < base
                         
                         %determine availability factor by relating what is available to
                         %what would be required to support the current growth rate
-                        fCO2AvailabilityFactor = (fAvailableCO2 * this.oMT.ttxMatter.CO2.fMolarMass) / (-fCO2Change*oCallingManip.fTimeStep) ; %kg/kg = [-]
-                        fUrineSolidsAvailabilityFactor =(fAvailableC2H6O2N2 * this.oMT.ttxMatter.C2H6O2N2.fMolarMass) / ( -fUrineSolidsChange*oCallingManip.fTimeStep) ; %kg/kg = [-]
+                        fCO2AvailabilityFactor = (fAvailableCO2 * this.oMT.afMolarMass(this.oMT.tiN2I.CO2)) / (-fCO2Change*oCallingManip.fTimeStep) ; %kg/kg = [-]
+                        fUrineSolidsAvailabilityFactor =(fAvailableC2H6O2N2 * this.oMT.afMolarMass(this.oMT.tiN2I.C2H6O2N2)) / ( -fUrineSolidsChange*oCallingManip.fTimeStep) ; %kg/kg = [-]
                         
                         
                         
@@ -352,13 +372,7 @@ classdef PhotosynthesisModule < base
                         if fUrineSolidsAvailabilityFactor > 1
                             fUrineSolidsAvailabilityFactor = 1; %[-]
                         end
-                        
-                        
-                        
                     end
-                    
-                    
-                    
                 else
                     %if everything is available in excess of what is needed
                     %set flow rates (kg/s) to pass back by dividing the desired
@@ -407,21 +421,21 @@ classdef PhotosynthesisModule < base
             % is 0 anyway. && operator only works with
             % scalars, and the fTimeStep of the manipulator's phase is not
             % a number in the first calculation step. Have to use &.
-            if oCallingManip.fTimeStep > 0 & fMolesChlorella > 0
+            if ~isempty(oCallingManip.fTimeStep) && oCallingManip.fTimeStep > 0 && fMolesChlorella > 0
                 %% Consumed substances in this time step
                 %products
-                fChlorellaChange = this.fChlorellaReactionMolesWithNitrate * fMolesChlorella * this.oMT.ttxMatter.Chlorella.fMolarMass;     %[kg/s]
-                fO2Change = this.fO2ReactionMolesWithNitrate *fMolesChlorella  * this.oMT.ttxMatter.O2.fMolarMass; %[kg/s]s
-                fHydroxideIonChange = this.fHydroxideIonReactionMolesWithNitrate * fMolesChlorella  * this.oMT.ttxMatter.(this.oMT.tsN2S.HydroxideIon).fMolarMass; %[kg/s]
-                fCOH2Change = this.fCOH2ReactionMolesWithNitrate * fMolesChlorella  * this.oMT.ttxMatter.COH2.fMolarMass; %[kg/s]
+                fChlorellaChange    = this.fChlorellaReactionMolesWithNitrate       * fMolesChlorella  * this.fMolarMassChlorella;     %[kg/s]
+                fO2Change           = this.fO2ReactionMolesWithNitrate              * fMolesChlorella  * this.oMT.afMolarMass(this.oMT.tiN2I.O2); %[kg/s]s
+                fHydroxideIonChange = this.fHydroxideIonReactionMolesWithNitrate    * fMolesChlorella  * this.oMT.afMolarMass(this.oMT.tiN2I.(this.oMT.tsN2S.HydroxideIon)); %[kg/s]
+                fCOH2Change         = this.fCOH2ReactionMolesWithNitrate            * fMolesChlorella  * this.oMT.afMolarMass(this.oMT.tiN2I.COH2); %[kg/s]
                 
                 %reactants
-                fCO2Change = - this.fCO2ReactionMolesWithNitrate * fMolesChlorella * this.oMT.ttxMatter.CO2.fMolarMass; %[kg/s]
-                fH2OChange = - this.fWaterReactionMolesWithNitrate * fMolesChlorella * this.oMT.ttxMatter.H2O.fMolarMass; %[kg/s]
-                fNO3Change = - this.fNO3ReactionMolesWithNitrate * fMolesChlorella * this.oMT.ttxMatter.NO3.fMolarMass;   %[kg/s]
-                fUreaChange = - this.fUreaReactionMolesWithNitrate * fMolesChlorella * this.oMT.ttxMatter.(this.oMT.tsN2S.Urea).fMolarMass;    %[kg/s]
-                fH2PO4Change = - this.fH2PO4ReactionMolesWithNitrate * fMolesChlorella * this.oMT.ttxMatter.(this.oMT.tsN2S.DihydrogenPhosphate).fMolarMass;    %[kg/s]
-                fUrineSolidsChange = - this.fUrineSolidsReactionMolesWithNitrate * fMolesChlorella * this.oMT.ttxMatter.C2H6O2N2.fMolarMass;    %[kg/s]
+                fCO2Change          = - this.fCO2ReactionMolesWithNitrate           * fMolesChlorella * this.oMT.afMolarMass(this.oMT.tiN2I.CO2); %[kg/s]
+                fH2OChange          = - this.fWaterReactionMolesWithNitrate         * fMolesChlorella * this.oMT.afMolarMass(this.oMT.tiN2I.H2O); %[kg/s]
+                fNO3Change          = - this.fNO3ReactionMolesWithNitrate           * fMolesChlorella * this.oMT.afMolarMass(this.oMT.tiN2I.NO3);   %[kg/s]
+                fUreaChange         = - this.fUreaReactionMolesWithNitrate          * fMolesChlorella * this.oMT.afMolarMass(this.oMT.tiN2I.(this.oMT.tsN2S.Urea));    %[kg/s]
+                fH2PO4Change        = - this.fH2PO4ReactionMolesWithNitrate         * fMolesChlorella * this.oMT.afMolarMass(this.oMT.tiN2I.(this.oMT.tsN2S.DihydrogenPhosphate));    %[kg/s]
+                fUrineSolidsChange  = - this.fUrineSolidsReactionMolesWithNitrate   * fMolesChlorella * this.oMT.afMolarMass(this.oMT.tiN2I.C2H6O2N2);    %[kg/s]
                 
                 
                 % problem can be that not enought CO2 is in the media phase to allow for the algae to grow how much they need to in the time step and the growth rate is automatically set to 0 if not enough nutrients are available. should change this to also be able to growth with less than wat is required. problem here is, that the growth rate will be slower due to less nutrients being currently available although in reality the required CO2 could just be drawn from the atmosphere due to the decreased concentration when it is used up.
@@ -460,9 +474,9 @@ classdef PhotosynthesisModule < base
                         %if only a part of what is required for the reaction is
                         %available, then use this part.
                         %determine available moles of nutrients
-                        fAvailableH2O = oCallingManip.oPhase.afMass(this.oMT.tiN2I.H2O) / this.oMT.ttxMatter.H2O.fMolarMass; %[mol]
-                        fAvailableCO2 = oCallingManip.oPhase.afMass(this.oMT.tiN2I.CO2) / this.oMT.ttxMatter.CO2.fMolarMass;%[mol]
-                        fAvailableNO3 = oCallingManip.oPhase.afMass(this.oMT.tiN2I.NO3) / this.oMT.ttxMatter.NO3.fMolarMass;%[mol]
+                        fAvailableH2O = oCallingManip.oPhase.afMass(this.oMT.tiN2I.H2O) / this.oMT.afMolarMass(this.oMT.tiN2I.H2O); %[mol]
+                        fAvailableCO2 = oCallingManip.oPhase.afMass(this.oMT.tiN2I.CO2) / this.oMT.afMolarMass(this.oMT.tiN2I.CO2);%[mol]
+                        fAvailableNO3 = oCallingManip.oPhase.afMass(this.oMT.tiN2I.NO3) / this.oMT.afMolarMass(this.oMT.tiN2I.NO3);%[mol]
                         
                         
                         %calculate limiting factor, which relates the mole availability
@@ -476,42 +490,42 @@ classdef PhotosynthesisModule < base
                         
                         % determine how much chlorella is produced and how much of the nutrients can be
                         % used
-                        fMaximumPossibleChlorellaChange = fLimitingFactor * this.fChlorellaReactionMolesWithNitrate * this.oMT.ttxMatter.Chlorella.fMolarMass;    %[kg]
-                        fMaximumPossibleO2Change = fLimitingFactor * this.fO2ReactionMolesWithNitrate* this.oMT.ttxMatter.O2.fMolarMass;   %[kg]
-                        fMaximumPossibleHydroxideIonChange = fLimitingFactor * this.fHydroxideIonReactionMolesWithNitrate * this.oMT.ttxMatter.(this.oMT.tsN2S.HydroxideIon).fMolarMass;   %[kg]
-                        fMaximumPossibleCOH2Change = fLimitingFactor * this.fCOH2ReactionMolesWithNitrate * this.oMT.ttxMatter.COH2.fMolarMass;   %[kg]
+                        fMaximumPossibleChlorellaChange     = fLimitingFactor * this.fChlorellaReactionMolesWithNitrate     * this.fMolarMassChlorella;    %[kg]
+                        fMaximumPossibleO2Change            = fLimitingFactor * this.fO2ReactionMolesWithNitrate            * this.oMT.afMolarMass(this.oMT.tiN2I.O2);   %[kg]
+                        fMaximumPossibleHydroxideIonChange  = fLimitingFactor * this.fHydroxideIonReactionMolesWithNitrate  * this.oMT.afMolarMass(this.oMT.tiN2I.(this.oMT.tsN2S.HydroxideIon));   %[kg]
+                        fMaximumPossibleCOH2Change          = fLimitingFactor * this.fCOH2ReactionMolesWithNitrate          * this.oMT.afMolarMass(this.oMT.tiN2I.COH2);   %[kg]
                         
                         
-                        fMaximumPossibleCO2Change = fLimitingFactor * - this.fCO2ReactionMolesWithNitrate * this.oMT.ttxMatter.CO2.fMolarMass;   %[kg]
-                        fMaximumPossibleH2OChange = fLimitingFactor * - this.fWaterReactionMolesWithNitrate * this.oMT.ttxMatter.H2O.fMolarMass;   %[kg]
-                        fMaximumPossibleNO3Change = fLimitingFactor * - this.fNO3ReactionMolesWithNitrate * this.oMT.ttxMatter.NO3.fMolarMass;     %[kg]
-                        fMaximumPossibleUreaChange = fLimitingFactor * - this.fUreaReactionMolesWithNitrate * this.oMT.ttxMatter.(this.oMT.tsN2S.Urea).fMolarMass;   %[kg]
-                        fMaximumPossibleUrineSolidsChange = fLimitingFactor * - this.fUrineSolidsReactionMolesWithNitrate * this.oMT.ttxMatter.C2H6O2N2.fMolarMass;   %[kg]
-                        fMaximumPossibleH2PO4Change = fLimitingFactor * - this.fH2PO4ReactionMolesWithNitrate * this.oMT.ttxMatter.(this.oMT.tsN2S.DihydrogenPhosphate).fMolarMass;   %[kg]
+                        fMaximumPossibleCO2Change           = fLimitingFactor * - this.fCO2ReactionMolesWithNitrate         * this.oMT.afMolarMass(this.oMT.tiN2I.CO2);   %[kg]
+                        fMaximumPossibleH2OChange           = fLimitingFactor * - this.fWaterReactionMolesWithNitrate       * this.oMT.afMolarMass(this.oMT.tiN2I.H2O);   %[kg]
+                        fMaximumPossibleNO3Change           = fLimitingFactor * - this.fNO3ReactionMolesWithNitrate         * this.oMT.afMolarMass(this.oMT.tiN2I.NO3);     %[kg]
+                        fMaximumPossibleUreaChange          = fLimitingFactor * - this.fUreaReactionMolesWithNitrate        * this.oMT.afMolarMass(this.oMT.tiN2I.(this.oMT.tsN2S.Urea));   %[kg]
+                        fMaximumPossibleUrineSolidsChange   = fLimitingFactor * - this.fUrineSolidsReactionMolesWithNitrate * this.oMT.afMolarMass(this.oMT.tiN2I.C2H6O2N2);   %[kg]
+                        fMaximumPossibleH2PO4Change         = fLimitingFactor * - this.fH2PO4ReactionMolesWithNitrate       * this.oMT.afMolarMass(this.oMT.tiN2I.(this.oMT.tsN2S.DihydrogenPhosphate));   %[kg]
                         
                         %set flow rates
                         afPartialFlowRates = zeros(1, this.oMT.iSubstances);   %[kg/s]
                         %Consumed Substances, when growth positive
-                        afPartialFlowRates(this.oMT.tiN2I.H2O) = fMaximumPossibleH2OChange / oCallingManip.fTimeStep;  %[kg/s]
-                        afPartialFlowRates(this.oMT.tiN2I.CO2) = fMaximumPossibleCO2Change / oCallingManip.fTimeStep; %[kg/s]
-                        afPartialFlowRates(this.oMT.tiN2I.NO3) = fMaximumPossibleNO3Change/ oCallingManip.fTimeStep;  %[kg/s]
-                        afPartialFlowRates(this.oMT.tiN2I.(this.oMT.tsN2S.Urea)) = fMaximumPossibleUreaChange/ oCallingManip.fTimeStep; %[kg/s]
-                        afPartialFlowRates(this.oMT.tiN2I.(this.oMT.tsN2S.DihydrogenPhosphate)) = fMaximumPossibleH2PO4Change / oCallingManip.fTimeStep;  %[kg/s]
-                        afPartialFlowRates(this.oMT.tiN2I.C2H6O2N2) = fMaximumPossibleUrineSolidsChange/ oCallingManip.fTimeStep; %[kg/s]
+                        afPartialFlowRates(this.oMT.tiN2I.H2O)                                  = fMaximumPossibleH2OChange         / oCallingManip.fTimeStep;  %[kg/s]
+                        afPartialFlowRates(this.oMT.tiN2I.CO2)                                  = fMaximumPossibleCO2Change         / oCallingManip.fTimeStep; %[kg/s]
+                        afPartialFlowRates(this.oMT.tiN2I.NO3)                                  = fMaximumPossibleNO3Change         / oCallingManip.fTimeStep;  %[kg/s]
+                        afPartialFlowRates(this.oMT.tiN2I.(this.oMT.tsN2S.Urea))                = fMaximumPossibleUreaChange        / oCallingManip.fTimeStep; %[kg/s]
+                        afPartialFlowRates(this.oMT.tiN2I.(this.oMT.tsN2S.DihydrogenPhosphate)) = fMaximumPossibleH2PO4Change       / oCallingManip.fTimeStep;  %[kg/s]
+                        afPartialFlowRates(this.oMT.tiN2I.C2H6O2N2)                             = fMaximumPossibleUrineSolidsChange / oCallingManip.fTimeStep; %[kg/s]
                         
                         %Produced Substances when growth positive
-                        afPartialFlowRates(this.oMT.tiN2I.Chlorella)= fMaximumPossibleChlorellaChange / oCallingManip.fTimeStep;  %[kg/s]
-                        afPartialFlowRates(this.oMT.tiN2I.O2) = fMaximumPossibleO2Change / oCallingManip.fTimeStep;  %[kg/s]
-                        afPartialFlowRates(this.oMT.tiN2I.(this.oMT.tsN2S.HydroxideIon)) = fMaximumPossibleHydroxideIonChange / oCallingManip.fTimeStep;  %[kg/s]
-                        afPartialFlowRates(this.oMT.tiN2I.COH2) = fMaximumPossibleCOH2Change / oCallingManip.fTimeStep ; %[kg/s]
+                        afPartialFlowRates(this.oMT.tiN2I.Chlorella)                     = fMaximumPossibleChlorellaChange      / oCallingManip.fTimeStep;  %[kg/s]
+                        afPartialFlowRates(this.oMT.tiN2I.O2)                            = fMaximumPossibleO2Change             / oCallingManip.fTimeStep;  %[kg/s]
+                        afPartialFlowRates(this.oMT.tiN2I.(this.oMT.tsN2S.HydroxideIon)) = fMaximumPossibleHydroxideIonChange   / oCallingManip.fTimeStep;  %[kg/s]
+                        afPartialFlowRates(this.oMT.tiN2I.COH2)                          = fMaximumPossibleCOH2Change           / oCallingManip.fTimeStep ; %[kg/s]
                         
                         
                         
                         
                         %determine availability factor by relating what is available to
                         %what would be required to support the current growth rate
-                        fCO2AvailabilityFactor = (fAvailableCO2 * this.oMT.ttxMatter.CO2.fMolarMass) / (-fCO2Change*oCallingManip.fTimeStep) ; %kg/kg = [-]
-                        fNO3AvailabilityFactor =(fAvailableNO3 * this.oMT.ttxMatter.NO3.fMolarMass) / ( -fNO3Change*oCallingManip.fTimeStep) ; %kg/kg = [-]
+                        fCO2AvailabilityFactor = (fAvailableCO2 * this.oMT.afMolarMass(this.oMT.tiN2I.CO2)) / (-fCO2Change*oCallingManip.fTimeStep) ; %kg/kg = [-]
+                        fNO3AvailabilityFactor =(fAvailableNO3 * this.oMT.afMolarMass(this.oMT.tiN2I.NO3)) / ( -fNO3Change*oCallingManip.fTimeStep) ; %kg/kg = [-]
                         
                         %typically one of both will be larger than 1 because most
                         %likely the nutrients won't become limited all at once. Set
@@ -523,13 +537,7 @@ classdef PhotosynthesisModule < base
                         if fNO3AvailabilityFactor > 1
                             fNO3AvailabilityFactor = 1;  %[-]
                         end
-                        
-                        
-                        
                     end
-                    
-                    
-                    
                 else
                     %if everything is available in excess of what is needed
                     %set flow rates (kg/s) to pass back by dividing the desired
@@ -569,174 +577,191 @@ classdef PhotosynthesisModule < base
         
         
         %% (this.oMT.tsN2S.Urea) function is not needed here, but can still be used at a later time.
-        % function [afPartialFlowRatesFromUreaNitrogen,fUreaAvailabilityFactor,fCO2AvailabilityFactor = UreaNitrogen(this, fChlorellaMolesFromUreaNitrogen,oCallingManip)
-        % fMolesChlorella = fChlorellaMolesFromUreaNitrogen;
-        %
-        % %% Consumed substances in this time step
-        % %products
-        % fChlorellaChange = this.fChlorellaReactionMolesWithUrea * fMolesChlorella * this.oMT.ttxMatter.Chlorella.fMolarMass;     %kg/s
-        % fO2Change = this.fO2ReactionMolesWithUrea *fMolesChlorella  * this.oMT.ttxMatter.O2.fMolarMass; %kg/s
-        % fHydroxideIonChange = this.fHydroxideIonReactionMolesWithUrea * fMolesChlorella  * this.oMT.ttxMatter.(this.oMT.tsN2S.HydroxideIon).fMolarMass; %kg/s
-        % fCOH2Change = this.fCOH2ReactionMolesWithUrea * fMolesChlorella  * this.oMT.ttxMatter.COH2.fMolarMass; %kg/s
-        %
-        % %reactants
-        % fCO2Change = - this.fCO2ReactionMolesWithUrea * fMolesChlorella * this.oMT.ttxMatter.CO2.fMolarMass; %kg/s
-        % fH2OChange = - this.fWaterReactionMolesWithUrea * fMolesChlorella * this.oMT.ttxMatter.H2O.fMolarMass; %kg/s
-        % fNO3Change = - this.fNO3ReactionMolesWithUrea * fMolesChlorella * this.oMT.ttxMatter.NO3.fMolarMass;    %kg/s
-        % fUreaChange = - this.fUreaReactionMolesWithUrea * fMolesChlorella * this.oMT.ttxMatter.(this.oMT.tsN2S.Urea).fMolarMass;    %kg/s
-        % fH2PO4Change = - this.fH2PO4ReactionMolesWithUrea * fMolesChlorella * this.oMT.ttxMatter.(this.oMT.tsN2S.DihydrogenPhosphate).fMolarMass;    %kg/s
-        % fUrineSolidsChange = - this.fUrineSolidsReactionMolesWithUrea * fMolesChlorella * this.oMT.ttxMatter.C2H6O2N2.fMolarMass;    %kg/s
-        %
-        % %% set flow rates to pass back
-        %
-        % % check if time step is larger than 0 (exclude first time
-        % % step) in order to ensure one is not dividing by zero
-        % if oCallingManip.fTimeStep > 0
-        %
-        %     % check if something would result in negative mass.
-        %     % problem can be that not enought CO2 is in the media phase to allow for the algae to grow how much they need to in the time step and the growth rate is automatically set to 0 if not enough nutrients are available. should change this to also be able to growth with less than wat is required. problem here is, that the growth rate will be slower due to less nutrients being currently available although in reality the required CO2 could just be drawn from the atmosphere due to the decreased concentration when it is used up.
-        %     if oCallingManip.oPhase.afMass(this.oMT.tiN2I.H2O) + fH2OChange*oCallingManip.fTimeStep < 0 || oCallingManip.oPhase.afMass(this.oMT.tiN2I.CO2) + fCO2Change*oCallingManip.fTimeStep < 0 || oCallingManip.oPhase.afMass(this.oMT.tiN2I.(this.oMT.tsN2S.Urea)) + fUreaChange*oCallingManip.fTimeStep < 0 || oCallingManip.oPhase.afMass(this.oMT.tiN2I.(this.oMT.tsN2S.DihydrogenPhosphate)) + fH2PO4Change*oCallingManip.fTimeStep < 0
-        %
-        %         %this will not work with variable reaction equations, differ by
-        %         %case
-        %         if oCallingManip.oPhase.afMass(this.oMT.tiN2I.H2O) <= 0 || oCallingManip.oPhase.afMass(this.oMT.tiN2I.CO2) <= 0 || oCallingManip.oPhase.afMass(this.oMT.tiN2I.(this.oMT.tsN2S.Urea)) <= 0 || oCallingManip.oPhase.afMass(this.oMT.tiN2I.(this.oMT.tsN2S.DihydrogenPhosphate)) <= 0
-        %             %set everything to 0 since there aren't enough
-        %             %substances to be consumed for the reaction to take
-        %             %place
-        %
-        %             %Consumed Substances
-        %             afPartialFlowRates(this.oMT.tiN2I.H2O) = 0 ; %kg/s
-        %             afPartialFlowRates(this.oMT.tiN2I.CO2) = 0 ;%kg/s
-        %             afPartialFlowRates(this.oMT.tiN2I.NO3) = 0 ;%kg/s
-        %             afPartialFlowRates(this.oMT.tiN2I.(this.oMT.tsN2S.Urea)) = 0 ;%kg/s
-        %             afPartialFlowRates(this.oMT.tiN2I.(this.oMT.tsN2S.DihydrogenPhosphate)) = 0 ;%kg/s
-        %             afPartialFlowRates(this.oMT.tiN2I.C2H6O2N2) = 0 ;%kg/s
-        %
-        %             %Produced Substances
-        %             afPartialFlowRates(this.oMT.tiN2I.Chlorella)= 0 ;%kg/s
-        %             afPartialFlowRates(this.oMT.tiN2I.O2) = 0 ;%kg/s
-        %             afPartialFlowRates(this.oMT.tiN2I.(this.oMT.tsN2S.HydroxideIon)) = 0 ;%kg/s
-        %             afPartialFlowRates(this.oMT.tiN2I.COH2) = 0 ;%kg/s
-        %
-        %             fCO2AvailabilityFactor = 0;
-        %             fUreaAvailabilityFactor = 0;
-        %             fH2PO4AvailabilityFactor = 0;
-        %
-        %
-        %         else
-        %             %if only a part of what is required for the reaction is
-        %             %available, then use this part.
-        %             %determine available moles of nutrients
-        %             fAvailableH2O = oCallingManip.oPhase.afMass(this.oMT.tiN2I.H2O) / this.oMT.ttxMatter.H2O.fMolarMass; %mol
-        %             fAvailableCO2 = oCallingManip.oPhase.afMass(this.oMT.tiN2I.CO2) / this.oMT.ttxMatter.CO2.fMolarMass; %mol
-        %             %fAvailableNO3 = oCallingManip.oPhase.afMass(this.oMT.tiN2I.NO3) / this.oMT.ttxMatter.NO3.fMolarMass;%mol
-        %             fAvailableUrea = oCallingManip.oPhase.afMass(this.oMT.tiN2I.(this.oMT.tsN2S.Urea)) / this.oMT.ttxMatter.(this.oMT.tsN2S.Urea).fMolarMass;%mol
-        %             %fAvailableC2H6O2N2 = oCallingManip.oPhase.afMass(this.oMT.tiN2I.C2H6O2N2) / this.oMT.ttxMatter.C2H6O2N2.fMolarMass;%mol
-        %             fAvailableH2PO4 = oCallingManip.oPhase.afMass(this.oMT.tiN2I.(this.oMT.tsN2S.DihydrogenPhosphate)) / this.oMT.ttxMatter.(this.oMT.tsN2S.DihydrogenPhosphate).fMolarMass;%mol
-        %
-        %             %calculate limiting factor, which relates the mole availability
-        %             %to how much is needed for the reaction
-        %             mfAvailabilityFactor(1) = fAvailableH2O / this.fWaterReactionMolesWithUrea;
-        %             mfAvailabilityFactor(2) = fAvailableCO2 / this.fCO2ReactionMolesWithUrea;
-        %             mfAvailabilityFactor(3) = fAvailableH2PO4 / this.fH2PO4ReactionMolesWithUrea;
-        %
-        %             mfAvailabilityFactor(4) = fAvailableUrea / this.fUreaReactionMolesWithUrea;
-        %
-        %
-        %             fLimitingFactor = min(mfAvailabilityFactor);
-        %
-        %             % determine how much chlorella is produced and how much of the nutrients can be
-        %             % used
-        %             fMaximumPossibleChlorellaChange = fLimitingFactor * this.fChlorellaReactionMolesWithUrea * this.oMT.ttxMatter.Chlorella.fMolarMass;     %kg
-        %             fMaximumPossibleO2Change = fLimitingFactor * this.fO2ReactionMolesWithUrea* this.oMT.ttxMatter.O2.fMolarMass; %kg
-        %             fMaximumPossibleHydroxideIonChange = fLimitingFactor * this.fHydroxideIonReactionMolesWithUrea * this.oMT.ttxMatter.(this.oMT.tsN2S.HydroxideIon).fMolarMass; %kg
-        %             fMaximumPossibleCOH2Change = fLimitingFactor * this.fCOH2ReactionMolesWithUrea * this.oMT.ttxMatter.COH2.fMolarMass; %kg
-        %
-        %
-        %             fMaximumPossibleCO2Change = fLimitingFactor * - this.fCO2ReactionMolesWithUrea * this.oMT.ttxMatter.CO2.fMolarMass; %kg
-        %             fMaximumPossibleH2OChange = fLimitingFactor * - this.fWaterReactionMolesWithUrea * this.oMT.ttxMatter.H2O.fMolarMass; %kg
-        %             fMaximumPossibleNO3Change = fLimitingFactor * - this.fNO3ReactionMolesWithUrea * this.oMT.ttxMatter.NO3.fMolarMass;    %kg
-        %             fMaximumPossibleUreaChange = fLimitingFactor * - this.fUreaReactionMolesWithUrea * this.oMT.ttxMatter.(this.oMT.tsN2S.Urea).fMolarMass; %kg
-        %             fMaximumPossibleUrineSolidsChange = fLimitingFactor * - this.fUrineSolidsReactionMolesWithUrea * this.oMT.ttxMatter.C2H6O2N2.fMolarMass; %kg
-        %             fMaximumPossibleH2PO4Change = fLimitingFactor * - this.fH2PO4ReactionMolesWithUrea * this.oMT.ttxMatter.(this.oMT.tsN2S.DihydrogenPhosphate).fMolarMass; %kg
-        %
-        %             %set flow rates
-        %             afPartialFlowRates = zeros(1, this.oMT.iSubstances); %?kg/s
-        %             %Consumed Substances, when growth positive
-        %             afPartialFlowRates(this.oMT.tiN2I.H2O) = fMaximumPossibleH2OChange / oCallingManip.fTimeStep; %kg/s
-        %             afPartialFlowRates(this.oMT.tiN2I.CO2) = fMaximumPossibleCO2Change / oCallingManip.fTimeStep;%kg/s
-        %             afPartialFlowRates(this.oMT.tiN2I.NO3) = fMaximumPossibleNO3Change/ oCallingManip.fTimeStep; %kg/s
-        %             afPartialFlowRates(this.oMT.tiN2I.(this.oMT.tsN2S.Urea)) = fMaximumPossibleUreaChange/ oCallingManip.fTimeStep; %kg/s
-        %             afPartialFlowRates(this.oMT.tiN2I.(this.oMT.tsN2S.DihydrogenPhosphate)) = fMaximumPossibleH2PO4Change / oCallingManip.fTimeStep; %kg/s
-        %             afPartialFlowRates(this.oMT.tiN2I.C2H6O2N2) = fMaximumPossibleUrineSolidsChange/ oCallingManip.fTimeStep; %kg/s
-        %
-        %             %Produced Substances when growth positive
-        %             afPartialFlowRates(this.oMT.tiN2I.Chlorella)= fMaximumPossibleChlorellaChange / oCallingManip.fTimeStep; %kg/s
-        %             afPartialFlowRates(this.oMT.tiN2I.O2) = fMaximumPossibleO2Change / oCallingManip.fTimeStep; %kg/s
-        %             afPartialFlowRates(this.oMT.tiN2I.(this.oMT.tsN2S.HydroxideIon)) = fMaximumPossibleHydroxideIonChange / oCallingManip.fTimeStep ;%kg/s
-        %             afPartialFlowRates(this.oMT.tiN2I.COH2) = fMaximumPossibleCOH2Change / oCallingManip.fTimeStep ;%kg/s
-        %
-        %
-        %
-        %
-        %             %determine availability factor by relating what is available to
-        %             %what would be required to support the current growth rate
-        %             fCO2AvailabilityFactor = (fAvailableCO2 * this.oMT.ttxMatter.CO2.fMolarMass) / (-fCO2Change*oCallingManip.fTimeStep) ; %kg/kg = [-]
-        %             fUreaAvailabilityFactor =(fAvailableUrea * this.oMT.ttxMatter.(this.oMT.tsN2S.Urea).fMolarMass) / ( -fUreaChange*oCallingManip.fTimeStep) ; %kg/kg = [-]
-        %             fH2PO4AvailabilityFactor = (fAvailableH2PO4 * this.oMT.ttxMatter.(this.oMT.tsN2S.DihydrogenPhosphate).fMolarMass) / ( -fH2PO4Change*oCallingManip.fTimeStep);
-        %             %typically one of both will be larger than 1 because most
-        %             %likely the nutrients won't become limited all at once. Set
-        %             %the one larger than 1 to 1 for ease of reading.
-        %             if fCO2AvailabilityFactor > 1
-        %                 fCO2AvailabilityFactor = 1;
-        %             end
-        %
-        %             if fUreaAvailabilityFactor > 1
-        %                 fUreaAvailabilityFactor = 1;
-        %             end
-        %
-        %             if fH2PO4AvailabilityFactor > 1
-        %                 fH2PO4AvailabilityFactor = 1;
-        %             end
-        %
-        %         end
-        %
-        %
-        %
-        %     else
-        %         %if everything is available in excess of what is needed
-        %         %set flow rates (kg/s) to pass back by dividing the desired
-        %         %mass conversion (kg) through the time step (s)
-        %
-        %         afPartialFlowRates = zeros(1, this.oMT.iSubstances); %?kg/s
-        %         %Consumed Substances, when growth positive
-        %         afPartialFlowRates(this.oMT.tiN2I.H2O) = fH2OChange; %kg/s
-        %         afPartialFlowRates(this.oMT.tiN2I.CO2) = fCO2Change;%kg/s
-        %         afPartialFlowRates(this.oMT.tiN2I.NO3) = fNO3Change; %kg/s
-        %         afPartialFlowRates(this.oMT.tiN2I.(this.oMT.tsN2S.Urea)) = fUreaChange; %kg/s
-        %         afPartialFlowRates(this.oMT.tiN2I.(this.oMT.tsN2S.DihydrogenPhosphate)) = fH2PO4Change; %kg/s
-        %         afPartialFlowRates(this.oMT.tiN2I.C2H6O2N2) = fUrineSolidsChange; %kg/s
-        %
-        %         %Produced Substances when growth positive
-        %         afPartialFlowRates(this.oMT.tiN2I.Chlorella)= fChlorellaChange; %kg/s
-        %         afPartialFlowRates(this.oMT.tiN2I.O2) = fO2Change; %kg/s
-        %         afPartialFlowRates(this.oMT.tiN2I.(this.oMT.tsN2S.HydroxideIon)) = fHydroxideIonChange ;%kg/s
-        %         afPartialFlowRates(this.oMT.tiN2I.COH2) = fCOH2Change ;%kg/s
-        %
-        %
-        %
-        %         fCO2AvailabilityFactor = 1;
-        %         fUreaAvailabilityFactor = 1;
-        %         fH2PO4AvailabilityFactor = 1;
-        %     end
-        % else
-        %     %if timestep = 0;
-        %     afPartialFlowRates = zeros(1, this.oMT.iSubstances);
-        %     fCO2AvailabilityFactor = 0;
-        %     fUreaAvailabilityFactor = 0;
-        %     fH2PO4AvailabilityFactor = 0;
-        % end
-        % afPartialFlowRatesFromUreaNitrogen = afPartialFlowRates;
-        % end
+        function [afPartialFlowRatesFromUreaNitrogen,fUreaAvailabilityFactor,fCO2AvailabilityFactor] = UreaNitrogen(this, fChlorellaMolesFromUreaNitrogen,oCallingManip)
+            % 0.925 CO2 + 0.075 CH4N2O + 0.725 H2O -> Ch1.75O0.42N0.15 +  1.115 O2
+            
+            fMolesChlorella = fChlorellaMolesFromUreaNitrogen;
+
+            afPartialFlowRates = zeros(1, this.oMT.iSubstances);
+            
+            % check if time step is larger than 0 (exclude first time
+            % step) in order to ensure one is not dividing by zero
+            if ~isempty(oCallingManip.fTimeStep) && oCallingManip.fTimeStep > 0 && fMolesChlorella > 0
+                %% Consumed substances in this time step
+                %products
+                fChlorellaChange    = this.fChlorellaReactionMolesWithUrea      * fMolesChlorella * this.fMolarMassChlorella;     %kg/s
+                fO2Change           = this.fO2ReactionMolesWithUrea             * fMolesChlorella * this.oMT.afMolarMass(this.oMT.tiN2I.O2); %kg/s
+                fHydroxideIonChange = this.fHydroxideIonReactionMolesWithUrea   * fMolesChlorella * this.oMT.afMolarMass(this.oMT.tiN2I.(this.oMT.tsN2S.HydroxideIon)); %kg/s
+                fCOH2Change         = this.fCOH2ReactionMolesWithUrea           * fMolesChlorella * this.oMT.afMolarMass(this.oMT.tiN2I.COH2); %kg/s
+
+                %reactants
+                fCO2Change          = - this.fCO2ReactionMolesWithUrea          * fMolesChlorella * this.oMT.afMolarMass(this.oMT.tiN2I.CO2); %kg/s
+                fH2OChange          = - this.fWaterReactionMolesWithUrea        * fMolesChlorella * this.oMT.afMolarMass(this.oMT.tiN2I.H2O); %kg/s
+                fNO3Change          = - this.fNO3ReactionMolesWithUrea          * fMolesChlorella * this.oMT.afMolarMass(this.oMT.tiN2I.NO3);    %kg/s
+                fUreaChange         = - this.fUreaReactionMolesWithUrea         * fMolesChlorella * this.oMT.afMolarMass(this.oMT.tiN2I.(this.oMT.tsN2S.Urea));    %kg/s
+                fH2PO4Change        = - this.fH2PO4ReactionMolesWithUrea        * fMolesChlorella * this.oMT.afMolarMass(this.oMT.tiN2I.(this.oMT.tsN2S.DihydrogenPhosphate));    %kg/s
+                fUrineSolidsChange  = - this.fUrineSolidsReactionMolesWithUrea  * fMolesChlorella * this.oMT.afMolarMass(this.oMT.tiN2I.C2H6O2N2);    %kg/s
+
+                %% set flow rates to pass back
+
+                % check if something would result in negative mass.
+                % problem can be that not enought CO2 is in the media phase to allow for the algae to grow how much they need to in the time step and the growth rate is automatically set to 0 if not enough nutrients are available. should change this to also be able to growth with less than wat is required. problem here is, that the growth rate will be slower due to less nutrients being currently available although in reality the required CO2 could just be drawn from the atmosphere due to the decreased concentration when it is used up.
+                if oCallingManip.oPhase.afMass(this.oMT.tiN2I.H2O) + fH2OChange*oCallingManip.fTimeStep < 0 || oCallingManip.oPhase.afMass(this.oMT.tiN2I.CO2) + fCO2Change*oCallingManip.fTimeStep < 0 || oCallingManip.oPhase.afMass(this.oMT.tiN2I.(this.oMT.tsN2S.Urea)) + fUreaChange*oCallingManip.fTimeStep < 0 || oCallingManip.oPhase.afMass(this.oMT.tiN2I.(this.oMT.tsN2S.DihydrogenPhosphate)) + fH2PO4Change*oCallingManip.fTimeStep < 0
+
+                    %this will not work with variable reaction equations, differ by
+                    %case
+                    if oCallingManip.oPhase.afMass(this.oMT.tiN2I.H2O) <= 0 || oCallingManip.oPhase.afMass(this.oMT.tiN2I.CO2) <= 0 || oCallingManip.oPhase.afMass(this.oMT.tiN2I.(this.oMT.tsN2S.Urea)) <= 0 % || oCallingManip.oPhase.afMass(this.oMT.tiN2I.(this.oMT.tsN2S.DihydrogenPhosphate)) <= 0
+                        %set everything to 0 since there aren't enough
+                        %substances to be consumed for the reaction to take
+                        %place
+
+                        %Consumed Substances
+                        afPartialFlowRates(this.oMT.tiN2I.H2O) = 0 ; %kg/s
+                        afPartialFlowRates(this.oMT.tiN2I.CO2) = 0 ;%kg/s
+                        afPartialFlowRates(this.oMT.tiN2I.NO3) = 0 ;%kg/s
+                        afPartialFlowRates(this.oMT.tiN2I.(this.oMT.tsN2S.Urea)) = 0 ;%kg/s
+                        afPartialFlowRates(this.oMT.tiN2I.(this.oMT.tsN2S.DihydrogenPhosphate)) = 0 ;%kg/s
+                        afPartialFlowRates(this.oMT.tiN2I.C2H6O2N2) = 0 ;%kg/s
+
+                        %Produced Substances
+                        afPartialFlowRates(this.oMT.tiN2I.Chlorella)= 0 ;%kg/s
+                        afPartialFlowRates(this.oMT.tiN2I.O2) = 0 ;%kg/s
+                        afPartialFlowRates(this.oMT.tiN2I.(this.oMT.tsN2S.HydroxideIon)) = 0 ;%kg/s
+                        afPartialFlowRates(this.oMT.tiN2I.COH2) = 0 ;%kg/s
+
+                        fCO2AvailabilityFactor = 0;
+                        fUreaAvailabilityFactor = 0;
+%                         fH2PO4AvailabilityFactor = 0;
+
+
+                    else
+                        %if only a part of what is required for the reaction is
+                        %available, then use this part.
+                        %determine available moles of nutrients
+                        fAvailableH2O           = oCallingManip.oPhase.afMass(this.oMT.tiN2I.H2O) / this.oMT.afMolarMass(this.oMT.tiN2I.H2O); %mol
+                        fAvailableCO2           = oCallingManip.oPhase.afMass(this.oMT.tiN2I.CO2) / this.oMT.afMolarMass(this.oMT.tiN2I.CO2); %mol
+                        %fAvailableNO3          = oCallingManip.oPhase.afMass(this.oMT.tiN2I.NO3) / this.oMT.afMolarMass(this.oMT.tiN2I.NO3);%mol
+                        fAvailableUrea          = oCallingManip.oPhase.afMass(this.oMT.tiN2I.(this.oMT.tsN2S.Urea)) / this.oMT.afMolarMass(this.oMT.tiN2I.(this.oMT.tsN2S.Urea));%mol
+                        %fAvailableC2H6O2N2     = oCallingManip.oPhase.afMass(this.oMT.tiN2I.C2H6O2N2) / this.oMT.afMolarMass(this.oMT.tiN2I.C2H6O2N2);%mol
+                        fAvailableH2PO4         = oCallingManip.oPhase.afMass(this.oMT.tiN2I.(this.oMT.tsN2S.DihydrogenPhosphate)) / this.oMT.afMolarMass(this.oMT.tiN2I.(this.oMT.tsN2S.DihydrogenPhosphate));%mol
+
+                        %calculate limiting factor, which relates the mole availability
+                        %to how much is needed for the reaction
+                        mfAvailabilityFactor(1) = fAvailableH2O     / this.fWaterReactionMolesWithUrea;
+                        mfAvailabilityFactor(2) = fAvailableCO2     / this.fCO2ReactionMolesWithUrea;
+                        mfAvailabilityFactor(3) = fAvailableH2PO4   / this.fH2PO4ReactionMolesWithUrea;
+
+                        mfAvailabilityFactor(4) = fAvailableUrea    / this.fUreaReactionMolesWithUrea;
+
+
+                        fLimitingFactor = min(mfAvailabilityFactor);
+                        if fLimitingFactor > 1
+                            fLimitingFactor = 1;
+                        end
+
+                        % determine how much chlorella is produced and how much of the nutrients can be
+                        % used
+                        fMaximumPossibleChlorellaChange     = fLimitingFactor * this.fChlorellaReactionMolesWithUrea        * this.fMolarMassChlorella;     %kg
+                        fMaximumPossibleO2Change            = fLimitingFactor * this.fO2ReactionMolesWithUrea               * this.oMT.afMolarMass(this.oMT.tiN2I.O2); %kg
+                        fMaximumPossibleHydroxideIonChange  = fLimitingFactor * this.fHydroxideIonReactionMolesWithUrea     * this.oMT.afMolarMass(this.oMT.tiN2I.(this.oMT.tsN2S.HydroxideIon)); %kg
+                        fMaximumPossibleCOH2Change          = fLimitingFactor * this.fCOH2ReactionMolesWithUrea             * this.oMT.afMolarMass(this.oMT.tiN2I.COH2); %kg
+
+                        fMaximumPossibleCO2Change           = fLimitingFactor * - this.fCO2ReactionMolesWithUrea            * this.oMT.afMolarMass(this.oMT.tiN2I.CO2); %kg
+                        fMaximumPossibleH2OChange           = fLimitingFactor * - this.fWaterReactionMolesWithUrea          * this.oMT.afMolarMass(this.oMT.tiN2I.H2O); %kg
+                        fMaximumPossibleNO3Change           = fLimitingFactor * - this.fNO3ReactionMolesWithUrea            * this.oMT.afMolarMass(this.oMT.tiN2I.NO3);    %kg
+                        fMaximumPossibleUreaChange          = fLimitingFactor * - this.fUreaReactionMolesWithUrea           * this.oMT.afMolarMass(this.oMT.tiN2I.(this.oMT.tsN2S.Urea)); %kg
+                        fMaximumPossibleUrineSolidsChange   = fLimitingFactor * - this.fUrineSolidsReactionMolesWithUrea    * this.oMT.afMolarMass(this.oMT.tiN2I.C2H6O2N2); %kg
+                        fMaximumPossibleH2PO4Change         = fLimitingFactor * - this.fH2PO4ReactionMolesWithUrea          * this.oMT.afMolarMass(this.oMT.tiN2I.(this.oMT.tsN2S.DihydrogenPhosphate)); %kg
+
+                        %set flow rates
+                        %Consumed Substances, when growth positive
+                        afPartialFlowRates(this.oMT.tiN2I.H2O) = fMaximumPossibleH2OChange / oCallingManip.fTimeStep; %kg/s
+                        afPartialFlowRates(this.oMT.tiN2I.CO2) = fMaximumPossibleCO2Change / oCallingManip.fTimeStep;%kg/s
+                        afPartialFlowRates(this.oMT.tiN2I.NO3) = fMaximumPossibleNO3Change/ oCallingManip.fTimeStep; %kg/s
+                        afPartialFlowRates(this.oMT.tiN2I.(this.oMT.tsN2S.Urea)) = fMaximumPossibleUreaChange/ oCallingManip.fTimeStep; %kg/s
+                        afPartialFlowRates(this.oMT.tiN2I.(this.oMT.tsN2S.DihydrogenPhosphate)) = fMaximumPossibleH2PO4Change / oCallingManip.fTimeStep; %kg/s
+                        afPartialFlowRates(this.oMT.tiN2I.C2H6O2N2) = fMaximumPossibleUrineSolidsChange/ oCallingManip.fTimeStep; %kg/s
+
+                        %Produced Substances when growth positive
+                        afPartialFlowRates(this.oMT.tiN2I.Chlorella)= fMaximumPossibleChlorellaChange / oCallingManip.fTimeStep; %kg/s
+                        afPartialFlowRates(this.oMT.tiN2I.O2) = fMaximumPossibleO2Change / oCallingManip.fTimeStep; %kg/s
+                        afPartialFlowRates(this.oMT.tiN2I.(this.oMT.tsN2S.HydroxideIon)) = fMaximumPossibleHydroxideIonChange / oCallingManip.fTimeStep ;%kg/s
+                        afPartialFlowRates(this.oMT.tiN2I.COH2) = fMaximumPossibleCOH2Change / oCallingManip.fTimeStep ;%kg/s
+                        
+                        %determine availability factor by relating what is available to
+                        %what would be required to support the current growth rate
+                        fCO2AvailabilityFactor = (fAvailableCO2 * this.oMT.afMolarMass(this.oMT.tiN2I.CO2)) / (-fCO2Change*oCallingManip.fTimeStep) ; %kg/kg = [-]
+                        fUreaAvailabilityFactor =(fAvailableUrea * this.oMT.afMolarMass(this.oMT.tiN2I.(this.oMT.tsN2S.Urea))) / ( -fUreaChange*oCallingManip.fTimeStep) ; %kg/kg = [-]
+%                         fH2PO4AvailabilityFactor = (fAvailableH2PO4 * this.oMT.afMolarMass(this.oMT.tiN2I.(this.oMT.tsN2S.DihydrogenPhosphate))) / ( -fH2PO4Change*oCallingManip.fTimeStep);
+                        %typically one of both will be larger than 1 because most
+                        %likely the nutrients won't become limited all at once. Set
+                        %the one larger than 1 to 1 for ease of reading.
+                        if fCO2AvailabilityFactor > 1
+                            fCO2AvailabilityFactor = 1;
+                        end
+
+                        if fUreaAvailabilityFactor > 1
+                            fUreaAvailabilityFactor = 1;
+                        end
+
+%                         if fH2PO4AvailabilityFactor > 1
+%                             fH2PO4AvailabilityFactor = 1;
+%                         end
+                    end
+                else
+                    %if everything is available in excess of what is needed
+                    %set flow rates (kg/s) to pass back by dividing the desired
+                    %mass conversion (kg) through the time step (s)
+
+                    %Consumed Substances, when growth positive
+                    afPartialFlowRates(this.oMT.tiN2I.H2O) = fH2OChange; %kg/s
+                    afPartialFlowRates(this.oMT.tiN2I.CO2) = fCO2Change;%kg/s
+                    afPartialFlowRates(this.oMT.tiN2I.NO3) = fNO3Change; %kg/s
+                    afPartialFlowRates(this.oMT.tiN2I.(this.oMT.tsN2S.Urea)) = fUreaChange; %kg/s
+                    afPartialFlowRates(this.oMT.tiN2I.(this.oMT.tsN2S.DihydrogenPhosphate)) = fH2PO4Change; %kg/s
+                    afPartialFlowRates(this.oMT.tiN2I.C2H6O2N2) = fUrineSolidsChange; %kg/s
+
+                    %Produced Substances when growth positive
+                    afPartialFlowRates(this.oMT.tiN2I.Chlorella)= fChlorellaChange; %kg/s
+                    afPartialFlowRates(this.oMT.tiN2I.O2) = fO2Change; %kg/s
+                    afPartialFlowRates(this.oMT.tiN2I.(this.oMT.tsN2S.HydroxideIon)) = fHydroxideIonChange ;%kg/s
+                    afPartialFlowRates(this.oMT.tiN2I.COH2) = fCOH2Change ;%kg/s
+
+
+
+                    fCO2AvailabilityFactor = 1;
+                    fUreaAvailabilityFactor = 1;
+%                     fH2PO4AvailabilityFactor = 1;
+                end
+            else
+                %if timestep = 0;
+                fCO2AvailabilityFactor = 0;
+                fUreaAvailabilityFactor = 0;
+%                 fH2PO4AvailabilityFactor = 0;
+            end
+            
+            fError = sum(afPartialFlowRates);
+            if fError < 1e-6
+                fPositiveFlowRate = sum(afPartialFlowRates(afPartialFlowRates > 0));
+                fNegativeFlowRate = abs(sum(afPartialFlowRates(afPartialFlowRates < 0)));
+                
+                if fPositiveFlowRate > fNegativeFlowRate
+                    % reduce the positive flows by the difference:
+                    fDifference = fPositiveFlowRate - fNegativeFlowRate;
+                    arRatios = afPartialFlowRates(afPartialFlowRates > 0)./fPositiveFlowRate;
+                    
+                    afPartialFlowRates(afPartialFlowRates > 0) = afPartialFlowRates(afPartialFlowRates > 0) - fDifference .* arRatios;
+                else
+                    % reduce the negative flows by the difference:
+                    fDifference = fPositiveFlowRate - fNegativeFlowRate;
+                    arRatios = abs(afPartialFlowRates(afPartialFlowRates < 0)./fNegativeFlowRate);
+                    
+                    afPartialFlowRates(afPartialFlowRates < 0) = afPartialFlowRates(afPartialFlowRates < 0) - fDifference .* arRatios;
+                end
+            else
+                keyboard()
+            end
+            afPartialFlowRatesFromUreaNitrogen = afPartialFlowRates;
+        end
     end
 end

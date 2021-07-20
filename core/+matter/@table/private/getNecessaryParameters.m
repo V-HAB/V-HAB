@@ -5,27 +5,33 @@ tbReference.bFlow = false;
 tbReference.bNone = false;
 
 if length(varargin) == 1
-    if ~isa(varargin{1}, 'matter.phase') && ~isa(varargin{1}, 'matter.flow')
-        this.throw('calculateDensity', 'If only one param provided, has to be a matter.phase or matter.flow (derivative)');
-    end
-    
     % Initialize attributes from input object
     % Getting the phase type (gas, liquid, solid) depending on the object
     % type
-    if isa(varargin{1}, 'matter.phase')
+    if strcmp(varargin{1}.sObjectType, 'phase')
         sMatterState = varargin{1}.sType;
         oPhase = varargin{1};
         tbReference.bPhase = true;
         
-    elseif isa(varargin{1}, 'matter.flow')
-        sMatterState = varargin{1}.oBranch.getInEXME().oPhase.sType;
+        if varargin{1}.fMass == 0
+            arPartialMass = zeros(1, this.iSubstances);
+        else
+            arPartialMass = this.resolveCompoundMass(varargin{1}.arPartialMass, varargin{1}.arCompoundMass);
+        end
+        
+    elseif strcmp(varargin{1}.sObjectType, 'flow')
         oPhase = varargin{1}.oBranch.getInEXME().oPhase;
+        sMatterState = oPhase.sType;
         tbReference.bFlow = true;
         
+        % For flows not partial masses but partial mass ratios are stored
+        arPartialMass = this.resolveCompoundMass(varargin{1}.arPartialMass, varargin{1}.arCompoundMass);
+    else
+        this.throw('calculateDensity', 'If only one param provided, has to be a matter.phase or matter.flow (derivative)');
     end
     
     fTemperature = varargin{1}.fTemperature;
-    arPartialMass = varargin{1}.arPartialMass;
+    
     fPressure = varargin{1}.fPressure;
     
     if strcmp(sMatterState, 'gas')
@@ -130,10 +136,10 @@ else
     end
     
     % Isobar or isochor?
-    if nargin > 5 && varargin{5} == true
-        bUseIsobaricData = true;
-    else
+    if nargin > 5 && varargin{5} == false
         bUseIsobaricData = false;
+    else
+        bUseIsobaricData = true;
     end
     
 end

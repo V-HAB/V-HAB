@@ -1,0 +1,179 @@
+Source: USDA National Nutrient Database for Standard Reference 1 April 2018 Software v.3.9.5.3_2019-06-13
+Full Report (All Nutrients)
+Report Run at: September 05 2019 02:27 EDT
+"Nutrient data for: Sweet potato, raw, unprepared (Includes foods for USDA's Food Distribution Program)"
+Food Group:  Vegetables and Vegetable Products
+Common Name:Sweetpotato
+Carbohydrate Factor: Fat Factor: Protein Factor: Nitrogen to Protein Conversion Factor: 
+Refuse: Refuse Description: 
+Nutrient,Unit,1Value per 100 g,Data points,Std. Error,"1 cup, cubes = 133.0g","1 sweetpotato, 5"" long = 130.0g",
+Proximates
+"Water",g,77.28,7,0.650,102.78,100.46
+"Energy",kcal,86,--,--,114,112
+"Energy",kJ,359,--,--,477,467
+"Protein",g,1.57,4,0.140,2.09,2.04
+"Total lipid (fat)",g,0.05,4,0.030,0.07,0.07
+"Ash",g,0.99,4,0.050,1.32,1.29
+"Carbohydrate, by difference",g,20.12,--,--,26.76,26.16
+"Fiber, total dietary",g,3.0,1,--,4.0,3.9
+"Sugars, total",g,4.18,--,--,5.56,5.43
+"Sucrose",g,2.52,6,0.120,3.35,3.28
+"Glucose (dextrose)",g,0.96,6,0.260,1.28,1.25
+"Fructose",g,0.70,6,0.170,0.93,0.91
+"Lactose",g,0.00,4,0.000,0.00,0.00
+"Maltose",g,0.00,4,0.000,0.00,0.00
+"Galactose",g,0.00,--,--,0.00,0.00
+"Starch",g,12.65,4,2.700,16.82,16.45
+Minerals
+"Calcium, Ca",mg,30,3,4.000,40,39
+"Iron, Fe",mg,0.61,3,0.070,0.81,0.79
+"Magnesium, Mg",mg,25,3,3.000,33,32
+"Phosphorus, P",mg,47,3,7.000,63,61
+"Potassium, K",mg,337,3,27.000,448,438
+"Sodium, Na",mg,55,3,26.000,73,72
+"Zinc, Zn",mg,0.30,3,0.030,0.40,0.39
+"Copper, Cu",mg,0.151,3,0.015,0.201,0.196
+"Manganese, Mn",mg,0.258,3,0.052,0.343,0.335
+"Selenium, Se",µg,0.6,1,--,0.8,0.8
+Vitamins
+"Vitamin C, total ascorbic acid",mg,2.4,4,1.000,3.2,3.1
+"Thiamin",mg,0.078,4,0.007,0.104,0.101
+"Riboflavin",mg,0.061,4,0.005,0.081,0.079
+"Niacin",mg,0.557,4,0.076,0.741,0.724
+"Pantothenic acid",mg,0.800,4,0.152,1.064,1.040
+"Vitamin B-6",mg,0.209,4,0.014,0.278,0.272
+"Folate, total",µg,11,4,1.000,15,14
+"Folic acid",µg,0,--,--,0,0
+"Folate, food",µg,11,4,1.000,15,14
+"Folate, DFE",µg,11,--,--,15,14
+"Choline, total",mg,12.3,--,--,16.4,16.0
+"Vitamin B-12",µg,0.00,--,--,0.00,0.00
+"Vitamin B-12, added",µg,0.00,--,--,0.00,0.00
+"Vitamin A, RAE",µg,709,--,--,943,922
+"Retinol",µg,0,--,--,0,0
+"Carotene, beta",µg,8509,43,224.000,11317,11062
+"Carotene, alpha",µg,7,41,3.000,9,9
+"Cryptoxanthin, beta",µg,0,38,0.000,0,0
+"Vitamin A, IU",IU,14187,--,--,18869,18443
+"Lycopene",µg,0,5,0.000,0,0
+"Lutein + zeaxanthin",µg,0,1,--,0,0
+"Vitamin E (alpha-tocopherol)",mg,0.26,2,--,0.35,0.34
+"Vitamin E, added",mg,0.00,--,--,0.00,0.00
+"Tocopherol, beta",mg,0.01,2,--,0.01,0.01
+"Tocopherol, gamma",mg,0.00,2,--,0.00,0.00
+"Tocopherol, delta",mg,0.00,2,--,0.00,0.00
+"Tocotrienol, alpha",mg,0.01,2,--,0.01,0.01
+"Tocotrienol, beta",mg,0.00,2,--,0.00,0.00
+"Tocotrienol, gamma",mg,0.00,2,--,0.00,0.00
+"Tocotrienol, delta",mg,0.00,2,--,0.00,0.00
+"Vitamin D (D2 + D3)",µg,0.0,--,--,0.0,0.0
+"Vitamin D",IU,0,--,--,0,0
+"Vitamin K (phylloquinone)",µg,1.8,2,--,2.4,2.3
+Lipids
+"Fatty acids, total saturated",g,0.018,--,--,0.024,0.023
+"4:0",g,0.000,--,--,0.000,0.000
+"6:0",g,0.000,--,--,0.000,0.000
+"8:0",g,0.000,2,--,0.000,0.000
+"10:0",g,0.000,2,--,0.000,0.000
+"12:0",g,0.000,2,--,0.000,0.000
+"14:0",g,0.000,2,--,0.000,0.000
+"15:0",g,0.000,2,--,0.000,0.000
+"16:0",g,0.018,2,--,0.024,0.023
+"17:0",g,0.000,2,--,0.000,0.000
+"18:0",g,0.001,2,--,0.001,0.001
+"20:0",g,0.000,2,--,0.000,0.000
+"22:0",g,0.000,2,--,0.000,0.000
+"24:0",g,0.000,2,--,0.000,0.000
+"Fatty acids, total monounsaturated",g,0.001,--,--,0.001,0.001
+"14:1",g,0.000,2,--,0.000,0.000
+"15:1",g,0.000,2,--,0.000,0.000
+"16:1 undifferentiated",g,0.000,2,--,0.000,0.000
+"17:1",g,0.000,2,--,0.000,0.000
+"18:1 undifferentiated",g,0.001,2,--,0.001,0.001
+"20:1",g,0.000,2,--,0.000,0.000
+"22:1 undifferentiated",g,0.000,2,--,0.000,0.000
+"Fatty acids, total polyunsaturated",g,0.014,--,--,0.019,0.018
+"18:2 undifferentiated",g,0.013,2,--,0.017,0.017
+"18:3 undifferentiated",g,0.001,2,--,0.001,0.001
+"18:4",g,0.000,2,--,0.000,0.000
+"20:2 n-6 c,c",g,0.000,2,--,0.000,0.000
+"20:3 undifferentiated",g,0.000,2,--,0.000,0.000
+"20:4 undifferentiated",g,0.000,2,--,0.000,0.000
+"20:5 n-3 (EPA)",g,0.000,2,--,0.000,0.000
+"22:5 n-3 (DPA)",g,0.000,2,--,0.000,0.000
+"22:6 n-3 (DHA)",g,0.000,2,--,0.000,0.000
+"Fatty acids, total trans",g,0.000,--,--,0.000,0.000
+"Cholesterol",mg,0,--,--,0,0
+"Phytosterols",mg,12,--,--,16,16
+Amino Acids
+"Tryptophan",g,0.031,--,--,0.041,0.040
+"Threonine",g,0.083,--,--,0.110,0.108
+"Isoleucine",g,0.055,--,--,0.073,0.072
+"Leucine",g,0.092,--,--,0.122,0.120
+"Lysine",g,0.066,--,--,0.088,0.086
+"Methionine",g,0.029,--,--,0.039,0.038
+"Cystine",g,0.022,--,--,0.029,0.029
+"Phenylalanine",g,0.089,--,--,0.118,0.116
+"Tyrosine",g,0.034,--,--,0.045,0.044
+"Valine",g,0.086,--,--,0.114,0.112
+"Arginine",g,0.055,--,--,0.073,0.072
+"Histidine",g,0.031,--,--,0.041,0.040
+"Alanine",g,0.077,--,--,0.102,0.100
+"Aspartic acid",g,0.382,--,--,0.508,0.497
+"Glutamic acid",g,0.155,--,--,0.206,0.201
+"Glycine",g,0.063,--,--,0.084,0.082
+"Proline",g,0.052,--,--,0.069,0.068
+"Serine",g,0.088,--,--,0.117,0.114
+Other
+"Alcohol, ethyl",g,0.0,--,--,0.0,0.0
+"Caffeine",mg,0,--,--,0,0
+"Theobromine",mg,0,--,--,0,0
+Flavonoids
+Flavones
+"Apigenin",mg,0.0,2,--,0.0,0.0
+"Luteolin",mg,0.0,2,--,0.0,0.0
+Flavonols
+"Kaempferol",mg,0.0,2,--,0.0,0.0
+"Myricetin",mg,0.0,2,--,0.0,0.0
+"Quercetin",mg,0.0,2,--,0.0,0.0
+Isoflavones
+"Daidzein",mg,0.00,2,--,0.00,0.00
+"Genistein",mg,0.01,2,--,0.01,0.01
+"Total isoflavones",mg,0.01,2,--,0.01,0.01
+"Biochanin A",mg,0.00,1,--,0.00,0.00
+"Formononetin",mg,0.00,1,--,0.00,0.00
+"Coumestrol",mg,0.00,1,--,0.00,0.00
+Proanthocyanidin
+"Proanthocyanidin dimers",mg,0.0,1,--,0.0,0.0
+"Proanthocyanidin trimers",mg,0.0,1,--,0.0,0.0
+"Proanthocyanidin 4-6mers",mg,0.0,1,--,0.0,0.0
+"Proanthocyanidin 7-10mers",mg,0.0,1,--,0.0,0.0
+"Proanthocyanidin polymers (>10mers)",mg,0.0,1,--,0.0,0.0
+
+
+Sources of Data
+1,"Nutrient Data Laboratory, ARS, USDA","National Food and Nutrient Analysis Program Wave 6a",2002,,BeltsvilleMD
+2,"F W Quackenbush","Reverse phase HPLC separation of cis- and trans-carotenoids and its application to beta-carotenes in food materials",1987,J Liq Chrom,10MD pp. 643-643
+3,"J P Sweeney, A C Marsh","Effect of processing on provitamin A in vegetables",1971,J Am Diet Assoc,59MD pp. 238-238
+4,"J L Bureau, R J Bushway","HPLC determination of carotenoids in fruits and vegetables in the United States",1986,J Food Sci,52MD pp. 128-128
+5,"R J Bushway","Determination of alpha- and beta-carotene in some raw fruits and vegetables by high-performance liquid chromatography",1986,J Agr Food Chem,34MD pp. 409-409
+6,"L A Chandler, S J Schwartz","Isomerization and losses of trans-beta-carotene in sweet potatoes as affected by processing treatments",1988,J Agric Food Chem,36MD pp. 129-129
+7,"F Khachik, G R Beecher","Application of C-45-beta-carotene as an internal standard for the quantification of carotenoids in yellow/orange vegetables by liquid chromatography",1987,J Agr Food Chem,35MD pp. 732-732
+8,"Franke, A.A., Custer, L.J., Arakaki, C., and Murphy, S.P.","Vitamin C and flavonoid levels of fruits and vegetables consumed in Hawaii.",2004,J. Food Comp. Anal.,17 pp. 1-1
+9,"Gu, L., Kelm, M.A., Hammerstone, J.F., Beecher, G., Holden, J., Haytowitz, D., Gebhardt, S., and Prior, R.L.","Screening foods containing proanthocyanidins and their structural characterization using LC-MS/MS and thiolytic degradation",2003,J. Agric. Food Chem.,51 pp. 7513-7513
+10,"Horn-Ross, P. L., Barnes, S., Lee, M., Coward, L., Mandel, E., Koo, J., John, E. M., and Smith, M. ","Assesing phytoestrogen exposure in epidemiologic studies: development of a database (United States).",2000,Cancer Causes and Control,11 pp. 289-289
+11,"Liggins, J., Bluck, L. J. C., Runswick, C., Atkinson, C., Coward, W. A., and Bingham, S. A. ","Daidzein and genistein content of vegetables.",2000,Brit. J. Nutr.,84 pp. 717-717
+Langual Code(s)
+"M0001""CONTAINER OR WRAPPING NOT KNOWN"
+"P0024""HUMAN FOOD, NO AGE SPECIFICATION"
+"A0152""VEGETABLE OR VEGETABLE PRODUCT (US CFR)"
+"A1281""1100 VEGETABLES AND VEGETABLE PRODUCTS (USDA SR)"
+"B1106""SWEET POTATO"
+"H0003""NO TREATMENT APPLIED"
+"C0240""ROOT, TUBER OR BULB, WITHOUT PEEL"
+"J0001""PRESERVATION METHOD NOT KNOWN"
+"K0003""NO PACKING MEDIUM USED"
+"E0150""WHOLE, NATURAL SHAPE"
+"F0003""NOT HEAT-TREATED"
+"N0001""FOOD CONTACT SURFACE NOT KNOWN"
+"G0003""COOKING METHOD NOT APPLICABLE"

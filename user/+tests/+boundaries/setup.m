@@ -13,14 +13,9 @@ classdef setup < simulation.infrastructure
     
     methods
         % Constructor function
-        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig) 
+        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig, fSimTime) 
             
-            ttMonitorConfig.oMassBalanceObserver.sClass = 'simulation.monitors.massbalanceObserver';
-            fAccuracy = 1e-8;
-            fMaxMassBalanceDifference = inf;
-            bSetBreakPoints = false;
-            ttMonitorConfig.oMassBalanceObserver.cParams = { fAccuracy, fMaxMassBalanceDifference, bSetBreakPoints };
-            % First we call the parent constructor and tell it the name of
+             % First we call the parent constructor and tell it the name of
             % this simulation we are creating.
             this@simulation.infrastructure('Test_Boundaries', ptConfigParams, tSolverParams, ttMonitorConfig);
             
@@ -30,7 +25,11 @@ classdef setup < simulation.infrastructure
             
             % Setting the simulation duration to one hour. Time is always
             % in units of seconds in V-HAB.
-            this.fSimTime = 3600;
+            if nargin < 4 || isempty(fSimTime)
+                this.fSimTime = 3600;
+            else 
+                this.fSimTime = fSimTime;
+            end
             
         end
         

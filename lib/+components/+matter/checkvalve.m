@@ -17,7 +17,6 @@ classdef checkvalve < matter.procs.f2f
         % If false, no flow at all (returns inf as pressure drop)
         bReversed = false;
         
-        bCheckValve = true;
         bOpen = true;
     end
     
@@ -28,6 +27,8 @@ classdef checkvalve < matter.procs.f2f
             %   bValveOpen - if closed, inf pressure drop - no flow!
             
             this@matter.procs.f2f(oContainer, sName);
+            
+            this.bCheckValve = true;
             
             if nargin >= 3 && ~isempty(bReversed) && islogical(bReversed)
                 this.bReversed = bReversed;
@@ -59,24 +60,21 @@ classdef checkvalve < matter.procs.f2f
                 % if the solver is not iterative always calculate the valve
             end
                 
-            
-            % No flow - no pressure drop
-            if fFlowRate == 0
-                this.fPressureDrop = 0;
-                this.bOpen = true;
-                
-            % NEGATIVE flow for 'normal' checkvalve (matter can only flow
-            % from the left to the right side) - return inf to block flow!
-            elseif ~this.bReversed && fFlowRate < 0
+            % For the case of no flow we still have to model the valve as
+            % closed, otherwise the solver we open it even though the flow
+            % might only be 0 because it was closed before, which can lead
+            % to oscillations.
+            if ~this.bReversed && fFlowRate <= 0
                 this.fPressureDrop = inf;
                 this.bOpen =false;
-            elseif this.bReversed && fFlowRate > 0
+            elseif this.bReversed && fFlowRate >= 0
                 this.fPressureDrop = inf;
                 this.bOpen =false;
             else
                 this.bOpen = true;
-                fPressureDrop = this.fFlowThroughPressureDropCoefficient * fFlowRate^2;
+                this.fPressureDrop =  this.fFlowThroughPressureDropCoefficient * fFlowRate^2;
             end
+            fPressureDrop = this.fPressureDrop;
         end
     end
     

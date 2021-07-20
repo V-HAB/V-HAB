@@ -4,18 +4,31 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig) % Constructor function
+        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig, fSimTime) % Constructor function
             
+            if nargin < 3
+                ttMonitorConfig = struct();
+            end
             this@simulation.infrastructure('Test_Human_Model', ptConfigParams, tSolverParams, ttMonitorConfig);
+            
+            trBaseCompositionUrine.H2O      = 0.9644;
+            trBaseCompositionUrine.C2H6O2N2 = 0.0356;
+            this.oSimulationContainer.oMT.defineCompoundMass(this, 'Urine', trBaseCompositionUrine)
+            
+            trBaseCompositionFeces.H2O          = 0.7576;
+            trBaseCompositionFeces.C42H69O13N5  = 0.2424;
+            this.oSimulationContainer.oMT.defineCompoundMass(this, 'Feces', trBaseCompositionFeces)
             
             examples.human_model.systems.Example(this.oSimulationContainer, 'Example');
             
             %% Simulation length
             % Stop when specific time in simulation is reached or after 
             % specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 3600 * 24 * 2; % In seconds
-            this.iSimTicks = 1500;
-            this.bUseTime = true;
+            if nargin < 4 || isempty(fSimTime)
+                this.fSimTime = 3600 * 24;
+            else 
+                this.fSimTime = fSimTime;
+            end
         end
         
         

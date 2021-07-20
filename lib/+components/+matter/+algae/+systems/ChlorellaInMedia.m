@@ -29,12 +29,14 @@ classdef ChlorellaInMedia < vsys
         %current phase density calculated here because needed by multiple
         %parts of sim. only needs to be calculated once in each iteration. 
         fCurrentGrowthMediumDensity     %[kg/m^3]
+        
+        oUrinePhase;
 
     end
     
     methods
         function this = ChlorellaInMedia (oParent, sName)
-            this@vsys(oParent, sName, 30);
+            this@vsys(oParent, sName, oParent.fTimeStep);
             eval(this.oRoot.oCfgParams.configCode(this));
             
             %initially set refill parameters to false for solver control logic.
@@ -72,8 +74,6 @@ classdef ChlorellaInMedia < vsys
 
             matter.phases.mixture(this.toStores.GrowthChamber, 'GrowthMedium', 'liquid', this.tfGrowthChamberComponents, 303, 1e5);
             
-            %the true after 'gas' makes this to be a flow node, composition
-            %of this phase is ignored if it is true (flow).
             this.toStores.GrowthChamber.createPhase('gas', 'flow', 'AirInGrowthChamber', 0.05 ,struct('O2',5000, 'CO2', 59000), 293, 0.5);
             
             
@@ -82,7 +82,7 @@ classdef ChlorellaInMedia < vsys
             %(eg. cabin air)
             %inlet flow
             matter.procs.exmes.gas(this.toStores.GrowthChamber.toPhases.AirInGrowthChamber, 'From_Outside');
-            components.matter.pipe(this, 'Air_In', 0.1, 0.01); %length, diameter
+            components.matter.algae.F2F.GrowthMediumAirInlet(this, 'Air_In'); %length, diameter
             matter.branch(this, 'GrowthChamber.From_Outside', {'Air_In'}, 'Air_Inlet', 'Air_to_GrowthChamber');
             
             %outlet flow
@@ -172,12 +172,13 @@ classdef ChlorellaInMedia < vsys
             createSolverStructure@vsys(this);
             
             %% air connection
-            solver.matter.manual.branch(this.toBranches.Air_to_GrowthChamber);
-            solver.matter.residual.branch(this.toBranches.Air_from_GrowthChamber);
+            solver.matter.manual.branch(this.toBranches.Air_from_GrowthChamber);
+            aoMultiSolverBranches = [this.toBranches.Air_to_GrowthChamber];
+            solver.matter_multibranch.iterative.branch(aoMultiSolverBranches, 'complex');
             
             %Since interfaces always have to be on the right side in the subsystem branches that are supposed to transport matter into the subsystem always have a negative flow rate.
             
-            this.toBranches.Air_to_GrowthChamber.oHandler.setFlowRate(-0.1);
+            this.toBranches.Air_from_GrowthChamber.oHandler.setFlowRate(0.1);
 
             
             %% medium to harvest
@@ -186,6 +187,7 @@ classdef ChlorellaInMedia < vsys
             
             this.toBranches.Medium_to_Harvester.oHandler.setVolumetricFlowRate(this.oParent.fVolumetricFlowToHarvester); %equals to 25ml/min as referenced in tobias paper @IAC18
 
+            this.oUrinePhase = this.toBranches.Urine_from_PBR.coExmes{2}.oPhase;
             
             %% NO3, Urine, Phosphate and Water Supply
             solver.matter.manual.branch(this.toBranches.NO3_from_Maintenance);
@@ -193,6 +195,20 @@ classdef ChlorellaInMedia < vsys
             %Urine Supply from PBR
             solver.matter.manual.branch(this.toBranches.Urine_from_PBR);
             this.setThermalSolvers();
+            
+            csStoreNames = fieldnames(this.toStores);
+            for iStore = 1:length(csStoreNames)
+                for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
+                    oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
+                    tTimeStepProperties.fMaxStep = this.fTimeStep * 5;
+
+                    oPhase.setTimeStepProperties(tTimeStepProperties);
+
+                    tTimeStepProperties = struct();
+                    tTimeStepProperties.fMaxStep = this.fTimeStep * 5;
+                    oPhase.oCapacity.setTimeStepProperties(tTimeStepProperties);
+                end
+            end
         end
         %%
         function createThermalStructure(this)
@@ -283,7 +299,7 @@ classdef ChlorellaInMedia < vsys
                 if this.bNitrogenRefill == true
                     %check if enough urine is available without running into
                     %mass losses. if not, use no3 to refill.
-                    if this.oParent.oParent.toStores.UrineStorage.toPhases.Urine.fMass > 0.1
+                    if this.oUrinePhase.fMass > 0.1
                         %refill with urine as long as its available
                         this.toBranches.NO3_from_Maintenance.oHandler.setFlowRate(0);
                         this.toBranches.Urine_from_PBR.oHandler.setVolumetricFlowRate(-0.8*this.oParent.fVolumetricFlowToHarvester); %0.8 is used to make it smaller than the harvesting flow, to not cause any mass loss problems.
@@ -323,10 +339,6 @@ classdef ChlorellaInMedia < vsys
 
             %% update everything
             exec@vsys(this)
-            
-            
         end
     end
-    
-    
 end

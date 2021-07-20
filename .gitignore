@@ -4,6 +4,7 @@
 user/+*
 !user/+tutorials
 !user/+examples
+!user/+simulations
 !user/+tests
 
 # Ignore simulation results, excepct README
@@ -28,3 +29,4 @@ main_*.m
 
 # Ignore Excel temporary files
 ~*
+*.log

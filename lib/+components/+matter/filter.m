@@ -17,9 +17,6 @@ classdef filter < matter.store
         % Parent system
         oParentSys;
         
-        % Volume of this filter
-        fVolume;
-        
         % Void fraction (porosity) to correctly set the volumes
         rVoidFraction;
         
@@ -211,7 +208,7 @@ classdef filter < matter.store
             % Creating the phase representing the filter volume manually.
             % gas(oStore, sName, tfMasses, fVolume, fTemp)
             tfMass.AmineSA9T = this.oMT.ttxMatter.AmineSA9T.ttxPhases.tSolid.Density * this.fVolume * (1-this.rVoidFraction);
-            matter.phases.mixture(this, 'FilteredPhase', 'solid', tfMass, this.fVolume, fTemperature, fPressure);
+            matter.phases.mixture(this, 'FilteredPhase', 'solid', tfMass, fTemperature, fPressure);
 
             % Fixed Time Step
             if exist('fFixedTimeStep','var')
@@ -238,9 +235,6 @@ classdef filter < matter.store
             end
             
         end
-    end
-    
-    methods (Access = protected)
         
         function setVolume(this)
             % Overwriting the matter.store setVolume which would give both

@@ -39,11 +39,14 @@ if strcmp(sTarget, 'MatterData')
     csColumnNames = textscan(sFirstRow, '%s','Delimiter',';');
     csColumnNames = csColumnNames{1};
     
+    abDeletEmptyColumns = false(length(csColumnNames),1);
     for iI = 1:length(csColumnNames)
         if strcmp(csColumnNames{iI},'')
-            csColumnNames(iI) = [];
+            abDeletEmptyColumns(iI) = true;
         end
     end
+    
+    csColumnNames(abDeletEmptyColumns) = [];
     
     iNumberOfColumns = length(csColumnNames);
     
@@ -419,6 +422,10 @@ else
             ttxImportMatter.(csStructName{iI}).(sPhaseStructName).mfData(iIndex,:) = mfRawData(iJ,:);
             aiCurrentIndex(iPhaseID) = aiCurrentIndex(iPhaseID) + 1;
         end
+        
+        % Now we add the supercritical struct to the gas phase data,
+        % because otherwise calculating high pressure gases is difficult
+        ttxImportMatter.(csStructName{iI}).tGas.mfData = [ttxImportMatter.(csStructName{iI}).tGas.mfData; ttxImportMatter.(csStructName{iI}).tSupercritical.mfData];
         
         % In an effort to further increase the performance of the matter table
         % by avoiding frequent calls of min() and max(), we include these

@@ -9,12 +9,12 @@ function calculateTimeStep(this)
 % the outflows!
 
 % Change in kg of partial masses per second
-[ afChange, mfDetails ] = this.getTotalMassChange();
+[ afChange, mfDetails, this.arInFlowCompoundMass ] = this.getTotalMassChange();
 
 afTmpCurrentTotalInOuts = this.afCurrentTotalInOuts;
 
 % Setting the properties to the current values
-this.afCurrentTotalInOuts = afChange;
+this.afCurrentTotalInOuts   = afChange;
 this.mfCurrentInflowDetails = mfDetails;
 
 if this.iSubstanceManipulators ~= 0
@@ -39,10 +39,11 @@ else
     % first positive mass in the phase reaches 0:
     
     abOutFlows = afPartialFlows < 0;
+    
     % This calculation limits the maximum mass loss that occurs within one
     % tick to 1e-8 kg. Adding the 1e-8 kg is necessary to prevent extremly
     % small time steps
-    fMaxFlowStep = min(abs((1e-8 + this.afMass(abOutFlows)) ./ afPartialFlows(abOutFlows)));
+    fMaxFlowStep = min(abs((this.fMassErrorLimit + this.afMass(abOutFlows)) ./ afPartialFlows(abOutFlows)));
     
     % If we have set a fixed time step for this phase, we can just continue
     % without doing any calculations.
@@ -85,7 +86,7 @@ else
         % has the unit [1/s], giving us the percentage change per second of the
         % overall mass of the phase.
         fChange = sum(afPartialFlows);
-
+        
         if fChange == 0
             rTotalPerSecond = 0;
         else
@@ -103,14 +104,9 @@ else
             %   leading to a negative time step. This however will only happen
             %   if the store would update soon anyways and should therefore not
             %   lead to larger issues.
-            %CHECK use fMassLastUpdate or fMass? The latter leads
-            %      to larger time steps but is logically slightly incorrect.
-            %      [also above, arPartialsChange!]
-            % FOR NOW ... we'll go with fMass, faster and does not seem to
-            % introduce big issues ...
-            rTotalPerSecond = abs(fChange / this.fMass);
+            rTotalPerSecond = abs(tools.round.prec(fChange, this.iTimeStepPrecision) / this.fMass);
         end
-
+        
         %% Partial mass change compared to partial mas
         % note that rPartialsPerSecond from the calculation is the partial mass
         % change compared to the total mass, while this calculation is the
@@ -223,7 +219,6 @@ else
             this.out(1, 2, 'prev-timestep', 'MASS: %.16f kg, Prevous Mass Change Rate: %.16f kg/s / Total: %.16f kg ', { this.fMass, sum(afTmpCurrentTotalInOuts), sum(afTmpCurrentTotalInOuts)*(this.oTimer.fTime-this.fLastUpdate) });
             this.out(1, 2, 'prev-timestep', 'MASS: %.16f kg, New Mass Change Rate: %.16f kg/s / Total: %.16f kg ', { this.fMass, sum(this.afCurrentTotalInOuts), sum(this.afCurrentTotalInOuts)*fNewStep });
 
-
             this.out(1, 1, 'new-timestep', '%s-%s-%s new TS: %.16fs', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, fNewStep });
         end
     end
@@ -239,7 +234,6 @@ else
     end
 end
 
-
 % Set the time step for this phase. If the update was also called in this
 % tick we also reset the time at which the phase was last executed thus
 % enforcing the next execution time to be exactly this.oTimer.fTime +
@@ -249,7 +243,7 @@ end
 % earlier tick. If we used setTimeStep(fNewStep, true) in all cases the
 % update function of a phase might never be called if massupdates are
 % always triggered before!
-if this.fLastUpdate == this.oTimer.fTime
+if this.fLastUpdate == this.oTimer.fTime || this.bFlow
     this.setTimeStep(fNewStep, true);
 else
     this.setTimeStep(fNewStep);

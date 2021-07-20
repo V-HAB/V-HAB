@@ -1,0 +1,166 @@
+Source: USDA National Nutrient Database for Standard Reference 1 April 2018 Software v.3.9.5.3_2019-06-13
+Full Report (All Nutrients)
+Report Run at: September 05 2019 02:25 EDT
+"Nutrient data for: Potatoes, white, flesh and skin, raw"
+Food Group:  Vegetables and Vegetable Products
+Common Name:
+Carbohydrate Factor: Fat Factor: Protein Factor: Nitrogen to Protein Conversion Factor: 
+Refuse: Refuse Description: 
+Nutrient,Unit,1Value per 100 g,Data points,Std. Error,"0.5 cup, diced = 75.0g","1 large (3"" to 4-1/4"" dia.) = 369.0g","1 medium (2+-1/4"" to 3-1/4"" dia.) = 213.0g","1 small (1-3/4"" to 2-1/4"" dia.) = 92.0g",
+Proximates
+"Water",g,81.58,3,1.090,61.19,301.03,173.77,75.05
+"Energy",kcal,69,--,--,52,255,147,63
+"Energy",kJ,288,--,--,216,1063,613,265
+"Protein",g,1.68,3,0.070,1.26,6.20,3.58,1.55
+"Total lipid (fat)",g,0.10,3,0.000,0.07,0.37,0.21,0.09
+"Ash",g,0.94,3,0.010,0.70,3.47,2.00,0.86
+"Carbohydrate, by difference",g,15.71,--,--,11.78,57.97,33.46,14.45
+"Fiber, total dietary",g,2.4,1,--,1.8,8.9,5.1,2.2
+"Sugars, total",g,1.15,--,--,0.86,4.24,2.45,1.06
+"Sucrose",g,0.28,3,0.020,0.21,1.03,0.60,0.26
+"Glucose (dextrose)",g,0.53,3,0.010,0.40,1.96,1.13,0.49
+"Fructose",g,0.34,3,0.010,0.26,1.25,0.72,0.31
+"Lactose",g,0.00,3,0.000,0.00,0.00,0.00,0.00
+"Maltose",g,0.00,3,0.000,0.00,0.00,0.00,0.00
+"Galactose",g,0.00,1,--,0.00,0.00,0.00,0.00
+"Starch",g,13.49,--,--,10.12,49.78,28.73,12.41
+Minerals
+"Calcium, Ca",mg,9,3,0.000,7,33,19,8
+"Iron, Fe",mg,0.52,3,0.030,0.39,1.92,1.11,0.48
+"Magnesium, Mg",mg,21,3,0.000,16,77,45,19
+"Phosphorus, P",mg,62,3,0.000,46,229,132,57
+"Potassium, K",mg,407,3,9.000,305,1502,867,374
+"Sodium, Na",mg,16,3,1.000,12,59,34,15
+"Zinc, Zn",mg,0.29,3,0.009,0.22,1.07,0.62,0.27
+"Copper, Cu",mg,0.116,3,0.003,0.087,0.428,0.247,0.107
+"Manganese, Mn",mg,0.145,3,0.016,0.109,0.535,0.309,0.133
+"Selenium, Se",µg,0.3,299,0.031,0.2,1.1,0.6,0.3
+Vitamins
+"Vitamin C, total ascorbic acid",mg,9.1,3,0.083,6.8,33.6,19.4,8.4
+"Thiamin",mg,0.071,3,0.002,0.053,0.262,0.151,0.065
+"Riboflavin",mg,0.034,3,0.002,0.026,0.125,0.072,0.031
+"Niacin",mg,1.066,2,--,0.799,3.934,2.271,0.981
+"Pantothenic acid",mg,0.281,3,0.007,0.211,1.037,0.599,0.259
+"Vitamin B-6",mg,0.203,3,0.021,0.152,0.749,0.432,0.187
+"Folate, total",µg,18,3,1.000,14,66,38,17
+"Folic acid",µg,0,--,--,0,0,0,0
+"Folate, food",µg,18,3,1.000,14,66,38,17
+"Folate, DFE",µg,18,--,--,14,66,38,17
+"Choline, total",mg,11.0,--,--,8.2,40.6,23.4,10.1
+"Betaine",mg,0.2,2,--,0.1,0.7,0.4,0.2
+"Vitamin B-12",µg,0.00,--,--,0.00,0.00,0.00,0.00
+"Vitamin A, RAE",µg,0,--,--,0,0,0,0
+"Retinol",µg,0,--,--,0,0,0,0
+"Carotene, beta",µg,5,3,0.000,4,18,11,5
+"Carotene, alpha",µg,0,3,0.000,0,0,0,0
+"Cryptoxanthin, beta",µg,0,3,0.000,0,0,0,0
+"Vitamin A, IU",IU,8,--,--,6,30,17,7
+"Lycopene",µg,0,3,0.000,0,0,0,0
+"Lutein + zeaxanthin",µg,13,2,--,10,48,28,12
+"Vitamin E (alpha-tocopherol)",mg,0.01,--,--,0.01,0.04,0.02,0.01
+"Tocopherol, beta",mg,0.00,--,--,0.00,0.00,0.00,0.00
+"Tocopherol, gamma",mg,0.00,--,--,0.00,0.00,0.00,0.00
+"Tocopherol, delta",mg,0.00,--,--,0.00,0.00,0.00,0.00
+"Vitamin D (D2 + D3)",µg,0.0,--,--,0.0,0.0,0.0,0.0
+"Vitamin D",IU,0,--,--,0,0,0,0
+"Vitamin K (phylloquinone)",µg,1.6,3,0.100,1.2,5.9,3.4,1.5
+Lipids
+"Fatty acids, total saturated",g,0.026,--,--,0.019,0.096,0.055,0.024
+"4:0",g,0.000,--,--,0.000,0.000,0.000,0.000
+"6:0",g,0.000,--,--,0.000,0.000,0.000,0.000
+"8:0",g,0.000,--,--,0.000,0.000,0.000,0.000
+"10:0",g,0.001,6,--,0.001,0.004,0.002,0.001
+"12:0",g,0.003,6,--,0.002,0.011,0.006,0.003
+"14:0",g,0.001,18,--,0.001,0.004,0.002,0.001
+"16:0",g,0.016,59,--,0.012,0.059,0.034,0.015
+"18:0",g,0.004,59,--,0.003,0.015,0.009,0.004
+"Fatty acids, total monounsaturated",g,0.002,--,--,0.002,0.007,0.004,0.002
+"16:1 undifferentiated",g,0.001,37,--,0.001,0.004,0.002,0.001
+"18:1 undifferentiated",g,0.001,59,--,0.001,0.004,0.002,0.001
+"20:1",g,0.000,--,--,0.000,0.000,0.000,0.000
+"22:1 undifferentiated",g,0.000,--,--,0.000,0.000,0.000,0.000
+"Fatty acids, total polyunsaturated",g,0.043,--,--,0.032,0.159,0.092,0.040
+"18:2 undifferentiated",g,0.032,59,--,0.024,0.118,0.068,0.029
+"18:3 undifferentiated",g,0.010,59,--,0.007,0.037,0.021,0.009
+"18:4",g,0.000,--,--,0.000,0.000,0.000,0.000
+"20:4 undifferentiated",g,0.000,--,--,0.000,0.000,0.000,0.000
+"20:5 n-3 (EPA)",g,0.000,--,--,0.000,0.000,0.000,0.000
+"22:5 n-3 (DPA)",g,0.000,--,--,0.000,0.000,0.000,0.000
+"22:6 n-3 (DHA)",g,0.000,--,--,0.000,0.000,0.000,0.000
+"Fatty acids, total trans",g,0.000,--,--,0.000,0.000,0.000,0.000
+"Cholesterol",mg,0,--,--,0,0,0,0
+Amino Acids
+"Tryptophan",g,0.017,--,--,0.013,0.063,0.036,0.016
+"Threonine",g,0.055,--,--,0.041,0.203,0.117,0.051
+"Isoleucine",g,0.054,--,--,0.041,0.199,0.115,0.050
+"Leucine",g,0.080,--,--,0.060,0.295,0.170,0.074
+"Lysine",g,0.087,--,--,0.065,0.321,0.185,0.080
+"Methionine",g,0.026,--,--,0.019,0.096,0.055,0.024
+"Cystine",g,0.020,--,--,0.015,0.074,0.043,0.018
+"Phenylalanine",g,0.066,--,--,0.050,0.244,0.141,0.061
+"Tyrosine",g,0.039,--,--,0.029,0.144,0.083,0.036
+"Valine",g,0.084,--,--,0.063,0.310,0.179,0.077
+"Arginine",g,0.082,--,--,0.062,0.303,0.175,0.075
+"Histidine",g,0.028,--,--,0.021,0.103,0.060,0.026
+"Alanine",g,0.051,--,--,0.038,0.188,0.109,0.047
+"Aspartic acid",g,0.391,--,--,0.293,1.443,0.833,0.360
+"Glutamic acid",g,0.286,--,--,0.214,1.055,0.609,0.263
+"Glycine",g,0.046,--,--,0.034,0.170,0.098,0.042
+"Proline",g,0.051,--,--,0.038,0.188,0.109,0.047
+"Serine",g,0.061,--,--,0.046,0.225,0.130,0.056
+Other
+"Alcohol, ethyl",g,0.0,--,--,0.0,0.0,0.0,0.0
+"Caffeine",mg,0,--,--,0,0,0,0
+"Theobromine",mg,0,--,--,0,0,0,0
+Flavonoids
+Anthocyanidins
+"Cyanidin",mg,0.0,3,0.000,0.0,0.0,0.0,0.0
+"Petunidin",mg,0.0,3,0.000,0.0,0.0,0.0,0.0
+"Delphinidin ",mg,0.0,3,0.000,0.0,0.0,0.0,0.0
+"Malvidin",mg,0.0,3,0.000,0.0,0.0,0.0,0.0
+"Pelargonidin",mg,0.0,3,0.000,0.0,0.0,0.0,0.0
+"Peonidin",mg,0.0,3,0.000,0.0,0.0,0.0,0.0
+Flavan-3-ols
+"(+)-Catechin",mg,0.0,3,0.000,0.0,0.0,0.0,0.0
+"(-)-Epigallocatechin",mg,0.0,3,0.000,0.0,0.0,0.0,0.0
+"(-)-Epicatechin",mg,0.0,3,0.000,0.0,0.0,0.0,0.0
+"(-)-Epicatechin 3-gallate",mg,0.0,3,0.000,0.0,0.0,0.0,0.0
+"(-)-Epigallocatechin 3-gallate",mg,0.0,3,0.000,0.0,0.0,0.0,0.0
+"(+)-Gallocatechin",mg,0.0,3,0.000,0.0,0.0,0.0,0.0
+Flavanones
+"Hesperetin",mg,0.0,3,0.000,0.0,0.0,0.0,0.0
+"Naringenin",mg,0.0,3,0.000,0.0,0.0,0.0,0.0
+Flavones
+"Apigenin",mg,0.0,3,0.000,0.0,0.0,0.0,0.0
+"Luteolin",mg,0.0,2,--,0.0,0.0,0.0,0.0
+Flavonols
+"Myricetin",mg,0.0,3,0.000,0.0,0.0,0.0,0.0
+"Quercetin",mg,0.5,3,0.300,0.4,1.8,1.0,0.5
+Proanthocyanidin
+"Proanthocyanidin dimers",mg,0.0,1,--,0.0,0.0,0.0,0.0
+"Proanthocyanidin trimers",mg,0.0,1,--,0.0,0.0,0.0,0.0
+"Proanthocyanidin 4-6mers",mg,0.0,1,--,0.0,0.0,0.0,0.0
+"Proanthocyanidin 7-10mers",mg,0.0,1,--,0.0,0.0,0.0,0.0
+"Proanthocyanidin polymers (>10mers)",mg,0.0,1,--,0.0,0.0,0.0,0.0
+
+
+Sources of Data
+1,"Nutrient Data Laboratory, ARS, USDA","National Food and Nutrient Analysis Program Wave 5e",2001,,BeltsvilleMD
+2,"Nutrient Data Laboratory, ARS, USDA","National Food and Nutrient Analysis Program Wave 5L",2001,,BeltsvilleMD
+3,"Harnly, J. M., Doherty, R., Beecher, G. R., Holden, J. M., Haytowitz, D. B., and Bhagwat, S., and Gebhardt S. ","Flavonoid content of U.S. fruits, vegetables, and nuts",2006,J. Agric. Food Chem.,54 pp. 9966-9966
+4,"Gu, L., Kelm, M.A., Hammerstone, J.F., Beecher, G., Holden, J., Haytowitz, D., Gebhardt, S., and Prior, R.L.","Screening foods containing proanthocyanidins and their structural characterization using LC-MS/MS and thiolytic degradation",2003,J. Agric. Food Chem.,51 pp. 7513-7513
+Langual Code(s)
+"M0001""CONTAINER OR WRAPPING NOT KNOWN"
+"H0001""TREATMENT APPLIED NOT KNOWN"
+"J0001""PRESERVATION METHOD NOT KNOWN"
+"N0001""FOOD CONTACT SURFACE NOT KNOWN"
+"A1281""1100 VEGETABLES AND VEGETABLE PRODUCTS (USDA SR)"
+"B1218""POTATO"
+"P0024""HUMAN FOOD, NO AGE SPECIFICATION"
+"E0150""WHOLE, NATURAL SHAPE"
+"C0238""ROOT, TUBER OR BULB"
+"G0003""COOKING METHOD NOT APPLICABLE"
+"K0001""PACKING MEDIUM NOT KNOWN"
+"R0001""GEOGRAPHIC PLACE OR REGION NOT KNOWN"
+"A0152""VEGETABLE OR VEGETABLE PRODUCT (US CFR)"
+"F0003""NOT HEAT-TREATED"

@@ -11,7 +11,7 @@ classdef solid < matter.phase
     end
 
     methods
-        function this = solid(oStore, sName, tfMasses, fTemperature)
+        function this = solid(oStore, sName, tfMasses, fTemperature, ~)
             %% solid class constructor
             % describes an ideally mixed volume of solid. Different from the
             % boundary and flow type phases the mass of this phase will
@@ -59,7 +59,21 @@ classdef solid < matter.phase
             %% get_fPressure
             % for solids we do not want to include the mass change between
             % updates as a pressure change
-            fPressure = this.fMassToPressure * this.fMass;
+            if this.iVolumeManipulators == 0
+                % In this case no volume manipulator is present at all, for
+                % this case we assume the initial pressure of the liquid to
+                % remain constant
+                fPressure = this.oMT.Standard.Pressure;
+                
+            else
+                if this.toManips.volume.bCompressible
+                    fMassSinceUpdate = this.fCurrentTotalMassInOut * (this.oStore.oTimer.fTime - this.fLastMassUpdate);
+
+                    fPressure = this.fMassToPressure * (this.fMass + fMassSinceUpdate);
+                else
+                    fPressure = this.toManips.volume.oCompressibleManip.oPhase.fPressure;
+                end
+            end
         end
     end
 end

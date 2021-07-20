@@ -13,15 +13,10 @@ classdef flow < base
         % Temperature of this flow object
         fTemperature = 293;   % [K]
         
-        fSpecificHeatCapacity = 0;       % [J/K/kg]
         fMolarMass            = 0;       % [kg/mol]
         
-        % Re-calculated every tick in setData/seal
-        % Partial pressures of the matter of the flow
-        afPartialPressure;  % [Pa]
-        
         % Only recalculated when setData was executed and requested again!
-        % Density of the matter of the flow in kg/m³
+        % Density of the matter of the flow in kg/mï¿½
         fDensity;           % [kg/m^3]
         % Dynamic Viscosity of the matter of the flow in Pa/s
         fDynamicViscosity;  % [Pa/s]
@@ -29,6 +24,11 @@ classdef flow < base
         % Partial masses in percent (ratio) in indexed vector (use oMT to
         % translate, e.g. this.oMT.tiN2I)
         arPartialMass;
+        
+        % To model masses consisting of more than one substance, compound
+        % masses can be defined. If these are transported through flows,
+        % their current composition is stored in this struct
+        arCompoundMass;
         
         % Reference to the matter table
         oMT;
@@ -49,6 +49,8 @@ classdef flow < base
         % References to the processors connected to the flow (exme || f2f)
         oIn;
         oOut;
+        % Number of the flow inside its branch
+        iFlow;
         
         % Sealed?
         bSealed = false;
@@ -59,6 +61,17 @@ classdef flow < base
         bInterface = false;
         
         tfPropertiesAtLastMassPropertySet;
+    
+        % In order to remove the need for numerous calls to isa(),
+        % especially in the matter table, this property can be used to see
+        % if an object is derived from this class. 
+        sObjectType = 'flow';
+    end
+    
+    properties (Dependent)
+        % Partial pressures of the matter of the flow
+        afPartialPressure;  % [Pa]
+        fSpecificHeatCapacity ;   % [J/K/kg]
     end
     
     properties (SetAccess = private, GetAccess = private)
@@ -82,12 +95,18 @@ classdef flow < base
                 
                 if isa(oCreator,'matter.branch')
                     this.oBranch = oCreator;
+                    if isa(oCreator,'components.matter.DetailedHuman.components.P2P_Branch')
+                        this.iFlow = 0;
+                    end
                 elseif isa(oCreator,'matter.store')
                     this.oStore  = oCreator;
+                    
+                    this.iFlow = 0;
                 end
                 
                 % Initialize the mass fractions array with zeros.
-                this.arPartialMass = zeros(1, this.oMT.iSubstances);
+                this.arPartialMass  = zeros(1, this.oMT.iSubstances);
+                this.arCompoundMass = zeros(this.oMT.iSubstances, this.oMT.iSubstances);
                 
                 this.tfPropertiesAtLastMassPropertySet.fTemperature = -1;
                 this.tfPropertiesAtLastMassPropertySet.fPressure    = -1;
@@ -155,11 +174,9 @@ classdef flow < base
                 % This is likely to be overwritten by the assigned solver
                 % in the first, initializion step (time < 0)
                 if oPhase.fMass ~= 0
-                    this.arPartialMass = oPhase.arPartialMass;
-                    this.fMolarMass    = oPhase.fMolarMass;
-                    this.fSpecificHeatCapacity = oPhase.oCapacity.fSpecificHeatCapacity;
-                    
-                    this.afPartialPressure = this.oMT.calculatePartialPressures(this);
+                    this.arPartialMass  = oPhase.arPartialMass;
+                    this.fMolarMass     = oPhase.fMolarMass;
+                    this.arCompoundMass = oPhase.arCompoundMass;
                 end
 
             end
@@ -214,6 +231,52 @@ classdef flow < base
             
             fDynamicViscosity = this.fDynamicViscosity;
         end
+        
+        function afPartialPressure = get.afPartialPressure(this)
+            afPartialPressure = this.oMT.calculatePartialPressures(this);
+        end
+        
+        function fSpecificHeatCapacity = get.fSpecificHeatCapacity(this)
+            try
+                if this.iFlow == 0
+                    fSpecificHeatCapacity = this.fSpecificHeatCapacityP2P;
+                else
+                    if this.fFlowRate >= 0
+                        iConductor = this.iFlow - 1;
+                    else
+                        iConductor = this.iFlow + 1;
+                    end
+                    if iConductor < 1
+                        iConductor = 1;
+                    elseif iConductor > this.oBranch.oThermalBranch.iConductors
+                        iConductor = this.oBranch.oThermalBranch.iConductors;
+                    end
+                    fSpecificHeatCapacity = this.oBranch.oThermalBranch.coConductors{iConductor}.fSpecificHeatCapacity;
+                end
+            catch oErr
+                if isempty(this.oBranch) || isempty(this.oBranch.oThermalBranch)
+                    fSpecificHeatCapacity = 0;
+                elseif isempty(this.iFlow)
+                    this.iFlow = find(this.oBranch.aoFlows == this);
+                    
+                    if this.fFlowRate >= 0
+                        iConductor = this.iFlow - 1;
+                    else
+                        iConductor = this.iFlow + 1;
+                    end
+                    if iConductor < 1
+                        iConductor = 1;
+                    elseif iConductor > this.oBranch.oThermalBranch.iConductors
+                        iConductor = this.oBranch.oThermalBranch.iConductors;
+                    end
+                    fSpecificHeatCapacity = this.oBranch.oThermalBranch.coConductors{iConductor}.fSpecificHeatCapacity;
+                    
+                else
+                    rethrow(oErr)
+                end
+            end
+        end
+        
     end
     
     
@@ -247,7 +310,7 @@ classdef flow < base
             % methods, since aoFlows attribute has SetAccess private!
             elseif isa(oProc, 'matter.procs.f2f')
                 if ~any(oProc.aoFlows == this)
-                    this.throw('addProc', 'Object processor aoFlows property is not the same as this one - use processor''s addFlow method!');
+                    this.throw('addProc', 'This proc already has two flows connected, you probably already added it to another branch');
                 end
             elseif isa(oProc, 'matter.procs.exme')
                 if ~any(oProc.oFlow == this)
@@ -306,17 +369,13 @@ classdef flow < base
             end
             
             if fFlowRate ~= 0
-                % Uses the ideal gas law to calculate the density of the
-                % flow and from the density the volumetric flowrate. In non
-                % ideal case, or for liquid flows, this calculation is
-                % therefore not correct and should not be used! If a
-                % non-ideal or liquid case becomes necessary it should be
-                % discussed if this calculation can be moved to the matter
-                % table and use the calculateDensity function of the matter
-                % table.
-                fVolumetricFlowRate = fFlowRate / ...
-                                    ( this.fPressure * this.fMolarMass / ...
-                                    ( this.oMT.Const.fUniversalGas * this.fTemperature  ) );
+                % Get the current density and then calculate the volumetric
+                % flowrate from that value. As it uses the matter table, it
+                % is valid in all cases. For gases, if the ideal gas law is
+                % used to calculate the density, some discrepancies could
+                % occur, but this calculation is more accurate anyway
+                fCurrentDensity = this.getDensity();
+                fVolumetricFlowRate = fFlowRate / fCurrentDensity;
             else
                 % In some cases the pressure/temperature or other values
                 % for the flows are not "valid" if the flowrate is zero and
@@ -351,40 +410,6 @@ classdef flow < base
             this.oOut = [];
         end
         
-        
-        function setMatterProperties(this, fFlowRate, arPartialMass, fTemperature, fPressure)
-            %% setMatterProperties
-            % For derived classes of flow, can set the matter properties 
-            % through this method manually. In contrast to setData, this 
-            % method does not get information automatically from the 
-            % inflowing exme but just uses the provided values. This allows
-            % derived, but still generic classes (namely matter.p2ps.flow 
-            % and matter.p2ps.stationary) to ensure control over the actual
-            % processor implementatins when they set the flow properties.
-            %
-            % Required Inputs:
-            % fFlowRate:        new mass flow rate in kg/s
-            % arPartialMass:    new partial mass ratios (vector with length
-            %                   of (1, oMT.iSubstances) where the sum of
-            %                   the vector is 1
-            % fTemperature:     new temperature of the flow in K
-            % fPressure:        new pressure of the flow in Pa
-            
-            this.fFlowRate     = fFlowRate;
-            this.arPartialMass = arPartialMass;
-            this.fTemperature  = fTemperature;
-            this.fPressure     = fPressure;
-            
-            if this.fFlowRate >= 0
-                oPhase = this.oIn.oPhase;
-            else
-                oPhase = this.oOut.oPhase;
-            end
-            
-            this.fSpecificHeatCapacity = oPhase.oCapacity.fSpecificHeatCapacity;
-            this.fMolarMass            = oPhase.fMolarMass;
-        end
-        
     end
         
     methods (Access = {?solver.thermal.base.branch})
@@ -400,17 +425,18 @@ classdef flow < base
             this.fTemperature = fTemperature;
             
             % Reset to empty, so if requested again, recalculated!
-            if (abs(this.fTemperature       - this.tfPropertiesAtLastMassPropertySet.fTemperature) > 0.5)
+            if (abs(this.fTemperature - this.tfPropertiesAtLastMassPropertySet.fTemperature) > 0.5)
 
                 this.fDensity          = [];
                 this.fDynamicViscosity = [];
 
-                this.tfPropertiesAtLastMassPropertySet.fTemperature     = this.fTemperature;
+                this.tfPropertiesAtLastMassPropertySet.fTemperature = this.fTemperature;
             end
             this.fDensity          = [];
             this.fDynamicViscosity = [];
         end
     end
+    
     methods (Access = {?matter.branch})
         % Only branches are allowed to use the setData function. This is
         % done to prevent data corruption
@@ -441,7 +467,7 @@ classdef flow < base
             % fTemperature in the flows. So get pressure/temperature of in
             % exme (if FR provided)
             if nargin >= 3 && ~isempty(oExme)
-                [ fExMePress, ~ ] = oExme.getExMeProperties();
+                fExMePress = oExme.oPhase.fPressure;
             else
                 fExMePress = 0;
             end
@@ -460,10 +486,14 @@ classdef flow < base
                    oExme.oPhase.registerMassupdate();
                 end
                 
+                if oExme.oPhase.bFlow
+                    oExme.oPhase.updatePartials();
+                end
+                
                 arPhasePartialMass         = oExme.oPhase.arPartialMass;
                 fPhaseMolarMass            = oExme.oPhase.fMolarMass;
-                fPhaseSpecificHeatCapacity = oExme.oPhase.oCapacity.fSpecificHeatCapacity;
-                        
+                arFlowCompoundMass         = oExme.oPhase.arCompoundMass;
+
                 % This can occur for example if a flow phase is used, which
                 % has an outflow, but not yet an inflow. In that case the
                 % partial mass of the phase is zero (as nothing flows in)
@@ -472,25 +502,11 @@ classdef flow < base
                     fFlowRate = 0;
                 end
                 
-                % If a phase was empty in one of the previous time steps
-                % and has had mass added to it, the specific heat capacity
-                % may not have yet been calculated, because the phase has
-                % not been updated. If the phase does have mass but zero
-                % heat capacity, we force an update of this value here. 
-                if fPhaseSpecificHeatCapacity == 0 && oExme.oPhase.fMass ~= 0
-                    %TODO move the following warning to a lower level debug
-                    %output once this is implemented
-                    % aoFlows(1).warn('setData', 'Updating specific heat capacity for phase %s %s.', oExme.oPhase.oStore.sName, oExme.oPhase.sName);
-                    oExme.oPhase.oCapacity.updateSpecificHeatCapacity();
-                    fPhaseSpecificHeatCapacity = oExme.oPhase.oCapacity.fSpecificHeatCapacity;
-                end
-                
             % If no exme is provided, those values will not be changed (see
             % above, in case of e.g. a closed valve within the branch).
             else
                 arPhasePartialMass         = 0;
                 fPhaseMolarMass            = 0;
-                fPhaseSpecificHeatCapacity = 0;
                 afPressures                = zeros(1, length(afPressures));
             end
             
@@ -539,8 +555,7 @@ classdef flow < base
                 if ~isempty(oExme)
                     oFlow.arPartialMass         = arPhasePartialMass;
                     oFlow.fMolarMass            = fPhaseMolarMass;
-                    
-                    oFlow.fSpecificHeatCapacity = fPhaseSpecificHeatCapacity;
+                    oFlow.arCompoundMass        = arFlowCompoundMass;
                 end
                 
                 
@@ -598,9 +613,6 @@ classdef flow < base
                     fExMePress = fExMePress - afPressures(iIndex);
                 end
                 
-                % Re-calculate partial pressures
-                oFlow.afPartialPressure = oFlow.oMT.calculatePartialPressures(oFlow);
-                
                 % Reset to empty, so if requested again, recalculated!
                 if (abs(oFlow.fTemperature       - oFlow.tfPropertiesAtLastMassPropertySet.fTemperature) > 0.5) ||...
                     (abs(oFlow.fPressure         - oFlow.tfPropertiesAtLastMassPropertySet.fPressure) > 10) ||...
@@ -613,6 +625,61 @@ classdef flow < base
                     oFlow.tfPropertiesAtLastMassPropertySet.fPressure        = oFlow.fPressure;
                     oFlow.tfPropertiesAtLastMassPropertySet.arPartials       = oFlow.arPartialMass;
                 end
+            end
+        end
+    end
+    
+    methods (Access = {?matter.container})
+        function disconnectBranch(this, sSide)
+            %DISCONNECTBRANCH Deletes references to the parent branch
+            %   This is necessary when the simulation object is saved to a
+            %   MAT file. In large and/or networked systems the number of
+            %   consecutive, unique objects that are referenced in a row
+            %   cannot be larger than 500. In order to break these chains,
+            %   we delete the reference to the branch on all matter flows
+            %   on the right and left sides of all branches. We also need
+            %   to delete the references to the ExMes that are stored in
+            %   the oIn and oOut properties of a flow at the beginning and
+            %   end of a branch. Since the branch object retains a
+            %   reference to this flow, we can easily reconnect it on load.
+            
+            % First we delete the branch reference.
+            this.oBranch = [];
+            
+            % Now we need to delete the reference to the connected ExMe.
+            % The sSide argument indicates on which side of the branch this
+            % flow is located. Depending on that we delete either the oIn
+            % or oOut property. We should only call this on the flows at
+            % the beginning and end of a branch so we can be sure, that oIn
+            % and oOut are actually ExMes. But just to be safe, we verify
+            % it first. 
+            switch sSide
+                case 'right'
+                    if isa(this.oOut, 'matter.procs.exme')
+                        this.oOut = [];
+                    else
+                        error('VHAB:oOutNotAnExMe', ['The object referenced by the oOut property of this flow is not an ExMe.\n', ...
+                            'It is a %s.\n'], class(this.oOut));
+                    end
+                case 'left'
+                    if isa(this.oIn, 'matter.procs.exme')
+                        this.oIn = [];
+                    else
+                        error('VHAB:oInNotAnExMe', ['The object referenced by the oIn property of this flow is not an ExMe.\n', ...
+                            'It is a %s.\n'], class(this.oOut));
+                    end
+            end
+        end
+        
+        function reconnectBranch(this, oBranch, oExMe, sSide)
+            %RECONNECTBRANCH Restores references to the parent branch
+            %   This reverses the action performed in disconnectBranch().
+            this.oBranch = oBranch;
+            switch sSide
+                case 'right'
+                    this.oOut = oExMe;
+                case 'left'
+                    this.oIn = oExMe;
             end
         end
     end

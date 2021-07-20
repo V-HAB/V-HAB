@@ -6,7 +6,7 @@ classdef flow < matter.procs.p2p
     % used. If the P2P flowrate does not depend on the branch flowrates use
     % a stationary P2P instead!
     
-    % to easier discern between P2Ps that are stationary and do not change
+    % To easier discern between P2Ps that are stationary and do not change
     % within one tick and flow p2ps where the p2p flowrate must be
     % recalculated in every tick, a constant property is defined
     properties (Constant)
@@ -41,6 +41,43 @@ classdef flow < matter.procs.p2p
             end
             
         end
+        function oSolver = findSolver(this)
+            
+            csExmes = fieldnames(this.oIn.oPhase.toProcsEXME);
+            for iExme = 1:length(csExmes)
+                if ~this.oIn.oPhase.toProcsEXME.(csExmes{iExme}).bFlowIsAProcP2P
+                    if isa(this.oIn.oPhase.toProcsEXME.(csExmes{iExme}).oFlow.oBranch.oHandler, 'solver.matter_multibranch.iterative.branch')
+                        oSolver = this.oIn.oPhase.coProcsEXME{iExme}.oFlow.oBranch.oHandler;
+                    end
+                end
+            end
+            
+            csExmes = fieldnames(this.oOut.oPhase.toProcsEXME);
+            for iExme = 1:length(csExmes)
+                if ~this.oOut.oPhase.toProcsEXME.(csExmes{iExme}).bFlowIsAProcP2P
+                    if isa(this.oOut.oPhase.toProcsEXME.(csExmes{iExme}).oFlow.oBranch.oHandler, 'solver.matter_multibranch.iterative.branch')
+                        oSolver = this.oOut.oPhase.coProcsEXME{iExme}.oFlow.oBranch.oHandler;
+                    end
+                end
+            end
+        end
+        
+        function limitFlows(this, afInFlows, abLimitFlows)
+            
+            afPartialFlows = this.fFlowRate * this.arPartialMass;
+            if this.fFlowRate >= 0
+                afPartialFlows(abLimitFlows) = afInFlows(abLimitFlows);
+            else
+                afPartialFlows(abLimitFlows) = - afInFlows(abLimitFlows);
+            end
+            fFlowRate = sum(afPartialFlows);
+            if fFlowRate ~= 0
+                arPartials = afPartialFlows ./ fFlowRate;
+            else
+                arPartials = zeros(1, this.oMT.iSubstances);
+            end
+            this.setMatterProperties(fFlowRate, arPartials);
+        end
     end
     
     methods (Abstract)
@@ -62,36 +99,6 @@ classdef flow < matter.procs.p2p
         % attached to the oOut exme of this p2p.
         
     end
-    
-    methods (Access = protected)
-        function setMatterProperties(this, fFlowRate, arPartials)
-            %% flow p2p setMatterProperties
-            %
-            % If the p2p is updated it sets the new flow rates using this
-            % method. In addition to the basic operations from the general
-            % P2P we must set register the phase massupdates to trigger a
-            % recalculation of the partial mass composition
-            %
-            % Required Inputs:
-            % fFlowRate:     The current total flowrate of the p2p in kg/s.
-            %                Total means it must be the sum of all partial
-            %                mass flow rates
-            % arPartialMass: Vector containing the partial mass flow ratios
-            %                to convert fFlowRate into a vector with
-            %                partial mass flows by using fFlowRate *
-            %                arPartialMass
-            
-            % The phase that called update already did matterupdate, but 
-            % set the fLastUpd to curr time so doesn't do that again
-            this.oIn.oPhase.registerMassupdate();
-            this.oOut.oPhase.registerMassupdate();
-            
-            
-            % Set matter properties. Calculates molar mass, heat capacity,
-            % etc.
-            setMatterProperties@matter.procs.p2p(this, fFlowRate, arPartials);
-            
-        end
-    end
+
 end
 

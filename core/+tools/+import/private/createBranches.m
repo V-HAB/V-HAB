@@ -65,9 +65,11 @@ tInterfaces.Human = {'Air_Out', 'Air_In', 'Water_In', 'Food_In', 'Feces_Out', 'U
 tInterfaces.CDRA  = {'Air_In', 'Air_Out', 'CO2_Out'};
 tInterfaces.OGA  =  {'Water_In', 'O2_Out', 'H2_Out'};
 tInterfaces.SCRA  = {'H2_In', 'CO2_In', 'Gas_Out', 'Condensate_Out', 'Coolant_In', 'Coolant_Out'};
-tInterfaces.Plant = {'Air_In', 'Air_Out', 'Water_In', 'Nutrient_In', 'Biomass_Out'};
+tInterfaces.Plant = {'Air_In', 'Air_Out', 'Nutrient_In', 'Nutrient_Out', 'Biomass_Out'};
 tInterfaces.HFC   = {'Air_In', 'Air_Out'};
-                
+tInterfaces.Electrolyzer = {'H2_Out', 'O2_Out', 'Water_In', 'Coolant_Out', 'Coolant_In'};
+tInterfaces.FuelCell     = {'H2_In',  'H2_Out', 'O2_In', 'O2_Out', 'Coolant_In', 'Coolant_Out', 'Water_Out'};
+
 for iSubsystemType = 1:length(csSystems)
     sSubsystemType = csSystems{iSubsystemType};
     for iSubsystem = 1:length(tCurrentSystem.(sSubsystemType))
@@ -76,19 +78,23 @@ for iSubsystemType = 1:length(csSystems)
         % The CCAA has a variable number of outputs
         if strcmp(sSubsystemType, 'CCAA')
             if isempty(tSubsystem.sCDRA)
-                tInterfaces.CCAA = {'Air_In', 'CHX_Air_Out', 'Bypass_Air_Out', 'Condensate_Out', 'Coolant_In', 'Coolant_Out'};
+                tInterfaces.CCAA = {'Air_In', 'Air_Out', 'Condensate_Out', 'Coolant_In', 'Coolant_Out'};
             else
-                
-                tInterfaces.CCAA = {'Air_In', 'CHX_Air_Out', 'Bypass_Air_Out', 'Condensate_Out', 'Coolant_In', 'Coolant_Out', 'CDRA_Air_Out'};
+                tInterfaces.CCAA = {'Air_In', 'Air_Out', 'Condensate_Out', 'Coolant_In', 'Coolant_Out', 'CDRA_Air_Out'};
             end
         end
         
         csInterface = cell.empty();
         if strcmp(sSubsystemType, 'Subsystem')
-            if strcmp(tSubsystem.sSubsystemPath, 'components.matter.PlantModuleV2.PlantCulture')
+            if strcmp(tSubsystem.sSubsystemPath, 'components.matter.PlantModule.PlantCulture')
                 csInterfaces = tInterfaces.Plant;
-            elseif strcmp(tSubsystem.sSubsystemPath, 'hojo.ILCO2.subsystems.HFC')
+            elseif strcmp(tSubsystem.sSubsystemPath, 'components.matter.HFC')
                 csInterfaces = tInterfaces.HFC;
+            elseif strcmp(tSubsystem.sSubsystemPath, 'components.matter.Electrolyzer.Electrolyzer')
+                csInterfaces = tInterfaces.Electrolyzer;
+            elseif strcmp(tSubsystem.sSubsystemPath, 'components.matter.FuelCell.FuelCell')
+                csInterfaces = tInterfaces.FuelCell;
+                
             else
                 error('unknown subsystem type was used')
             end
@@ -103,6 +109,7 @@ for iSubsystemType = 1:length(csSystems)
             sInterfaceType = csFields{end};
             sInterface = sInterface(1:end-(length(sInterfaceType) + 1));
             
+            iCurrentNumberOfInterfaces = length(csInterface);
             if strcmp(sInterfaceType, 'In')
                  for iInput = 1:length(tSubsystem.Input)
                     tInput = tSubsystem.Input{iInput};
@@ -113,10 +120,16 @@ for iSubsystemType = 1:length(csSystems)
             else
                  for iOutput = 1:length(tSubsystem.Output)
                     tOutput = tSubsystem.Output{iOutput};
-                    if ~isempty(regexp(tOutput.label, sInterface, 'once'))
+                    % now check if the label is represented accuratly
+                    % to prevent Air_Out and XX_Air_Out to be added
+                    % twice
+                    if strcmp(tOutput.label, sInterface)
                         csInterface{end+1} = ['''', tSubsystem.label, '_', tOutput.label, '_Out'''];
                     end
                  end
+            end
+            if iCurrentNumberOfInterfaces == length(csInterface)
+                error(['the import algorithm failed to find the interface ', csInterfaces{iInterface},' of the system ', tSubsystem.label,'. Please check if it actually located in the system (try drag and dropping it elsewhere and then back into the system it belongs to)'])
             end
         end
         

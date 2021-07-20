@@ -117,7 +117,7 @@ classdef matterObserver < simulation.monitor
             iPhases   = length(this.aoPhases);
             if iBranches == 1; sEnding1 = ''; else; sEnding1 = 'es'; end
             if iPhases == 1; sEnding2 = ''; else; sEnding2 = 's'; end
-            fprintf('Model contains %i Branch%s and %i Phase%s.\n', iBranches, sEnding1, iPhases, sEnding2);
+            fprintf('Model contains %i Matter Branch%s and %i Phase%s.\n', iBranches, sEnding1, iPhases, sEnding2);
             
             iNumberOfFlows = 0;
             for iBranch = 1:length(this.aoBranches)
@@ -189,7 +189,7 @@ classdef matterObserver < simulation.monitor
                 fprintf('| Generated Mass is the sum over all phases of the afGeneratedMass property.        |\n');
                 fprintf('| There mass is generated in case slightly too much mass is taken out of the phase. |\n');
                 fprintf('|                                                                                   |\n');
-                fprintf('| Mass Balance refers to the total mass balance and shows the difference between    | \n');
+                fprintf('| Mass Balance refers to the total mass balance and shows the difference between    |\n');
                 fprintf('| the sum over all phase masses at the end of the simulation and the beginning.     |\n');
                 fprintf('| A positive mass balance means mass was generated during the simulation, therefore |\n');
                 fprintf('| the Generated Mass value always results in a mass balance error.                  |\n');

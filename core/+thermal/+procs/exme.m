@@ -37,7 +37,7 @@ classdef exme < base
         % (only for massbound transfer). The reduction/increase in thermal
         % energy from increasing or decreasing mass is handled by the total
         % heat capacity change instead and doing it through the exmes as
-        % well would result in inconsitencies
+        % well would result in inconsistencies
         fHeatFlow = 0;
     end
     
@@ -78,7 +78,7 @@ classdef exme < base
             % ensures that the phase still has a valid exme etc when it is
             % calculated but that the exme is changed before the solvers
             % are updated
-            this.hReconnectExme = this.oTimer.registerPostTick(@this.reconnectExMePostTick,            'thermal',        'post_capacity_temperatureupdate');
+            this.hReconnectExme = this.oTimer.registerPostTick(@this.reconnectExMePostTick, 'thermal', 'post_capacity_temperatureupdate');
         end
         
         function addBranch(this, oBranch)
@@ -137,7 +137,12 @@ classdef exme < base
             if nargin < 3
                 bMatterExmeCaller = false;
             end
-            
+            % If someone reconnects the exme to the current phase nothing
+            % has to be changed (note without this check it would be
+            % possible for the exme to belong to no system at all
+            if oNewCapacity == this.oCapacity
+                return
+            end
             % Bind the new capacity to the property, will be set in post
             % tick function reconnectExMePostTick
             this.oNewCapacity = oNewCapacity;
@@ -148,7 +153,7 @@ classdef exme < base
             % check if we are reconnecting a thermal branch which models
             % the heat transfer from a mass branch. If that is the case,
             % ensure that this function is called from the matter exme!
-            if isa(this.oBranch.coConductors{1}, 'thermal.procs.conductors.fluidic') && ~bMatterExmeCaller
+            if ~isa(this.oBranch.oHandler, 'solver.thermal.manual.branch') && isa(this.oBranch.coConductors{1}, 'thermal.procs.conductors.fluidic') && ~bMatterExmeCaller
                 error(['reconnecting a thermal exme which models mass bound energy transfer must be done through the matter exme! Occured while reconnecting exme', this.sName])
             end
         end
@@ -193,6 +198,27 @@ classdef exme < base
             % to prevent confusion, empty the new phase property
             this.oNewCapacity = [];
             
+        end
+    end
+    
+    methods (Access = {?thermal.container})
+        function disconnectBranch(this)
+            %DISCONNECTBRANCH Deletes the reference to the connected branch
+            %   This is necessary when the simulation object is saved to a
+            %   MAT file. In large and/or networked systems the number of
+            %   consecutive, unique objects that are referenced in a row
+            %   cannot be larger than 500. In order to break these chains,
+            %   we delete the reference to the branch on all thermal exmes
+            %   on the right side of all branches. Since the branch object
+            %   retains a reference to this flow, we can easily reconnect
+            %   it on load. 
+            this.oBranch = [];
+        end
+        
+        function reconnectBranch(this, oBranch)
+            %RECONNECTBRANCH Sets branch reference to input object
+            %   This reverses the action performed in disconnectBranch().
+            this.oBranch = oBranch;
         end
     end
 end

@@ -19,10 +19,17 @@ if ~isfield(trMasses, 'O2'),  trMasses.O2  = 0.23135; end
 if ~isfield(trMasses, 'Ar'),  trMasses.Ar  = 0.01288; end
 if ~isfield(trMasses, 'CO2'), trMasses.CO2 = 0.00058; end
 
-% N2 takes remaining fraction
+% Values from @matter.table
+fRm           = oStore.oMT.Const.fUniversalGas;                 % ideal gas constant [J/K]
+fMolarMassH2O = oStore.oMT.afMolarMass(oStore.oMT.tiN2I.H2O);   % molar mass of water [kg/mol]
+
+% Check input arguments, set default
+%TODO for fTemperature, rRH, fPress -> key/value pairs?
+if nargin < 4 || isempty(fTemperature), fTemperature = 273.15; end
+if nargin < 5 || isempty(rRH),          rRH          = 0;      end
+if nargin < 6 || isempty(fPressure),    fPressure    = 101325; end
+
 trMasses.N2 = 1 - trMasses.O2 - trMasses.Ar - trMasses.CO2;
-
-
 
 % Molar mass - use matter table to calculate using pseudo masses - do not
 % know the absolute values yet, but molar mass just depends on relative
@@ -36,58 +43,59 @@ end
 
 fMolarMass = oStore.oMT.calculateMolarMass(afPseudoMasses); %0.029088; % [kg/mol]
 
-
-
-
-% Values from @matter.table
-fRm           = oStore.oMT.Const.fUniversalGas;                 % ideal gas constant [J/K]
-fMolarMassH2O = oStore.oMT.afMolarMass(oStore.oMT.tiN2I.H2O);   % molar mass of water [kg/mol]
-
-% Check input arguments, set default
-%TODO for fTemperature, rRH, fPress -> key/value pairs?
-if nargin < 4 || isempty(fTemperature), fTemperature = 273.15; end
-if nargin < 5 || isempty(rRH),          rRH          = 0;      end
-if nargin < 6 || isempty(fPressure),    fPressure    = 101325; end
-
 % Calculation of the saturation vapour pressure
 fSaturationVapourPressure = oStore.oMT.calculateVaporPressure(fTemperature, 'H2O');
 
 % calculate vapour pressure [Pa]
 fVapourPressure = rRH * fSaturationVapourPressure; 
 
-% calculate mass fraction of H2O in air
-fMassFractionH2O = fMolarMassH2O / fMolarMass * fVapourPressure / (fPressure - fVapourPressure);
+fMolarMassNew = inf;
+iCounter = 0;
 
-% calculate molar fraction of H2O in air
-fMolarFractionH2O = fMassFractionH2O / fMolarMassH2O * fMolarMass; 
+while abs(fMolarMass - fMolarMassNew) > 1e-8 && iCounter < 500
+    fMolarMass = fMolarMassNew;
+    % calculate mass fraction of H2O in air
+    trMasses.H2O = fMolarMassH2O / fMolarMass * fVapourPressure / (fPressure - fVapourPressure);
+
+    % N2 takes remaining fraction
+    trMasses.N2 = 1 - trMasses.O2 - trMasses.Ar - trMasses.CO2 - trMasses.H2O;
+
+    % Molar mass - use matter table to calculate using pseudo masses - do not
+    % know the absolute values yet, but molar mass just depends on relative
+    % weights of the substances!
+    afPseudoMasses = zeros(1, oStore.oMT.iSubstances);
+    csFields = fieldnames(trMasses);
+
+    for iS = 1:length(csFields)
+        afPseudoMasses(oStore.oMT.tiN2I.(csFields{iS})) = trMasses.(csFields{iS});
+    end
+
+    fMolarMassNew = oStore.oMT.calculateMolarMass(afPseudoMasses); %0.029088; % [kg/mol]
+    iCounter = iCounter + 1;
+end
 
 % calculate total mass
 % p V = m / M * R_m * T  <=>  m = p * V * M / (R_m * T)
-fMassGes = fPressure * fVolume * (fMolarFractionH2O * fMolarMassH2O + (1 - fMolarFractionH2O) * fMolarMass) / (fRm * fTemperature); 
+fMassGes = fPressure * fVolume * fMolarMass / (fRm * fTemperature); 
 % calculate dry air mass
-fMass    = fMassGes * (1 - fMassFractionH2O); 
-
-
+fMass    = fMassGes * (1 - trMasses.H2O); 
 
 % Matter composition
 tfMass = struct(...
     'N2',  trMasses.N2  * fMass, ...
     'O2',  trMasses.O2  * fMass, ...
     'Ar',  trMasses.Ar  * fMass, ...
-    'CO2', trMasses.CO2 * fMass ...
+    'CO2', trMasses.CO2 * fMass, ...
+    'H2O', trMasses.H2O * fMass ...
 );
-tfMass.H2O = fMassGes * fMassFractionH2O; %calculate H2O mass
 
 % Create cParams for a whole matter.phases.gas standard phase. If user does
 % not want to use all of them, can just use
 % matter.phases.gas(oMT.create('air'){1:2}, ...)
 cParams = { tfMass fVolume fTemperature };
 
-
 % Default class - required for automatic construction of phase. Helper re-
 % turns the default phase that could be constructed with this set of params
 sDefaultPhase = 'matter.phases.gas';
-
-
 
 end

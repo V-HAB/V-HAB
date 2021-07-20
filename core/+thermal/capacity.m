@@ -1,8 +1,12 @@
-classdef capacity < base & event.source
+classdef capacity < base & event.source & matlab.mixin.Heterogeneous
     %CAPACITY An object that holds thermal energy
     % created automatically with a phase and performs all thermal
     % calculations for the respective phase
         
+    % Objects of different classes cannot be put into the same
+    % array if they do not inherti from the matlab.mixin.Heterogenous class
+    % Therefore we use this reference here to be able to put capacities of
+    % different subtypes into an object array
     properties (Access = public)
         % If true, updateTemperature triggers all branches to re-calculate their
         % heat flows. Use when thermal capacity is small compared to heat
@@ -37,6 +41,12 @@ classdef capacity < base & event.source
         % phase
         sName;
         
+        % Boolean to identify this as a boundary capacity
+        bBoundary = false;
+        
+        % Boolean to identify this as a flow capacity
+        bFlow = false;
+        
         %% Associated objects
         % The phase which is the matter domain representation of this
         % capacity (as there is no capacity without matter)
@@ -47,9 +57,13 @@ classdef capacity < base & event.source
         
         % cell array containing all heat sources within this capacity
         coHeatSource;
+        
         % struct array containing all heat sources within this capacitiy
         % with their names as the corresponding field names
         toHeatSources;
+        
+        % Number of heat sources of this capacity
+        iHeatSources = 0;
         
         % object arry containing the different (thermal) exmes of this
         % capacity. Not that each matter exme is mirrored by a thermal exme
@@ -88,6 +102,22 @@ classdef capacity < base & event.source
         % means that for a temperature of 293 K the maximum temperature
         % change is 1.47 K
         rMaxChange = 0.005; % [-]
+        
+        % These two temperature values represent temperature limits up to
+        % which the time step can extended at maximum. E.g. without any
+        % other limits, if the temperature is currently 300 K and the lower
+        % limit is 275 K, the temperature change at most can be 25 K with
+        % the corresponding timestep
+        fMinimumTemperatureForTimeStep;
+        fMaximumTemperatureForTimeStep;
+        
+        % In case the user does not want to specify a percentage limit for
+        % the time step, this value can be used to define a K limit
+        fMaxTemperatureChange = inf;
+        
+        % The minimal and maximal time step of the capacity:
+        fMaxStep = 20;
+        fMinStep = 1e-8;
         
         % as for the phase in the matter domain, the time step for the
         % capacity can also be set to a fixed value
@@ -141,6 +171,10 @@ classdef capacity < base & event.source
         % the correct post tick levels are used
         hBindPostTickTimeStep
         
+        % In case the capacity is detled, we have to call all unbind
+        % functions
+        chUnbindFunctions;
+        
         % function registered at the timer to allow the setting of a
         % specific time step for this capacity, which is then enforced by
         % the timer object
@@ -149,12 +183,16 @@ classdef capacity < base & event.source
     
     methods
         
-        function this = capacity(oPhase, fTemperature)
+        function this = capacity(oPhase, fTemperature, bFlow)
             %CAPACITY Create new thermal capacity object
             %   Create a new capacity with a name and associated phase
             %   object. Capacities are generated automatically together
             %   with phases and all thermal calculations are performed here
-            
+            if nargin < 3
+                this.bFlow = false;
+            else
+                this.bFlow = bFlow;
+            end
             % Set associated objects.
             this.oPhase     = oPhase;
             this.oContainer = this.oPhase.oStore.oContainer;
@@ -163,6 +201,9 @@ classdef capacity < base & event.source
             
             % Adding this capacity to the container
             this.oContainer.addCapacity(this);
+            
+            % Adding this capacity to its phase
+            this.oPhase.setCapacity(this);
             
             % Sets the temperature of this capacity and the asscociated
             % phase
@@ -174,7 +215,7 @@ classdef capacity < base & event.source
             try
                 this.fSpecificHeatCapacity  = this.oMT.calculateSpecificHeatCapacity(this.oPhase);
                 this.fTotalHeatCapacity     = sum(this.oPhase.afMass) * this.fSpecificHeatCapacity;
-            catch
+            catch %#ok<CTCH>
                 % Just use dummy values in case the previous try did not
                 % work, the really correct ones will be calculated before
                 % the sim starts in the init_post triggered function
@@ -182,26 +223,34 @@ classdef capacity < base & event.source
                 this.fTotalHeatCapacity     = sum(this.oPhase.afMass) * this.fSpecificHeatCapacity;
             end
             
-            this.oContainer.bind('ThermalSeal_post',@(~)this.setInitialHeatCapacity());
+            this.chUnbindFunctions = cell.empty;
             
-            % Set name of capacity.
+            [ ~, this.chUnbindFunctions{end+1} ] = this.oContainer.bind('ThermalSeal_post',@(~)this.setInitialHeatCapacity());
+            
+            
+            % Set name of capacity
             this.sName = oPhase.sName;
             
             % Initialize the heat source cell
             this.coHeatSource = cell.empty();
             
-            %% Register post tick callbacks for massupdate and update        
-            this.hBindPostTickTemperatureUpdate = this.oTimer.registerPostTick(@this.updateTemperature, 'thermal', 'capacity_temperatureupdate');
-            this.hBindPostTickTimeStep          = this.oTimer.registerPostTick(@this.calculateTimeStep, 'post_physics', 'timestep');
+            %% Register post tick callbacks for massupdate and update
+            if this.bFlow
+                [this.hBindPostTickTemperatureUpdate, this.chUnbindFunctions{end+1}] = this.oTimer.registerPostTick(@this.updateTemperature, 'thermal', 'flow_capacity_temperatureupdate');
+            else
+                [this.hBindPostTickTemperatureUpdate, this.chUnbindFunctions{end+1}] = this.oTimer.registerPostTick(@this.updateTemperature, 'thermal', 'capacity_temperatureupdate');
+            end
+            [this.hBindPostTickTimeStep,          this.chUnbindFunctions{end+1}] = this.oTimer.registerPostTick(@this.calculateTimeStep, 'post_physics', 'timestep');
             
             % Register the first temperature update
             this.hBindPostTickTemperatureUpdate();
             
-            % Bind the .update method to the timer, with a time step of 0
-            % (i.e. smallest step), will be adapted after each .update
-            this.setTimeStep = this.oTimer.bind(@(~) this.registerUpdateTemperature(), 0, struct(...
-                'sMethod', 'update', ...
-                'sDescription', 'The .update method of a phase', ...
+            % Bind the .registerUpdateTemperature method to the timer, with
+            % a time step of 0 (i.e. smallest step), will be adapted after
+            % each .registerUpdateTemperature
+            [this.setTimeStep, this.chUnbindFunctions{end+1}] = this.oTimer.bind(@(~) this.registerUpdateTemperature(), 0, struct(...
+                'sMethod', 'registerUpdateTemperature', ...
+                'sDescription', 'The .registerUpdateTemperature method of a phase', ...
                 'oSrcObj', this ...
             ));
         end
@@ -223,6 +272,7 @@ classdef capacity < base & event.source
             if (this.oTimer.iTick <= 0)
                 return
             end
+            
             if isempty(this.fPressureLastHeatCapacityUpdate) ||...
                (abs(this.fPressureLastHeatCapacityUpdate - this.oPhase.fPressure) > 100) ||...
                (abs(this.fTemperatureLastHeatCapacityUpdate - this.fTemperature) > 1) ||...
@@ -233,9 +283,9 @@ classdef capacity < base & event.source
                     this.out(1, 1, 'name', '%s-%s-%s', { this.oContainer.sName, this.oPhase.oStore.sName, this.sName });
 
                     this.out(1, 2, 'last', 'fSpecificHeatCapacity:              %f [J/(kg*K)]', { this.fSpecificHeatCapacity });
-                    this.out(1, 2, 'last', 'fMass:                              %f [kg]', { sum(this.arPartialMassLastHeatCapacityUpdate) });
-                    this.out(1, 2, 'last', 'fPressureLastHeatCapacityUpdate:    %f [Pa]', { this.fPressureLastHeatCapacityUpdate });
-                    this.out(1, 2, 'last', 'fTemperatureLastHeatCapacityUpdate: %f [K]', { this.fTemperatureLastHeatCapacityUpdate });
+                    this.out(1, 2, 'last', 'fMass:                              %f [kg]',       { sum(this.arPartialMassLastHeatCapacityUpdate) });
+                    this.out(1, 2, 'last', 'fPressureLastHeatCapacityUpdate:    %f [Pa]',       { this.fPressureLastHeatCapacityUpdate });
+                    this.out(1, 2, 'last', 'fTemperatureLastHeatCapacityUpdate: %f [K]',        { this.fTemperatureLastHeatCapacityUpdate });
                 end
                 
                 % Actually updating the specific heat capacity
@@ -249,9 +299,9 @@ classdef capacity < base & event.source
                 
                 if ~base.oDebug.bOff
                     this.out(1, 2, 'curr', 'fSpecificHeatCapacity:              %f [J/(kg*K)]', { this.fSpecificHeatCapacity });
-                    this.out(1, 2, 'curr', 'fMass:                              %f [kg]', { sum(this.arPartialMassLastHeatCapacityUpdate) });
-                    this.out(1, 2, 'curr', 'fPressureLastHeatCapacityUpdate:    %f [Pa]', { this.fPressureLastHeatCapacityUpdate });
-                    this.out(1, 2, 'curr', 'fTemperatureLastHeatCapacityUpdate: %f [K]', { this.fTemperatureLastHeatCapacityUpdate });
+                    this.out(1, 2, 'curr', 'fMass:                              %f [kg]',       { sum(this.arPartialMassLastHeatCapacityUpdate) });
+                    this.out(1, 2, 'curr', 'fPressureLastHeatCapacityUpdate:    %f [Pa]',       { this.fPressureLastHeatCapacityUpdate });
+                    this.out(1, 2, 'curr', 'fTemperatureLastHeatCapacityUpdate: %f [K]',        { this.fTemperatureLastHeatCapacityUpdate });
                 end
             end
         end
@@ -274,8 +324,9 @@ classdef capacity < base & event.source
             % are moved between container no temperature change occurs. And
             % this is basically what happens here as the difference in
             % temperature is already handled in the thermal branch
-            
-            this.fTotalHeatCapacity = fTotalHeatCapacity;
+            if ~this.bBoundary
+                this.fTotalHeatCapacity = fTotalHeatCapacity;
+            end
             
             this.fLastTotalHeatCapacityUpdate = this.oTimer.fTime;
         end
@@ -291,13 +342,34 @@ classdef capacity < base & event.source
                 % the specific heat capacity calculation
                 mfFlowRate              = zeros(1,this.iProcsEXME);
                 mfSpecificHeatCapacity  = zeros(1,this.iProcsEXME);
+                
                 for iExme = 1:this.iProcsEXME
                     if isa(this.aoExmes(iExme).oBranch.oHandler, 'solver.thermal.basic_fluidic.branch')
-                        fFlowRate = this.aoExmes(iExme).oBranch.coConductors{1}.oMassBranch.fFlowRate * this.oPhase.toProcsEXME.(this.aoExmes(iExme).sName).iSign;
+                        
+                        iExMeSign = this.aoExmes(iExme).iSign;
+                        fFlowRate = this.aoExmes(iExme).oBranch.oMatterObject.fFlowRate * iExMeSign;
                         
                         if fFlowRate > 0
                             mfFlowRate(iExme) = fFlowRate;
-                            mfSpecificHeatCapacity(iExme) = this.oPhase.toProcsEXME.(this.aoExmes(iExme).sName).oFlow.fSpecificHeatCapacity;
+                            oMatterObject = this.aoExmes(iExme).oBranch.oMatterObject;
+                            try
+                                iBranchSign = sign(oMatterObject.fFlowRate);
+                                if iBranchSign * iExMeSign < 0
+                                    mfSpecificHeatCapacity(iExme) = oMatterObject.aoFlows(1).fSpecificHeatCapacity;
+                                else
+                                    mfSpecificHeatCapacity(iExme) = oMatterObject.aoFlows(end).fSpecificHeatCapacity;
+                                end
+                            catch oFirstError
+                                try
+                                    mfSpecificHeatCapacity(iExme) = oMatterObject.fSpecificHeatCapacity;
+                                catch oSecondError
+                                    if strcmp(oFirstError.identifier, 'MATLAB:noSuchMethodOrField')
+                                        rethrow(oSecondError);
+                                    else
+                                        rethrow(oFirstError);
+                                    end
+                                end
+                            end
                         end
                     end
                 end
@@ -378,6 +450,8 @@ classdef capacity < base & event.source
             else
                 this.coHeatSource{end+1} = oHeatSource;
             end
+            
+            this.iHeatSources = length(this.coHeatSource);
         end
         
         function setOutdatedTS(this)
@@ -389,6 +463,11 @@ classdef capacity < base & event.source
             % Only sets a boolean in the timer to true, so it does not
             % matter if we do this multiple times --> no check required
             this.hBindPostTickTimeStep();
+            % Since this function is called when the heat flows change, we
+            % also have to call the temperature update to transfer the
+            % correct amount of thermal energy before changing the heat
+            % flows!
+            this.registerUpdateTemperature();
         end
         
         function registerUpdateTemperature(this, ~)
@@ -430,126 +509,18 @@ classdef capacity < base & event.source
             % controls the maximum allowed changes in composition until
             % this is recalculated, these are acceptable errors.
             
-            
-            % In case this is a flow phase with 0 mass (and therefore also
-            % 0 capacity by itself) the temperature calculation must be
-            % adapted to reflect this correctly
-            if this.oPhase.bFlow
-                % Initializing three arrays that will hold the information
-                % gathered from all exmes connected to this capacity.
-                afMatterFlowRate       = zeros(1,this.iProcsEXME);
-                afSpecificHeatCapacity = zeros(1,this.iProcsEXME);
-                afTemperature          = zeros(1,this.iProcsEXME);
-                
-                % we cannot use the fCurrentHeatFlow property directly
-                % because it would contain mass based heat flows, which are
-                % not valid for flow phases
-                fSolverHeatFlow = 0;
-                
-                % Looping through all the thermal exmes 
-                for iExme = 1:this.iProcsEXME
-                    % for basic_fluidic branches, the thermal branch
-                    % represent a matter based mass transfer, and therefore
-                    % we can use this to calculate the overall heat
-                    % capacity flow entering the phase
-                    if isa(this.aoExmes(iExme).oBranch.oHandler, 'solver.thermal.basic_fluidic.branch')
-                        % Now we need to find out in which direction the
-                        % branch is connected. Positive is from left to
-                        % right. In this case we are looking at the coExmes
-                        % cell and here index 1 is left and index 2 is
-                        % right. 
-                        % When we compare this capacity's phase to the
-                        % phase of the matter exme at one end of the
-                        % branch, we can determine if we are at the right
-                        % or left side of that branch. 
-                        if this.aoExmes(iExme).oBranch.oMatterObject.coExmes{1}.oPhase == this.oPhase
-                            % We're at the left side
-                            iMatterExme = 1;
-                            iOtherExme = 2;
-                        else
-                            % We're at the right side
-                            iMatterExme = 2;
-                            iOtherExme = 1;
-                        end
-                        
-                        % Now we can get the flow rate of this exme and
-                        % more importantly the sign. 
-                        fFlowRate = this.aoExmes(iExme).oBranch.oMatterObject.fFlowRate * this.aoExmes(iExme).oBranch.oMatterObject.coExmes{iMatterExme}.iSign;
-                        
-                        % We only consider inflows. Outflows change the
-                        % temperature through a change in mass and thereby
-                        % total heat capacity. 
-                        if fFlowRate > 0
-                            % Setting the matter flow rate and specific
-                            % heat capacity for this exme.
-                            afMatterFlowRate(iExme) = fFlowRate;
-                            afSpecificHeatCapacity(iExme) = this.aoExmes(iExme).oBranch.oMatterObject.coExmes{iOtherExme}.oFlow.fSpecificHeatCapacity;
-                            
-                            % To get the temperature of the inflow, we need
-                            % to look at the afTemperatures array in the
-                            % thermal branch. This is necessary, because
-                            % matter f2f processors can change the
-                            % temperature via their fHeatFlow property.
-                            % This is taken into account in the thermal
-                            % solver when the afTemperatures array is
-                            % populated. Depending on which end of the
-                            % branch this capacity is located (left or
-                            % right) we get the first or last element in
-                            % the array. 
-                            if iMatterExme == 1
-                                afTemperature(iExme) = this.aoExmes(iExme).oBranch.afTemperatures(1);
-                            else
-                                afTemperature(iExme) = this.aoExmes(iExme).oBranch.afTemperatures(end);
-                            end
-                        end
-                    else
-                        % in case a different solver is used, we need the
-                        % heat flow calculated by that solver, to add it to
-                        % the heat flows from the sources. The heat flows
-                        % from mass transport can be neglected since their
-                        % temperature is directly used to calculate the
-                        % base temperature
-                        fSolverHeatFlow = fSolverHeatFlow + this.aoExmes(iExme).iSign * this.aoExmes(iExme).fHeatFlow;
-                    end
-                end
-                
-                % Now we can calculate the overall heat capacity flow into
-                % the phase.
-                fOverallHeatCapacityFlow = sum(afMatterFlowRate .* afSpecificHeatCapacity);
-                
-                % Triggering in case someone wants to do something here
-                if this.bTriggerSetCalculateFlowConstantTemperatureCallbackBound
-                    this.trigger('calculateFlowConstantTemperature');
-                end
-                
-                % If nothing flows into the phase, we maintain the previous
-                % temperature, otherwise we calculate it using all of the
-                % information we have gathered so far.
-                if fOverallHeatCapacityFlow == 0
-                    fTemperatureNew = this.fTemperature;
-                else
-                    % We also need to take into account all of the heat
-                    % sources connected to this capacity.
-                    fSourceHeatFlow = sum(cellfun(@(cCell) cCell.fHeatFlow, this.coHeatSource));
-                    
-                    % Calculating the new temperature
-                    fTemperatureNew = (sum(afMatterFlowRate .* afSpecificHeatCapacity .* afTemperature) / fOverallHeatCapacityFlow) + (fSourceHeatFlow + fSolverHeatFlow)/fOverallHeatCapacityFlow;
-                end
+            % This is not a flow phase. 
+            if this.fTotalHeatCapacity <= 1e-15
+                % Setting the temperature to 293 K. If the temperature
+                % is set to zero, it will cause problems with several
+                % solvers that use the capacity temperature for density
+                % calculations, even though the flow rate is zero. 
+                fTemperatureNew = 293;
             else
-                % This is not a flow phase. 
-                if this.fTotalHeatCapacity == 0
-                    % Setting the temperature to 293 K. If the temperature
-                    % is set to zero, it will cause problems with several
-                    % solvers that use the capacity temperature for density
-                    % calculations, even though the flow rate is zero. 
-                    fTemperatureNew = 293;
-                else
-                    % Calculating the new temperature based on the current
-                    % heat flow. This value is calculated in the
-                    % calculateTimeStep() method of this class. 
-                    fTemperatureNew = this.fTemperature + ((this.fCurrentHeatFlow / this.fTotalHeatCapacity) * fLastStep);
-                end
-
+                % Calculating the new temperature based on the current
+                % heat flow. This value is calculated in the
+                % calculateTimeStep() method of this class. 
+                fTemperatureNew = this.fTemperature + ((this.fCurrentHeatFlow / this.fTotalHeatCapacity) * fLastStep);
             end
             
             % Setting the properties that help us determine if we need to
@@ -585,14 +556,31 @@ classdef capacity < base & event.source
             % currently the possible time step properties that can be set
             % by the user are:
             %
-            % rMaxChange:   Maximum allowed percentage change in the total
-            %               temperature of the capacity
+            % rMaxChange:     Maximum allowed percentage change in the total
+            %                 temperature of the capacity
+            % fMaxStep:       Maximum time step in seconds
+            % fMinStep:       Minimum time step in seconds
+            % fFixedTimeStep: Fixed (constant) time step in seconds, if this
+            %                 property is set all other time step properties
+            %                 will be ignored and the set time step will be
+            %                 used
             %
+            % fMaxTemperatureChange:    Maximum allowed temperature change
+            %                           in K
+            % fMinimumTemperatureForTimeStep:   Minimum temperature up to
+            %                                   which the time step can
+            %                                   extend
+            % fMaximumTemperatureForTimeStep:   Maximum temperature up to
+            %                                   which the time step can
+            %                                   extend
+            
+        
+            
             % In order to define these provide a struct with the fieldnames
             % as described here to this function for the values that you
             % want to set
             
-            csPossibleFieldNames = {'rMaxChange', 'fFixedTimeStep'};
+            csPossibleFieldNames = {'rMaxChange', 'fFixedTimeStep', 'fMaxStep', 'fMinStep', 'fMaxTemperatureChange', 'fMinimumTemperatureForTimeStep', 'fMaximumTemperatureForTimeStep'};
             
             % Gets the fieldnames of the struct to easier loop through them
             csFieldNames = fieldnames(tTimeStepProperties);
@@ -663,7 +651,11 @@ classdef capacity < base & event.source
             % Function used to set the initial heat capacity after the
             % system has been sealed
             this.fSpecificHeatCapacity  = this.oMT.calculateSpecificHeatCapacity(this.oPhase);
-            this.fTotalHeatCapacity     = sum(this.oPhase.afMass) * this.fSpecificHeatCapacity;
+            if this.bBoundary
+                this.fTotalHeatCapacity	= inf;
+            else
+                this.fTotalHeatCapacity	= sum(this.oPhase.afMass) * this.fSpecificHeatCapacity;
+            end
         end
         
         function calculateTimeStep(this,~)
@@ -674,126 +666,154 @@ classdef capacity < base & event.source
             % - Store the overall heat flow in the fCurrentHeatFlow property
             % - calculate the allowed time step based on the phase
             %   temperature max change
-            try
-                fExmeHeatFlow = sum([this.aoExmes.iSign] .* [this.aoExmes.fHeatFlow]);
-            catch oError
-                if ~isempty(this.aoExmes)
-                    rethrow(oError)
-                else 
-                    fExmeHeatFlow = 0;
-                end
-            end
             
-            % For constant temperature heat sources, we have to recalculate
-            % the heat source now with this trigger, to ensure that it used
-            % the correct heat flows from other values
-            if this.bTriggerSetCalculateHeatsourcePreCallbackBound
-            	this.trigger('calculateHeatsource_pre');
-            end
-            
-            this.fTotalHeatSourceHeatFlow = sum(cellfun(@(cCell) cCell.fHeatFlow, this.coHeatSource));
-            
-            fNewHeatFlow = fExmeHeatFlow + this.fTotalHeatSourceHeatFlow;
-            % In case the heat flow changed we trigger a update of the
-            % residual solver branches, which in the thermal domain are
-            % e.g. the infinite conduction branches
-            if fNewHeatFlow ~= this.fCurrentHeatFlow
-                this.setBranchesOutdated(true);
-            end
-            
-            % Checking for NaNs. It is necessary to do this here so the
-            % origin of NaNs can be found easily during debugging.
-            if isnan(fNewHeatFlow)
-                
-                % Checking if its the EXMEs
-                abEXMEsWithNaNs = isnan([this.aoExmes.fHeatFlow]);
-                
-                if any(abEXMEsWithNaNs)
-                    error('Error in capacity ''%s''. The heat flow from EXME ''%s'' is NaN.\n', this.sName, this.aoExmes(abEXMEsWithNaNs).sName);
-                else
-                    % It's not from the EXMEs so it has to be from one of
-                    % the connected heat sources. 
-                    abHeatSourcesWithNaNs = false(length(this.coHeatSource));
-                    for iHeatSource = 1:length(this.coHeatSource)
-                         abHeatSourcesWithNaNs(iHeatSource) = isnan(this.coHeatSource{iHeatSource}.fHeatFlow);
-                    end
-                    error('Error in capacity ''%s''. The heat flow from heatsource ''%s'' is NaN.\n', this.sName, this.coHeatSource{abHeatSourcesWithNaNs}.sName);
-                end
-            end
-            
-            this.fCurrentHeatFlow = fNewHeatFlow;
-            
-            % If we have set a fixed time step for the phase, we can just
-            % continue without doing any calculations as the fixed step is
-            % also used for the capacity
-            if this.oPhase.bFlow
-                % In a flow phase heat flows do not change temperature over
-                % time, but instead directly change the temperature.
-                % Therefore, the time step in flow phases can be infinite.
-                % Recalculation in this case is triggered only through
-                % changes in the branches
-                fNewStep = inf;
+            % In case we have a boundary we can just use the maximum time
+            % step because any change in boundary phases is triggered externally
+            if this.bBoundary
+                fNewStep = this.fMaxStep;
             else
-                % if it is not a flow phase we always calculate a maximum
-                % time step which prevents unphysical properties
+                try
+                    fExmeHeatFlow = sum([this.aoExmes.iSign] .* [this.aoExmes.fHeatFlow]);
+                catch oError
+                    if ~isempty(this.aoExmes)
+                        rethrow(oError)
+                    else
+                        fExmeHeatFlow = 0;
+                    end
+                end
+
                 
-                % calculate the current percentual temperature change per
-                % second
-                fTemperatureChangePerSecond = (this.fCurrentHeatFlow / this.fTotalHeatCapacity);
-                rTemperatureChangePerSecond = abs(fTemperatureChangePerSecond / this.fTemperature);
-                
-                % similar to the mass we also limit the temperature update
-                % to prevent negative temperatures:
-                if fTemperatureChangePerSecond < 0
-                    fMaximumTimeStep = - this.fTemperature / fTemperatureChangePerSecond;
-                else
-                    fMaximumTimeStep = inf;
+                % For constant temperature heat sources, we have to
+                % recalculate the heat source now with this trigger, to
+                % ensure that it used the correct heat flows from other
+                % values
+                if this.bTriggerSetCalculateHeatsourcePreCallbackBound
+                    this.trigger('calculateHeatsource_pre');
                 end
                 
-                if ~isempty(this.fFixedTimeStep)
-                    % If a fixed time step is set just use that value as
-                    % time step
-                    fNewStep = this.oPhase.fFixedTimeStep;
+                this.fTotalHeatSourceHeatFlow = sum(cellfun(@(cCell) cCell.fHeatFlow, this.coHeatSource));
+                
+                fNewHeatFlow = fExmeHeatFlow + this.fTotalHeatSourceHeatFlow;
+                % In case the heat flow changed we trigger a update of the
+                % residual solver branches, which in the thermal domain are
+                % e.g. the infinite conduction branches
+                if fNewHeatFlow ~= this.fCurrentHeatFlow
+                    this.setBranchesOutdated(true);
+                end
+                
+                % Checking for NaNs. It is necessary to do this here so the
+                % origin of NaNs can be found easily during debugging.
+                if isnan(fNewHeatFlow)
                     
-                    fNewStep = min(fNewStep, fMaximumTimeStep);
+                    % Checking if its the EXMEs
+                    abEXMEsWithNaNs = isnan([this.aoExmes.fHeatFlow]);
+                    
+                    if any(abEXMEsWithNaNs)
+                        error('Error in capacity ''%s''. The heat flow from EXME ''%s'' is NaN.\n', this.sName, this.aoExmes(abEXMEsWithNaNs).sName);
+                    else
+                        % It's not from the EXMEs so it has to be from one
+                        % of the connected heat sources.
+                        abHeatSourcesWithNaNs = false(length(this.coHeatSource));
+                        for iHeatSource = 1:length(this.coHeatSource)
+                            abHeatSourcesWithNaNs(iHeatSource) = isnan(this.coHeatSource{iHeatSource}.fHeatFlow);
+                        end
+                        error('Error in capacity ''%s''. The heat flow from heatsource ''%s'' is NaN.\n', this.sName, this.coHeatSource{abHeatSourcesWithNaNs}.sName);
+                    end
+                end
+                
+                this.fCurrentHeatFlow = fNewHeatFlow;
+                
+                % If we have set a fixed time step for the phase, we can
+                % just continue without doing any calculations as the fixed
+                % step is also used for the capacity
+                if this.oPhase.bFlow
+                    % In a flow phase heat flows do not change temperature
+                    % over time, but instead directly change the
+                    % temperature. Therefore, the time step in flow phases
+                    % can be infinite. Recalculation in this case is
+                    % triggered only through changes in the branches
+                    fNewStep = inf;
                 else
-                    % for no heat capacity, no heat can be stored 
-                    % --> infinite time step
-                    if this.fTotalHeatCapacity == 0 || this.fTemperature == 0
-                        this.setTimeStep(inf);
-                        return
+                    % if it is not a flow phase we always calculate a
+                    % maximum time step which prevents unphysical
+                    % properties
+                    
+                    % calculate the current percentual temperature change
+                    % per second
+                    fTemperatureChangePerSecond = (this.fCurrentHeatFlow / this.fTotalHeatCapacity);
+                    rTemperatureChangePerSecond = abs(fTemperatureChangePerSecond / this.fTemperature);
+                    
+                    % similar to the mass we also limit the temperature
+                    % update to prevent negative temperatures:
+                    if fTemperatureChangePerSecond < 0
+                        fMaximumTimeStep = - this.fTemperature / fTemperatureChangePerSecond;
+                    else
+                        fMaximumTimeStep = inf;
                     end
                     
-                    fNewStep = this.rMaxChange / rTemperatureChangePerSecond;
-
-                    fNewStep = min(fNewStep, fMaximumTimeStep);
-
-                    if fNewStep < 0
-                        if ~base.oDebug.bOff, this.out(3, 1, 'time-step-neg', 'Phase %s-%s-%s has neg. time step of %.16f', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, fNewStep }); end
-                    end
-
-                    % If our newly calculated time step is larger than the
-                    % maximum time step set for this phase, we use this
-                    % instead.
-                    if fNewStep > this.oPhase.fMaxStep
-                        fNewStep = this.oPhase.fMaxStep;
-                        if ~base.oDebug.bOff
-                            this.out(3, 1, 'max-time-step', 'Phase %s-%s-%s setting maximum timestep of %f', { this.oContainer.sName, this.oPhase.oStore.sName, this.sName, this.oPhase.fMaxStep });
+                    if ~isempty(this.fFixedTimeStep)
+                        % If a fixed time step is set just use that value
+                        % as time step
+                        fNewStep = this.fFixedTimeStep;
+                        
+                        fNewStep = min(fNewStep, fMaximumTimeStep);
+                    else
+                        % for no heat capacity, no heat can be stored -->
+                        % infinite time step
+                        if this.fTotalHeatCapacity == 0 || this.fTemperature == 0
+                            this.setTimeStep(inf);
+                            return
                         end
                         
-                    % If the time step is smaller than the set minimal time
-                    % step for the phase the minimal time step is used
-                    % (standard case is that fMinStep is 0, but the user
-                    % can set it to a different value)
-                    elseif fNewStep < this.oPhase.fMinStep
-                        fNewStep = this.oPhase.fMinStep;
-                        %TODO Make this output a lower level debug message.
-                       if ~base.oDebug.bOff
-                           this.out(3, 1, 'min-time-step', 'Phase %s-%s-%s setting minimum timestep', { this.oContainer.sName, this.oPhase.oStore.sName, this.sName });
-                       end
+                        fNewStepPercentage = this.rMaxChange / rTemperatureChangePerSecond;
+                        fNewStepTotal      = abs(this.fMaxTemperatureChange / fTemperatureChangePerSecond);
+                        fNewStepLowerLimit = inf;
+                        fNewStepUpperLimit = inf;
+                        if fTemperatureChangePerSecond < 0 && ~isempty(this.fMinimumTemperatureForTimeStep)
+                            fNewStepLowerLimit = (this.fTemperature - this.fMinimumTemperatureForTimeStep) / fTemperatureChangePerSecond;
+                            if fNewStepLowerLimit < 0
+                                fNewStepLowerLimit = inf;
+                            end
+                        elseif fTemperatureChangePerSecond > 0 && ~isempty(this.fMaximumTemperatureForTimeStep)
+                            fNewStepUpperLimit = (this.fMaximumTemperatureForTimeStep - this.fTemperature) / fTemperatureChangePerSecond;
+                            if fNewStepUpperLimit < 0
+                                fNewStepUpperLimit = inf;
+                            end
+                        end
+                        
+                        fNewStep = min([fNewStepPercentage, fNewStepTotal, fNewStepLowerLimit, fNewStepUpperLimit, fMaximumTimeStep]);
+                        
+                        if fNewStep < 0
+                            if ~base.oDebug.bOff, this.out(3, 1, 'time-step-neg', 'Phase %s-%s-%s has neg. time step of %.16f', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, fNewStep }); end
+                        end
+                        
+                        % If our newly calculated time step is larger than
+                        % the maximum time step set for this phase, we use
+                        % this instead.
+                        if fNewStep > this.fMaxStep
+                            fNewStep = this.fMaxStep;
+                            if ~base.oDebug.bOff
+                                this.out(3, 1, 'max-time-step', 'Phase %s-%s-%s setting maximum timestep of %f', { this.oContainer.sName, this.oPhase.oStore.sName, this.sName, this.oPhase.fMaxStep });
+                            end
+                            
+                            % If the time step is smaller than the set
+                            % minimal time step for the phase the minimal
+                            % time step is used (standard case is that
+                            % fMinStep is 0, but the user can set it to a
+                            % different value)
+                        elseif fNewStep < this.fMinStep
+                            fNewStep = this.fMinStep;
+                            %TODO Make this output a lower level debug
+                            %message.
+                            if ~base.oDebug.bOff
+                                this.out(3, 1, 'min-time-step', 'Phase %s-%s-%s setting minimum timestep', { this.oContainer.sName, this.oPhase.oStore.sName, this.sName });
+                            end
+                        end
                     end
                 end
+                
             end
+            
             % Set the time step for this capacity. If the update was also
             % called in this tick we also reset the time at which the phase
             % was last executed thus enforcing the next execution time to
@@ -818,8 +838,16 @@ classdef capacity < base & event.source
                 bResidual = false;
             end
             
+            bUpdateOutFlow = false;
             if ~bResidual && this.fLastSetOutdated >= this.oTimer.fTime
-                return;
+                if this.bFlow
+                    % Since flow phases can change instantly, we still have
+                    % to update their outflows even if they were already
+                    % updated in this tick
+                    bUpdateOutFlow = true;
+                else
+                    return;
+                end
             end
             
             this.fLastSetOutdated = this.oTimer.fTime;
@@ -828,25 +856,30 @@ classdef capacity < base & event.source
             % Loop through exmes / flows and set outdated, i.e. request
             % recalculation of flow rate.
             for iE = 1:this.iProcsEXME
-                oExme   = this.aoExmes(iE);
-                oBranch = oExme.oBranch;
-                    
-                if bResidual && ~isempty(oBranch.oHandler) && ~oBranch.oHandler.bResidual
-                    continue
-                end
+                oBranch = this.aoExmes(iE).oBranch;
                 % We can't directly set this oBranch as outdated if
                 % it is just connected to an interface, because the
                 % solver is assigned to the 'leftest' branch.
-                while ~isempty(oBranch.coBranches{1})
+                while oBranch.abIf(1)
                     oBranch = oBranch.coBranches{1};
+                end    
+                
+                if bResidual && ~oBranch.oHandler.bResidual
+                    continue
                 end
-
+                
                 % Tell branch to recalculate flow rate (done after
                 % the current tick, in timer post tick).
-                oBranch.setOutdated();
+                
+                if bUpdateOutFlow && this.aoExmes(iE).iSign * oBranch.fHeatFlow <= 0
+                    oBranch.setOutdated();
+                else
+                    oBranch.setOutdated();
+                end
             end
         end
     end
+    
     methods (Access = {?thermal.procs.exme})
         % these functions are used to handle dynamic reconnection of
         % branches during simulations. As it is important that everything

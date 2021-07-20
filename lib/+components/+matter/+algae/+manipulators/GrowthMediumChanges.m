@@ -56,6 +56,18 @@ classdef GrowthMediumChanges < matter.manips.substance.stationary
             %% add flow rates from different functions
             this.afPartialFlowRatesFromFunctions =  afPartialFlowRatesFromReactions + this.afPartialFlowRatesFromPhotosynthesis; %[kg/s]
             
+            
+            %% If compound masses for urine are used, split it into its components
+            if this.oPhase.afMass(this.oMT.tiN2I.Urine) && this.oMT.abCompound(this.oMT.tiN2I.Urine)
+                
+                afCompoundMasses                        = zeros(1, this.oMT.iSubstances);
+                afCompoundMasses(this.oMT.tiN2I.Urine)	= this.oPhase.afMass(this.oMT.tiN2I.Urine);
+                afResolvedMass                          = this.oMT.resolveCompoundMass(afCompoundMasses, this.oPhase.arCompoundMass);
+                
+                afCompoundFlowRates                     = afResolvedMass ./ this.fTimeStep - afCompoundMasses ./ this.fTimeStep;
+                
+                this.afPartialFlowRatesFromFunctions = this.afPartialFlowRatesFromFunctions + afCompoundFlowRates;
+            end
             %% set flow rates to pass back
             
             % check if time step is larger than 0 (exclude first time
@@ -70,7 +82,16 @@ classdef GrowthMediumChanges < matter.manips.substance.stationary
                 afPartialFlowRates = zeros(1, this.oMT.iSubstances); %[kg/s]
             end
             
-            update@matter.manips.substance.stationary(this, afPartialFlowRates);
+            aarFlowsToCompound = zeros(this.oMT.iSubstances, this.oMT.iSubstances);
+            csCompositions = fieldnames(this.oMT.ttxMatter.Chlorella.trBaseComposition);
+            for iField = 1:length(csCompositions)
+                aarFlowsToCompound(this.oMT.tiN2I.Chlorella, this.oMT.tiN2I.(csCompositions{iField})) = this.oMT.ttxMatter.Chlorella.trBaseComposition.(csCompositions{iField});
+            end
+            
+            if abs(sum(afPartialFlowRates)) > 1e-7
+                keyboard()
+            end
+            update@matter.manips.substance.stationary(this, afPartialFlowRates, aarFlowsToCompound);
         end
     end
     

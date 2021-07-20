@@ -71,7 +71,12 @@ sRootName = tools.normalizePath(sRootSystemLabel);
 oMT = matter.table();
 
 %% Create V-HAB Code
-createSetupFile(tVHAB_Objects, sPath, sSystemLabel, sRootName, csPhases, csF2F, oMT, tSystemIDtoLabel)
+if any(strcmp(csSystems, 'Human'))
+    bHumanModel = true;
+else
+    bHumanModel = false;
+end
+createSetupFile(tVHAB_Objects, sPath, sSystemLabel, sRootName, csPhases, csF2F, oMT, tSystemIDtoLabel, bHumanModel)
 
 % Create System Files
 sPath = [sPath, filesep, '+systems'];

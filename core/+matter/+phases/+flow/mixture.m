@@ -14,6 +14,22 @@ classdef mixture < matter.phases.flow.flow
         % Actual phase type of the matter in the phase, e.g. 'liquid',
         % 'solid' or 'gas'.
         sPhaseType;
+        
+        bGasPhase = false;
+    end
+    
+    properties (Dependent)
+        % Partial pressures [Pa]
+        afPP;
+        
+        % Relative humidity in the phase
+        rRelHumidity;
+    
+        % Substance concentrations in ppm. This is a dependent property because it is
+        % only calculated on demand because it should rarely be used. if
+        % the property is used often, making it not a dependent property or
+        % providing a faster calculation option is suggested
+        afPartsPerMillion;
     end
     
     methods
@@ -33,33 +49,108 @@ classdef mixture < matter.phases.flow.flow
             % sName         : Name of phase
             % tfMasses      : Struct containing mass value for each species
             % fTemperature  : Temperature of matter in phase
-            % fPressure     : Pressure of the phase      
+            % fPressure     : Pressure of the phase
             
-            % The constructor of the flow phase base class requires the
-            % volume, so we need to calculate that here. First we get the
-            % density. Since we can't use 'this' before calling the parent
-            % constructor, we use the parent store's matter table object.
-            if ~isempty(tfMass)
-                fDensity = oStore.oMT.calculateDensity('mixture', tfMass, fTemperature, fPressure);
-
-                % Now calculating the mass by summing up all entries in the
-                % tfMass struct. We have to convert it to a cell first. 
-                cfMasses = struct2cell(tfMass);
-                fMass = sum([cfMasses{:}]);
-
-                % And now we get the volume by simple division. 
-                fVolume = fMass / fDensity;
-            else
-                fVolume = 0;
+            % Note that the volume passed on here of 1e-6 is only a
+            % momentary volume to enable the definition of the phase. This
+            % value is overwriten by the calculation:
+            % this.fVolume = this.fMass / this.fDensity;
+            % within this constructor!
+            this@matter.phases.flow.flow(oStore, sName, tfMass, 1e-6, fTemperature);
+            
+            if strcmp(sPhaseType, 'gas')
+                this.bGasPhase = true;
             end
             
-            this@matter.phases.flow.flow(oStore, sName, tfMass, fVolume, fTemperature);
-            
             this.sPhaseType = sPhaseType;
-            if nargin > 6
+            if nargin > 5
                 this.fVirtualPressure = fPressure;
             else
                 this.fVirtualPressure = 1e5;
+            end
+            this.updatePressure();
+            
+            this.fDensity = this.oMT.calculateDensity(this);
+            this.fVolume = this.fMass / this.fDensity;
+            
+        end
+        function afPP = get.afPP(this)
+            if this.oMultiBranchSolver.bUpdateInProgress
+                this.throw('FlowPhase:UnsafeAccess:afPP',                             ...
+                    ['You are trying to access the afPP property of the flow phase ', ...
+                     '%s during an iteration of the multi-branch solver. ',           ...
+                     'This can lead to incorrect results. Please use the flow ',      ...
+                     'information from the appropriate matter.flow object. ',         ...
+                     'It is set by the solver and updated every iteration.'], this.sName);
+            else
+                if ~this.bGasPhase
+                    error('phase:mixture:invalidAccessPartialPressures', 'you are trying to access a gas property in a mixture phase that is not set a gas type!')
+                end
+                afPartialMassFlow_In = zeros(this.iProcsEXME, this.oMT.iSubstances);
+                
+                for iExme = 1:this.iProcsEXME
+                    fFlowRate = this.coProcsEXME{iExme}.iSign * this.coProcsEXME{iExme}.oFlow.fFlowRate;
+                    if fFlowRate > 0
+                        afPartialMassFlow_In(iExme,:) = this.coProcsEXME{iExme}.oFlow.arPartialMass .* fFlowRate;
+                    end
+                end
+                
+                % See ideal gas mixtures for information on this
+                % calculation: "Ideally the ratio of partial pressures
+                % equals the ratio of the number of molecules. That is, the
+                % mole fraction of an individual gas component in an ideal
+                % gas mixture can be expressed in terms of the component's
+                % partial pressure or the moles of the component"
+                afCurrentMolsIn   = (sum(afPartialMassFlow_In, 1) ./ this.oMT.afMolarMass);
+                arFractions       = afCurrentMolsIn ./ sum(afCurrentMolsIn);
+                afPartialPressure = arFractions .*  this.fPressure;
+                
+                afPartialPressure(isnan(afPartialPressure)) = 0;
+                afPartialPressure(afPartialPressure < 0 ) = 0;
+                
+                afPP = afPartialPressure;
+            end
+        end
+        
+        function rRelHumidity = get.rRelHumidity(this)
+            if this.oMultiBranchSolver.bUpdateInProgress
+                this.throw('FlowPhase:UnsafeAccess:rRelHumidity',                     ...
+                    ['You are trying to access the afPP property of the flow phase ', ...
+                     '%s during an iteration of the multi-branch solver. ',           ...
+                     'This can lead to incorrect results. Please use the flow ',      ...
+                     'information from the appropriate matter.flow object. ',         ...
+                     'It is set by the solver and updated every iteration.'], this.sName);
+            else
+                if ~this.bGasPhase
+                    error('phase:mixture:invalidAccessHumidity', 'you are trying to access a gas property in a mixture phase that is not set a gas type!')
+                end
+                % Check if there is water in here at all
+                if this.afPP(this.oMT.tiN2I.H2O)
+                    % calculate saturation vapour pressure [Pa];
+                    fSaturationVapourPressure = this.oMT.calculateVaporPressure(this.fTemperature, 'H2O');
+                    % calculate relative humidity
+                    rRelHumidity = this.afPP(this.oMT.tiN2I.H2O) / fSaturationVapourPressure;
+                else
+                    rRelHumidity = 0;
+                end
+            end
+        end
+        function afPartsPerMillion = get.afPartsPerMillion(this)
+            % Calculates the PPM value on demand.
+            % Made this a dependent variable to reduce the computational
+            % load during run-time since the value is rarely used. 
+            if this.oMultiBranchSolver.bUpdateInProgress
+                this.throw('FlowPhase:UnsafeAccess:afPartsPerMillion',                     ...
+                    ['You are trying to access the afPartsPerMillion property of the flow phase ', ...
+                     '%s during an iteration of the multi-branch solver. ',           ...
+                     'This can lead to incorrect results. Please use the flow ',      ...
+                     'information from the appropriate matter.flow object. ',         ...
+                     'It is set by the solver and updated every iteration.'], this.sName);
+            else
+                if ~this.bGasPhase
+                    error('phase:mixture:invalidAccessPartsPerMillion', 'you are trying to access a gas property in a mixture phase that is not set a gas type!')
+                end
+                afPartsPerMillion = this.oMT.calculatePartsPerMillion(this);
             end
         end
     end

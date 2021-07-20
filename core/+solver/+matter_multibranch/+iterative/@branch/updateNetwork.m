@@ -1,4 +1,4 @@
-function updateNetwork(this, bForceP2Pcalc)
+function updateNetwork(this, bForceP2Pcalc, bManipUpdate)
     %UPDATENETWORK Updates the network of branches associated with this solver
     % This function is used to update the network of the solver. P2Ps are
     % only recalculated if either the solver reached initial convergence
@@ -31,9 +31,7 @@ function updateNetwork(this, bForceP2Pcalc)
                     continue
                 end
                 
-                oCurrentBranch   = this.aoBranches(iB);
-                
-                % it must ensured that all branches upstream of the current
+                % It must ensured that all branches upstream of the current
                 % branch are already update and the phase partial masses
                 % are set correctly for this to work!
                 
@@ -42,13 +40,14 @@ function updateNetwork(this, bForceP2Pcalc)
                 % allowing cases where e.g. a flow is used with a manual
                 % branch as input, a P2P inside the flow node and a
                 % multisolver branch as output
-                coCurrentProcExme = oCurrentBranch.coExmes;
-                % if the flowrate is zero we update both phases, to be sure
+                coCurrentProcExme = this.aoBranches(iB).coExmes;
+                
+                % If the flowrate is zero we update both phases, to be sure
                 % to update all P2Ps
                 for iPhase = 1:length(coCurrentProcExme)
                     oPhase = coCurrentProcExme{iPhase}.oPhase;
                     
-                    [afInFlowRates, aarInPartials] = this.getPhaseInFlows(oPhase);
+                    [afInFlowRates, aarInPartials, ~] = this.getPhaseInFlows(oPhase, false);
                     
                     if oPhase.bFlow
                         
@@ -61,6 +60,17 @@ function updateNetwork(this, bForceP2Pcalc)
                             oPhase.updatePartials(zeros(1,this.oMT.iSubstances));
                         else
                             oPhase.updatePartials(afInFlowRates .* aarInPartials);
+                        end
+                        
+                        if bManipUpdate
+                            if oPhase.iSubstanceManipulators > 0
+                                [~, ~, mrInCompoundMass] = this.getPhaseInFlows(oPhase, true);
+                    
+                                oPhase.toManips.substance.calculateConversionRate(afInFlowRates, aarInPartials, mrInCompoundMass);
+                                % If we have a manip, we have to update the
+                                % partial masses again
+                                oPhase.updatePartials(afInFlowRates .* aarInPartials);
+                            end
                         end
                         
                         if bForceP2Pcalc
@@ -80,18 +90,17 @@ function updateNetwork(this, bForceP2Pcalc)
                                     if oProcP2P.oIn.oPhase ~= oPhase
                                         oOtherPhase = oProcP2P.oIn.oPhase;
 
-                                        [afInsideInFlowRates, aarInsideInPartials] = this.getPhaseInFlows(oOtherPhase);
+                                        [afInsideInFlowRates, aarInsideInPartials, ~] = this.getPhaseInFlows(oOtherPhase, false);
 
-                                        afOutsideInFlowRate = afInFlowRates;
+                                        afOutsideInFlowRate  = afInFlowRates;
                                         aarOutsideInPartials = aarInPartials; 
                                     else
                                         oOtherPhase = oProcP2P.oOut.oPhase;
 
-                                        [afOutsideInFlowRate, aarOutsideInPartials] = this.getPhaseInFlows(oOtherPhase);
+                                        [afOutsideInFlowRate, aarOutsideInPartials, ~] = this.getPhaseInFlows(oOtherPhase, false);
 
                                         afInsideInFlowRates = afInFlowRates;
-                                        aarInsideInPartials = aarInPartials; 
-
+                                        aarInsideInPartials = aarInPartials;
                                     end
 
                                     % Update the P2P! (not with update function
@@ -122,6 +131,7 @@ function updateNetwork(this, bForceP2Pcalc)
                             end
                             aarInPartials(oPhase.iProcsEXME + iProcP2P, :) = oProcP2P.arPartialMass;
                         end
+                        
                         
                         % Now the phase is updated again this time with the
                         % partial flowrates of the P2Ps as well!

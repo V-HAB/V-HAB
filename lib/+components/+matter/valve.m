@@ -53,6 +53,11 @@ classdef valve < matter.procs.f2f
         function this = setOpen(this, bOpen)
             this.bOpen = ~~bOpen;
             
+            if this.bOpen == 0
+                this.fDeltaPressure = Inf;
+            else
+                this.fDeltaPressure = 0;
+            end
             % Set branch outdated - needs to recalculate flows!
             this.oBranch.setOutdated();
         end

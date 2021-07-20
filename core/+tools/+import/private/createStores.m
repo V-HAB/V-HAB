@@ -231,24 +231,6 @@ for iStore = 1:length(tCurrentSystem.Stores)
                 end
             end
             
-            %% Create heatsources
-
-            for iHeatSource = 1:length(tPhase.HeatSource)
-                tHeatSource = tPhase.HeatSource{iHeatSource};
-                
-                fprintf(sSystemFile, '\n');
-                
-                if isempty(tHeatSource.label)
-                    tHeatSource.label = [tPhase.label, '_HeatSource_', num2str(iHeatSource)];
-                end
-                
-                if strcmp(tHeatSource.sHeatSourceType, 'components.thermal.heatsources.ConstantTemperature')
-                    fprintf(sSystemFile, ['oHeatSource = ', tHeatSource.sHeatSourceType, '(''', tHeatSource.label,''');\n']);
-                else
-                    fprintf(sSystemFile, ['oHeatSource = ', tHeatSource.sHeatSourceType, '(''', tHeatSource.label,''', ', tHeatSource.fHeatFlow,');\n']);
-                end
-                fprintf(sSystemFile, ['this.toStores.', tStore.label,'.toPhases.', tPhase.label,'.oCapacity.addHeatSource(oHeatSource);\n']);
-            end
         end
     end
     
@@ -294,7 +276,7 @@ for iStore = 1:length(tCurrentSystem.Stores)
         sTarget = [sTargetPhase, '.', sTargetExme];
         
         if strcmp(tP2P.sP2P_Type, 'components.matter.P2Ps.ManualP2P')
-            fprintf(sSystemFile,  ['oP2P = ', tP2P.sP2P_Type, '(this, this.toStores.', tStore.label, ', ''', tP2P.label, ''', ''', sSource, ', ''', sTarget, ');\n']);
+            fprintf(sSystemFile,  ['oP2P = ', tP2P.sP2P_Type, '(this.toStores.', tStore.label, ', ''', tP2P.label, ''', ''', sSource, ', ''', sTarget, ');\n']);
             
             csFields = fieldnames(tP2P);
             csStandardFields = {'id', 'label', 'sP2P_Type', 'sType', 'csToPlot', 'csToLog', 'ParentID', 'SourceID', 'TargetID'};

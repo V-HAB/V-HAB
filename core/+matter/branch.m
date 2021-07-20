@@ -5,10 +5,10 @@ classdef branch < base.branch
     properties (SetAccess = protected, GetAccess = public)
         
         % Flows belonging to this branch
-        aoFlows = matter.flow.empty();
+        aoFlows;
         
         % Array with f2f processors in between the flows
-        aoFlowProcs = matter.procs.f2f.empty();
+        aoFlowProcs;
         
         % Amount of flows / procs
         iFlows = 0;
@@ -33,6 +33,13 @@ classdef branch < base.branch
         % Thermal branch which solves the thermal energy transport of this
         % matter branch
         oThermalBranch;
+    end
+    
+    properties (Constant)
+        % In order to remove the need for numerous calls to isa(),
+        % especially in the matter table, this property can be used to see
+        % if an object is derived from this class. 
+        sObjectType = 'branch';
     end
     
     methods
@@ -79,56 +86,6 @@ classdef branch < base.branch
             % Counting the number of flows and processors in this branch
             this.iFlows     = length(this.aoFlows);
             this.iFlowProcs = length(this.aoFlowProcs);
-            
-            %% Construct asscociated thermal branch
-            % To model the mass-bound heat (advective) transfer we need a
-            % thermal branch in parallel to the matter branch. The required
-            % thermal exmes on the capacities have already been created in
-            % conductor for every f2f processor in this branch. 
-            if length(csProcs) >= 1
-                for iProc = 1:length(csProcs)
-                    thermal.procs.conductors.fluidic(this.oContainer, csProcs{iProc}, this);
-                end
-            else
-                % Branches without a f2f can exist (e.g. manual branches)
-                % however for the thermal branch we always require at least
-                % one conductor
-                
-                % Constructing the name of the thermal conductor by adding
-                % the string '_Conductor' to either the custom name or
-                % regular name of this branch. 
-                if ~isempty(this.sCustomName)
-                    csProcs{1} = [this.sCustomName, '_Conductor'];
-                else
-                    csProcs{1} = [this.sName, '_Conductor'];
-                end
-                
-                % Since this name will be used as a struct field name, we
-                % need to make sure it doesn't exceed the maximum field
-                % name length of 63 characters. 
-                if length(csProcs{1}) > 63
-                    % Generating some messages for the debugger
-                    if ~base.oDebug.bOff
-                        this.out(3,1,'matter.branch','Truncating automatically generated thermal conductor name.');
-                        this.out(3,2,'matter.branch','Old name: %s', csProcs(1));
-                    end
-                    
-                    % Truncating the name
-                    csProcs{1} = csProcs{1}(1:63);
-                    
-                    % More debugging output
-                    if ~base.oDebug.bOff
-                        this.out(3,2,'matter.branch','New name: %s', csProcs(1));
-                    end
-                    
-                end
-                
-                thermal.procs.conductors.fluidic(this.oContainer, csProcs{1}, this);
-            end
-            
-            % Now we have everything we need, so we can call the thermal
-            % branch constructor. 
-            this.oThermalBranch = thermal.branch(this.oContainer, xLeft, csProcs, xRight, this.sCustomName, this);
         end
         
         function createProcs(this, csProcs)
@@ -161,13 +118,21 @@ classdef branch < base.branch
                 
                 % Create flow
                 oFlow = matter.flow(this);
-                this.aoFlows(end + 1) = oFlow;
+                if isempty(this.aoFlows)
+                    this.aoFlows = oFlow;
+                else
+                    this.aoFlows(end + 1) = oFlow;
+                end
                 
                 % Connect the new flow - 'right' of proc to 'in' of flow
                 % Because of the possibility that the proc is not connected
                 % to an in flow (interface branch - in flow not yet known),
                 % we explicitly provide the port to connect the flow to.
-                this.aoFlowProcs(end + 1) = this.oContainer.toProcsF2F.(sProc).addFlow(oFlow, 2);
+                if isempty(this.aoFlowProcs)
+                    this.aoFlowProcs = this.oContainer.toProcsF2F.(sProc).addFlow(oFlow, 2);
+                else
+                    this.aoFlowProcs(end + 1) = this.oContainer.toProcsF2F.(sProc).addFlow(oFlow, 2);
+                end
             end
         end
         
@@ -237,8 +202,11 @@ classdef branch < base.branch
                 % ensures that the matter properties don't become zero if
                 % the coExmes{1} phase is empty.
                 
-                afPressure = [ this.coExmes{1}.getExMeProperties(), this.coExmes{2}.getExMeProperties() ];
-                if afPressure(1) >= afPressure(2); iWhichExme = 1; else; iWhichExme = 2; end
+                if this.coExmes{1}.oPhase.fPressure >= this.coExmes{2}.oPhase.fPressure
+                    iWhichExme = 1; 
+                else
+                    iWhichExme = 2; 
+                end
                 
                 for iI = 1:this.iFlowProcs
                     if isa(this.aoFlowProcs(iI), 'components.matter.valve') && ~this.aoFlowProcs(iI).bOpen
@@ -269,13 +237,18 @@ classdef branch < base.branch
             end
         end
         
+        function setThermalBranch(this, oThermalBranch)
+            this.oThermalBranch = oThermalBranch;
+        end
+    end
+    
+    methods (Access = {?solver.matter.base.branch, ?base.branch})
         function setFlowRate(this, fFlowRate, afPressureDrops)
             %% matter branch setFlowRate
             % INTERNAL FUNCTION! The registerHandler function of
             % base.branch provides access to this function for ONE solver,
             % and only that solver is allowed to set the flowrate for the
-            % branch. Unfortunatly since base.branch is a parent class this
-            % function cannot be protected or private.
+            % branch.
             %
             % sets the flowrate for the branch and all flow objects, as
             % well as the pressures for the flow objects
@@ -311,11 +284,9 @@ classdef branch < base.branch
             
             % No pressure? Distribute equally.
             if nargin < 3 || isempty(afPressureDrops) || any(isinf(afPressureDrops))
-                fPressureDiff = (this.coExmes{1}.getExMeProperties() - this.coExmes{2}.getExMeProperties());
-                
-                % Each flow proc produces the same pressure drop, the sum
-                % being the actual pressure difference.
-                afPressureDrops = ones(1, this.iFlowProcs) * (fPressureDiff) / this.iFlowProcs;
+                % in this case (e.g. no f2fs) assume no pressure drop to
+                % occur
+                afPressureDrops = zeros(1, this.iFlowProcs);
                 
                 % Note: no matter the flow direction, positive values on
                 % afPRessure always denote a pressure DROP

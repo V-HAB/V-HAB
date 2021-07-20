@@ -6,7 +6,8 @@ function [tVHAB_Objects, tConvertIDs] = extractXML(filepath, csValidTypes)
 
 % Open the XML and go to the relevant section containing the V-HAB objects
 DrawIoXML = tools.parseXML(filepath);
-XML_VSYS = DrawIoXML.Children.Children;
+
+XML_VSYS = DrawIoXML.Children(2).Children(2).Children(2).Children;
 
 % Initialize the struct which contains the draw IO components that will be
 % translated into V-HAB objects
@@ -29,6 +30,14 @@ for iElement = 1:length(XML_VSYS)
         if strcmp(XML_VSYS(iElement).Attributes(iAttribute).Name, 'id') || strcmp(XML_VSYS(iElement).Attributes(iAttribute).Name, 'label')
             try
                 sValue = XML_VSYS(iElement).Attributes(iAttribute).Value;
+                % We have to remove some formatting stuff draw io adds to
+                % the labels sometimes
+                if ~isempty(regexp(sValue, '<div>', 'once'))
+                    iIndex = regexp(sValue, '<div>', 'once');
+                    sValue(iIndex:iIndex+4) = [];
+                    iIndex = regexp(sValue, '</div>', 'once');
+                    sValue(iIndex:iIndex+5) = [];
+                end
                 fields = textscan(sValue,'%s','Delimiter','<');
                 sValue = fields{1,1};
                 sValue = sValue{1};

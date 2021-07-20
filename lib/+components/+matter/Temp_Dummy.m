@@ -12,6 +12,7 @@ classdef Temp_Dummy < matter.procs.f2f
         fTemperature;
         fMaxHeatFlow = inf;
         
+        bActiveTemperatureRegulation = true;
     end
     
     methods
@@ -34,7 +35,7 @@ classdef Temp_Dummy < matter.procs.f2f
             fDeltaPressure = 0;
         end
         function updateThermal(this)
-            if ~this.bActive
+            if ~this.bActiveTemperatureRegulation
                 this.fHeatFlow = 0;
             else
                 try
@@ -58,7 +59,7 @@ classdef Temp_Dummy < matter.procs.f2f
         
         
         function setActive(this, bActive, ~)
-            this.bActive = bActive;
+            this.bActiveTemperatureRegulation = bActive;
         end
     end
 end

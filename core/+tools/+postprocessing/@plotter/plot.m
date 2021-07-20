@@ -92,8 +92,8 @@ for iFigure = 1:length(this.coFigures)
     % If there is only one plot in the figure, we just create a small save
     % button in the bottom left corner.
     if iNumberOfPlots == 1
-        oButton = uicontrol(oFigure,'String','Save','FontSize',10,'Position',[ 0 0 50 30]);
-        oButton.Callback = @tools.postprocessing.plotter.helper.saveFigureAs;
+        oSaveButton = uicontrol(oFigure,'String','Save','FontSize',10,'Position',[ 0 0 50 30]);
+        oSaveButton.Callback = @tools.postprocessing.plotter.helper.saveFigureAs;
     else
         % There are at least two plots in this figure, so we'll create our
         % little grid of buttons.
@@ -105,8 +105,8 @@ for iFigure = 1:length(this.coFigures)
         
         % Since the user may want to save the entire figure to a file, we
         % create a save button above the panel.
-        oButton = uicontrol(oFigure,'String','Save Figure','FontSize',10,'Units','normalized','Position',[ 0 fPanelYSize + 0.03 fPanelXSize 0.03]);
-        oButton.Callback = @tools.postprocessing.plotter.helper.saveFigureAs;
+        oSaveButton = uicontrol(oFigure,'String','Save Figure','FontSize',10,'Units','normalized','Position',[ 0 fPanelYSize + 0.03 fPanelXSize 0.03]);
+        oSaveButton.Callback = @tools.postprocessing.plotter.helper.saveFigureAs;
         
         oButton = uicontrol(oFigure,'String','Toggle Legends','FontSize',10,'Units','normalized','Position',[ 0 fPanelYSize fPanelXSize 0.03]);
         oButton.Callback = @tools.postprocessing.plotter.helper.toggleLegends;
@@ -228,6 +228,14 @@ for iFigure = 1:length(this.coFigures)
                 bAlternativeXAxis = false;
             end
             
+            % Checking if this is a plot with an alternate x axis instead
+            % of time
+            if isfield(tPlotOptions, 'bUseSIConventionForLabel')
+                bUseSIConventionForLabel = tPlotOptions.bUseSIConventionForLabel;
+            else
+                bUseSIConventionForLabel = true;
+            end
+            
             % We now have some combination of parameters. The default and
             % most commonly used is a plot of values over time
             % (bAlternativeXAxis == false) that have the same unit
@@ -237,10 +245,10 @@ for iFigure = 1:length(this.coFigures)
                 [ mfData, afTime, tLogProps ] = oLogger.get(this.coFigures{iFigure}.coPlots{iRow, iColumn}.aiIndexes, tPlotOptions.sIntervalMode, tPlotOptions.fInterval);
                 
                 % Getting the Y label from the logger object
-                if isfield(tPlotOptions, 'yLabel')
-                    sLabelY = tPlotOptions.yLabel;
+                if isfield(tPlotOptions, 'YLabel')
+                    sLabelY = tPlotOptions.YLabel;
                 else
-                    sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
+                    sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps, bUseSIConventionForLabel);
                 end
                 
                 % If the user selected to change the unit of time by which
@@ -249,7 +257,7 @@ for iFigure = 1:length(this.coFigures)
                 
                 % Now we can actually create the plot with all of the
                 % information we have gathered so far.
-                this.generatePlot(oPlot, afTime, mfData, tLogProps, sLabelY, sTimeUnit);
+                this.generatePlot(oPlot, afTime, mfData, tLogProps, sLabelY, sTimeUnit, bUseSIConventionForLabel);
                 
                 % Setting the title of the plot
                 title(oPlot, this.coFigures{iFigure}.coPlots{iRow, iColumn}.sTitle);
@@ -350,12 +358,12 @@ for iFigure = 1:length(this.coFigures)
                 if isfield(tPlotOptions, 'yLabel')
                     sLabelY = tPlotOptions.yLabel;
                 else
-                    sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
+                    sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps, bUseSIConventionForLabel);
                 end
                 
                 % Actually creating the plot with all of the information we
                 % have gathered so far.
-                this.generatePlot(oPlot, afTime, mfData, tLogProps, sLabelY, sTimeUnit);
+                this.generatePlot(oPlot, afTime, mfData, tLogProps, sLabelY, sTimeUnit, bUseSIConventionForLabel);
                 
                 % Setting the title of the plot
                 title(oPlot, this.coFigures{iFigure}.coPlots{iRow, iColumn}.sTitle);
@@ -375,9 +383,13 @@ for iFigure = 1:length(this.coFigures)
                     if isfield(tPlotOptions, 'yLabel')
                         sLabelY = tPlotOptions.yLabel;
                     else
-                        sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
+                        sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps, bUseSIConventionForLabel);
                     end
                     
+                    % If the user selected to change the unit of time by which
+                    % this plot is created, we have to adjust the afTime array.
+                    [ afTime, ~ ] = this.adjustTime(afTime, tPlotOptions);
+
                     % Using a specialized version of the generatePlot()
                     % method we used for the left side, we can now create
                     % the remaining traces and the y axis on the right
@@ -396,14 +408,14 @@ for iFigure = 1:length(this.coFigures)
                 if isfield(tPlotOptions, 'yLabel')
                     sLabelY = tPlotOptions.yLabel;
                 else
-                    sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
+                    sLabelY = this.getLabel(oLogger.poUnitsToLabels, tYLogProps, bUseSIConventionForLabel);
                 end
                 
                 % Getting the x axis data
                 [ afXData, ~, tXLogProps ] = oLogger.get(tPlotOptions.iAlternativeXAxisIndex, tPlotOptions.sIntervalMode, tPlotOptions.fInterval);
                 
                 % Getting the X label from the logger object
-                sLabelX = this.getLabel(oLogger.poUnitsToLabels, tXLogProps);
+                sLabelX = this.getLabel(oLogger.poUnitsToLabels, tXLogProps, bUseSIConventionForLabel);
                 
                 % Using a specialized version of the generatePlot() method
                 % we used for the left side, we can now create the plot.
@@ -579,8 +591,8 @@ for iFigure = 1:length(this.coFigures)
             title('Evolution of Simulation Time vs. Simulation Ticks');
             set(oTimePlotFigure, 'name', [ 'Time Plot for ' this.oSimulationInfrastructure.sName ' - (' this.oSimulationInfrastructure.sCreated ')' ]');
             
-            oButton = uicontrol(oTimePlotFigure,'String','Save','FontSize',10,'Position',[ 0 0 50 30]);
-            oButton.Callback = @tools.postprocessing.plotter.helper.saveFigureAs;
+            oSaveButton = uicontrol(oTimePlotFigure,'String','Save','FontSize',10,'Position',[ 0 0 50 30]);
+            oSaveButton.Callback = @tools.postprocessing.plotter.helper.saveFigureAs;
             
             % Since some later command may assume that the current figure
             % is still the main figure with all the plots, we set the
@@ -653,14 +665,194 @@ for iFigure = 1:length(this.coFigures)
         aoFigures(iFigure) = oFigure;
     end
     
+    %% Keyboard Control
+    % The following code exists solely to enable the user to control the
+    % undock subplot callback buttons via the keyboard. To make this
+    % functionality feel native on all platforms, Windows and Unix
+    % environments will use keyboard shortcuts using the 'Control' key as
+    % the main modifier, while macOS uses 'Command'. Similarly, Windows and
+    % Unix use 'alt' and macOS uses 'option'. The keyboard shortcuts are as
+    % follows:
+    %
+    % Command/Control + [1-0] -> Undocks plots 1 to 10
+    % Command/Control + alt/option [1-0] -> Undocks plots 11 to 20
+    % Command/Control + alt/option + shift [1-0] -> Undocks plots 21 to 30
+    %
+    % Hopefully no one will have more than thirty plots in a figure.
+    
+    % Saving a handle to the save button callback to the figure properties
+    % so we can call it from the KeyPressFcn.
+    oFigure.UserData.hSaveButton = oSaveButton.Callback;
+    
+    % Undocking subplots only makes sense if there are any subplots, so we
+    % enclose all of this in an if-condition.
+    
+    if iNumberOfPlots > 1
+        % First we need to save a reference to all buttons in the UserData
+        % struct of the figure so we can access their callbacks later.
+        oFigure.UserData.coButtons = coButtons;
+        
+        % Because MATLAB numbers columns and rows differently than the
+        % buttons are actually displayed, we need to create the
+        % miButtonIndexes matrix that links the numbers on the buttons to
+        % the actual array indexes. First we get the current size of the
+        % plot. Note that size actually outputs the results in the reverse
+        % order, rows then columns. This is necessary so we can later
+        % transpose the matrix and get the dimensions we have in the button
+        % array.
+        [iFakeColumns, iFakeRows] = size(oFigure.UserData.coButtons);
+        
+        % Creating a matrix of zeros with the appropriate dimensions.
+        oFigure.UserData.miButtonIndexes = zeros([iFakeRows, iFakeColumns]);
+        
+        % We now fill the matrix in the order of the linear indexes.
+        for iI = 1:(iRows*iColumns)
+            oFigure.UserData.miButtonIndexes(iI) = iI;
+        end
+        
+        % Last step is the transposition.
+        oFigure.UserData.miButtonIndexes = oFigure.UserData.miButtonIndexes';
+        
+    end
+    
+    % Now we need to assign the key press function to this figure.
+    oFigure.KeyPressFcn = @KeyPressFunction;
+    
 end
 
-% In case we are running a simulation using the parallel pool, we need to
-% assign the aoFigures array in the base workspace so the parallel worker
-% can save them into a file. Without this there would be no way to access
-% the figure objects after the plot() method has finished executing. 
-if this.oSimulationInfrastructure.bParallelExecution
-    assignin('base','aoFigures',aoFigures);
+% % In case we are running a simulation using the parallel pool, we need to
+% % assign the aoFigures array in the base workspace so the parallel worker
+% % can save them into a file. Without this there would be no way to access
+% % the figure objects after the plot() method has finished executing. 
+% if this.oSimulationInfrastructure.bParallelExecution
+%     assignin('base','aoFigures',aoFigures);
+% end
+
+function KeyPressFunction(oFigure, oKeyData)
+    %KEYPRESSFUNCTION Enables keyboard control of undock subplot buttons
+    % We need to catch all sorts of stray inputs, so we enclose this entire
+    % function in a try-catch-block. That way we can just throw errors to
+    % silently abort. 
+    try
+        % Getting the number key the user pressed.
+        iKey = str2double(oKeyData.Key);
+        
+        % We only need to do anything here if the user pressed a modifier
+        % key combination. 
+        if ~isempty(oKeyData.Modifier)
+            
+            % To account for the Mac using 'command' instead of 'control',
+            % we create a string containing the platform-specific modifier.
+            % Interestingly, MATLAB displays 'alt' on Macs as well, even
+            % though 'option' is pressed, so we don't need to worry about
+            % that. 
+            if ismac()
+                sPlatformModifier = 'command';
+            else
+                sPlatformModifier = 'control';
+            end
+            
+            % Getting the total number of modifier keys being pressed. We
+            % need this to catch some unwanted inputs.
+            iNumberOfModifiers = length(oKeyData.Modifier);
+            
+            % This if-condition catches the case where the user hit only
+            % the 'command' or 'control' key and nothing else.
+            if isempty(oKeyData.Character) && strcmp(oKeyData.Key, '0') && iNumberOfModifiers == 1
+                error('Just pressed the command or control key.');
+            end
+            
+            % 'Command' and 'control' are the main modifiers, so this
+            % if-condition catches the case where only 'shift' or 'alt' is
+            % pressed.
+            if ~any(strcmp(oKeyData.Modifier, sPlatformModifier))
+                error('Command or control not pressed.');
+            end
+            
+            % We now switch the number of modifiers being pressed because
+            % that drives the number range we want to address. We control
+            % the range by setting iOffset, which is then added to the
+            % value of the number key being pressed. Due to the differences
+            % between macOS and Windows and Linux we have to make some
+            % additional checks here regarding the order in which the
+            % modifiers are present in the Modifier struct. 
+            switch iNumberOfModifiers
+                case 1
+                    if strcmp(oKeyData.Modifier, sPlatformModifier)
+                        iOffset = 0;
+                    end
+                case 2
+                    if ismac()
+                        if strcmp(oKeyData.Modifier{1},'alt') && ...
+                           strcmp(oKeyData.Modifier{2},sPlatformModifier)
+                            iOffset = 10;
+                        end
+                    else
+                        if strcmp(oKeyData.Modifier{1},sPlatformModifier) && ...
+                           strcmp(oKeyData.Modifier{2},'alt')
+                            iOffset = 10;
+                        end
+                    end
+                    
+                    % Catch the case where we're actually trying to save
+                    % the figure and not undock anything.
+                    if strcmp(oKeyData.Modifier{1},'shift') && ...
+                       strcmp(oKeyData.Modifier{2},sPlatformModifier) && ...
+                       strcmp(oKeyData.Key,'s')
+                        oFigure.UserData.hSaveButton(NaN, NaN);
+                        return;
+                    end
+                case 3
+                    if ismac()
+                        if strcmp(oKeyData.Modifier{1},'shift') && ...
+                           strcmp(oKeyData.Modifier{2},'alt') && ...
+                           strcmp(oKeyData.Modifier{3},sPlatformModifier)
+                            iOffset = 20;
+                        end
+                    else
+                        if strcmp(oKeyData.Modifier{1},'shift') && ...
+                           strcmp(oKeyData.Modifier{2},sPlatformModifier) && ...
+                           strcmp(oKeyData.Modifier{3},'alt')
+                            iOffset = 20;
+                        end
+                    end
+                otherwise
+                    % For now, if any more modifier buttons are pressed, we
+                    % abort. 
+                    error('Something went wrong.');
+            end
+                    
+            % If the pressed key is zero, we add ten to its value. 
+            if iKey == 0
+                iKey = 10;
+            end
+            
+            % Adding the offset to the key. 
+            iKey = iKey + iOffset;
+            
+            % Getting the linear index of the plot the user wants to undock
+            % using our miButtonIndexes link matrix.
+            iActualIndex = oFigure.UserData.miButtonIndexes == iKey;
+            
+            % The Callback property of the uicontrol object is actually a
+            % cell in our case, containing the callback itself, as well as
+            % a reference to the plot object and its legend object. We need
+            % to extract those and pass them as arguments to the actual
+            % function call. 
+            cCallBackData = oFigure.UserData.coButtons{iActualIndex}.Callback;
+            
+            % Actually calling the callback. Since this is a uicontrol
+            % callback, the function expects references to the parent
+            % figure and the button object as the first two arguments.
+            % These are not used in the undockSuplot() function, so we just
+            % pass in NaNs.
+            cCallBackData{1}(NaN, NaN, cCallBackData{2}, cCallBackData{3});
+            
+        end
+    catch
+        % We want this to fail silently if there are inadvertent button
+        % presses, so we don't put anything in here. 
+    end
 end
 
 end

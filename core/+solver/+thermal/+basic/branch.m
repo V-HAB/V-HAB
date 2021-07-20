@@ -72,9 +72,12 @@ classdef branch < solver.thermal.base.branch
             % parallel resistances use multiple branches
             fTotalThermalResistance = sum(afResistances);
 
-            % calculate the heat flow
-            fHeatFlow = fDeltaTemperature / fTotalThermalResistance;
-            
+            if this.oBranch.bActive
+                % calculate the heat flow
+                fHeatFlow = fDeltaTemperature / fTotalThermalResistance;
+            else
+                fHeatFlow = 0;
+            end
             % set heat flows
             this.oBranch.coExmes{1}.setHeatFlow(fHeatFlow);
             this.oBranch.coExmes{2}.setHeatFlow(fHeatFlow);

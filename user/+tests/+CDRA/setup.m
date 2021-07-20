@@ -15,18 +15,9 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig) % Constructor function
+        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig, fSimTime) % Constructor function
             
-            % Possible to change the constructor paths and params for the
-            % monitors
-            ttMonitorConfig.oTimeStepObserver.sClass = 'simulation.monitors.timestepObserver';
-            ttMonitorConfig.oTimeStepObserver.cParams = { 0 };
-            
-%             ttMonitorConfig.oMassBalanceObserver.sClass = 'simulation.monitors.massbalanceObserver';
-%             fAccuracy = 1e-8;
-%             fMaxMassBalanceDifference = inf;
-%             bSetBreakPoints = false;
-%             ttMonitorConfig.oMassBalanceObserver.cParams = { fAccuracy, fMaxMassBalanceDifference, bSetBreakPoints };
+            ttMonitorConfig.oTimeStepObserver = struct('sClass', 'simulation.monitors.timestepObserver', 'cParams', {{ 0 }});
             
             this@simulation.infrastructure('Test_CDRA', ptConfigParams, tSolverParams, ttMonitorConfig);
             
@@ -36,8 +27,11 @@ classdef setup < simulation.infrastructure
             %% Simulation length
             % Stop when specific time in simulation is reached or after 
             % specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 20000; % In seconds
-            this.bUseTime = true;
+            if nargin < 4 || isempty(fSimTime)
+                this.fSimTime = 20000;
+            else 
+                this.fSimTime = fSimTime;
+            end
         end
         
         function configureMonitors(this)
@@ -71,7 +65,7 @@ classdef setup < simulation.infrastructure
                 end
             end
             
-            oLog.addValue('Example.toStores.Cabin.toProcsP2P.CrewCO2Prod',       'fFlowRate',  'kg/s', 'CO2 Production');
+            oLog.addValue('Example.toStores.Cabin.toProcsP2P.CrewCO2',       'fFlowRate',  'kg/s', 'CO2 Production');
             
             % CDRA In
             oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_In_1.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'CDRA CO2 Inlet Flow 1');

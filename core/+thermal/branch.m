@@ -1,12 +1,18 @@
 classdef branch < base.branch
-    % Thermal base branch class definition. Here all basic properties and
-    % methodes that all thermal branches require are defined. Domain
-    % independent definitions are inherited from the base branch.
+    %BRANCH Thermal branch 
+    % Here all basic properties and methods that all thermal branches
+    % require are defined. Domain independent definitions are inherited
+    % from the base branch.
     
     properties (SetAccess = protected)
         
         % The thermal conductivity of the branch
         fConductivity; % [W/K] or [W/K^4] depending on the child class
+        
+        % Boolean property to easier identify whether this branch solves
+        % radiative heat transfer
+        bRadiative = false;
+        bNoConductor = false;
         
         % The currently transmitted heat flow through this branch
         fHeatFlow = 0;  % [W]
@@ -37,6 +43,10 @@ classdef branch < base.branch
         % parent system), store its index on the aoFlows here to make it
         % possible to remove those connections later!
         iIfConductors;
+        
+        % This property can be used to deactivate heat transfer via this
+        % branch
+        bActive = true;
     end
     
     methods
@@ -56,6 +66,15 @@ classdef branch < base.branch
             if nargin < 5
                 sCustomName = [];
             end
+            
+            if isobject(xLeft) && ~isa(xLeft, 'thermal.capacity')
+                error('Capacity:Constructor', 'The object you are using to create a thermal branch, ''%s'', is not a thermal capacity.', xLeft.sName);
+            end
+            
+            if isobject(xRight) && ~isa(xRight, 'thermal.capacity')
+                error('Capacity:Constructor', 'The object you are using to create a thermal branch, ''%s'', is not a thermal capacity.', xRight.sName);
+            end
+            
             this@base.branch(oContainer, xLeft, csProcs, xRight, sCustomName, 'thermal');
             
             % Since there are thermal branches which do not have a matter
@@ -63,6 +82,19 @@ classdef branch < base.branch
             % object is only added in case it is provided as input
             if nargin > 5
                 this.oMatterObject = oMatterObject;
+            end
+            
+            try
+                this.bRadiative = this.coConductors{1}.bRadiative;
+            catch oErr
+                %nothing to do, since in that case no conductor exists at
+                %all, meaning there is no resistance and the case has to be
+                %handled specifically
+                if isempty(this.coConductors)
+                    this.bNoConductor = true;
+                else
+                    rethrow(oErr);
+                end
             end
             
             %% Adding the branch to our container
@@ -129,32 +161,33 @@ classdef branch < base.branch
             end
         end
         
+        function setActive(this, bActive)
+            this.bActive = bActive;
+            this.setOutdated();
+        end
+    end
+    
+    methods (Access = {?solver.thermal.base.branch, ?base.branch})
         function setHeatFlow(this, fHeatFlow, afTemperatures)
             % The solver calls this function to set the fHeatFlow and
             % afTemperatures values of the branch based on its internal
             % calculations.
             if this.abIf(1), this.throw('setHeatFlow', 'Left side is interface, can''t set flowrate on this branch object'); end
             
+            % The registerUpdateTemperature() of the connected capacities
+            % must be called before this function is called. Usually while
+            % registering the update for the solver
             
-            % Connected capacities have to do a temperature update before we
-            % set the new heat flow - so the thermal energy for the LAST
-            % time step, with the old flow, is actually moved from tank to
-            % tank.
-            if this.fHeatFlow >= 0; aiExmes = 1:2; else; aiExmes = 2:-1:1; end
-            for iE = aiExmes
-                this.coExmes{iE}.oCapacity.registerUpdateTemperature();
-            end
-            
-            % set the new heat flow
+            % Set the new heat flow
             this.fHeatFlow = fHeatFlow;
-            
-            % set new temperature vector
+                
+            % Set new temperature vector
             this.afTemperatures = afTemperatures;
             
-            % now we are no longer outdated, but up-to-date
+            % Now we are no longer outdated, but up-to-date
             this.bOutdated = false;
             
-            % if any call is bound to the setHeatFlow trigger of the branch
+            % If any call is bound to the setHeatFlow trigger of the branch
             % we execute the trigger, otherwise it is skipped
             if this.bTriggersetHeatFlowCallbackBound
                 this.trigger('setHeatFlow');

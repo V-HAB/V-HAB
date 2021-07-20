@@ -137,8 +137,8 @@ classdef RCA < vsys
             
             % Constant pressure exmes for the linear solver, for both the
             % flow volume and amine phases.
-            special.matter.const_press_exme(oVacuum, 'Inlet_Bed_A_FlowVolume', 0);
-            special.matter.const_press_exme(oVacuum, 'Inlet_Bed_B_FlowVolume', 0);
+            solver.matter.special_exmes.const_press_exme(oVacuum, 'Inlet_Bed_A_FlowVolume', 0);
+            solver.matter.special_exmes.const_press_exme(oVacuum, 'Inlet_Bed_B_FlowVolume', 0);
 
             %% Adding valves
             % True/false decides if the valve is open or closed and the
@@ -200,32 +200,22 @@ classdef RCA < vsys
             
         end
         
+        function createThermalStructure(this)
+            createThermalStructure@vsys(this);
+        end
         function createSolverStructure(this)
             
             createSolverStructure@vsys(this);
             
             % Now we can create all of the solver branches
-            oB1 = solver.matter.iterative.branch(this.toBranches.Splitter__Outlet1___Bed_A__Inlet);
-            oB2 = solver.matter.iterative.branch(this.toBranches.Splitter__Outlet2___Bed_B__Inlet);
+            oB1 = solver.matter.interval.branch(this.toBranches.Splitter__Outlet1___Bed_A__Inlet);
+            oB2 = solver.matter.interval.branch(this.toBranches.Splitter__Outlet2___Bed_B__Inlet);
             oB3 = solver.matter.manual.branch(this.toBranches.Bed_A__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_A_FlowVolume);
             oB4 = solver.matter.manual.branch(this.toBranches.Bed_B__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_B_FlowVolume);
-            oB5 = solver.matter.iterative.branch(this.toBranches.Bed_A__Outlet___Merger__Inlet1);
-            oB6 = solver.matter.iterative.branch(this.toBranches.Bed_B__Outlet___Merger__Inlet2);
-            oB7 = solver.matter.iterative.branch(this.toInterfaceBranches.Outlet);
-            oB8 = solver.matter.iterative.branch(this.toInterfaceBranches.Inlet);
-            
-            % Through experimentation, the following damping factor has
-            % proven the optimal compromise between execution speed and
-            % 'niceness' of the resulting plots. 
-            iDampingFactor = 10;
-            
-            % Setting the damping factor on all branches. 
-            oB1.iDampFR = iDampingFactor;
-            oB2.iDampFR = iDampingFactor;
-            oB5.iDampFR = iDampingFactor;
-            oB6.iDampFR = iDampingFactor;
-            oB7.iDampFR = iDampingFactor;
-            oB8.iDampFR = iDampingFactor;
+            oB5 = solver.matter.interval.branch(this.toBranches.Bed_A__Outlet___Merger__Inlet1);
+            oB6 = solver.matter.interval.branch(this.toBranches.Bed_B__Outlet___Merger__Inlet2);
+            oB7 = solver.matter.interval.branch(this.toInterfaceBranches.Outlet);
+            oB8 = solver.matter.interval.branch(this.toInterfaceBranches.Inlet);
             
             oB3.setFlowRate(0);
             oB4.setFlowRate(10000);
@@ -242,10 +232,10 @@ classdef RCA < vsys
             tTimeStepProperties.rMaxChange = 0.5;
             this.toStores.Vacuum.toPhases.Vacuum_Phase_1.setTimeStepProperties(tTimeStepProperties)
 
-            this.toStores.Splitter.toPhases.Splitter_Phase_1.bSynced = true;
-            this.toStores.Bed_A.toPhases.FlowPhase.bSynced           = true;
-            this.toStores.Bed_B.toPhases.FlowPhase.bSynced           = true;
-            this.toStores.Merger.toPhases.Merger_Phase_1.bSynced     = true;
+%             this.toStores.Splitter.toPhases.Splitter_Phase_1.bSynced = true;
+%             this.toStores.Bed_A.toPhases.FlowPhase.bSynced           = true;
+%             this.toStores.Bed_B.toPhases.FlowPhase.bSynced           = true;
+%             this.toStores.Merger.toPhases.Merger_Phase_1.bSynced     = true;
 
             this.setThermalSolvers();
         end

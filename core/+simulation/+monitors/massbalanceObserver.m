@@ -44,7 +44,7 @@ classdef massbalanceObserver < simulation.monitor
     % If you want to add this monitor to your simulation you can use the
     % following code as an example to do so:
     %
-    %        ttMonitorConfig.oMassBalanceObserver.sClass = 'simulation.monitors.massbalance_observer';
+    %        ttMonitorConfig.oMassBalanceObserver.sClass = 'simulation.monitors.massbalanceObserver';
     %        fAccuracy = 1e-8;
     %        fMaxMassBalanceDifference = inf;
     %        bSetBreakPoints = false;

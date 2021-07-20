@@ -9,8 +9,15 @@ function [ mfData, afTime, atConfiguration ] = get(this, aiIndexes, sIntervalMod
 % last tick so we can truncate the mfLog data, because it is preallocated,
 % meaning there are most likely hundreds of rows filled with NaNs at the
 % end, that would mess up everything. We need to add one to the last tick
-% because the log also contains data for tick 0. 
+% because the log also contains data for tick 0. In some cases, where there
+% was a crash and restart, the number of ticks in the simulation may be
+% larger than the actual length of the log. In this case we throw a
+% warning and set the iTick value to the length of the log. 
 iTick = this.oSimulationInfrastructure.oSimulationContainer.oTimer.iTick + 1;
+if iTick > length(this.mfLog)
+    this.warn('LogLength','Log length is shorter than number of ticks. %i vs. %i.\nShortening to smaller value.',iTick, length(this.mfLog));
+    iTick = length(this.mfLog);
+end
 mfLogTmp = this.mfLog(1:iTick, :);
 
 % We now initialize our return array with NaNs

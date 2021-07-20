@@ -5,7 +5,7 @@ classdef (Abstract) container < sys
     
     properties (SetAccess = protected, GetAccess = public)
         % An array containing all circuits of this electrical system
-        aoCircuits = electrical.circuit.empty();
+        aoCircuits;
         
         % A struct containing all circuits of this electrical system
         toCircuits = struct();
@@ -23,6 +23,8 @@ classdef (Abstract) container < sys
         function this = container(oParent, sName)
             % Calling the parent constructor
             this@sys(oParent, sName);
+            
+            this.aoCircuits = electrical.circuit.empty();
             
         end
     end
@@ -89,6 +91,28 @@ classdef (Abstract) container < sys
             this.bElectricalSealed = true;
         end
         
+    end
+    
+    methods (Access = protected)    
+        function disconnectElectricalBranchesForSaving(this)
+            %%% PLACEHOLDER 
+            % This method is just here to prevent the save process from
+            % failing. It needs to be adapted to the actual architecture in
+            % the electrical domain. It already works for matter and
+            % thermal.
+%             csBranchNames = fieldnames(this.toBranches);
+%             for iBranch = 1:length(csBranchNames)
+%                 this.toBranches.(csBranchNames{iBranch}).coExMes{2}.oFlow.disconnectBranch();
+%             end
+        end
+        
+        function reconnectElectricalBranches(this)
+            %%% PLACEHOLDER 
+            % This method is just here to prevent the load process from
+            % failing. It needs to be adapted to the actual architecture in
+            % the electrical domain. It already works for matter and
+            % thermal.
+        end
     end
     
 end

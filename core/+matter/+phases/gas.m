@@ -51,11 +51,21 @@ classdef gas < matter.phase
             
             if this.fMass == 0
                 this.fMassToPressure = 0;
+                this.afPP =  zeros(1, this.oMT.iSubstances);
             else
-                this.fMassToPressure = this.oMT.calculatePressure(this) / this.fMass;
+                fPressure = this.oMT.calculatePressure(this);
+                if fPressure < this.oStore.oContainer.fMaxIdealGasLawPressure
+                    % p V = m R T 
+                    this.afPP = (this.afMass .* (oStore.oMT.Const.fUniversalGas ./ this.oStore.oMT.afMolarMass) .* fTemperature) ./ fVolume;
+                    fPressure = sum(this.afPP);
+                    this.fMassToPressure = fPressure / this.fMass;
+                else
+                    % have to define fMassToPressure before calculatePartialPressures
+                    % is called!
+                    this.fMassToPressure = fPressure / this.fMass;
+                    this.afPP = this.oMT.calculatePartialPressures(this);
+                end
             end
-            
-            this.afPP = this.oMT.calculatePartialPressures(this);
             
             if this.afPP(this.oMT.tiN2I.H2O)
                 % Calculate saturation vapour pressure
@@ -76,7 +86,7 @@ classdef gas < matter.phase
             % calculated by using the matter table (realgas assumption) and
             % dividing it with the current mass
             
-            if this.fPressure < 10e5
+            if this.fPressure < this.oStore.oContainer.fMaxIdealGasLawPressure
                 fMassToPressure = this.oMT.Const.fUniversalGas * this.fTemperature / (this.fMolarMass * this.fVolume);
             else
                 fMassToPressure = this.oMT.calculatePressure(this) / this.fMass;
@@ -88,12 +98,9 @@ classdef gas < matter.phase
         end
         
         function afPartsPerMillion = get.afPartsPerMillion(this)
-            %% get.fPressure
-            % Since the pressure is a dependent property but some child
-            % classes require a different calculation approach for
-            % the pressure this function only defines the function name
-            % which is used to calculate the pressure (since child classes
-            % cannot overload this function).
+            % Calculates the PPM value on demand.
+            % Made this a dependent variable to reduce the computational
+            % load during run-time since the value is rarely used. 
             afPartsPerMillion = this.oMT.calculatePartsPerMillion(this);
         end
     end
@@ -124,11 +131,11 @@ classdef gas < matter.phase
             
             % Check for volume not empty, when called from constructor
             if ~isempty(this.fVolume)
+                this.fDensity = this.fMass / this.fVolume;
+                
                 this.fMassToPressure = this.calculatePressureCoefficient();
                 
                 this.afPP               = this.oMT.calculatePartialPressures(this);
-                this.fDensity = this.fMass / this.fVolume;
-                
                 
                 % Function rRelHumidity calculates the relative humidity of
                 % the gas by using the MAGNUS Formula(validity: 

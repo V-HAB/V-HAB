@@ -30,7 +30,7 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
         
         % Get the corresponding column from the matrix for this branch (we
         % already have the row)
-        iCol = this.piObjUuidsToColIndex(oBranch.sUUID);
+        iCol = this.tiObjUuidsToColIndex.(oBranch.sUUID);
         
         % Now we get the corresponding row of this branch in the
         % afBoundaryConditions and aafPhasePressuresAndFlowRates matrix
@@ -100,9 +100,18 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
                     % flow
                     fFlowRate = this.fInitializationFlowRate;
 
-                    % Negative pressure difference? Negative guess!
-                    if oBranch.coExmes{1}.getExMeProperties() < oBranch.coExmes{2}.getExMeProperties()
-                        fFlowRate = -1 * fFlowRate;
+                    % check for a check valve
+                    if any([oBranch.aoFlowProcs.bCheckValve])
+                        % if one is present use the open condition for the
+                        % check valve for the guess
+                        if oBranch.aoFlowProcs([oBranch.aoFlowProcs.bCheckValve]).bReversed
+                            fFlowRate = -1 * fFlowRate;
+                        end
+                    else
+                        % Negative pressure difference? Negative guess!
+                        if oBranch.coExmes{1}.oPhase.fPressure < oBranch.coExmes{2}.oPhase.fPressure
+                            fFlowRate = -1 * fFlowRate;
+                        end
                     end
                 end
 
@@ -155,6 +164,7 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
                         this.throw('updatePDCoeffs','NaN in the pressure drops.');
                     end
 
+                    abFlowRateDependenPressureDrops = [oBranch.aoFlowProcs.bFlowRateDependPressureDrop];
                     % The pressure drops are linearized to drop coefficient
                     % by summing them all up and dividing them with the
                     % currently assumed flowrate (for laminar this is
@@ -163,7 +173,16 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
                     % flowrate. 
                     %TODO: Check if implementing that increases speed of
                     % the solver!) 
-                    this.afPressureDropCoeffsSum(iBranch) = sum(afPressureDrops)/abs(fFlowRate);
+                    this.afPressureDropCoeffsSum(iBranch) = sum(afPressureDrops(abFlowRateDependenPressureDrops))/abs(fFlowRate);
+                    
+                    if any(~abFlowRateDependenPressureDrops)
+                        iSign = sign(this.afFlowRates(iBranch));
+                        if iSign == 0
+                            iSign = 1;
+                        end
+
+                        afBoundaryConditions(iRow) = afBoundaryConditions(iRow) + iSign * sum(afPressureDrops(~abFlowRateDependenPressureDrops));
+                    end
                 end
 
 
@@ -187,10 +206,11 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
     for iBoundary = 1:length(afBoundaryHelper)
         abEqualize = abs(afBoundaryHelper - afBoundaryHelper(iBoundary)) < this.fMinPressureDiff & ~(afBoundaryHelper == 0);
         
-        fEqualizedPressure = sum(afBoundaryHelper(abEqualize)) / sum(abEqualize);
-        
-        afBoundaryConditions(abEqualize) = fEqualizedPressure .* miSigns(abEqualize);
-        
+        if sum(abEqualize) > 0
+            fEqualizedPressure = sum(afBoundaryHelper(abEqualize)) / sum(abEqualize);
+
+            afBoundaryConditions(abEqualize) = fEqualizedPressure .* miSigns(abEqualize);
+        end
         if any(isnan(afBoundaryConditions))
             this.throw('updatePDCoeffs','NaN in the pressure drop coefficients.');
         end

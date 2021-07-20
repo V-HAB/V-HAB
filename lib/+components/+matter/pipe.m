@@ -133,13 +133,26 @@ classdef pipe < matter.procs.f2f
             % Get in/out flow object references
             [ oFlowIn, oFlowOut ] = this.getFlows(fFlowRate);
 
-            % Calculate density and flow speed
-            % As for the pressure above, we are using the average
-            % density between in- and outflow.
-            fDensityIn = oFlowIn.getDensity();
-            fDensityOut = oFlowOut.getDensity();
+            % Since the flowrate can have changed without the branch
+            % setting the new flowrate, the flow arPartialMass can be
+            % outdated (multibranch use case with flow phases). In order to
+            % prevent outdated/wrong partial masses we check the in phase
+            % partial mass and provide that for the density calculation.
+            if fFlowRate >= 0
+                iInExme = 1;
+            else
+                iInExme = 2;
+            end
+            
+            try            
+                fDensityIn = oFlowIn.getDensity();
+                fDensityOut = oFlowOut.getDensity();
+                
+                fDensity = (fDensityIn + fDensityOut) / 2;
+            catch
+                fDensity = this.oBranch.coExmes{iInExme}.oPhase.fDensity;
+            end
 
-            fDensity = (fDensityIn + fDensityOut) / 2;
             fFlowSpeed   = abs(fFlowRate) / ((pi / 4) * this.fDiameter^2 * fDensity);
 
             % Calculate dynamic viscosity

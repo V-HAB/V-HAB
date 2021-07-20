@@ -3,7 +3,8 @@ classdef (Abstract) flow < matter.phase
     % A phase that is modelled as containing no matter. For implementation
     % purposes the phase does have a mass, but the calculations enforce
     % zero mass change for the phase and calculate all values based on the
-    % inflows.
+    % inflows. Flow phases will only work correctly if used with either a
+    % residual or a multi branch solver!!
     
     properties (SetAccess = protected, GetAccess = public)
         % flow_nodes can be used within multi branch solvers to allow the
@@ -20,6 +21,21 @@ classdef (Abstract) flow < matter.phase
         % Initial mass for information and debugging purposes. If
         % everything works correctly the phase should not change its mass!
         fInitialMass;
+        
+        % An array of zeros will be stored here to avoid having to call
+        % zeros() a lot. 
+        mfEmptyCompoundMassFlow;
+        
+        % A reference to the multi-branch solver this phases is part of.
+        oMultiBranchSolver;
+        
+        % The following three properties capture the pressure, temperature
+        % and partial mass state of the flow through this phase. This is done
+        % in an effort to reduce the calls to calculateSpecificHeatCapacity
+        % in the matter table. See setMatterProperties() for details.
+        fPressureLastHeatCapacityUpdate;
+        fTemperatureLastHeatCapacityUpdate;
+        arPartialMassLastHeatCapacityUpdate;
     end
     
     methods
@@ -46,6 +62,8 @@ classdef (Abstract) flow < matter.phase
             
             this.fDensity = this.fMass / this.fVolume;
             
+            this.mfEmptyCompoundMassFlow = zeros(this.oMT.iSubstances,  this.oMT.iSubstances);
+            
             % Mass change must be zero for flow nodes, if that is not the
             % case, this enforces V-HAB to make a minimum size time step to
             % keep the error small
@@ -58,24 +76,6 @@ classdef (Abstract) flow < matter.phase
             
             this.bind('update_partials',@(~)this.updatePartials());
         end
-        
-        function setPressure(this, fPressure)
-            %% setPressure
-            % INTERNAL FUNCTION!
-            % This function is called by the multi branch solver to set the
-            % pressure of the connected flow nodes. Should not be used by
-            % the user, however access restrictions would require further
-            % queries and since this function is called very often, that
-            % would slow down the simulation.
-            % Required Inputs:
-            % fPressure: Pressure of the flow node in Pa
-            if fPressure < 0
-                error(['a negative pressure occured in the flow phase ', this.sName, ' in store ', this.oStore.sName, '. This can happen if e.g. the f2f have a too large pressure drops for a constant flowrate boundary forcing the solver to converge to a solution with negative pressures. Please check your system']);
-            end
-            this.fVirtualPressure = fPressure;
-            this.fMassToPressure = fPressure;
-        end
-        
         
         function updatePartials(this, afPartialInFlows)
             %% updatePartials
@@ -93,13 +93,6 @@ classdef (Abstract) flow < matter.phase
             % afPartialInFlows: Vector with the length (1, oMT.iSubstances)
             %                   with a partial mass flow in kg/s for each
             %                   substance
-            if isempty(this.fPressure)
-                if ~base.oDebug.bOff
-                    this.out(1, 1, 'skip-partials', '%s-%s: skip at %i (%f) - no pressure (i.e. before multi solver executed at least once)!', { this.oStore.sName, this.sName, this.oTimer.iTick, this.oTimer.fTime });
-                end
-                
-                return;
-            end
             
             % Store needs to be sealed (else problems with initial
             % conditions). Last partials update needs to be in the past,
@@ -112,6 +105,7 @@ classdef (Abstract) flow < matter.phase
                 
                 return;
             end
+            
             if nargin < 2
                 %NOTE these should probably be named e.g. afRelevantFlows
                 %     because e.g. p2ps both in and out used!
@@ -131,9 +125,13 @@ classdef (Abstract) flow < matter.phase
                 % is actually a real flow rate.
                 fInwardsFlowRates = 0;
                 
+                mfCompoundMassFlow = this.mfEmptyCompoundMassFlow;
+                
+                bCompoundMassesPresent = false;
+                
                 % Get flow rates and partials from EXMEs
                 for iI = 1:this.iProcsEXME
-                    [ fFlowRate, arFlowPartials, ~ ] = this.coProcsEXME{iI}.getFlowData();
+                    [ fFlowRate, arFlowPartials, ~, arExMECompoundMass ] = this.coProcsEXME{iI}.getFlowData();
                     
                     % Include if EITHER an (real) inflow, OR a p2p (but not
                     % ourselves!) in either direction (p2ps can change
@@ -144,13 +142,26 @@ classdef (Abstract) flow < matter.phase
                         afInFlowrates(iI)  = fFlowRate;
                         aiOutFlows(iI)     = 0;
                         
+                        
                         %if ~this.coProcsEXME{iI}.bFlowIsAProcP2P
                         if fFlowRate > 0
                             fInwardsFlowRates = fInwardsFlowRates + fFlowRate;
+                            % Only the inflowing exme can actually change the mass
+                            % ratios of the phase. Outflowing exme must only be
+                            % considered as a total mass change before calculating
+                            % the new composition
+                            if any(arExMECompoundMass, 'all')
+                                mfCompoundMassFlow = mfCompoundMassFlow + (fFlowRate .* arExMECompoundMass);
+                                bCompoundMassesPresent = true;
+                            else
+                                if ~bCompoundMassesPresent
+                                    bCompoundMassesPresent = false;
+                                end
+                            end
                         end
                     end
                 end
-
+                
                 % Now we delete all of the rows in the mfInflowDetails matrix
                 % that belong to out-flows.
                 if any(aiOutFlows)
@@ -163,30 +174,31 @@ classdef (Abstract) flow < matter.phase
                     mrInPartials(iF, :) = mrInPartials(iF, :) .* afInFlowrates(iF);
                 end
                 
-                % Include possible manipulator, which uses an array of
-                % absolute flow-rates for the different substances
-                % Also depends on normal inflow branches, so do not include
-                % with the fInwardsFlowRates check.
-                if ~isempty(this.toManips.substance) && ~isempty(this.toManips.substance.afPartialFlows)
-                    % The sum() of the flow rates of a substance manip
-                    % should always be zero. Therefore, split positive and
-                    % negative rates and see as two flows.
-                    afManipPartialsIn  = this.toManips.substance.afPartialFlows;
-                    afManipPartialsOut = this.toManips.substance.afPartialFlows;
-                    
-                    afManipPartialsIn (afManipPartialsIn  < 0) = 0;
-                    afManipPartialsOut(afManipPartialsOut > 0) = 0;
-                    
-                    mrInPartials(end + 1, :) = afManipPartialsIn;
-                    mrInPartials(end + 1, :) = afManipPartialsOut;
-                end
-                
                 afPartialInFlows = sum(mrInPartials, 1); %note we did multiply mrInPartials with flow rates above, so actually total partial flows!
                 
+                if bCompoundMassesPresent
+                    % The compound mass flow ratio is stored per compound mass (in
+                    % the rows)
+                    afCompoundMassFlow = sum(mfCompoundMassFlow,2);
+                    this.arCompoundMass = mfCompoundMassFlow ./ afCompoundMassFlow;
+                    this.arCompoundMass(afCompoundMassFlow == 0, :) = 0;
+                end
             else
                 afPartialInFlows = sum(afPartialInFlows, 1);
             end
             
+            % Include possible manipulator, which uses an array of
+            % absolute flow-rates for the different substances
+            % Also depends on normal inflow branches, so do not include
+            % with the fInwardsFlowRates check.
+            if this.iSubstanceManipulators > 0 && ~isempty(this.toManips.substance.afPartialFlows)
+                % The sum() of the flow rates of a substance manip
+                % should always be zero. Therefore, split positive and
+                % negative rates and see as two flows.
+                afPartialInFlows = afPartialInFlows + this.toManips.substance.afPartialFlows;
+                afPartialInFlows(afPartialInFlows < 0) = 0;
+            end
+                
             if any(afPartialInFlows < 0)
                 afPartialInFlows(afPartialInFlows < 0) = 0;
                 if ~base.oDebug.bOff
@@ -202,9 +214,55 @@ classdef (Abstract) flow < matter.phase
                 this.arPartialMass = zeros(1, this.oMT.iSubstances);
             end
         end
+        
+        function setHandler(this, oMultiBranchSolver)
+            %SETHANDLER Sets reference to multi-branch solver
+            this.oMultiBranchSolver = oMultiBranchSolver;
+        end
     end
     
     methods  (Access = protected)
+        
+        function update(this)
+            % Overloading the matter.phase's update method. Most of what we
+            % need is being done either in the massupdate() or
+            % updatePressure() methods. The only thing that is done in
+            % matter.phase.update() that is of relevance for a flow phase
+            % is calling updateSpecificHeatCapacity() on the phase's
+            % capacity, so we do that below.
+            
+            % There are some additional properties that are calculated in
+            % the child classes of matter.phase (i.e. gas, solid, liquid).
+            % These are made dependent properties in the flow versions of
+            % those phases and calculated on demand. 
+            
+            % We check if the matter properties changed sufficiently to
+            % make a matter table update of the property necessary are
+            % performed within the function.
+            if ~all(this.arPartialMass == 0) && (...
+               isempty(this.fPressureLastHeatCapacityUpdate) ||...
+               (abs(this.fPressureLastHeatCapacityUpdate - this.fPressure) > 100) ||...
+               (abs(this.fTemperatureLastHeatCapacityUpdate - this.fTemperature) > 1) ||...
+               (max(abs(this.arPartialMassLastHeatCapacityUpdate - this.arPartialMass)) > 0.01))
+                
+                % Recalculating the specific heat capacity
+                this.oCapacity.setSpecificHeatCapacity(this.oMT.calculateSpecificHeatCapacity(this));
+                
+                this.fDensity =  this.oMT.calculateDensity(this);
+                
+                % Setting the properties for the next check
+                this.fPressureLastHeatCapacityUpdate     = this.fPressure;
+                this.fTemperatureLastHeatCapacityUpdate  = this.fTemperature;
+                this.arPartialMassLastHeatCapacityUpdate = this.arPartialMass;
+            end
+            
+            if this.bTriggerSetUpdateCallbackBound
+            	this.trigger('update_post');
+            end
+            % Updating the fLastUpdate property
+            this.fLastUpdate = this.oTimer.fTime;
+        end
+        
         function massupdate(this, varargin)
             %% flow phase massupdate
             % We call the massupdate together with the function to update
@@ -260,6 +318,29 @@ classdef (Abstract) flow < matter.phase
                 fPressure = this.fVirtualPressure;
             end
         end
+    end
+    
+    methods (Access = ?solver.matter_multibranch.iterative.branch)
+        
+        function setPressure(this, fPressure)
+            %% setPressure
+            % This function can only be called by the multi branch solver
+            % to set the pressure of the connected flow nodes. 
+            % 
+            % Required Inputs: fPressure: Pressure of the flow node in Pa
+            
+            if fPressure < 0
+                error('VHAB:FlowPhase:NegativePressure',['A negative pressure occured in the flow phase ', ...
+                      this.sName, ' in store ', this.oStore.sName, '. ', ...
+                      'This can happen if e.g. the f2f have a too large pressure drops for a constant flowrate '; ...
+                      'boundary forcing the solver to converge to a solution with negative pressures. ', ...
+                      'Please check your system']);
+            end
+            
+            this.fVirtualPressure = fPressure;
+            this.fMassToPressure  = fPressure;
+        end
+        
     end
 end
 

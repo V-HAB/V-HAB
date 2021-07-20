@@ -19,9 +19,11 @@ classdef setup < simulation.infrastructure
             
             % Possible to change the constructor paths and params for the
             % monitors
-            ttMonitorConfig.oTimeStepObserver.sClass = 'simulation.monitors.timestepObserver';
-            ttMonitorConfig.oTimeStepObserver.cParams = { 0 };
-            ttMonitorConfig.oLogger.cParams = {true};
+            ttMonitorConfig = struct();
+%             ttMonitorConfig.oLogger.cParams = {true, 10000};
+            
+%             ttMonitorConfig.oTimeStepObserver.sClass = 'simulation.monitors.timestepObserver';
+%             ttMonitorConfig.oTimeStepObserver.cParams = { 0 };
             
 %             ttMonitorConfig.oMassBalanceObserver.sClass = 'simulation.monitors.massbalanceObserver';
 %             fAccuracy = 1e-8;
@@ -50,6 +52,8 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'afPP(this.oMT.tiN2I.CO2)',  'Pa',   'Partial Pressure CO2');
             oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'fTemperature',              'K',    'Temperature Atmosphere');
             
+            oLog.addValue('Example.oTimer',                                 'fTimeStepFinal',                 's',   'Timestep');
+            
             oLog.addValue('Example:c:CCAA:s:CHX.toPhases.CHX_PhaseIn',      'fTemperature',                             'K',    'Temperature CHX');
             oLog.addValue('Example:c:CCAA:s:CHX.toPhases.CHX_PhaseIn',      'this.fMass * this.fMassToPressure',        'Pa',   'Pressure CHX');
             oLog.addValue('Example:c:CCAA:s:TCCV.toPhases.TCCV_PhaseGas',  	'fTemperature',                             'K',    'Temperature TCCV');
@@ -57,6 +61,7 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Example:c:CCAA:s:TCCV.toPhases.TCCV_PhaseGas',  	'afPP(this.oMT.tiN2I.H2O)',                 'Pa',   'Partial Pressure H2O TCCV');
             oLog.addValue('Example:c:CCAA:s:TCCV.toPhases.TCCV_PhaseGas',  	'afPP(this.oMT.tiN2I.CO2)',                 'Pa',   'Partial Pressure CO2 TCCV');
             oLog.addValue('Example:c:CCAA:s:CHX.toProcsP2P.CondensingHX',   'fFlowRate',                                'kg/s', 'Condensate Flowrate CHX');
+            oLog.addValue('Example:c:CCAA',                                 'fTCCV_Angle',                               '°',   'TCCV Angle');
             
             iCellNumber13x = this.oSimulationContainer.toChildren.Example.toChildren.CDRA.tGeometry.Zeolite13x.iCellNumber;
             iCellNumberSylobead = this.oSimulationContainer.toChildren.Example.toChildren.CDRA.tGeometry.Sylobead.iCellNumber;
@@ -94,7 +99,7 @@ classdef setup < simulation.infrastructure
             
             oLog.addValue('Example.toStores.CCAA_CDRA_Connection.aoPhases',      'fPressure',  'Pa',   'Connection Pressure CCAA to CDRA');
             
-            oLog.addValue('Example.toStores.Cabin.toProcsP2P.CrewCO2Prod',       'fFlowRate',  'kg/s', 'CO2 Production');
+            oLog.addValue('Example.toStores.Cabin.toProcsP2P.CrewCO2',       'fFlowRate',  'kg/s', 'CO2 Production');
             
             % CDRA In
             oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_In_1.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'CDRA CO2 Inlet Flow 1');
@@ -185,8 +190,17 @@ classdef setup < simulation.infrastructure
             mfCO2OutletFlow(isnan(mfCO2OutletFlow)) = [];
             mfCO2OutletFlow(end) = [];
             
-            afTimeSteps = oLogger.afTime(2:end) - oLogger.afTime(1:end-1);
-            fAveragedCO2Outlet = sum(mfCO2OutletFlow .* afTimeSteps') ./ sum(afTimeSteps);
+            csLogVariableNames = {'Timestep'};
+            [aiLogIndices, ~] = tools.findLogIndices(oLogger, csLogVariableNames);
+            try
+                afTimeSteps =  oLogger.mfLog(:,aiLogIndices(1));
+                afTimeSteps(isnan(afTimeSteps)) = [];
+                fAveragedCO2Outlet = sum(mfCO2OutletFlow .* afTimeSteps(1:length(mfCO2OutletFlow))) ./ sum(afTimeSteps);
+            catch
+                afTimeSteps = oLogger.afTime(2:end) - oLogger.afTime(1:end-1);
+                fAveragedCO2Outlet = sum(mfCO2OutletFlow .* afTimeSteps') ./ sum(afTimeSteps);
+            end
+            
             
             disp(' ')
             disp(['Averaged CO2 Outlet Flow:       ', num2str(fAveragedCO2Outlet)])
@@ -363,15 +377,17 @@ classdef setup < simulation.infrastructure
             
             coPlot = cell(4,3);
             coPlot{1,1} = oPlotter.definePlot({'"CDRA CO2 InletFlow"', '"CDRA H2O InletFlow"', '"CDRA CO2 OutletFlow"', '"CDRA H2O OutletFlow"'}, 'CDRA In- and Outlet Flows', tPlotOptions);
-            coPlot{1,2} = oPlotter.definePlot({'"Condensate Flowrate CHX"'}, 'CHX Condensate Flowrate', tPlotOptions);
-            coPlot{1,3} = oPlotter.definePlot({'"Partial Pressure CO2"'}, 'Partial Pressure CO2 Habitat',tPlotOptions);
-            coPlot{2,1} = oPlotter.definePlot({'"Partial Pressure CO2 Torr"'}, 'Partial Pressure CO2 Habitat in Torr',tPlotOptions);
-            coPlot{2,2} = oPlotter.definePlot({'"Relative Humidity Cabin"'}, 'Relative Humidity Cabin',tPlotOptions);
-            coPlot{2,3} = oPlotter.definePlot({'"CO2 Production"', '"CDRA effective CO2 Flow"'}, 'Effective CO2 FlowRates',tPlotOptions);
-            coPlot{3,1} = oPlotter.definePlot({'"Temperature CHX"', '"Temperature TCCV"'}, 'Temperatures in CHX',tPlotOptions);
-            coPlot{3,2} = oPlotter.definePlot({'"Pressure CHX"', '"Pressure TCCV"'}, 'Pressure in CHX', tPlotOptions);
-            coPlot{3,3} = oPlotter.definePlot({'"Partial Pressure H2O TCCV"', '"Partial Pressure CO2 TCCV"'}, 'Partial Pressure H2O and CO2 TCCV', tPlotOptions);
-            coPlot{4,3} = oPlotter.definePlot({'"CDRA Heater Power"'}, 'CDRA Heater Power', tPlotOptions);
+            coPlot{1,2} = oPlotter.definePlot({'"Condensate Flowrate CHX"'},                                    'CHX Condensate Flowrate', tPlotOptions);
+            coPlot{1,3} = oPlotter.definePlot({'"Partial Pressure CO2"'},                                       'Partial Pressure CO2 Habitat',tPlotOptions);
+            coPlot{2,1} = oPlotter.definePlot({'"Partial Pressure CO2 Torr"'},                                  'Partial Pressure CO2 Habitat in Torr',tPlotOptions);
+            coPlot{2,2} = oPlotter.definePlot({'"Relative Humidity Cabin"'},                                    'Relative Humidity Cabin',tPlotOptions);
+            coPlot{2,3} = oPlotter.definePlot({'"CO2 Production"', '"CDRA effective CO2 Flow"'},                'Effective CO2 FlowRates',tPlotOptions);
+            coPlot{3,1} = oPlotter.definePlot({'"Temperature CHX"', '"Temperature TCCV"'},                      'Temperatures in CHX',tPlotOptions);
+            coPlot{3,2} = oPlotter.definePlot({'"Pressure CHX"', '"Pressure TCCV"'},                            'Pressure in CHX', tPlotOptions);
+            coPlot{3,3} = oPlotter.definePlot({'"Partial Pressure H2O TCCV"', '"Partial Pressure CO2 TCCV"'},   'Partial Pressure H2O and CO2 TCCV', tPlotOptions);
+            coPlot{4,3} = oPlotter.definePlot({'"CDRA Heater Power"'},                                          'CDRA Heater Power', tPlotOptions);
+            coPlot{4,2} = oPlotter.definePlot({'"TCCV Angle"'},                                                 'CCAA TCCV Angle', tPlotOptions);
+            coPlot{4,1} = oPlotter.definePlot({'"Temperature Atmosphere"'},                                     'Cabin Temperature', tPlotOptions);
             
             
             oPlotter.defineFigure(coPlot,  'Plots');
@@ -423,8 +439,8 @@ classdef setup < simulation.infrastructure
             figure()
             plot(mfTestData(:,1), mfTestData(:,2));
             grid on
-            xlabel('Time in h');
-            ylabel('Partial Pressure CO_2 in Torr');
+            xlabel('Time / h');
+            ylabel('Partial Pressure CO_2 / Torr');
             hold on
             
             for iVirtualLog = 1:length(oLogger.tVirtualValues)
@@ -438,7 +454,7 @@ classdef setup < simulation.infrastructure
             afTime = (oLogger.afTime./3600)';
             afTime(isnan(afTime)) = [];
             
-            plot(afTime, mfCO2PartialPressure);
+            plot(afTime(1:length(mfCO2PartialPressure)), mfCO2PartialPressure);
             legend('Test Data','Simulation');
             
             [afTimeDataUnique, ia, ~] = unique(mfTestData(:,1));
@@ -462,10 +478,12 @@ classdef setup < simulation.infrastructure
             fMinDiff  = min(abs(mfCO2PartialPressure - InterpolatedTestData));
             fMeanDiff = mean(mfCO2PartialPressure - InterpolatedTestData);
             rPercentualError = 100 * fMeanDiff / mean(InterpolatedTestData);
+            fMeanSquaredError = mean((mfCO2PartialPressure - InterpolatedTestData).^2);
             
             disp(['Maximum   Difference between Simulation and Test:     ', num2str(fMaxDiff), ' Torr'])
             disp(['Minimum   Difference between Simulation and Test:     ', num2str(fMinDiff), ' Torr'])
             disp(['Mean      Difference between Simulation and Test:     ', num2str(fMeanDiff), ' Torr'])
+            disp(['MSE       Difference between Simulation and Test:     ', num2str(fMeanSquaredError), ' Torr'])
             disp(['Percent   Difference between Simulation and Test:     ', num2str(rPercentualError), ' %'])
             
         end

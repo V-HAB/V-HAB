@@ -1,0 +1,210 @@
+Source: USDA National Nutrient Database for Standard Reference 1 April 2018 Software v.3.9.5.3_2019-06-13
+Full Report (All Nutrients)
+Report Run at: September 05 2019 02:23 EDT
+"Nutrient data for: Carrots, raw"
+Food Group:  Vegetables and Vegetable Products
+Common Name:
+Carbohydrate Factor: Fat Factor: Protein Factor: Nitrogen to Protein Conversion Factor: 
+Refuse: Refuse Description: 
+Nutrient,Unit,1Value per 100 g,Data points,Std. Error,"1 cup chopped = 128.0g","1 cup grated = 110.0g","1 cup strips or slices = 122.0g","1 large (7-1/4"" to 8-/1/2"" long) = 72.0g","1 medium = 61.0g","1 small (5-1/2"" long) = 50.0g","1 slice = 3.0g","1 strip large (3"" long) = 7.0g","1 strip medium = 4.0g",
+Proximates
+"Water",g,88.29,33,0.420,113.01,97.12,107.71,63.57,53.86,44.15,2.65,6.18,3.53
+"Energy",kcal,41,--,--,52,45,50,30,25,20,1,3,2
+"Energy",kJ,173,--,--,221,190,211,125,106,86,5,12,7
+"Protein",g,0.93,19,0.008,1.19,1.02,1.13,0.67,0.57,0.47,0.03,0.07,0.04
+"Total lipid (fat)",g,0.24,26,0.010,0.31,0.26,0.29,0.17,0.15,0.12,0.01,0.02,0.01
+"Ash",g,0.97,19,0.010,1.24,1.07,1.18,0.70,0.59,0.48,0.03,0.07,0.04
+"Carbohydrate, by difference",g,9.58,--,--,12.26,10.54,11.69,6.90,5.84,4.79,0.29,0.67,0.38
+"Fiber, total dietary",g,2.8,4,--,3.6,3.1,3.4,2.0,1.7,1.4,0.1,0.2,0.1
+"Sugars, total",g,4.74,--,--,6.07,5.21,5.78,3.41,2.89,2.37,0.14,0.33,0.19
+"Sucrose",g,3.59,11,0.280,4.60,3.95,4.38,2.58,2.19,1.79,0.11,0.25,0.14
+"Glucose (dextrose)",g,0.59,11,0.140,0.76,0.65,0.72,0.42,0.36,0.29,0.02,0.04,0.02
+"Fructose",g,0.55,11,0.090,0.70,0.61,0.67,0.40,0.34,0.28,0.02,0.04,0.02
+"Lactose",g,0.00,5,0.000,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+"Maltose",g,0.00,5,0.000,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+"Galactose",g,0.00,--,--,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+"Starch",g,1.43,2,--,1.83,1.57,1.74,1.03,0.87,0.71,0.04,0.10,0.06
+Minerals
+"Calcium, Ca",mg,33,75,1.000,42,36,40,24,20,16,1,2,1
+"Iron, Fe",mg,0.30,75,0.010,0.38,0.33,0.37,0.22,0.18,0.15,0.01,0.02,0.01
+"Magnesium, Mg",mg,12,75,0.000,15,13,15,9,7,6,0,1,0
+"Phosphorus, P",mg,35,75,0.000,45,38,43,25,21,18,1,2,1
+"Potassium, K",mg,320,76,8.000,410,352,390,230,195,160,10,22,13
+"Sodium, Na",mg,69,81,3.000,88,76,84,50,42,34,2,5,3
+"Zinc, Zn",mg,0.24,76,0.010,0.31,0.26,0.29,0.17,0.15,0.12,0.01,0.02,0.01
+"Copper, Cu",mg,0.045,70,0.007,0.058,0.050,0.055,0.032,0.027,0.022,0.001,0.003,0.002
+"Manganese, Mn",mg,0.143,66,0.006,0.183,0.157,0.174,0.103,0.087,0.071,0.004,0.010,0.006
+"Selenium, Se",µg,0.1,39,0.038,0.1,0.1,0.1,0.1,0.1,0.1,0.0,0.0,0.0
+"Fluoride, F",µg,3.2,21,0.400,4.1,3.5,3.9,2.3,2.0,1.6,0.1,0.2,0.1
+Vitamins
+"Vitamin C, total ascorbic acid",mg,5.9,21,1.100,7.6,6.5,7.2,4.2,3.6,3.0,0.2,0.4,0.2
+"Thiamin",mg,0.066,21,0.011,0.084,0.073,0.081,0.048,0.040,0.033,0.002,0.005,0.003
+"Riboflavin",mg,0.058,19,0.013,0.074,0.064,0.071,0.042,0.035,0.029,0.002,0.004,0.002
+"Niacin",mg,0.983,19,0.215,1.258,1.081,1.199,0.708,0.600,0.491,0.029,0.069,0.039
+"Pantothenic acid",mg,0.273,9,0.145,0.349,0.300,0.333,0.197,0.167,0.137,0.008,0.019,0.011
+"Vitamin B-6",mg,0.138,19,0.030,0.177,0.152,0.168,0.099,0.084,0.069,0.004,0.010,0.006
+"Folate, total",µg,19,19,5.000,24,21,23,14,12,10,1,1,1
+"Folic acid",µg,0,--,--,0,0,0,0,0,0,0,0,0
+"Folate, food",µg,19,19,5.000,24,21,23,14,12,10,1,1,1
+"Folate, DFE",µg,19,--,--,24,21,23,14,12,10,1,1,1
+"Choline, total",mg,8.8,--,--,11.3,9.7,10.7,6.3,5.4,4.4,0.3,0.6,0.4
+"Betaine",mg,0.4,1,--,0.5,0.4,0.5,0.3,0.2,0.2,0.0,0.0,0.0
+"Vitamin B-12",µg,0.00,--,--,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+"Vitamin B-12, added",µg,0.00,--,--,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+"Vitamin A, RAE",µg,835,--,--,1069,918,1019,601,509,418,25,58,33
+"Retinol",µg,0,--,--,0,0,0,0,0,0,0,0,0
+"Carotene, beta",µg,8285,197,1082.000,10605,9114,10108,5965,5054,4142,249,580,331
+"Carotene, alpha",µg,3477,190,531.000,4451,3825,4242,2503,2121,1738,104,243,139
+"Cryptoxanthin, beta",µg,0,45,--,0,0,0,0,0,0,0,0,0
+"Vitamin A, IU",IU,16706,--,--,21384,18377,20381,12028,10191,8353,501,1169,668
+"Lycopene",µg,1,8,0.000,1,1,1,1,1,0,0,0,0
+"Lutein + zeaxanthin",µg,256,10,62.000,328,282,312,184,156,128,8,18,10
+"Vitamin E (alpha-tocopherol)",mg,0.66,11,0.260,0.84,0.73,0.81,0.48,0.40,0.33,0.02,0.05,0.03
+"Vitamin E, added",mg,0.00,--,--,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+"Tocopherol, beta",mg,0.01,11,0.005,0.01,0.01,0.01,0.01,0.01,0.01,0.00,0.00,0.00
+"Tocopherol, gamma",mg,0.00,11,0.000,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+"Tocopherol, delta",mg,0.00,11,0.000,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+"Tocotrienol, alpha",mg,0.01,5,0.010,0.01,0.01,0.01,0.01,0.01,0.01,0.00,0.00,0.00
+"Tocotrienol, beta",mg,0.00,5,0.000,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+"Tocotrienol, gamma",mg,0.00,5,0.000,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+"Tocotrienol, delta",mg,0.00,5,0.000,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+"Vitamin D (D2 + D3)",µg,0.0,--,--,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+"Vitamin D",IU,0,--,--,0,0,0,0,0,0,0,0,0
+"Vitamin K (phylloquinone)",µg,13.2,4,--,16.9,14.5,16.1,9.5,8.1,6.6,0.4,0.9,0.5
+Lipids
+"Fatty acids, total saturated",g,0.032,--,--,0.041,0.035,0.039,0.023,0.020,0.016,0.001,0.002,0.001
+"4:0",g,0.000,--,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"6:0",g,0.000,--,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"8:0",g,0.000,2,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"10:0",g,0.000,2,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"12:0",g,0.000,2,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"14:0",g,0.000,2,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"15:0",g,0.000,2,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"16:0",g,0.030,2,--,0.038,0.033,0.037,0.022,0.018,0.015,0.001,0.002,0.001
+"17:0",g,0.000,2,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"18:0",g,0.002,2,--,0.003,0.002,0.002,0.001,0.001,0.001,0.000,0.000,0.000
+"20:0",g,0.000,2,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"22:0",g,0.000,2,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"24:0",g,0.000,2,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"Fatty acids, total monounsaturated",g,0.012,--,--,0.015,0.013,0.015,0.009,0.007,0.006,0.000,0.001,0.000
+"14:1",g,0.000,2,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"15:1",g,0.000,2,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"16:1 undifferentiated",g,0.002,2,--,0.003,0.002,0.002,0.001,0.001,0.001,0.000,0.000,0.000
+"17:1",g,0.000,2,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"18:1 undifferentiated",g,0.011,2,--,0.014,0.012,0.013,0.008,0.007,0.005,0.000,0.001,0.000
+"20:1",g,0.000,2,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"22:1 undifferentiated",g,0.000,2,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"Fatty acids, total polyunsaturated",g,0.102,--,--,0.131,0.112,0.124,0.073,0.062,0.051,0.003,0.007,0.004
+"18:2 undifferentiated",g,0.100,2,--,0.128,0.110,0.122,0.072,0.061,0.050,0.003,0.007,0.004
+"18:3 undifferentiated",g,0.002,2,--,0.003,0.002,0.002,0.001,0.001,0.001,0.000,0.000,0.000
+"18:4",g,0.000,2,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"20:2 n-6 c,c",g,0.000,2,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"20:3 undifferentiated",g,0.000,2,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"20:4 undifferentiated",g,0.000,2,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"20:5 n-3 (EPA)",g,0.000,2,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"22:5 n-3 (DPA)",g,0.000,2,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"22:6 n-3 (DHA)",g,0.000,2,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"Fatty acids, total trans",g,0.000,--,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"Cholesterol",mg,0,--,--,0,0,0,0,0,0,0,0,0
+Amino Acids
+"Tryptophan",g,0.012,--,--,0.015,0.013,0.015,0.009,0.007,0.006,0.000,0.001,0.000
+"Threonine",g,0.191,--,--,0.244,0.210,0.233,0.138,0.117,0.096,0.006,0.013,0.008
+"Isoleucine",g,0.077,--,--,0.099,0.085,0.094,0.055,0.047,0.038,0.002,0.005,0.003
+"Leucine",g,0.102,--,--,0.131,0.112,0.124,0.073,0.062,0.051,0.003,0.007,0.004
+"Lysine",g,0.101,--,--,0.129,0.111,0.123,0.073,0.062,0.051,0.003,0.007,0.004
+"Methionine",g,0.020,--,--,0.026,0.022,0.024,0.014,0.012,0.010,0.001,0.001,0.001
+"Cystine",g,0.083,--,--,0.106,0.091,0.101,0.060,0.051,0.042,0.002,0.006,0.003
+"Phenylalanine",g,0.061,--,--,0.078,0.067,0.074,0.044,0.037,0.030,0.002,0.004,0.002
+"Tyrosine",g,0.043,--,--,0.055,0.047,0.052,0.031,0.026,0.021,0.001,0.003,0.002
+"Valine",g,0.069,--,--,0.088,0.076,0.084,0.050,0.042,0.035,0.002,0.005,0.003
+"Arginine",g,0.091,--,--,0.116,0.100,0.111,0.066,0.056,0.045,0.003,0.006,0.004
+"Histidine",g,0.040,--,--,0.051,0.044,0.049,0.029,0.024,0.020,0.001,0.003,0.002
+"Alanine",g,0.113,--,--,0.145,0.124,0.138,0.081,0.069,0.057,0.003,0.008,0.005
+"Aspartic acid",g,0.190,--,--,0.243,0.209,0.232,0.137,0.116,0.095,0.006,0.013,0.008
+"Glutamic acid",g,0.366,--,--,0.468,0.403,0.447,0.264,0.223,0.183,0.011,0.026,0.015
+"Glycine",g,0.047,--,--,0.060,0.052,0.057,0.034,0.029,0.024,0.001,0.003,0.002
+"Proline",g,0.054,--,--,0.069,0.059,0.066,0.039,0.033,0.027,0.002,0.004,0.002
+"Serine",g,0.054,--,--,0.069,0.059,0.066,0.039,0.033,0.027,0.002,0.004,0.002
+Other
+"Alcohol, ethyl",g,0.0,--,--,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+"Caffeine",mg,0,--,--,0,0,0,0,0,0,0,0,0
+"Theobromine",mg,0,--,--,0,0,0,0,0,0,0,0,0
+Flavonoids
+Flavan-3-ols
+"(+)-Catechin",mg,0.0,7,0.000,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+"(-)-Epigallocatechin",mg,0.0,7,0.000,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+"(-)-Epicatechin",mg,0.0,7,0.000,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+"(-)-Epicatechin 3-gallate",mg,0.0,7,0.000,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+"(-)-Epigallocatechin 3-gallate",mg,0.0,7,0.000,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+"(+)-Gallocatechin",mg,0.0,7,0.000,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+Flavones
+"Apigenin",mg,0.0,6,0.000,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+"Luteolin",mg,0.1,7,0.110,0.1,0.1,0.1,0.1,0.1,0.1,0.0,0.0,0.0
+Flavonols
+"Isorhamnetin",mg,0.0,1,--,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+"Kaempferol",mg,0.2,9,0.170,0.3,0.3,0.3,0.2,0.1,0.1,0.0,0.0,0.0
+"Myricetin",mg,0.0,9,0.040,0.1,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+"Quercetin",mg,0.2,9,0.170,0.3,0.2,0.3,0.2,0.1,0.1,0.0,0.0,0.0
+Isoflavones
+"Daidzein",mg,0.00,3,0.000,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+"Genistein",mg,0.00,3,0.000,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+"Glycitein",mg,0.00,1,--,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+"Total isoflavones",mg,0.00,3,0.000,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+"Biochanin A",mg,0.00,1,--,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+"Formononetin",mg,0.00,2,--,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+"Coumestrol",mg,0.00,2,--,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+Proanthocyanidin
+"Proanthocyanidin dimers",mg,0.0,8,0.000,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+"Proanthocyanidin trimers",mg,0.0,8,0.000,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+"Proanthocyanidin 4-6mers",mg,0.0,5,0.000,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+"Proanthocyanidin 7-10mers",mg,0.0,5,0.000,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+"Proanthocyanidin polymers (>10mers)",mg,0.0,5,0.000,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+
+
+Sources of Data
+1,"Nutrient Data Laboratory, ARS, USDA","National Food and Nutrient Analysis Program Wave 6a",2002,,BeltsvilleMD
+2,"J.D.B. Featherstone, Carol Shields","A Study of Fluoride Intake in New York State Residents",1988,New York State Fluoride Analysis Contract - report date 12/1/1988,MD
+3,"Robert Ophaug","Fluoride, Unpublished - Ophaug",,Microdiffision,MD
+4,"A. Kingman","Unpublished data. NIDR/NIH, 1984",1984,Unpublished data. NIDR/NIH, 1984.,MD
+5,"F W Quackenbush","Reverse phase HPLC separation of cis- and trans-carotenoids and its application to beta-carotenes in food materials",1987,J Liq Chrom,10MD pp. 643-643
+6,"J P Sweeney, A C Marsh","Effect of processing on provitamin A in vegetables",1971,J Am Diet Assoc,59MD pp. 238-238
+7,"J P Sweeney, A C Marsh","Effects of selected herbicides on provitamin A content of vegetables",1971,J Agric Food Chem,19MD pp. 854-854
+8,"P W Simon, X Y Wolff","Carotenes in typical and dark orange carrots",1987,J Agric Food Chem,35MD pp. 1017-1017
+9,"R J Bushway, A M Wilson","Determination of alpha- and beta-carotene in fruit and vegetables by high performance liquid chromatography",1982,Can Inst Food Sci Technol,15MD pp. 165-165
+10,"J L Bureau, R J Bushway","HPLC determination of carotenoids in fruits and vegetables in the United States",1986,J Food Sci,52MD pp. 128-128
+11,"R J Bushway","Determination of alpha- and beta-carotene in some raw fruits and vegetables by high-performance liquid chromatography",1986,J Agr Food Chem,34MD pp. 409-409
+12,"R J Bushway, A Yang, A M Yamani","Comparison of alpha- and beta-carotene content of supermarket versus roadside stand produce",1987,J Food Qual,9MD pp. 437-437
+13,"L R Howard, T Dewi","Minimal processing and edible coating effects on composition and sensory quality of mini-peeled carrots.",1996,J. Food Science,613 pp. 643-643
+14,"C Y Lee","Changes in carotenoid content of carrots during growth and post-harvest storage",1986,Food Chem,203 pp. 285-285
+15,"A T Ogunlesi, C Y Lee","Effect of thermal processing on the stereoisomerization of major carotenoids and vitamin A value of carrots",1979,Food Chem,43 pp. 311-311
+16,"National Cancer Institute (NCI), DHHS","NCI Contract No. 1-CN-SS442 - Carotenoids",1988,,3 pp. 311-311
+17,"National Cancer Institute (NCI), DHHS","Carotenoid content of fruits and vegetables",1988,,3 pp. 311-311
+18,"Nutrient Data Laboratory, ARS, USDA","National Food and Nutrient Analysis Program Wave 4a",2001,,BeltsvilleMD pp. 311-311
+19,"Arts, I. C. W., van de Putte, B., and Hollman, P. C. H. ","Catechin content of foods commonly consumed in the Netherlands. 1. Fruits, vegetables, staple foods and processed foods.",2000,J. Agric. Food Chem.,48 pp. 1746-1746
+20,"de Pascual-Teresa, S., Santos-Buelga, C., & Rivas-Gonzalo, J.C. ","Quantitative analysis of flavan-3-ols in Spanish foodstuffs and beverages.",2000,J. Agric. Food Chem.,48 pp. 5331-5331
+21,"Bahroun, T., Luximon-Ramma, A., Crozier, A., and Arouma, O. ","Total phenol, flavonoid, proanthocyanidin and vitamin C levels and antioxidant        activities of Mauritian vegetables",2004,J. Sci. Food Agric.,84 pp. 1553-1553
+22,"Hertog, M. G. L., Hollman, P. C. H., and Katan, M. B. ","Content of potentially anticarcinogenic flavonoids of 28 vegetables and fruits commonly consumed in The Netherlands.",1992,J. Agric. Food Chem.,40 pp. 2379-2379
+23,"Lugasi, A., and Hovari, J.","Flavonoid aglycons in foods of plant origin I. Vegetables",2000,Acta Alimentaria,29 pp. 345-345
+24,"Arai, Yusuke, Watanabe, S., Kimira, M., Shimoi, K., Mochizuki, R., and Kinae, N.","Dietary intakes of flavonols and isoflavones by Japanese women and inverse correlation between quercetin intake and plasma LDL cholesterol concentration",2000,J. Nutr.,130 pp. 2243-2243
+25,"Lako, J., Trenerry, V. C., Wahlqvist, M., Wattanapenpaiboon, N., Sotheeswaran, S., Premier, R. ","Phytochemical flavonols, carotenoids and the antioxidant properties of a wide selection of Fijian fruit, vegetables and other readily available foods.",2007,Food Chemistry,101 pp. 1727-1727
+26,"Kevers, C., Falkowski, M., Tabart, J., Defraigne, J-O., Dommes, J., and Pincemail, J. ","Evolution of antioxidant capacity during storage of selected fruits and vegetables",2007,J. Agric. Food Chem.,55 pp. 8596-8596
+27,"de Pascual-Teresa, S., Santos-Buelga, C., and Rivas-Gonzalo, J.C.","Quantitative analysis of flavan-3-ols in Spanish foodstuffs and beverages",2000,J. Agric. Food Chem.,48 pp. 5331-5331
+28,"Gu, L., Kelm, M.A., Hammerstone, J.F., Beecher, G., Holden, J., Haytowitz, D., Gebhardt, S., and Prior, R.L.","Concentrations of proanthocyanidins in common foods and estimations of normal consumption",2004,J. Nutr.,134 pp. 613-613
+29,"Hellstr?m, T?rr?nen, A.R., and Matilla, P.H.","Proanthocyanidins in common food products of plant origin",2009,J. Agric. Food Chem.,57 pp. 7899-7899
+30,"Horn-Ross, P. L., Barnes, S., Lee, M., Coward, L., Mandel, E., Koo, J., John, E. M., and Smith, M. ","Assesing phytoestrogen exposure in epidemiologic studies: development of a database (United States).",2000,Cancer Causes and Control,11 pp. 289-289
+31,"Liggins, J., Bluck, L. J. C., Runswick, C., Atkinson, C., Coward, W. A., and Bingham, S. A. ","Daidzein and genistein content of vegetables.",2000,Brit. J. Nutr.,84 pp. 717-717
+32,"Thompson, L. U., Boucher, B. A., Liu, Z., Cotterchio, M., and Kreiger, N. ","Phytoestrogen content of foods consumed in Canada, including isoflavones, lignans, and coumestan.",2006,Nutr. Cancer,54 pp. 184-184
+Langual Code(s)
+"M0001""CONTAINER OR WRAPPING NOT KNOWN"
+"P0024""HUMAN FOOD, NO AGE SPECIFICATION"
+"A0152""VEGETABLE OR VEGETABLE PRODUCT (US CFR)"
+"C0240""ROOT, TUBER OR BULB, WITHOUT PEEL"
+"N0001""FOOD CONTACT SURFACE NOT KNOWN"
+"F0003""NOT HEAT-TREATED"
+"G0003""COOKING METHOD NOT APPLICABLE"
+"H0003""NO TREATMENT APPLIED"
+"J0001""PRESERVATION METHOD NOT KNOWN"
+"E0150""WHOLE, NATURAL SHAPE"
+"K0003""NO PACKING MEDIUM USED"
+"B1227""CARROT"
+"A1281""1100 VEGETABLES AND VEGETABLE PRODUCTS (USDA SR)"

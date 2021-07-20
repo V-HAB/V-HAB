@@ -108,7 +108,7 @@ function saveFigureAs(hButton,~)
             case 6
                 sFormat = '-dmeta';
             otherwise
-                error('Something went wrong the FilterIndex has an illegal value.');
+                error('Plotter:SaveDialogIndexError','Something went wrong the FilterIndex has an illegal value.');
         end
     end
     
@@ -155,7 +155,7 @@ function saveFigureAs(hButton,~)
         [ fFigureWidth, fFigureHeight, sFontName, fFontSize, ...
           bTitleOn, bMainGrid, bMinorGrid, bAutoAdjustXAxis, ...
           bAutoAdjustYAxis ] = settingsDialog();
-    catch
+    catch %#ok<CTCH>
         return;
     end
     
@@ -163,6 +163,28 @@ function saveFigureAs(hButton,~)
     % Okay, now we have everything that we need. In order to produce nice
     % image files, we need to do some magic with the figure properties
     % here.
+    
+    % Getting the number of graphics objects in the figure so we can loop
+    % through all of them.
+    iChildren = length(hFigure.Children);
+    
+    % Initializing an array and a struct in which we can save the font size
+    % and font information.
+    aiFontSizes = zeros(iChildren,1);
+    csFonts = cell(iChildren,1);
+    
+    % We need to find out, which one of the children are axes objects.
+    abAxesIndexes = false(iChildren, 1);
+    for iI = 1:iChildren
+        if strcmp(hFigure.Children(iI).Type,'axes')
+            abAxesIndexes(iI) = true;
+        end
+    end
+    
+    % Calculating the number of axes objects and getting their indexes in
+    % the Children array of he figure object. 
+    iNumberOfAxes = sum(abAxesIndexes);
+    aiAxesIndexes = find(abAxesIndexes);
     
     % First, we need to set the figure itself to the size that we want our
     % image to be. For that we first change the units to centimeters and
@@ -181,6 +203,15 @@ function saveFigureAs(hButton,~)
     fFigureLeft   = (afScreenSize(3) - fFigureWidth)  / 2;
     fFigureBottom = (afScreenSize(4) - fFigureHeight) / 2;
     
+    % Before we actually set the new position property, we need to make
+    % sure the resizing doesn't mess things up. So here we go through all
+    % axis objects and set the limit modes to manual, as to preserve any
+    % settings the user may have made. 
+    for iAxes = 1:iNumberOfAxes
+        hFigure.Children(aiAxesIndexes(iAxes)).XLimMode = 'manual';
+        hFigure.Children(aiAxesIndexes(iAxes)).YLimMode = 'manual';
+    end
+    
     % Finally we can set the new values.
     hFigure.Position = [fFigureLeft fFigureBottom fFigureWidth fFigureHeight];
     
@@ -190,6 +221,7 @@ function saveFigureAs(hButton,~)
     % again. 
     %TODO File MATLAB Bug Report.
     drawnow();
+    pause(0.1);
     hFigure.Position = [fFigureLeft fFigureBottom fFigureWidth fFigureHeight];
     
     
@@ -205,30 +237,6 @@ function saveFigureAs(hButton,~)
     % Alright, now we have to change the fonts and font sizes. We don't
     % want to mess up the plot, so we'll save the current values so we can
     % restore them after saving.
-    
-    % Getting the number of graphics objects in the figure so we can loop
-    % through all of them.
-    iChildren = length(hFigure.Children);
-    
-    % Initializing an array and a struct in which we can save the font size
-    % and font information.
-    aiFontSizes = zeros(iChildren,1);
-    csFonts = cell(iChildren,1);
-    
-    % We need to change a property of the axes objects before modifying
-    % the font size. To do this, we need to find out, which one of the
-    % children are axes objects.
-    abAxesIndexes = false(iChildren, 1);
-    for iI = 1:iChildren
-        if strcmp(hFigure.Children(iI).Type,'axes')
-            abAxesIndexes(iI) = true;
-        end
-    end
-    
-    % Calculating the number of axes objects and getting their indexes in
-    % the Children array of he figure object. 
-    iNumberOfAxes = sum(abAxesIndexes);
-    aiAxesIndexes = find(abAxesIndexes);
     
     % Initializing some arrays and cells so we can save the current
     % information for later. This will enable us to return the figure back
@@ -258,21 +266,18 @@ function saveFigureAs(hButton,~)
     
     % The following code only needs to be performed if there is only one
     % plot in the figure, it resizes it to fill out the figure better.
-    
     if iNumberOfAxes == 1
-    
         % We want to make sure, that the axes really fill out the figure so
         % now we'll change the size of the plot. Since we want to restore
         % the size later, we save it first.
         afOldAxesPosition = hFigure.Children(aiAxesIndexes(iAxes)).Position;
         
-        %TODO Insert a check here if there are two y axes. If so, the
-        %position values set below need to be different, so the right side
-        %axis labels are not cut off.
+        % Getting the values for the TightInset property
+        afInSet = get(hFigure.Children(aiAxesIndexes(iAxes)), 'TightInset');
         
-        hFigure.Children(aiAxesIndexes(iAxes)).Units = 'centimeters';
-        hFigure.Children(aiAxesIndexes(iAxes)).Position = [ 1.3 1 fFigureWidth-1.7 fFigureHeight-1.5];
-        hFigure.Children(aiAxesIndexes(iAxes)).Units = 'normalized';
+        % Setting the new axes position.
+        hFigure.Children(aiAxesIndexes(iAxes)).Position = [afInSet(1:2), 1-afInSet(1)-afInSet(3), 1-afInSet(2)-afInSet(4)];
+
         
     end
     
@@ -389,8 +394,6 @@ function saveFigureAs(hButton,~)
         case {3,4}
             % This is the case for JPEG and PNG. They use the same format.
             print('-r600','-noui',[sFilePath,sFileName],sFormat);
-        otherwise
-            error('Something went wrong the FilterIndex has an illegal value.');
     end
     
     % Okay, all done saving, now we can clean everything up again.
@@ -781,22 +784,33 @@ function [ fFigureWidth, fFigureHeight, sFontName, fFontSize, ...
     % due to the size of the button.
     iVerticalPosition = iVerticalPosition - iLineHeight * 2.5;
     
-    % Creating the button
-    uicontrol('Parent',oDialog,...
+    % Creating the 'Done' button
+    oButton = uicontrol('Parent',oDialog,...
               'Position',[50 iVerticalPosition 70 30],...
               'String','Done',...
               'FontSize',12,...
+              'FontWeight','bold',...
+              'ForegroundColor','#0072BD',...
               'Callback',@finish);
     
     %% Save as default button
           
-    % Creating the button
+    % Creating the 'Save as default' button
     uicontrol('Parent',oDialog,...
               'Position',[150 iVerticalPosition 140 30],...
               'String','Save as default',...
               'FontSize',12,...
               'Callback',@saveAsDefault);
-
+    
+          
+    % Saving a handle to the Done button callback to the dialog properties
+    % so we can call it from the KeyPressFcn.
+    oDialog.UserData.hDoneButton = oButton;
+    
+    % Now we need to assign the key press function to this dialog.
+    oDialog.KeyPressFcn = @KeyPressFunction;
+    
+    
     %% Wait for d to close before running to completion
     uiwait(oDialog);
     
@@ -897,6 +911,24 @@ function [ fFigureWidth, fFigureHeight, sFontName, fFontSize, ...
             
             bAutoAdjustYAxis_Preset = tPresets.bAutoAdjustYAxis;
             
+        end
+    end
+
+    function KeyPressFunction(oFigure, oKeyData)
+        %KEYPRESSFUNCTION Enables keyboard control of the Done button
+        % By pressing the return key the user can finish the dialog.
+        
+        % We need to catch all sorts of stray inputs, so we enclose this entire
+        % function in a try-catch-block. That way we can just throw errors to
+        % silently abort.
+        try
+            if strcmp(oKeyData.Key,'return')
+                % Executing the button callback.
+                oFigure.UserData.hDoneButton.Callback(oFigure.UserData.hDoneButton, NaN);
+            end
+        catch %#ok<CTCH>
+            % We want this to fail silently if there are inadvertent button
+            % presses, so we don't put anything in here.
         end
     end
         

@@ -59,6 +59,10 @@ classdef store < base
         % Timer object, needs to inherit from / implement event.timer
         oTimer;
         
+        % A cell containing the names of all ExMe processors in this store.
+        % This is used to ensure that all ExMe names are unique.
+        csExMeNames = '';
+        
         %% Geometry Properties
         % This is only important for gravity or likewise driven systems 
         % where the position of ports and geometry of the store is no longer
@@ -144,6 +148,13 @@ classdef store < base
             end
             
             oExMe = this.aoPhases(iIdx).toProcsEXME.(sExMe);
+        end
+        
+        function addExMeName(this, sName)
+            %% addExMeName
+            % In order to ensure that the ExMe names in this store are
+            % unique, we save their names to the csExMeNames property.
+            this.csExMeNames{end+1} = sName;
         end
         
         function oProc = getThermalExMe(this, sExMe)
@@ -373,9 +384,13 @@ classdef store < base
             % and incompressible volume manipulators to other phases.
             for iPhase = 1:length(this.aoPhases)
                 if strcmp(this.aoPhases(iPhase).sType, 'gas') || (strcmp(this.aoPhases(iPhase).sType, 'mixture') && strcmp(this.aoPhases(iPhase).sPhaseType, 'gas'))
-                    matter.manips.volume.StoreVolumeCalculation.compressibleMedium([this.aoPhases(iPhase).sName, '_CompressibleManip'], this.aoPhases(iPhase));
-                else
-                    matter.manips.volume.StoreVolumeCalculation.incompressibleMedium([this.aoPhases(iPhase).sName, '_IncompressibleManip'], this.aoPhases(iPhase));
+                    oCompressibleManip = matter.manips.volume.StoreVolumeCalculation.compressibleMedium([this.aoPhases(iPhase).sName, '_CompressibleManip'], this.aoPhases(iPhase));
+                end
+            end
+            
+            for iPhase = 1:length(this.aoPhases)
+                if ~(strcmp(this.aoPhases(iPhase).sType, 'gas') || (strcmp(this.aoPhases(iPhase).sType, 'mixture') && strcmp(this.aoPhases(iPhase).sPhaseType, 'gas')))
+                    matter.manips.volume.StoreVolumeCalculation.incompressibleMedium([this.aoPhases(iPhase).sName, '_IncompressibleManip'], this.aoPhases(iPhase), oCompressibleManip);
                 end
             end
         end

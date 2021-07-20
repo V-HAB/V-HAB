@@ -61,13 +61,13 @@ classdef logger < simulation.monitor
         % key so 'longer' keys need to be defined first 
         % (e.g. 'this.fMass * this.fMassToPressure').
         poExpressionToUnit = containers.Map(... 
-            { 'this.fMass * this.fMassToPressure', 'fMassToPressure', 'fMass', 'afMass', 'fFlowRate', 'fTemperature', 'fPressure', 'afPP', 'fTotalHeatCapacity', 'fSpecificHeatCapacity', 'fConductivity', 'fHeatFlow', 'fPower', 'fCapacity', 'fResistance', 'fInductivity', 'fCurrent', 'fVoltage', 'fCharge', 'fBatteryCharge', 'fArea'}, ...
-            { 'Pa',                                'Pa/kg',           'kg',    'kg',     'kg/s',      'K',            'Pa',        'Pa',   'J/K',                'J/kgK',                 'W/K',           'W',         'W',      'F',         'Ohm',         'H',            'A',        'V',        'C',       'Ah',             'm^2'}  ...
+            { 'this.fMass * this.fMassToPressure', 'fMassToPressure', 'fMass', 'afMass', 'fFlowRate', 'fDensity', 'fTemperature', 'fPressure', 'afPP', 'fTotalHeatCapacity', 'fSpecificHeatCapacity', 'fConductivity', 'fHeatFlow', 'fPower', 'fCapacity', 'fResistance', 'fInductivity', 'fCurrent', 'fVoltage', 'fCharge', 'fBatteryCharge', 'fArea', 'fFrequency'}, ...
+            { 'Pa',                                'Pa/kg',           'kg',    'kg',     'kg/s',      'kg/m^3',   'K',            'Pa',        'Pa',   'J/K',                'J/kgK',                 'W/K',           'W',         'W',      'F',         'Ohm',         'H',            'A',        'V',        'C',       'Ah',             'm^2',   'Hz'        }  ...
         );
         
         poUnitsToLabels = containers.Map(...
-            { 's',    'kg',   'kg/s',      'g/s',       'L/min',     'K',           'degC',        'Pa',       'J/K',                 'J/kgK',                  'W/K',          'W',          'F',        'Ohm',        'H',           'A',       'V',       'C',      'mol/kg',        'ppm',           '%',       'Ah',     'kg/m^3',   'm/s',       'torr',     '-', 'J/kg',      'm^3',    'm^2'}, ...
-            { 'Time', 'Mass', 'Flow Rate', 'Flow Rate', 'Flow Rate', 'Temperature', 'Temperature', 'Pressure', 'Total Heat Capacity', 'Specific Heat Capacity', 'Conductivity', 'Heat Flow',  'Capacity', 'Resistance', 'Inductivity', 'Current', 'Voltage', 'Charge', 'Concentration', 'Concentration', 'Percent', 'Charge', 'Density',   'Velocity', 'Pressure', '' , 'Enthalpy',  'Volume', 'Area'} ...
+            { 's',    'kg',   'kg/s',      'g/s',       'L/min',     'K',           'degC',        'Pa',       'J/K',                 'J/kgK',                  'W/K',          'W',          'F',        'Ohm',        'H',           'A',       'V',       'C',      'mol/kg',        'ppm',           '%',       'Ah',     'kg/m^3',   'm/s',       'torr',     '-', 'J/kg',      'm^3',    'm^2',   'm^3/s',                'munits/L',         	'ng/L', 		'Hz',           'mol/m^3',          '°',        'g/min',     'mol/s'}, ...
+            { 'Time', 'Mass', 'Flow Rate', 'Flow Rate', 'Flow Rate', 'Temperature', 'Temperature', 'Pressure', 'Total Heat Capacity', 'Specific Heat Capacity', 'Conductivity', 'Heat Flow',  'Capacity', 'Resistance', 'Inductivity', 'Current', 'Voltage', 'Charge', 'Concentration', 'Concentration', 'Percent', 'Charge', 'Density',   'Velocity', 'Pressure', '' , 'Enthalpy',  'Volume', 'Area',  'Volumetric Flowrate',  'Concentration',	'Concentration',	'Frequency',    'Concentration',    'Angle',    'Flow Rate', 'Flow Rate'} ...
         );
     end
     
@@ -510,6 +510,13 @@ classdef logger < simulation.monitor
                 return;
             end
             
+            % check if the dumped files were already loaded:
+            miLogValues = size(this.mfLog);
+            if miLogValues(1) > this.iPreAllocatedRows
+                fprintf('[Logger] dumped data files already loaded, aborting.\n');
+                return;
+            end
+            
             % Telling the user what's going on and providing a warning
             % regarding the continuation of simulations using the
             % oLastSimObj object that will be manipulated below. Every
@@ -600,6 +607,14 @@ classdef logger < simulation.monitor
             fprintf('[Logger] Loading complete!\n');
         end
         
+        function clearVirtualValues(this)
+            %CLEARVIRTUALVALUES Deletes all virtual values
+            % This function is intended for use during debugging and
+            % post-processing of simulation results where it may be
+            % necessary to add and then remove virtual values. 
+            this.tVirtualValues = struct('sExpression', {}, 'calculationHandle', {}, 'sName', {}, 'sUnit', {}, 'sLabel', {});
+        end
+        
     end
     
     
@@ -628,7 +643,7 @@ classdef logger < simulation.monitor
             % ticks should be pre-allocated. If the user did not provide
             % this value we use the default value which is currently stored
             % in the iPreAllocatedRows property. 
-            if ~this.bPreAllocationProvided
+            if ~this.bPreAllocationProvided && this.iNumberOfLogItems ~= 0
                 % The default value in iPreAllocatedRows assumes that 100
                 % items will be logged for ten thousand ticks. The actual
                 % number of log items may be smaller, so to keep the total
@@ -728,7 +743,7 @@ classdef logger < simulation.monitor
             % handle. 
             try
                 this.mfLog(this.iLogIndex + 1, :) = this.hEvaluateLogData();
-            catch
+            catch oError %#ok<NASGU>
                 % One reason for the above statement to fail is an 'empty'
                 % variable. Then the length of the array returned by
                 % this.hEvaluateLogData() will be shorter than this.mfLog
@@ -839,7 +854,13 @@ classdef logger < simulation.monitor
                 oLastSimObj = this.oSimulationInfrastructure; 
                 
                 % Actually saving the object into the mat file.
-                save(sFileName, 'oLastSimObj');
+                save(sFileName, 'oLastSimObj', '-v7.3');
+                
+                if this.oSimulationInfrastructure.bCreateSimulationOutputZIP
+                    % create the zip data in the batch specific output file
+                    sZipFolderName = sprintf('data/runs/%s', this.sStorageDirectory);
+                    zip(['SimulationOutput_', this.oSimulationInfrastructure.sOutputName], sZipFolderName)
+                end
             end
         end
         
@@ -898,8 +919,20 @@ classdef logger < simulation.monitor
             oLastSimObj = this.oSimulationInfrastructure;
             
             % Actually saving the object into the mat file.
-            save(sFileName, 'oLastSimObj');
+            save(sFileName, 'oLastSimObj', '-v7.3');
+            
+            if this.oSimulationInfrastructure.bCreateSimulationOutputZIP
+                % create the zip data in the batch specific output file
+                sZipFolderName = sprintf('data/runs/%s', this.sStorageDirectory);
+                zip(['SimulationOutput_', this.oSimulationInfrastructure.sOutputName], sZipFolderName)
+            end
+                
+            % To prevent MATLAB from crashing during saves, the saveobj()
+            % method of the infrastructure class will disconnect all
+            % branches on the right side. See that class for a more
+            % detailed discussion of the issue. In order to remain
+            % functional, we need to reconnect these branches here.
+            this.oSimulationInfrastructure.reconnectBranches();
         end
-        
     end
 end

@@ -10,7 +10,7 @@ function [mfEquilibriumLoading, mfLinearizationConstant] = calculateEquilibriumL
 % The paramteres for the Toth equation are stored in the matter table!
 
 if length(varargin) == 1
-    if ~isa(varargin{1}, 'matter.procs.p2p')
+    if ~strcmp(varargin{1}.sObjectType, 'p2p')
         this.throw('calculateEquilibriumLoading', 'If only one param provided, has to be a matter.procs.p2p (derivative)');
     end
     

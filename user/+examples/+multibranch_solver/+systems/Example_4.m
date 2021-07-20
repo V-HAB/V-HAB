@@ -25,6 +25,8 @@ classdef Example_4 < vsys
             matter.procs.exmes.gas(this.toStores.Store.aoPhases(1), 'Port_Out');
             matter.procs.exmes.gas(this.toStores.Store.aoPhases(1), 'Port_Rtn');
             
+            oPlenum = matter.store(this, 'Plenum', 0.001);
+            oPhase = oPlenum.createPhase('N2Atmosphere', 'flow', oPlenum.fVolume);
             
             
             iValves = 4;
@@ -47,13 +49,15 @@ classdef Example_4 < vsys
             
             % Resistors
             components.matter.pipe(this, 'R_1',  0.1, 0.001);
-            components.matter.pipe(this, 'R_2',  0.1, 0.001);
-            components.matter.pipe(this, 'R_3',  0.1, 0.001);
+            %components.matter.pipe(this, 'R_2',  0.1, 0.001);
+            %components.matter.pipe(this, 'R_3',  0.1, 0.001);
             components.matter.pipe(this, 'R_4',  0.1, 0.001);
             components.matter.pipe(this, 'R_5',  0.1, 0.001);
             
             components.matter.fan_simple(this, 'Fan', 600, false);
-            matter.branch(this, 'Store.Port_Out', { 'Pipe_1' , 'Fan'}, 'Valve_1.Port_1');
+            matter.branch(this, 'Store.Port_Out', { 'Pipe_1' }, oPhase);
+            
+            matter.branch(this, oPhase, {'Fan'}, 'Valve_1.Port_1');
             
             %matter.branch(this, 'Valve_1.Port_2', { 'Pipe_2', 'R_2' }, 'Valve_2.Port_1');
             matter.branch(this, 'Valve_1.Port_2', { 'Pipe_2' }, 'Valve_2.Port_1');

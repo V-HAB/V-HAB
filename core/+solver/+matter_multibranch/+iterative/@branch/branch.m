@@ -8,7 +8,7 @@ classdef branch < base & event.source
     % to solve. There is no limit to the number of branches that it can
     % solve.
     %
-    %% Regaring the implementation some rules must be observed!:
+    %% Regarding the implementation some rules must be observed!:
     %
     % - it is not possible to have a gas flow node as the connection
     %   between two different multi branch solvers!
@@ -148,7 +148,7 @@ classdef branch < base & event.source
     %      +     x2      -      x4                              = 0         (VI)
     %                                        +      x6 -     x7 = 0         (VII)
     %
-    % According to this.poColIndexToObj the columns represent the following
+    % According to this.coColIndexToObj the columns represent the following
     % objects: (phases are gas flow nodes)
     %   x1 ,  x2   ,  x3  ,   x4  ,   x5 ,   x6  ,  x7
     % phase, branch, phase, branch, phase, branch, branch
@@ -182,12 +182,17 @@ classdef branch < base & event.source
     end
     
     properties (SetAccess = private, GetAccess = public)
-       	% array containing the branches which are solved by this solver
+       	% array containing the branches that are solved by this solver
         aoBranches;
+        
         % number of total branches in the network
         iBranches;
         
-        % last time at which the solver was updated
+        % A cell containing all UUIDs of the branches that are solved by
+        % this solver. 
+        csBranchUUIDs;
+        
+        % Last time the solver was updated
         fLastUpdate = -10;
         
         % Mode:
@@ -240,19 +245,21 @@ classdef branch < base & event.source
         iIteration = 0;
         
         % Variable pressure phases by UUID
-        poVariablePressurePhases;
+        toVariablePressurePhases;
         
         % Boundary nodes
-        poBoundaryPhases;
+        toBoundaryPhases;
         
-        % Maps variable pressure phases / branches, using their UUIDs, to
+        % Struct variable pressure phases / branches, using their UUIDs, to
         % the according column in the solving matrix
-        piObjUuidsToColIndex;
+        tiObjUuidsToColIndex;
         
-        % Maps variable which provides the corresponding object to a column
+        tiObjUuidsToRowIndex;
+        
+        % Cell variable that provides the corresponding object to a column
         % index number (each column represents either a gas flow node or a
         % branch)
-        poColIndexToObj;
+        coColIndexToObj;
         
         
         %TODO These properties should be transient. That requires a static
@@ -274,9 +281,11 @@ classdef branch < base & event.source
         % flowrates for all branches is smaller than this the solver
         % considers the system solved
         fMaxError = 1e-4; % percent
+        
         % The maximum number of iterations defines how often the solver
         % iterates before resulting in an error
         iMaxIterations = 1000;
+        
         % This value can be used to force more frequent P2P updates (every
         % X iterations). Or the standard approach is to have the solver
         % solve the branch flowrates and then calculate the P2P flowrates.
@@ -284,18 +293,26 @@ classdef branch < base & event.source
         % again till converged. This is repeated until overall convergence
         % is achieved
         iIterationsBetweenP2PUpdate = 1000;
+        
         % The solver calculates a maximum time step, after which the phases
         % equalized their pressures. If this time step is exceed
         % oscillations can occur. This timestep represents the lowest
         % possible value for that time step (indepdentent from phase time
         % steps)
         fMinimumTimeStep = 1e-8; % s
+        
         % The minimum pressure difference defines how many Pa of pressure
         % difference must be present before the solver starts calculating
         % the branch. If the difference is below the value, the branch will
         % be considered to have no pressure difference and therefore to
         % have 0 kg/s flowrate
         fMinPressureDiff = 10; % Pa
+        
+        % This boolean can be turned on, if you want the multi branch
+        % solver to solve only the flowrates for its branches. In that case
+        % it uses the average boundary phase pressure to calculate the
+        % pressure for the flow phases
+        bSolveOnlyFlowRates = false;
         
         tBoundaryConnection;
         
@@ -306,6 +323,9 @@ classdef branch < base & event.source
         % Matrix that translated the index of a branch from aoBranches to a
         % row in the solution matrix
         miBranchIndexToRowID;
+        
+        % This vector can be used to translate column ids to branch ids
+        miColIndexToBranchID;
         
         % Integer that tells us how many branches are connected in a row.
         % These must be solved after each other to get the correct p2p
@@ -326,6 +346,49 @@ classdef branch < base & event.source
         
         fInitializationFlowRate;
         
+        % As a performance enhancement, these booleans are set to true once
+        % a callback is bound to the 'update' and 'register_update'
+        % triggers, respectively. Only then are the triggers actually sent.
+        % This saves quite some computational time since the trigger()
+        % method takes some time to execute, even if nothing is bound to
+        % them.
+        bTriggerUpdateCallbackBound = false;
+        bTriggerRegisterUpdateCallbackBound = false;
+        
+        % The current time step of the solver in seconds
+        fTimeStep;
+        
+        % Boolean indicating if oscillation suppression is turned on at all
+        % for all branches. 
+        bOscillationSuppression = true;
+        
+        % A boolean array indicating which branches are being corrected for
+        % oscillating in the current update step.
+        abOscillationCorrectedBranches;
+        
+        % A boolean used in the update() method to skip the 'too many
+        % iterations' error when the oscillating branches have been
+        % corrected. 
+        bBranchOscillationSuppressionActive = false;
+        
+        % A boolean that is set to true while the update() method of this
+        % class is being run. It is used by the flow phase objects to
+        % determine if it is safe to use their afPP and rRelHumidity
+        % properties or not. During the update those properties may change
+        % between solver iterations.
+        bUpdateInProgress = false;
+        
+        % This matrix contains a row for each branch and two columns (one
+        % for each exme) which contain a boolean to quickly decide whether
+        % the connected phase has a flow P2P connected to it
+        mbFlowP2P;
+        coFlowP2P;
+        ciFlowP2PSign;
+    end
+    
+    properties (SetAccess = protected, GetAccess = public)
+        %% Properties related to choked flow checking
+        
         % This boolean array identifies those branches that are to be
         % checked for choked flow conditions. Since this is a fairly
         % complex calculation, it can be turned on and off per branch,
@@ -345,19 +408,18 @@ classdef branch < base & event.source
         % updatePressureDropCoefficients() method of this class.
         cafChokedBranchPressureDiffs;
         
-        % As a performance enhancement, these booleans are set to true once
-        % a callback is bound to the 'update' and 'register_update'
-        % triggers, respectively. Only then are the triggers actually sent.
-        % This saves quite some computational time since the trigger()
-        % method takes some time to execute, even if nothing is bound to
-        % them.
-        bTriggerUpdateCallbackBound = false;
-        bTriggerRegisterUpdateCallbackBound = false;
-        
-        % The current time step of the solver in seconds
-        fTimeStep;
+        % The following three properties capture the pressure, temperature
+        % partial mass, adiabatic index and initialization state of the
+        % flow through the branches where choked flow checking is
+        % activated. This is done in an effort to reduce the calls to
+        % calculateAdiabaticIndex() in the matter table. See
+        % checkForChokedFlow() for details.
+        afPressureLastCheck;
+        afTemperatureLastCheck;
+        mrPartialMassLastCheck;
+        afAdiabaticIndex;
+        abChokedFlowCheckInitialized;
     end
-    
     
     methods
         function this = branch(aoBranches, sMode)
@@ -371,15 +433,36 @@ classdef branch < base & event.source
             else
                 this.sSolverType = 'coefficient';
             end
-            
-            this.aoBranches = aoBranches;
-            this.iBranches  = length(this.aoBranches);
-            this.abCheckForChokedFlow = false(this.iBranches,1);
-            this.abChokedBranches = false(this.iBranches,1);
-            this.cafChokedBranchPressureDiffs = cell(this.iBranches,1);
-            this.mbExternalBoundaryBranches = zeros(this.iBranches,1);
-            this.oMT        = this.aoBranches(1).oMT;
-            this.oTimer     = this.aoBranches(1).oTimer;
+            % through subsystems it is possible that two different
+            % multibranch solvers are combined. Therefore we check the
+            % branches added to this solver for flow phases and branches
+            % that are solved by a different multibranch solver. If we find
+            % this to be the case, we do not create a new multibranch
+            % solver, but instead add the branches which were supposed to
+            % be used for this multibranch solver and add them to other
+            % multibranch solver. The Solver properties therefore are only
+            % overwritten if the limitations are harsher or if the user
+            % specifically request these properties to be used.
+            [bFoundOtherSolver, oSolver] = this.findOtherMultiSolver(aoBranches);
+            if bFoundOtherSolver
+                this = oSolver;
+                return
+            end
+            % Initializing a bunch of properties
+            this.aoBranches                     = aoBranches;
+            this.iBranches                      = length(this.aoBranches);
+            this.abCheckForChokedFlow           = false(this.iBranches,1);
+            this.abChokedBranches               = false(this.iBranches,1);
+            this.cafChokedBranchPressureDiffs   = cell(this.iBranches,1);
+            this.abChokedFlowCheckInitialized   = false(this.iBranches,1);
+            this.afPressureLastCheck            = zeros(this.iBranches,1);
+            this.afTemperatureLastCheck         = zeros(this.iBranches,1);
+            this.afAdiabaticIndex               = zeros(this.iBranches,1);
+            this.mrPartialMassLastCheck         = zeros(this.iBranches,this.aoBranches(1).oMT.iSubstances);
+            this.abOscillationCorrectedBranches = false(this.iBranches,1);
+            this.mbExternalBoundaryBranches     = zeros(this.iBranches,1);
+            this.oMT                            = this.aoBranches(1).oMT;
+            this.oTimer                         = this.aoBranches(1).oTimer;
             
             % Preset
             this.chSetBranchFlowRate = cell(1, this.iBranches);
@@ -388,6 +471,9 @@ classdef branch < base & event.source
                 this.chSetBranchFlowRate{iB} = this.aoBranches(iB).registerHandler(this);
                 
                 this.aoBranches(iB).bind('outdated', @this.registerUpdate);
+                
+                this.csBranchUUIDs{iB} = this.aoBranches(iB).sUUID;
+
             end
             
             
@@ -440,11 +526,22 @@ classdef branch < base & event.source
             %                   considered to have no pressure difference
             %                   and therefore to have 0 kg/s flowrate
             %
+            % bOscillationSuppression: In some cases the solver may be
+            %                   oscillating around a very small value. This
+            %                   will still cause the error to be larger
+            %                   than the maximum error. This setting can be
+            %                   used to just set the flow rate to the mean
+            %                   value of the last 500 iterations. 
+            %
+            % bSolveOnlyFlowRates: This can be turned on to allow the
+            %                      solver to only solve flowrates and
+            %                      not calculate the flow pressures
+            %
             % In order to define these provide a struct with the fieldnames
             % as described here to this function for the values that you
             % want to set
             
-            csPossibleFieldNames = {'fMaxError', 'iMaxIterations', 'iIterationsBetweenP2PUpdate', 'fMinimumTimeStep', 'fMinPressureDiff'};
+            csPossibleFieldNames = {'fMaxError', 'iMaxIterations', 'iIterationsBetweenP2PUpdate', 'fMinimumTimeStep', 'fMinPressureDiff', 'bOscillationSuppression', 'bSolveOnlyFlowRates'};
             
             % Gets the fieldnames of the struct to easier loop through them
             csFieldNames = fieldnames(tSolverProperties);
@@ -456,7 +553,7 @@ classdef branch < base & event.source
                 % properties the function will overwrite the value,
                 % otherwise it will throw an error
                 if ~any(strcmp(sField, csPossibleFieldNames))
-                    error(['The function setSolverProperties was provided the unknown input parameter: ', sField, ' please view the help of the function for possible input parameters']);
+                    error('VHAB:MatterMultiBranch:UnknownParameter',['The function setSolverProperties was provided the unknown input parameter: ', sField, ' please view the help of the function for possible input parameters']);
                 end
                 
 
@@ -464,8 +561,14 @@ classdef branch < base & event.source
                 % correct type is used.
                 xProperty = tSolverProperties.(sField);
 
-                if ~isfloat(xProperty)
-                    error(['The ', sField,' value provided to the setSolverProperties function is not defined correctly as it is not a (scalar, or vector of) float']);
+                if strcmp(sField, 'bSolveOnlyFlowRates')
+                    if ~islogical(xProperty) || length(xProperty) ~= 1
+                        error('VHAB:MatterMultiBranch:IncorrectParameter',['The ', sField,' value provided to the setSolverProperties function is not defined correctly as it is not a scalar boolean']);
+                    end
+                else
+                    if ~isfloat(xProperty)
+                        error('VHAB:MatterMultiBranch:IncorrectParameter',['The ', sField,' value provided to the setSolverProperties function is not defined correctly as it is not a (scalar, or vector of) float']);
+                    end
                 end
                 
                 this.(sField) = tSolverProperties.(sField);
@@ -553,12 +656,32 @@ classdef branch < base & event.source
             % Calculating the pressure difference. Always positive!
             fPressureDiff = fUpstreamPressure - fDownstreamPressure;
             
+            oPhase = oBranch.coExmes{iPhaseIndex}.oPhase;
+            
             % We need to calculate the adiabatic index for the critical
-            % pressure calculation below. 
-            fAdiabaticIndex = this.oMT.calculateAdiabaticIndex(oBranch.coExmes{iPhaseIndex}.oPhase);
+            % pressure calculation below. To reduce the number of calls to
+            % the matter table findProperty() method, we only do this if
+            % the parameters of the inflowing phase have changed
+            % significantly.
+            if ~this.abChokedFlowCheckInitialized(iBranch) ||...
+               (abs(this.afPressureLastCheck(iBranch) - oPhase.fPressure) > 100) ||...
+               (abs(this.afTemperatureLastCheck(iBranch) - oPhase.fTemperature) > 1) ||...
+               (max(abs(this.mrPartialMassLastCheck(iBranch,:) - oPhase.arPartialMass)) > 0.01)
+                
+                % Recalculating the adiabatic index
+                this.afAdiabaticIndex(iBranch) = this.oMT.calculateAdiabaticIndex(oPhase);
+                
+                % Setting the properties for the next check
+                this.afPressureLastCheck(iBranch)      = oPhase.fPressure;
+                this.afTemperatureLastCheck(iBranch)   = oPhase.fTemperature;
+                this.mrPartialMassLastCheck(iBranch,:) = oPhase.arPartialMass;
+                
+                
+                this.abChokedFlowCheckInitialized(iBranch) = true;
+            end
             
             % Now we can calculate the critical pressure for this branch. 
-            fCriticalPressure = fUpstreamPressure * (2 / (fAdiabaticIndex + 1))^(fAdiabaticIndex / (fAdiabaticIndex - 1));
+            fCriticalPressure = fUpstreamPressure * (2 / (this.afAdiabaticIndex(iBranch) + 1))^(this.afAdiabaticIndex(iBranch) / (this.afAdiabaticIndex(iBranch) - 1));
             
             % If the downstream pressure is smaller or equal to the
             % critical pressure, the flow is choked. Otherwise we just
@@ -587,7 +710,7 @@ classdef branch < base & event.source
                 oProc = oBranch.aoFlowProcs(iProc);
                 try
                     afHydraulicDiameters(iProc) = oProc.fDiameter;
-                catch 
+                catch  %#ok<CTCH>
                     this.throw('ChokedFlowCheck','The processor ''%s'' does not have a ''fDiameter'' property. In order to support the checkForChokedFlow() method it must be implemented.', oProc.sName);
                 end
             end
@@ -614,76 +737,10 @@ classdef branch < base & event.source
             % but decided not to spend any more time on this. So:
             % NOTE: The source of the following equations is Wikipedia and
             % may not be correct. Should make sure it's good at some point.
-            fChokedFlowRate = fDischargeCoefficient * fMinimumArea * sqrt(fAdiabaticIndex * oBranch.coExmes{iPhaseIndex}.oPhase.fDensity * fUpstreamPressure * (2/(fAdiabaticIndex+1))^((fAdiabaticIndex + 1)/(fAdiabaticIndex - 1)));
+            fChokedFlowRate = fDischargeCoefficient * fMinimumArea * sqrt(this.afAdiabaticIndex(iBranch) * oBranch.coExmes{iPhaseIndex}.oPhase.fDensity * fUpstreamPressure * (2/(this.afAdiabaticIndex(iBranch)+1))^((this.afAdiabaticIndex(iBranch) + 1)/(this.afAdiabaticIndex(iBranch) - 1)));
             
         end
        
-    end
-    
-    
-    methods (Access = protected)
-        function initialize(this)
-            % Initialized variable pressure phases / branches
-            
-            this.poVariablePressurePhases = containers.Map();
-            this.piObjUuidsToColIndex     = containers.Map();
-            this.poBoundaryPhases         = containers.Map();
-            this.poColIndexToObj          = containers.Map('KeyType', 'uint32', 'ValueType', 'any');
-            
-            iColIndex = 0;
-            
-            for iBranch = 1:this.iBranches
-                abIsFlowNode = [false, false];
-                for iPhase = 1:2
-                    oPhase = this.aoBranches(iBranch).coExmes{iPhase}.oPhase;
-                    
-                    % Variable pressure phase - add to reference map if not
-                    % present yet, generate index for matrix column
-                    if isa(oPhase, 'matter.phases.flow.flow')
-                        abIsFlowNode(iPhase) = true;
-                        if ~this.poVariablePressurePhases.isKey(oPhase.sUUID)
-
-                            this.poVariablePressurePhases(oPhase.sUUID) = oPhase;
-
-                            iColIndex = iColIndex + 1;
-
-                            this.piObjUuidsToColIndex(oPhase.sUUID) = iColIndex;
-                            this.poColIndexToObj(iColIndex) = oPhase;
-                        end
-                        
-                    % 'Real' phase - boundary condition
-                    else
-                        abIsFlowNode(iPhase) = false;
-                        if ~this.poBoundaryPhases.isKey(oPhase.sUUID)
-                            this.poBoundaryPhases(oPhase.sUUID) = oPhase;
-                        end
-                    end
-                    
-                    oPhase.bind('update_post', @this.registerUpdate);
-                end
-                
-                
-                iColIndex = iColIndex + 1;
-                oBranch = this.aoBranches(iBranch);
-                
-                this.piObjUuidsToColIndex(oBranch.sUUID) = iColIndex;
-                this.poColIndexToObj(iColIndex) = oBranch;
-                
-                oBranch.bind('outdated', @this.registerUpdate);
-                if oBranch.bOutdated
-                    this.registerUpdate();
-                end
-                % Init
-                this.chSetBranchFlowRate{iBranch}(0, []);
-                
-            end
-            
-            
-            this.csVariablePressurePhases = this.poVariablePressurePhases.keys();
-            this.csObjUuidsToColIndex     = this.piObjUuidsToColIndex.keys();
-            this.csBoundaryPhases         = this.poBoundaryPhases.keys();
-        end
-        
         function registerUpdate(this, ~)
             % this function registers an update
             
@@ -713,6 +770,159 @@ classdef branch < base & event.source
             this.fLastSetOutdated = this.oTimer.fTime;
         end
         
+        function addBranches(this, aoBranches)
+            % this function is used by another multibranch solver if it
+            % detects that two multibranch solvers are connected via a flow
+            % phase. It then adds its branches to the already existing
+            % multibranch solver, instead of creating a new solver.
+            iCurrentBranches = this.iBranches;
+            iNewBranches = length(aoBranches);
+            this.aoBranches(end+1:end+iNewBranches) = aoBranches;
+            
+            this.iBranches                      = length(this.aoBranches);
+            this.abCheckForChokedFlow           = false(this.iBranches,1);
+            this.abChokedBranches               = false(this.iBranches,1);
+            this.cafChokedBranchPressureDiffs   = cell(this.iBranches,1);
+            this.abChokedFlowCheckInitialized   = false(this.iBranches,1);
+            this.afPressureLastCheck            = zeros(this.iBranches,1);
+            this.afTemperatureLastCheck         = zeros(this.iBranches,1);
+            this.afAdiabaticIndex               = zeros(this.iBranches,1);
+            this.mrPartialMassLastCheck         = zeros(this.iBranches,this.aoBranches(1).oMT.iSubstances);
+            this.abOscillationCorrectedBranches = false(this.iBranches,1);
+            this.mbExternalBoundaryBranches     = zeros(this.iBranches,1);
+            
+            for iB = iCurrentBranches+1:this.iBranches 
+                this.chSetBranchFlowRate{iB} = this.aoBranches(iB).registerHandler(this);
+                
+                this.aoBranches(iB).bind('outdated', @this.registerUpdate);
+                
+                this.csBranchUUIDs{iB} = this.aoBranches(iB).sUUID;
+
+            end
+            
+            this.initialize();
+        end
+        
+        function initialize(this)
+            % Initialized variable pressure phases / branches
+            
+            this.toVariablePressurePhases = struct();
+            this.toBoundaryPhases         = struct();
+            
+            iColIndex = 0;
+            
+            for iBranch = 1:this.iBranches
+                abIsFlowNode = [false, false];
+                for iPhase = 1:2
+                    oPhase = this.aoBranches(iBranch).coExmes{iPhase}.oPhase;
+                    
+                    % Variable pressure phase - add to reference map if not
+                    % present yet, generate index for matrix column
+                    if isa(oPhase, 'matter.phases.flow.flow')
+                        abIsFlowNode(iPhase) = true;
+                        if ~isfield(this.toVariablePressurePhases, oPhase.sUUID)
+
+                            this.toVariablePressurePhases.(oPhase.sUUID) = oPhase;
+
+                            iColIndex = iColIndex + 1;
+
+                            this.tiObjUuidsToColIndex.(oPhase.sUUID) = iColIndex;
+                            this.coColIndexToObj{iColIndex} = oPhase;
+                            
+                            oPhase.setHandler(this);
+                        end
+                        
+                    % 'Real' phase - boundary condition
+                    else
+                        abIsFlowNode(iPhase) = false;
+                        if ~(isfield(this.toBoundaryPhases, oPhase.sUUID))
+                            this.toBoundaryPhases.(oPhase.sUUID) = oPhase;
+                        end
+                    end
+                    
+                    oPhase.bind('update_post', @this.registerUpdate);
+                end
+                
+                
+                iColIndex = iColIndex + 1;
+                oBranch = this.aoBranches(iBranch);
+                
+                % Check to see if an active processor is alone in the
+                % branch.
+                if oBranch.iFlowProcs > 1 && any([oBranch.aoFlowProcs.bActive])
+                    sProcName = oBranch.aoFlowProcs([oBranch.aoFlowProcs.bActive]).sName;
+                    error('MatterMultiBranch:ActiveComponentNotAlone', 'One of the components in branch ''%s'' is active. Active component: ''%s''. When using the multi-branch solver in the matter domain, active components must be the only f2f processors in the branch.', oBranch.sName, sProcName);
+                end
+                
+                this.tiObjUuidsToColIndex.(oBranch.sUUID) = iColIndex;
+                this.coColIndexToObj{iColIndex} = oBranch;
+                
+                oBranch.bind('outdated', @this.registerUpdate);
+                if oBranch.bOutdated
+                    this.registerUpdate();
+                end
+                % Init
+                this.chSetBranchFlowRate{iBranch}(0, []);
+                
+            end
+            
+            this.csVariablePressurePhases = fieldnames(this.toVariablePressurePhases);
+            this.csObjUuidsToColIndex     = fieldnames(this.tiObjUuidsToColIndex);
+            this.csBoundaryPhases         = fieldnames(this.toBoundaryPhases);
+            
+            this.mbFlowP2P      = false(this.iBranches, 2);
+            this.coFlowP2P      = cell(this.iBranches, 2);
+            this.ciFlowP2PSign  = cell(this.iBranches, 2);
+            for iBranch = 1:this.iBranches
+                for iExme = 1:2
+                    oPhase = this.aoBranches(iBranch).coExmes{iExme}.oPhase;
+                    coCurrentFlowP2Ps    = cell(0);
+                    ciCurrentFlowP2PSign = cell(0);
+                    for iPhaseExme = 1:oPhase.iProcsEXME
+                        if oPhase.coProcsEXME{iPhaseExme}.bFlowIsAProcP2P
+                            if isa(oPhase.coProcsEXME{iPhaseExme}.oFlow, 'matter.procs.p2ps.flow')
+                                this.mbFlowP2P(iBranch, iExme)  = true;
+                                coCurrentFlowP2Ps{end+1}        = oPhase.coProcsEXME{iPhaseExme}.oFlow; %#ok
+                                ciCurrentFlowP2PSign{end+1}   	= oPhase.coProcsEXME{iPhaseExme}.iSign; %#ok
+                            end
+                        end
+                    end
+                    this.coFlowP2P{iBranch, iExme}      = coCurrentFlowP2Ps;
+                    this.ciFlowP2PSign{iBranch, iExme}  = ciCurrentFlowP2PSign;
+                end
+            end
+        end
+    end
+    
+    methods (Access = protected)
+        function [bFoundOtherSolver, oSolver] = findOtherMultiSolver(~, aoBranches)
+            % This function is used to check if another multibranch solver
+            % is already added to a flow phase which is connected to this
+            % solver. If that is the case we add the branches intended for
+            % this solver to the other solver.
+            bFoundOtherSolver = false;
+            oSolver = [];
+            for iBranch = 1:length(aoBranches)
+                for iExme = 1:2
+                    oPhase = aoBranches(iBranch).coExmes{iExme}.oPhase;
+                    if ~oPhase.bFlow
+                        continue
+                    end
+                    for iPhaseExme = 1:oPhase.iProcsEXME
+                        if ~oPhase.coProcsEXME{iPhaseExme}.bFlowIsAProcP2P && ~isempty(oPhase.coProcsEXME{iPhaseExme}.oFlow.oBranch.oHandler)
+                            if isa(oPhase.coProcsEXME{iPhaseExme}.oFlow.oBranch.oHandler, 'solver.matter_multibranch.iterative.branch')
+                                oSolver =  oPhase.coProcsEXME{iPhaseExme}.oFlow.oBranch.oHandler;
+                                oSolver.addBranches(aoBranches);
+                                bFoundOtherSolver = true;
+                                return
+                            end
+                        end
+                    end
+                end
+                
+            end
+            
+        end
         function calculateTimeStep(this)
             %% time step limitation
             % Bound to a post tick level after the residual branches.
@@ -736,8 +946,8 @@ classdef branch < base & event.source
             % Now check for the maximum allowable time step with the
             % current flow rate (the pressure differences in the branches
             % are not allowed to change their sign within one tick)
-            for iBoundaryPhase = 1:this.poBoundaryPhases.Count
-                oBoundary = this.poBoundaryPhases(this.csBoundaryPhases{iBoundaryPhase});
+            for iBoundaryPhase = 1:length(this.csBoundaryPhases)
+                oBoundary = this.toBoundaryPhases.(this.csBoundaryPhases{iBoundaryPhase});
                 
                 tfTotalMassChangeBoundary.(oBoundary.sUUID) = 0;
                 for iExme = 1:length(oBoundary.coProcsEXME)
@@ -762,9 +972,9 @@ classdef branch < base & event.source
                             try
                                 coRightSide = this.tBoundaryConnection.(csBoundaries{iBoundaryLeft});
 
-                                oLeftBoundary = this.poBoundaryPhases(csBoundaries{iBoundaryLeft});
+                                oLeftBoundary = this.toBoundaryPhases.(csBoundaries{iBoundaryLeft});
 
-                            catch
+                            catch %#ok<CTCH>
                                 continue
                             end
                             if isempty(oLeftBoundary) || isempty(coRightSide)

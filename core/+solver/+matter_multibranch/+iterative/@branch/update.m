@@ -4,6 +4,8 @@ function update(this)
     % information on the solution routine please view the initial code
     % section!
     
+    this.bUpdateInProgress = true;
+    
     this.fLastUpdate         = this.oTimer.fTime;
     
     if ~base.oDebug.bOff
@@ -80,7 +82,7 @@ function update(this)
         % matrices
         if bForceP2PUpdate
             % Regenerates matrices, gets coeffs from flow procs
-            [ mfFullPhasePressuresAndFlowRates, afFullBoundaryConditions ] = this.generateMatrices(bForceP2PUpdate);
+            [ mfFullPhasePressuresAndFlowRates, afFullBoundaryConditions ] = this.generateMatrices(bForceP2PUpdate, this.bFinalLoop);
             mfPhasePressuresAndFlowRates = mfFullPhasePressuresAndFlowRates;
             afBoundaryConditions = afFullBoundaryConditions;
             
@@ -132,6 +134,7 @@ function update(this)
             % can change their pressure
             if all(abZeroFlowBranches)
                 this.afFlowRates = zeros(1, this.iBranches);
+                iNewRows = [];
                 break
             end
             aoZeroFlowBranches = this.aoBranches(abZeroFlowBranches);
@@ -141,7 +144,9 @@ function update(this)
             abRemoveColumn = false(1,length(mfPhasePressuresAndFlowRates));
             
             % Setting the columns we want to remove to true
-            abRemoveColumn(cell2mat(this.piObjUuidsToColIndex.values({aoZeroFlowBranches.sUUID}))) = true;
+            for sBranchUUID = {aoZeroFlowBranches.sUUID}
+                abRemoveColumn(this.tiObjUuidsToColIndex.(sBranchUUID{1})) = true;
+            end
             
             % Setting the rows we want to remove to true
             abRemoveRow(this.miBranchIndexToRowID(abZeroFlowBranches)) = true;
@@ -234,8 +239,8 @@ function update(this)
                 this.out(5,1, 'solver', 'NaNs in the Multi-Branch Solver Phase Pressures and/or Flow Rates!');
                 [~, aiColumns] = find(isnan(mfPhasePressuresAndFlowRates));
                 for iObject = 1:length(aiColumns)
-                    sObjectType = this.poColIndexToObj(aiColumns(iObject)).sEntity;
-                    sObjectName = this.poColIndexToObj(aiColumns(iObject)).sName;
+                    sObjectType = this.coColIndexToObj{aiColumns(iObject)}.sEntity;
+                    sObjectName = this.coColIndexToObj{aiColumns(iObject)}.sName;
                     this.out(5,2, 'solver', 'A NaN value has occured in the %s ''%s''.', {sObjectType, sObjectName});
                 end
             end
@@ -243,8 +248,8 @@ function update(this)
                 this.out(5,1, 'solver', 'NaNs in the Multi-Branch Solver Boundary Conditions!');
                 aiRows = find(isnan(afBoundaryConditions));
                 for iObject = 1:length(aiRows)
-                    sObjectType = this.poColIndexToObj(aiRows(iObject)).sEntity;
-                    sObjectName = this.poColIndexToObj(aiRows(iObject)).sName;
+                    sObjectType = this.coColIndexToObj{aiRows(iObject)}.sEntity;
+                    sObjectName = this.coColIndexToObj{aiRows(iObject)}.sName;
                     this.out(5,2, 'solver', 'A NaN value has occured in the %s ''%s''.', {sObjectType, sObjectName});
                 end
             end
@@ -256,20 +261,50 @@ function update(this)
         % in flow direction
         iStartZeroSumEquations = length(afBoundaryConditions) - length(this.csVariablePressurePhases) + 1 + iRemovedZeroSumEquations;
         
-        % Solve
-        %hT = tic();
-        warning('off','all');
         
-        % this is the acutal solving of the matrix system:
-        % aafPhasePressuresAndFlowRates * afResults = afBoundaryConditions
-        % Where afResults contains gas flow node pressures and
-        % branch flowrates
-        afResults = mfPhasePressuresAndFlowRates \ afBoundaryConditions;
-        
-        warning('on','all');
+        if this.bSolveOnlyFlowRates
+            % It is possible that the user defined a loop of flow
+            % phases which start and end at the same normal phase. In
+            % that case the pressures cannot be calculated, resulting
+            % in NANs. Therefore, we check whether just solving the
+            % zero sum equation yields a valid solution. However, in this
+            % case we only solve the flowrates, as the pressures cannot be
+            % solved. Therefore, we set a flag to use the boundary
+            % pressures for the phase pressures
+            warning('off','all');
+            afResults = mfPhasePressuresAndFlowRates(iStartZeroSumEquations:end,:) \ afBoundaryConditions(iStartZeroSumEquations:end);
+            warning('on','all');
+            
+            % TBD: decide if we need a better way to get the pressures in
+            % this case. E.g. find out which boundary phase affects which
+            % branches and set these pressures for the flow phases
+            iBoundaries = sum(afBoundaryConditions(1:iStartZeroSumEquations-1) ~= 0);
+            if iBoundaries == 0
+                % In some cases this can occur during the iteration where
+                % valves close and only open in the next iteration
+                fAverageBoundaryPressure = this.oMT.Standard.Pressure;
+            else
+                fAverageBoundaryPressure = sum(abs(afBoundaryConditions(1:iStartZeroSumEquations-1))) / iBoundaries;
+            end
+            if any(isnan(afResults))
+                this.throw('solver', 'NaNs in the Multi-Branch Solver Results!');
+            end
+        else
+            % Solve
+            %hT = tic();
+            warning('off','all');
+
+            % this is the acutal solving of the matrix system:
+            % aafPhasePressuresAndFlowRates * afResults = afBoundaryConditions
+            % Where afResults contains gas flow node pressures and
+            % branch flowrates
+            afResults = mfPhasePressuresAndFlowRates \ afBoundaryConditions;
+
+            warning('on','all');
+        end
         
         if any(isnan(afResults))
-            this.throw('solver', 'NaNs in the Multi-Branch Solver Results!');
+            error('NaN Values occured in the multi branch solver. This can occur, e.g. if a flowrate boundary condition from a manual solver is used, but valves block all possible flow paths!')
         end
         
         toPhasesWithNegativePressures = struct();
@@ -282,35 +317,50 @@ function update(this)
             % from the matrix represents the row index from the vector. So
             % the column index from aafPhasePressuresAndFlowRates
             % corresponds to a row index in afResults!
-            oObj = this.poColIndexToObj(aiNewColToOriginalCol(iColumn));
+            oObj = this.coColIndexToObj{aiNewColToOriginalCol(iColumn)};
             
             % TO DO: if we can find a way to do this with a boolean it
             % would be a good speed optimization!
-            if isa(oObj, 'matter.branch')
-                iB = find(this.aoBranches == oObj, 1);
+            if strcmp(oObj.sObjectType, 'branch')
+                aiBranch = this.aoBranches == oObj;
                 
                 if this.iIteration == 1 || ~strcmp(this.sMode, 'complex')
-                    this.afFlowRates(iB) = afResults(iColumn);
+                    this.afFlowRates(aiBranch) = afResults(iColumn);
                 else
-                    % in order for the solver to converge better
+                    % In order for the solver to converge better
                     % the flowrates are smoothed out with this
-                    % calculation
-                    this.afFlowRates(iB) = (this.afFlowRates(iB) * 5 + afResults(iColumn)) / 6;
+                    % calculation. We don't do this if the current branch
+                    % is being corrected for oscillating. 
+                    if ~(this.abOscillationCorrectedBranches(aiBranch) && this.bFinalLoop)
+                        if bP2POscillationDetected
+                            this.afFlowRates(aiBranch) = (this.afFlowRates(aiBranch) * 10 + afResults(iColumn)) / 11;
+                        else
+                            this.afFlowRates(aiBranch) = (this.afFlowRates(aiBranch) * 5 + afResults(iColumn)) / 6;
+                        end
+                    end
                 end
-            elseif isa(oObj, 'matter.phases.flow.flow')
-                if afResults(iColumn) < 0
-                    % This case occurs for example if a manual solver
-                    % flowrate is used as boundary condition and forces the
-                    % loop flowrates to high values, while the
-                    % initialization is at low flow rates. We ignore this
-                    % value here and hopefully the solver will calculate
-                    % something better in the next iteration. Just in case,
-                    % we record the objects here to help with debugging. 
-                    toPhasesWithNegativePressures.(oObj.sUUID) = oObj;
+            elseif strcmp(oObj.sObjectType, 'phase')
+                if this.bSolveOnlyFlowRates
+                    oObj.setPressure(fAverageBoundaryPressure);
                 else
-                    oObj.setPressure(afResults(iColumn));
+                    if afResults(iColumn) < 0
+                        % This case occurs for example if a manual solver
+                        % flowrate is used as boundary condition and forces the
+                        % loop flowrates to high values, while the
+                        % initialization is at low flow rates. We ignore this
+                        % value here and hopefully the solver will calculate
+                        % something better in the next iteration. Just in case,
+                        % we record the objects here to help with debugging.
+                        toPhasesWithNegativePressures.(oObj.sUUID) = oObj;
+                    else
+                        oObj.setPressure(afResults(iColumn));
+                    end
                 end
             end
+        end
+        
+        if this.bOscillationSuppression && this.bFinalLoop
+            this.abOscillationCorrectedBranches = false(this.iBranches,1);
         end
         
         % For the branches which were removed beforehand because they have
@@ -351,25 +401,123 @@ function update(this)
         
         if ~base.oDebug.bOff, this.out(1, 2, 'solve-flow-rates', 'Iteration: %i with error %.12f', { this.iIteration, rError }); end
         
+        % Check if we have reached the maximum number of iterations.
         if this.iIteration > this.iMaxIterations
-            % if you reach this, please view debugging tipps at the
-            % beginning of this file!
-            keyboard();
-            this.throw('update', 'too many iterations, error %.12f', rError);
+            
+            % Check if oscillation suppression is turned on.
+            if this.bOscillationSuppression 
+                
+                % Checking if we have not done this in the previous
+                % iteration so we don't do it twice. 
+                if ~this.bBranchOscillationSuppressionActive
+                    % First we need to find out, which branches are
+                    % oscillating. So we get all of the individual errors.
+                    arErrors = abs(afFrsDiff ./ afPrevFrs);
+                    
+                    % Now we find the branches that have the maximum error.
+                    aiOffendingBranches = find(arErrors >= rErrorMax);
+                    
+                    % How many are there?
+                    iNumberOfOffendingBranches = length(aiOffendingBranches);
+                    
+                    % Creating a boolean array to see if we have resolved
+                    % all of them in the end.
+                    abResolvableBranches = false(iNumberOfOffendingBranches,1);
+                    
+                    % We need a simple counter to go through the
+                    % abResolvableBranches array.
+                    iCounter = 1;
+                    
+                    % What we will actually do here is average the
+                    % calculated flow rates in the offending branches. The
+                    % following two values determine over how many
+                    % iterations we will average. Here it is hard-coded to
+                    % be the last 501 iterations. 
+                    iLowerRangeLimit = this.iMaxIterations - 500;
+                    iUpperRangeLimit = this.iMaxIterations + 1;
+                    
+                    % Now we go through all offending branches.
+                    for iBranch = aiOffendingBranches
+                        % As an additional safe guard against setting
+                        % unrealistic flow rates we calculate both the mean
+                        % and the median of the flow rates in the defined
+                        % range and see how far they are apart.
+                        fMean = mean(mfFlowRates(iLowerRangeLimit:iUpperRangeLimit,iBranch));
+                        fMedian = median(mfFlowRates(iLowerRangeLimit:iUpperRangeLimit,iBranch));
+                        
+                        % Defining how large the difference between the
+                        % mean and median is allowed to be. Here it is hard
+                        % coded to be 50%.
+                        fAllowedDifference = 0.5;
+                        
+                        % If the difference between mean and median is
+                        % small enough, we actually make a change in the
+                        % calculated flow rates. 
+                        if abs(1 - fMean/fMedian) < fAllowedDifference 
+                            % Setting the offending branch's flow rate to
+                            % the mean of the past 501 iterations.
+                            this.afFlowRates(iBranch) = fMean;
+                            
+                            % Setting the corresponding field in the
+                            % abResolvableBranches array to true so we know
+                            % if we got them all.
+                            abResolvableBranches(iCounter) = true;
+                            
+                            % We also need to capture for which branch we
+                            % have done this so it is not overwritten again
+                            % in the 'Final Loop' of this solver update
+                            % step.
+                            this.abOscillationCorrectedBranches(iBranch) = true;
+                        end
+                        
+                        % Incrementing the counter. 
+                        iCounter = iCounter + 1;
+                    end
+                    
+                    % Checking if we resolved all oscillating branches.
+                    if all(abResolvableBranches)
+                        % We did it! So we set bFinalLoop to true and set
+                        % the oscillation suppression to active, that way
+                        % we skip the 'too many iterations' error and just
+                        % finish this method. 
+                        this.bFinalLoop = true;
+                        this.bBranchOscillationSuppressionActive = true;
+                    else
+                        % if you reach this, please view debugging tipps at the
+                        % beginning of this file!
+                        keyboard();
+                        this.throw('update', 'too many iterations, error %.12f', rError);
+                    end
+                end
+            else
+                % if you reach this, please view debugging tipps at the
+                % beginning of this file!
+                keyboard();
+                this.throw('update', 'too many iterations, error %.12f', rError);
+            end
+            if this.iIteration > this.iMaxIterations + 10 && ~this.bBranchOscillationSuppressionActive
+                % if you reach this, please view debugging tipps at the
+                % beginning of this file!
+                keyboard();
+                this.throw('update', 'too many iterations, error %.12f', rError);
+            end
         end
     end
     
+    this.bBranchOscillationSuppressionActive = false;
+    
+        
     %% Setting of final results to afFlowRates
     % during the iteration it is necessary to adapt the results for the
     % next iteration so that the solver can converge. However after it has
     % converged, the actual results must be used to ensure that the zero
     % sum of mass flows over the gas flow nodes is maintained!
     for iColumn = 1:iNewRows
-        oObj = this.poColIndexToObj(aiNewColToOriginalCol(iColumn));
+        oObj = this.coColIndexToObj{aiNewColToOriginalCol(iColumn)};
         
-        if isa(oObj, 'matter.branch')
-            iB = find(this.aoBranches == oObj, 1);
-            this.afFlowRates(iB) = afResults(iColumn);
+        if strcmp(oObj.sObjectType, 'branch')
+            abBranch = this.aoBranches == oObj;
+            this.afFlowRates(abBranch) = afResults(iColumn);
         end
     end
     
@@ -383,15 +531,17 @@ function update(this)
     % case) where all desorption flowrates from the flow node p2ps are
     % summed up!
     
-    if ~base.oDebug.bOff, this.out(1, 1, 'solve-flow-rates', 'Iterations: %i', { this.iIteration }); end
-    
-    for iColumn = 1:length(this.csObjUuidsToColIndex)
-        oObj = this.poColIndexToObj(iColumn);
+    if ~base.oDebug.bOff
+        this.out(1, 1, 'solve-flow-rates', 'Iterations: %i', { this.iIteration });
         
-        if isa(oObj, 'matter.branch')
-            iB = find(this.aoBranches == oObj, 1);
+        for iColumn = 1:length(this.csObjUuidsToColIndex)
+            oObj = this.coColIndexToObj{iColumn};
             
-            if ~base.oDebug.bOff, this.out(1, 2, 'solve-flow-rates', 'Branch: %s\t%.24f', { oObj.sName, this.afFlowRates(iB) }); end
+            if strcmp(oObj.sObjectType, 'branch')
+                abBranch = this.aoBranches == oObj;
+                
+                this.out(1, 2, 'solve-flow-rates', 'Branch: %s\t%.24f', { oObj.sName, this.afFlowRates(abBranch) });
+            end
         end
     end
     
@@ -400,7 +550,15 @@ function update(this)
     % we have to update this now. However, the P2Ps are not allowed to
     % update because otherwise the conservation of mass over the flow nodes
     % would no longer be valid!
-    this.updateNetwork(false);
+    this.updateNetwork(false, false);
+    
+    % The network of branches can be fairly complex. Since it is difficult
+    % to capture all possibilities and edge cases in this generic code, it
+    % can occur that the same branches are placed on multiple update
+    % levels. In order to prevent them from actually being updated multiple
+    % times, we create this boolean array, initialize it with false values
+    % and set them to true once the branch has been updated. 
+    abAlreadyUpdated = false(this.iBranches,1);
     
     % Ok now go through results - variable pressure phase pressures and
     % branch flow rates - and set! This must be done in the update order of
@@ -409,33 +567,63 @@ function update(this)
     % arPartialMass values of the flow nodes are still 0
     for iBL = 1:this.iBranchUpdateLevels
         
+        % Getting the indexes of all branches on this update level.
         miCurrentBranches = find(this.mbBranchesPerUpdateLevel(iBL,:));
         
+        % Looping through all current branches
         for iK = 1:length(miCurrentBranches)
             
+            % Getting the index of the current branch
             iB = miCurrentBranches(iK);
             
+            % If we have already updated this branch, we skip to the next
+            % one. 
+            if abAlreadyUpdated(iB)
+                continue;
+            end
+            
+            % Initializing an array in which we capture the delta pressures
+            % produced by the F2F procs in this branch
             afDeltaPressures = zeros(1,this.aoBranches(iB).iFlowProcs);
+            
+            bActiveBranch = false;
+            
+            % Looping through all F2F procs and saving their delta
+            % pressures. We only do this for the non-active procs.
             for iF2F = 1:this.aoBranches(iB).iFlowProcs
                 if ~this.aoBranches(iB).aoFlowProcs(iF2F).bActive
                     afDeltaPressures(iF2F) = this.aoBranches(iB).aoFlowProcs(iF2F).fDeltaPressure;
+                else
+                    % Setting the bActiveBranch variable to true. In the
+                    % current version of this solver, only one F2F can be
+                    % in the branch if it is active. So we don't need to
+                    % look for other F2Fs here.
+                    bActiveBranch = true;
                 end
             end
             
             % If any pressure difference is infinite, a closed valve is
             % present in the branch!
-            if any(isinf(abs(afDeltaPressures))) && this.afFlowRates(iB) ~= 0
+            if any(isinf(abs(afDeltaPressures)))% && this.afFlowRates(iB) ~= 0
                 this.chSetBranchFlowRate{iB}(0, afDeltaPressures);
             else
                 
-                % For constant flowrate boundary conditions it is possible that
-                % the pressure drop values are slightly of in some cases. E.g.
-                % desorbing CO2 into vacuum where the phase pressures are also
-                % very small. Therefore we limit the pressure drops from F2Fs
-                % in the branch to the total pressure difference in the branch
-                fPressureDifferenceBranch = sign(this.afFlowRates(iB)) * (this.aoBranches(iB).coExmes{1}.oPhase.fPressure - this.aoBranches(iB).coExmes{2}.oPhase.fPressure);
-                if sum(afDeltaPressures) > fPressureDifferenceBranch
-                    afDeltaPressures = afDeltaPressures .* (fPressureDifferenceBranch/sum(afDeltaPressures));
+                % For constant flowrate boundary conditions it is possible
+                % that the pressure drop values are slightly off in some
+                % cases. E.g. desorbing CO2 into vacuum where the phase
+                % pressures are also very small. Therefore we limit the
+                % pressure drops from F2Fs in the branch to the total
+                % pressure difference in the branch. Of course, we only do
+                % this if this is not an active branch. In that case we
+                % just set the delta pressures to the pressure after the
+                % active component.
+                if bActiveBranch
+                    afDeltaPressures = this.aoBranches(iB).aoFlowProcs(1).fDeltaPressure;
+                else
+                    fPressureDifferenceBranch = sign(this.afFlowRates(iB)) * (this.aoBranches(iB).coExmes{1}.oPhase.fPressure - this.aoBranches(iB).coExmes{2}.oPhase.fPressure);
+                    if sum(afDeltaPressures) > fPressureDifferenceBranch
+                        afDeltaPressures = afDeltaPressures .* (fPressureDifferenceBranch/sum(afDeltaPressures));
+                    end
                 end
                 
                 % If this branch is choked, we need to use different values
@@ -444,12 +632,86 @@ function update(this)
                 if this.abChokedBranches(iB) == true
                     afDeltaPressures = this.cafChokedBranchPressureDiffs{iB};
                 end
-
-                % Now we can call the setFlowRate callback.
-                this.chSetBranchFlowRate{iB}(this.afFlowRates(iB), afDeltaPressures);
+                
+                if this.afFlowRates(iB) >= 0
+                    iExme = 2;
+                else
+                    iExme = 1;
+                end
+                if this.mbFlowP2P(iB, iExme)
+                    oPhase = this.aoBranches(iB).coExmes{iExme}.oPhase;
+                    [afInFlowRates, aarInPartials] = this.getPhaseInFlows(oPhase, false);
+                    afPartialInFlows = sum(afInFlowRates .* aarInPartials);
+                    
+                    % Now we add the flow changes from manips, as the logic
+                    % is first branches, then manip and lastly P2Ps are
+                    % placed in the flow cell execution (because P2Ps are
+                    % often adsorption processes)
+                    if oPhase.iSubstanceManipulators > 0
+                        afPartialInFlows = afPartialInFlows + oPhase.toManips.substance.afPartialFlows;
+                    end
+                    
+                    afP2PFlowsAfter = zeros(1, this.oMT.iSubstances);
+                    afP2PFlowsBefore = zeros(1, this.oMT.iSubstances);
+                    for iP2P = 1:length(this.coFlowP2P{iB, iExme})
+                        afP2PFlows = this.ciFlowP2PSign{iB, iExme}{iP2P} * (this.coFlowP2P{iB, iExme}{iP2P}.fFlowRate * this.coFlowP2P{iB, iExme}{iP2P}.arPartialMass);
+                        
+                        afPhaseFlows = afPartialInFlows + afP2PFlows;
+                        abLimitFlows = afPhaseFlows < 0;
+                        if any(abLimitFlows)
+                            this.coFlowP2P{iB, iExme}{iP2P}.limitFlows(afPartialInFlows, abLimitFlows);
+                        end
+                        
+                        afP2PFlowsBefore = afP2PFlowsBefore + afP2PFlows;
+                        
+                        afP2PFlowsAfter = afP2PFlowsAfter + this.ciFlowP2PSign{iB, iExme}{iP2P} * (this.coFlowP2P{iB, iExme}{iP2P}.fFlowRate * this.coFlowP2P{iB, iExme}{iP2P}.arPartialMass);
+                    end
+                    
+                    mfZeroSum = mfFullPhasePressuresAndFlowRates(this.tiObjUuidsToRowIndex.(oPhase.sUUID),:);
+                    
+                    aiBranches = find(mfZeroSum ~= 0);
+                    
+                    aiBranches = aiBranches(aiBranches ~= this.tiObjUuidsToColIndex.(this.aoBranches(iB).sUUID));
+                    
+                    if ~isempty(aiBranches)
+                        iCurrentBranchSign = mfZeroSum(this.tiObjUuidsToColIndex.(this.aoBranches(iB).sUUID));
+                        
+                        iCurrentBranchSign = iCurrentBranchSign * sign(this.afFlowRates(iB));
+                        
+                        miOutflowBranches = zeros(length(aiBranches));
+                        for iOtherBranch = 1:length(aiBranches)
+                            iOtherSign = mfZeroSum(aiBranches(iOtherBranch)) * sign(this.afFlowRates(this.miColIndexToBranchID(aiBranches(iOtherBranch))));
+                            % If this is different, we found an outflowing
+                            % branch
+                            if iOtherSign ~= iCurrentBranchSign
+                                miOutflowBranches(iOtherBranch) = this.miColIndexToBranchID(aiBranches(iOtherBranch));
+                            end
+                        end
+                        miOutflowBranches(miOutflowBranches == 0) = [];
+                        
+                        fP2PFlowDiff = sum(afP2PFlowsAfter) - sum(afP2PFlowsBefore);
+                        fTotalOutFlow = sum(abs(this.afFlowRates(miOutflowBranches)));
+                        for iOutflow = 1:length(miOutflowBranches)
+                            this.afFlowRates(miOutflowBranches(iOutflow)) = this.afFlowRates(miOutflowBranches(iOutflow)) - (abs(this.afFlowRates(miOutflowBranches(iOutflow)) / fTotalOutFlow) * fP2PFlowDiff);
+                        end
+                    end
+                end
+                
+                
+                if tools.round.prec(this.afFlowRates(iB), this.oTimer.iPrecision) == 0
+                    this.chSetBranchFlowRate{iB}(0, afDeltaPressures);
+                else
+                    % Now we can call the setFlowRate callback.
+                    this.chSetBranchFlowRate{iB}(this.afFlowRates(iB), afDeltaPressures);
+                end
             end
+            
+            % Marking this branch as updated so we don't do it again.
+            abAlreadyUpdated(iB) = true;
         end
     end
+    
+    this.bUpdateInProgress = false;
     
     if this.bTriggerUpdateCallbackBound
         this.trigger('update');

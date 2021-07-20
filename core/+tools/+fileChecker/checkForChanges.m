@@ -109,6 +109,14 @@ if ~bFirstRun
     % action. 
     tSavedInfo.bLastActionComplete = false;
     
+    % Checking if there are any space characters in the string. This is not
+    % permitted, so we throw an error. 
+    if contains(sFileOrFolderPath, ' ')
+        error('VHAB:checkForChanges', ['The file you are adding\n(%s)\n', ... 
+              'contains space characters in its path. This is not permitted within V-HAB/MATLAB.\n'...
+              'Please change all file and folder names accordingly.'], sFileOrFolderPath);
+    end
+    
     % Make sure the string is cleaned up and doesn't contain any
     % illegal characters that can't be used as field names
     sFileOrFolderString = tools.normalizePath(sFileOrFolderPath, true);

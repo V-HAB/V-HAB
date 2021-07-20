@@ -19,7 +19,7 @@ classdef exme < base
         sName;
         
         % Connected matter flow
-        oFlow = matter.flow.empty();
+        oFlow;
         
         % Boolean flag to check if the ExMe has a flow or if it is
         % unconnected
@@ -62,6 +62,12 @@ classdef exme < base
             % Required Inputs:
             % oPhase:   the phase the exme is attached to
             % sName:    the name of the processor
+            
+            % First we check to see if there is already an ExMe with this
+            % name in the store. If so, we throw an error. 
+            if any(strcmp(sName, oPhase.oStore.csExMeNames))
+                this.throw('exme:constructor','There is already an ExMe named ''%s'' in store ''%s''. Please make all ExMe Names in this store unique.', sName, oPhase.oStore.sName);
+            end
             
             this.sName  = sName;
             this.oMT    = oPhase.oMT;
@@ -134,6 +140,13 @@ classdef exme < base
             % oNewPhase: The phase object to which the exme should be
             %            connected afterwards
             
+            % If someone reconnects the exme to the current phase nothing
+            % has to be changed (note without this check it would be
+            % possible for the exme to belong to no phase at all
+            if this.oPhase == oNewPhase
+                return
+            end
+            
             % Bin the new phase to the property, will be set in post tick
             % function reconnectExMePostTick
             this.oNewPhase = oNewPhase;
@@ -151,23 +164,24 @@ classdef exme < base
             this.oFlow.oBranch.oThermalBranch.coExmes{iExme}.reconnectExMe(oNewPhase.oCapacity, true);
         end
         
-        
-        function [ fFlowRate, arPartials, afProperties ] = getFlowData(this, fFlowRate)
+        function [ fFlowRate, arPartials, afProperties, arCompoundMass ] = getFlowData(this, fFlowRate)
             %% ExMe getFlowData
             % This function can be called to receive information about the
             % exme flow properties. 
             %
             % Outputs:
-            % fFlowRate:    current mass flow rate in kg/s with respect to
-            %               the connected phase (negative values mean the
-            %               mass of this.oPhase is beeing reduced)
-            % arPartials:   A vector with the length (1,oMT.iSubstances)
-            %               with the partial mass ratio of each substance in the current
-            %               fFlowRate. The sum of this vector is 1 and
-            %               multipliying arPartials with fFlowRate yields
-            %               the partial mass flow rates for each substance
-            % afProperties: A vector with two entries, the flow temperature
-            %               and the flow specific heat capacity
+            % fFlowRate:      current mass flow rate in kg/s with respect to
+            %                 the connected phase (negative values mean the
+            %                 mass of this.oPhase is beeing reduced)
+            % arPartials:     A vector with the length (1,oMT.iSubstances)
+            %                 with the partial mass ratio of each substance in the current
+            %                 fFlowRate. The sum of this vector is 1 and
+            %                 multipliying arPartials with fFlowRate yields
+            %                 the partial mass flow rates for each substance
+            % afProperties:   A vector with two entries, the flow temperature
+            %                 and the flow specific heat capacity
+            % arCompoundMass: An array containing the compound masses of
+            %                 the flow or attached phase
             
             % The flow rate property of the flow is unsigned, so we have to
             % add it again by multiplying with the iSign property of this
@@ -183,21 +197,24 @@ classdef exme < base
                 % the properties from the connected flow.
                 arPartials   = this.oFlow.arPartialMass;
                 afProperties = [ this.oFlow.fTemperature this.oFlow.fSpecificHeatCapacity ];
+                arCompoundMass = this.oFlow.arCompoundMass;
             else
                 
                 if fFlowRate > 0
                     % The flow rate is larger than zero, this means we use
-                    % the properties of the incoming flow.
-                    %CHECK do we need to get that from other side, in
-                    %      case that changed? Shouldn't need that, when
-                    %      mass is extracted on the other side, the
-                    %      arPartialMass from that phase is used - but
-                    %      if that get's updated, fr recalc is called
-                    %      on all branches which would set the new
-                    %      arPartials on all flows ... right?
-                    
-                    arPartials   = this.oFlow.arPartialMass;
+                    % the properties of the incoming flow. We have to get
+                    % it from the other side only in case the phase from
+                    % which the mass is taken is a flow phase. For that
+                    % case however, we have to check which exme is the
+                    % inexme of the branch. However, if we have to do this
+                    % anyway, we can do it for all cases
+                    if this.oFlow.fFlowRate >= 0
+                        arPartials   = this.oFlow.oBranch.coExmes{1}.oPhase.arPartialMass;
+                    else
+                        arPartials   = this.oFlow.oBranch.coExmes{2}.oPhase.arPartialMass;
+                    end
                     afProperties = [ this.oFlow.fTemperature this.oFlow.fSpecificHeatCapacity ];
+                    arCompoundMass = this.oFlow.arCompoundMass;
                     
                 else 
                     % The flow rate is either zero or negative, which means
@@ -205,7 +222,21 @@ classdef exme < base
                     % have to use the matter properties of the connected
                     % phase.
                     arPartials   = this.oPhase.arPartialMass;
-                    afProperties = [ this.oPhase.fTemperature this.oPhase.oCapacity.fSpecificHeatCapacity ];
+                    arCompoundMass = this.oPhase.arCompoundMass;
+                    
+                    % If this is called from the seal() method of the
+                    % store, the phase's capacity has not yet been set. So
+                    % we catch that error here and calculated the phase's
+                    % specific heat capacity directly. 
+                    try
+                        afProperties = [ this.oPhase.fTemperature this.oPhase.oCapacity.fSpecificHeatCapacity ];
+                    catch oError
+                        if isempty(this.oPhase.oCapacity)
+                            afProperties = [ this.oPhase.fTemperature this.oMT.calculateSpecificHeatCapacity(this.oPhase)];
+                        else
+                            rethrow(oError);
+                        end
+                    end
                 end
             end
         end
@@ -277,6 +308,35 @@ classdef exme < base
             % to prevent confusion, empty the new phase property
             this.oNewPhase = [];
             
+            if isa(this.oFlow.oBranch.oHandler, 'solver.matter_multibranch.iterative.branch')
+                % Since the multi branch solver stores the UUIDs of the
+                % phases to create the network, we have to recreate that
+                % network, if an exme with a multibranch solver is
+                % reconnected.
+                this.oFlow.oBranch.oHandler.initialize();
+            end
+            
+        end
+    end
+    
+    methods (Access = {?matter.container})
+        function disconnectFlow(this)
+            %DISCONNECTFLOW Deletes the reference to the connected flow
+            %   This is necessary when the simulation object is saved to a
+            %   MAT file. In large and/or networked systems the number of
+            %   consecutive, unique objects that are referenced in a row
+            %   cannot be larger than 500. In order to break these chains,
+            %   we delete the link to the branch on all matter ExMes. This
+            %   link is the oFlow property. Since the branch object retains
+            %   a reference to this flow and the ExMe it is connected to,
+            %   we can easily reconnect it on load.
+            this.oFlow = [];
+        end
+        
+        function reconnectFlow(this, oFlow)
+            %RECONNECTFLOW Restores the reference to the connected flow
+            %   Reverses the action from disconnectFlow().
+            this.oFlow = oFlow;
         end
     end
 end

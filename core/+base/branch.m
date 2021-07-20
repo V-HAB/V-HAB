@@ -131,6 +131,12 @@ classdef (Abstract) branch < base & event.source
             % Setting the branch type
             this.sType = sType;
             
+            % If the user provided a custom name, we also set that
+            % property.
+            if nargin >= 4
+                this.sCustomName = sCustomName;
+            end
+            
             %% Handle the left side of the branch
             sLeftSideName = this.handleSide('left', xLeft);
             
@@ -163,11 +169,6 @@ classdef (Abstract) branch < base & event.source
             % Setting the sName property
             this.sName = tools.normalizePath(sTempName);
             
-            % If the user provided a custom name, we also set that
-            % property.
-            if nargin >= 4
-                this.sCustomName = sCustomName;
-            end
         end
         
         
@@ -298,7 +299,16 @@ classdef (Abstract) branch < base & event.source
             % updateConnectedBranches() method.
             if all(this.abIf)
                 sLeftBranchName = strrep(oBranch.sName, this.csNames{2}, '');
-                sNewSubsystemBranchName = [ sLeftBranchName, 'Interface', csRightBranchName{2} ];
+%                 sNewSubsystemBranchName = [ sLeftBranchName, 'Interface', csRightBranchName{2} ];
+                sNewSubsystemBranchName = [ sLeftBranchName, '___if___', csRightBranchName{2} ];
+                
+                % In an effor to keep the branch names short, we check if
+                % there are multiple interfaces in a row, meaning we would
+                % find the string '___if______if___'. We replace the six
+                % underscores with three. That retains legibility and
+                % reduces the length of the string.
+                sNewSubsystemBranchName = strrep(sNewSubsystemBranchName, '______', '___');
+                
             else
                 sNewSubsystemBranchName = '';
                 
@@ -402,7 +412,9 @@ classdef (Abstract) branch < base & event.source
                 % branch, there will be a new Name for this branch. If not,
                 % then the 'sNewBranchName' variable is empty.
                 if ~(strcmp(sNewBranchName,''))
-                    this.sName = sNewBranchName;              
+                    sOldName = this.sName;
+                    this.sName = sNewBranchName;
+                    this.oContainer.updateBranchNames(this, sOldName);
                 end
             end
         end
@@ -423,7 +435,7 @@ classdef (Abstract) branch < base & event.source
         end
     end
     
-    methods (Access = {?base.branch, ?solver.matter.base.branch, ?solver.thermal.base.branch, ?solver.matter_multibranch.iterative.branch})
+    methods (Access = {?base.branch, ?solver.matter.base.branch, ?solver.thermal.base.branch, ?solver.matter_multibranch.iterative.branch, ?solver.thermal.multi_branch.basic.branch})
         function setFlowRate = registerHandler(this, oHandler)
             %REGISTERHANDLER Sets the solver and returns handle to
             % setFlowRate() method
@@ -528,49 +540,7 @@ classdef (Abstract) branch < base & event.source
                 % or ending a branch here. 
                 
                 if bCreatePort
-                    % This side was provided as an object, so we need to
-                    % create a port there first.
-                    
-                    % To automatically generate the port name, we need to
-                    % get the struct with ports.
-                    if strcmp(this.sType, 'matter')
-                        toPorts = xInput.toProcsEXME;
-                    elseif strcmp(this.sType, 'thermal')
-                        toPorts = xInput.oCapacity.toProcsEXME;
-                    elseif strcmp(this.sType, 'electrical')
-                        toPorts = xInput.toTerminals;
-                    end
-                    
-                    % Now we can calculate the port number
-                    if isempty(toPorts)
-                        iNumber = 1;
-                    else
-                        iNumber = numel(fieldnames(toPorts)) + 1;
-                    end
-                    
-                    % And with the port number we can create a unique port
-                    % name. 
-                    sPortName = sprintf('Port_%i',iNumber);
-                    
-                    % Now we can actually create the port on the object and
-                    % give it its name. We also set the side name,
-                    % depending on the domain we are in. The side name is
-                    % of the format <ObjectName>__<PortName> and  the
-                    % object can either be a matter store, a thermal
-                    % capacity, an electrical component or an electrical
-                    % node.
-                    if strcmp(this.sType, 'matter')
-                        oExMe = matter.procs.exmes.(xInput.sType)(xInput, sPortName);
-                        sSideName = [xInput.oStore.sName, '__', sPortName];
-                    elseif strcmp(this.sType, 'thermal')
-                        oExMe = thermal.procs.exme(xInput.oCapacity, sPortName);
-                        sSideName = [xInput.oStore.sName, '__', sPortName];
-                    elseif strcmp(this.sType, 'electrical')
-                        oExMe = electrical.terminal(xInput, sPortName);
-                        sSideName = [xInput.sName, '__', sPortName];
-                    end
-                    
-                    
+                    [oExMe, sSideName] = this.createPorts(xInput);
                 else
                     % xInput is a string containing the name of an object
                     % and a port.
@@ -578,10 +548,41 @@ classdef (Abstract) branch < base & event.source
                     % Split to object name / port name
                     [ sObject, sExMe ] = strtok(xInput, '.');
                     
+                    bMatterBranchIsInterface = false;
+                    
                     % Check if object exists
-                    if strcmp(this.sType, 'matter') || strcmp(this.sType, 'thermal')
+                    if strcmp(this.sType, 'matter')
                         if ~isfield(this.oContainer.toStores, sObject)
                             this.throw('branch', 'Can''t find provided store %s on parent system', sObject);
+                        end
+                    elseif strcmp(this.sType, 'thermal')
+                        if ~isfield(this.oContainer.toStores, sObject)
+                            % Since some of the thermal branches are
+                            % created automatically to model the advective
+                            % heat transfer associated with a matter
+                            % branch, we have to do some more checking
+                            % here. If the matter branch is an interface
+                            % branch, the store object may not be in the
+                            % same system as this branch. So we have to
+                            % traverse up the parent object tree until we
+                            % find it. 
+                            oParent = this.oContainer.oParent;
+                            while ~isa(oParent, 'simulation.container')
+                                if ~isfield(oParent.toStores, sObject)
+                                    oParent = oParent.oParent;
+                                else
+                                    oStore = oParent.toStores.(sObject);
+                                    bMatterBranchIsInterface = true;
+                                    break;
+                                end
+                            end
+                            
+                            if ~bMatterBranchIsInterface
+                                % We did not find the store, not even in
+                                % all systems above the current one, so we
+                                % throw an error.
+                                this.throw('branch', 'Can''t find provided store %s on parent system', sObject);
+                            end
                         end
                     elseif strcmp(this.sType, 'electrical')
                         if ~isfield(this.oContainer.toStores, sObject) && ~isfield(this.oContainer.toNodes, sObject)
@@ -593,21 +594,23 @@ classdef (Abstract) branch < base & event.source
                     if strcmp(this.sType, 'matter')
                         oExMe = this.oContainer.toStores.(sObject).getExMe(sExMe(2:end));
                         
-                        % Since we will be creating a thermal branch to run
-                        % in parallel with this matter branch, we need to
-                        % create a thermal ExMe that corresponds to this
-                        % matter ExMe.
-                        thermal.procs.exme(oExMe.oPhase.oCapacity, sExMe(2:end));
-                        
                     elseif strcmp(this.sType, 'thermal')
-                        oExMe = this.oContainer.toStores.(sObject).getThermalExMe(sExMe(2:end));
+                        % If this is a thermal branch associated with a
+                        % matter branch and that matter branch is an
+                        % interface, we will have defined the oStore
+                        % variable earlier. 
+                        if bMatterBranchIsInterface
+                            oExMe = oStore.getThermalExMe(sExMe(2:end));
+                        else
+                            oExMe = this.oContainer.toStores.(sObject).getThermalExMe(sExMe(2:end));
+                        end
                     elseif strcmp(this.sType, 'electrical')
                         % The object we are looking at can either be an an
                         % electrial store or an electrical node. To
                         % successfully get the port, we have to try both.
                         try
                             oExMe = this.oContainer.toNodes.(sObject).getTerminal(sExMe(2:end));
-                        catch
+                        catch %#ok<CTCH>
                             oExMe = this.oContainer.toStores.(sObject).getTerminal(sExMe(2:end));
                         end
                         
@@ -660,6 +663,7 @@ classdef (Abstract) branch < base & event.source
                         oExMe.addFlow(oFlow);
                     end
                 end
+                
                 % Add port to the coExmes property
                 this.coExmes{iSideIndex} = oExMe;
                 
@@ -673,6 +677,75 @@ classdef (Abstract) branch < base & event.source
                     this.coExmes{iSideIndex}.addBranch(this);
                 end
                 
+            end
+        end
+        
+        function [oExMe, sSideName] = createPorts(this, xInput)
+            % This function is used to automatically generated the ExMe
+            % ports required for the branch in case only phases where
+            % handed to the branch definition
+            
+            % To automatically generate a unique port name, we need to
+            % figure out, how many exmes there are in the xInput object
+            % already.
+            if strcmp(this.sType, 'matter')
+                % For matter phases, we get the csExMeNames cell from its
+                % store.
+                csPorts = xInput.oStore.csExMeNames;
+                
+                % Now we can calculate the port number
+                if isempty(csPorts)
+                    iNumber = 1;
+                else
+                    iNumber = length(csPorts) + 1;
+                end
+                
+            elseif strcmp(this.sType, 'thermal')
+                % For thermal capacities we get the toProcsEXME struct.
+                toPorts = xInput.toProcsEXME;
+                
+                % Now we can calculate the port number
+                if isempty(toPorts)
+                    iNumber = 1;
+                else
+                    iNumber = numel(fieldnames(toPorts)) + 1;
+                end
+            elseif strcmp(this.sType, 'electrical')
+                % For electrical nodes we get the toTerminals struct.
+                toPorts = xInput.toTerminals;
+                
+                % Now we can calculate the port number
+                if isempty(toPorts)
+                    iNumber = 1;
+                else
+                    iNumber = numel(fieldnames(toPorts)) + 1;
+                end
+            end
+
+            % And with the port number we can create a unique port
+            % name. 
+            sPortName = sprintf('Port_%i',iNumber);
+
+            if ~isempty(this.sCustomName)
+                sPortName = [sPortName, '_', this.sCustomName];
+            end
+            
+            % Now we can actually create the port on the object and
+            % give it its name. We also set the side name,
+            % depending on the domain we are in. The side name is
+            % of the format <ObjectName>__<PortName> and  the
+            % object can either be a matter store, a thermal
+            % capacity, an electrical component or an electrical
+            % node.
+            if strcmp(this.sType, 'matter')
+                oExMe = matter.procs.exmes.(xInput.sType)(xInput, sPortName);
+                sSideName = [xInput.oStore.sName, '__', sPortName];
+            elseif strcmp(this.sType, 'thermal')
+                oExMe = thermal.procs.exme(xInput, sPortName);
+                sSideName = [xInput.oPhase.oStore.sName, '__', sPortName];
+            elseif strcmp(this.sType, 'electrical')
+                oExMe = electrical.terminal(xInput, sPortName);
+                sSideName = [xInput.sName, '__', sPortName];
             end
         end
         

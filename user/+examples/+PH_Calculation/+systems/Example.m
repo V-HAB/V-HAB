@@ -39,21 +39,20 @@ classdef Example < vsys
             % Adding a phase to the store 'Tank_1', 1 m^3 air at 20 deg C
             oTank1 = matter.phases.liquid(this.toStores.Tank_1, 'Water', struct('H2O', 998 , 'H3PO4', fMolH3PO4 * this.oMT.afMolarMass(this.oMT.tiN2I.H3PO4)), 293, 1e5);
             
-            components.matter.algae.manipulators.GrowthMediumChanges('GrowthMediumChanges_Manip', oTank1);
+            components.matter.pH_Module.stationaryManip('GrowthMediumChanges_Manip', oTank1);
             
-            % Creating a second store, volume 1 m^3
-            matter.store(this, 'Tank_2', 3);
             
-            % Adding a phase to the store 'Tank_2', 2 m^3 air at 50 deg C
-            % Note that we are creating a phase that is twice as voluminous
-            % as the store it is in. This means that the pressure of this
-            % phase will be higher than that of 'Tank_1'
+            matter.store(this, 'Tank_2', 1000);
+            
             fMolNaOH        = 8 * fMolH3PO4;
-            fMassNaplus     = fMolNaOH * this.oMT.afMolarMass(this.oMT.tiN2I.Naplus);
-            fMassOHMinus    = fMolNaOH * this.oMT.afMolarMass(this.oMT.tiN2I.OH);
+%             fMassNaplus     = fMolNaOH * this.oMT.afMolarMass(this.oMT.tiN2I.Naplus);
+%             fMassOHMinus    = fMolNaOH * this.oMT.afMolarMass(this.oMT.tiN2I.OH);
+            fMassNaOH       = fMolNaOH * this.oMT.afMolarMass(this.oMT.tiN2I.NaOH);
             
-            oTank2 = matter.phases.liquid(this.toStores.Tank_2, 'Water', struct('H2O', 1994 , 'Naplus', fMassNaplus, 'OH', fMassOHMinus), 293, 1e5);
+%             oTank2 = matter.phases.liquid(this.toStores.Tank_2, 'Water', struct('H2O', 1994 , 'Naplus', fMassNaplus, 'OH', fMassOHMinus), 293, 1e5);
             
+            oTank2 = this.toStores.Tank_2.createPhase(  'liquid', 'boundary',   'Water',   this.toStores.Tank_2.fVolume, struct('H2O', 1994/(1994 + fMassNaOH) , 'NaOH', fMassNaOH/(1994 + fMassNaOH)),          293,          1e5);
+           
             % Adding a pipe to connect the tanks, 1.5 m long, 5 mm in
             % diameter. The pipe is in the components library and is
             % derived from the flow-to-flow (f2f) processor class
@@ -93,12 +92,15 @@ classdef Example < vsys
             % First we always need to call the createSolverStructure()
             % method of the parent class.
             createSolverStructure@vsys(this);
+            tTimeStepProperties.arMaxChange = ones(1,this.oMT.iSubstances) .* 0.01;
+            tTimeStepProperties.rMaxChange  = 0.005;
+            this.toStores.Tank_1.toPhases.Water.setTimeStepProperties(tTimeStepProperties);
             
-            % Creating an interval solver object that will solve for the
+            % Creating an manual solver object that will solve for the
             % flow rate of the one branch in this system.
             solver.matter.manual.branch(this.toBranches.Branch);
             
-            this.toBranches.Branch.oHandler.setFlowRate(0.03);
+            this.toBranches.Branch.oHandler.setFlowRate(0.1);
 
             % Since we want V-HAB to calculate the temperature changes in
             % this system we call the setThermalSolvers() method of the

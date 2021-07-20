@@ -1,0 +1,165 @@
+Source: USDA National Nutrient Database for Standard Reference 1 April 2018 Software v.3.9.5.3_2019-06-13
+Full Report (All Nutrients)
+Report Run at: September 05 2019 02:25 EDT
+"Nutrient data for: Peas, green, raw"
+Food Group:  Vegetables and Vegetable Products
+Common Name:
+Carbohydrate Factor: Fat Factor: Protein Factor: Nitrogen to Protein Conversion Factor: 
+Refuse: Refuse Description: 
+Nutrient,Unit,1Value per 100 g,Data points,Std. Error,"1 cup = 145.0g",
+Proximates
+"Water",g,78.86,10,0.500,114.35
+"Energy",kcal,81,--,--,117
+"Energy",kJ,339,--,--,492
+"Protein",g,5.42,7,0.130,7.86
+"Total lipid (fat)",g,0.40,7,0.030,0.58
+"Ash",g,0.87,7,0.040,1.26
+"Carbohydrate, by difference",g,14.45,--,--,20.95
+"Fiber, total dietary",g,5.7,--,--,8.3
+"Sugars, total",g,5.67,--,--,8.22
+"Sucrose",g,4.99,--,--,7.24
+"Glucose (dextrose)",g,0.12,--,--,0.17
+"Fructose",g,0.39,--,--,0.57
+"Lactose",g,0.00,--,--,0.00
+"Maltose",g,0.17,--,--,0.25
+"Galactose",g,0.00,--,--,0.00
+Minerals
+"Calcium, Ca",mg,25,8,2.000,36
+"Iron, Fe",mg,1.47,8,0.050,2.13
+"Magnesium, Mg",mg,33,8,1.000,48
+"Phosphorus, P",mg,108,8,4.000,157
+"Potassium, K",mg,244,10,16.000,354
+"Sodium, Na",mg,5,7,1.000,7
+"Zinc, Zn",mg,1.24,7,0.040,1.80
+"Copper, Cu",mg,0.176,7,0.013,0.255
+"Manganese, Mn",mg,0.410,7,0.030,0.594
+"Selenium, Se",µg,1.8,--,--,2.6
+Vitamins
+"Vitamin C, total ascorbic acid",mg,40.0,1,--,58.0
+"Thiamin",mg,0.266,7,0.029,0.386
+"Riboflavin",mg,0.132,7,0.009,0.191
+"Niacin",mg,2.090,7,0.137,3.030
+"Pantothenic acid",mg,0.104,1,--,0.151
+"Vitamin B-6",mg,0.169,7,0.013,0.245
+"Folate, total",µg,65,1,--,94
+"Folic acid",µg,0,--,--,0
+"Folate, food",µg,65,1,--,94
+"Folate, DFE",µg,65,--,--,94
+"Choline, total",mg,28.4,--,--,41.2
+"Betaine",mg,0.2,--,--,0.3
+"Vitamin B-12",µg,0.00,--,--,0.00
+"Vitamin B-12, added",µg,0.00,--,--,0.00
+"Vitamin A, RAE",µg,38,--,--,55
+"Retinol",µg,0,--,--,0
+"Carotene, beta",µg,449,40,108.000,651
+"Carotene, alpha",µg,21,40,5.000,30
+"Cryptoxanthin, beta",µg,0,15,--,0
+"Vitamin A, IU",IU,765,--,--,1109
+"Lycopene",µg,0,--,--,0
+"Lutein + zeaxanthin",µg,2477,--,--,3592
+"Vitamin E (alpha-tocopherol)",mg,0.13,1,--,0.19
+"Vitamin E, added",mg,0.00,--,--,0.00
+"Tocopherol, beta",mg,0.00,--,--,0.00
+"Tocopherol, gamma",mg,0.95,--,--,1.38
+"Tocopherol, delta",mg,0.02,--,--,0.03
+"Vitamin D (D2 + D3)",µg,0.0,--,--,0.0
+"Vitamin D",IU,0,--,--,0
+"Vitamin K (phylloquinone)",µg,24.8,--,--,36.0
+Lipids
+"Fatty acids, total saturated",g,0.071,--,--,0.103
+"4:0",g,0.000,--,--,0.000
+"6:0",g,0.000,--,--,0.000
+"8:0",g,0.000,--,--,0.000
+"10:0",g,0.000,--,--,0.000
+"12:0",g,0.000,--,--,0.000
+"14:0",g,0.000,--,--,0.000
+"16:0",g,0.064,1,--,0.093
+"18:0",g,0.007,1,--,0.010
+"Fatty acids, total monounsaturated",g,0.035,--,--,0.051
+"16:1 undifferentiated",g,0.000,--,--,0.000
+"18:1 undifferentiated",g,0.035,1,--,0.051
+"20:1",g,0.000,--,--,0.000
+"22:1 undifferentiated",g,0.000,--,--,0.000
+"Fatty acids, total polyunsaturated",g,0.187,--,--,0.271
+"18:2 undifferentiated",g,0.152,1,--,0.220
+"18:3 undifferentiated",g,0.035,1,--,0.051
+"18:4",g,0.000,--,--,0.000
+"20:4 undifferentiated",g,0.000,--,--,0.000
+"20:5 n-3 (EPA)",g,0.000,--,--,0.000
+"22:5 n-3 (DPA)",g,0.000,--,--,0.000
+"22:6 n-3 (DHA)",g,0.000,--,--,0.000
+"Fatty acids, total trans",g,0.000,--,--,0.000
+"Cholesterol",mg,0,--,--,0
+Amino Acids
+"Tryptophan",g,0.037,--,--,0.054
+"Threonine",g,0.203,--,--,0.294
+"Isoleucine",g,0.195,--,--,0.283
+"Leucine",g,0.323,--,--,0.468
+"Lysine",g,0.317,--,--,0.460
+"Methionine",g,0.082,--,--,0.119
+"Cystine",g,0.032,--,--,0.046
+"Phenylalanine",g,0.200,--,--,0.290
+"Tyrosine",g,0.114,--,--,0.165
+"Valine",g,0.235,--,--,0.341
+"Arginine",g,0.428,--,--,0.621
+"Histidine",g,0.107,--,--,0.155
+"Alanine",g,0.240,--,--,0.348
+"Aspartic acid",g,0.496,--,--,0.719
+"Glutamic acid",g,0.741,--,--,1.074
+"Glycine",g,0.184,--,--,0.267
+"Proline",g,0.173,--,--,0.251
+"Serine",g,0.181,--,--,0.262
+Other
+"Alcohol, ethyl",g,0.0,--,--,0.0
+"Caffeine",mg,0,--,--,0
+"Theobromine",mg,0,--,--,0
+Flavonoids
+Flavan-3-ols
+"(+)-Catechin",mg,0.0,3,0.000,0.0
+"(-)-Epigallocatechin",mg,0.0,3,0.000,0.0
+"(-)-Epicatechin",mg,0.0,3,0.000,0.0
+"(-)-Epicatechin 3-gallate",mg,0.0,3,0.000,0.0
+"(-)-Epigallocatechin 3-gallate",mg,0.0,3,0.000,0.0
+"(+)-Gallocatechin",mg,0.0,3,0.000,0.0
+Flavones
+"Apigenin",mg,0.0,1,--,0.0
+"Luteolin",mg,0.0,1,--,0.0
+Flavonols
+"Kaempferol",mg,0.0,1,--,0.0
+"Myricetin",mg,0.0,1,--,0.0
+"Quercetin",mg,0.0,1,--,0.0
+Isoflavones
+"Daidzein",mg,0.00,7,0.000,0.00
+"Genistein",mg,0.00,7,0.004,0.00
+"Glycitein",mg,0.00,6,0.000,0.00
+"Total isoflavones",mg,0.00,7,0.004,0.00
+"Biochanin A",mg,0.00,6,0.000,0.00
+"Formononetin",mg,0.00,6,0.000,0.00
+"Coumestrol",mg,0.00,6,0.000,0.00
+Proanthocyanidin
+"Proanthocyanidin dimers",mg,0.0,3,0.000,0.0
+"Proanthocyanidin trimers",mg,0.0,3,0.000,0.0
+
+
+Sources of Data
+1,"J L Bureau, R J Bushway","HPLC determination of carotenoids in fruits and vegetables in the United States",1986,J Food Sci,52 pp. 128-128
+2,"R J Bushway, A Yang, A M Yamani","Comparison of alpha- and beta-carotene content of supermarket versus roadside stand produce",1987,J Food Qual,9 pp. 437-437
+3,"de Pascual-Teresa, S., Santos-Buelga, C., & Rivas-Gonzalo, J.C. ","Quantitative analysis of flavan-3-ols in Spanish foodstuffs and beverages.",2000,J. Agric. Food Chem.,48 pp. 5331-5331
+4,"Hertog, M. G. L., Hollman, P. C. H., and Katan, M. B. ","Content of potentially anticarcinogenic flavonoids of 28 vegetables and fruits commonly consumed in The Netherlands.",1992,J. Agric. Food Chem.,40 pp. 2379-2379
+5,"de Pascual-Teresa, S., Santos-Buelga, C., and Rivas-Gonzalo, J.C.","Quantitative analysis of flavan-3-ols in Spanish foodstuffs and beverages",2000,J. Agric. Food Chem.,48 pp. 5331-5331
+6,"Liggins, J., Bluck, L. J. C., Runswick, C., Atkinson, C., Coward, W. A., and Bingham, S. A. ","Daidzein and genistein content of vegetables.",2000,Brit. J. Nutr.,84 pp. 717-717
+7,"Nakamura, Y., Kaihara, A., Yoshii, K., Tsumura, Y., Ishimitsu, S., and Tonogai, Y. ","Content and composition of isoflavones in mature or immature beans and bean sprouts consumed in Japan.",2001,J. Health Sci.,47 pp. 394-394
+Langual Code(s)
+"E0150""WHOLE, NATURAL SHAPE"
+"P0024""HUMAN FOOD, NO AGE SPECIFICATION"
+"K0003""NO PACKING MEDIUM USED"
+"N0001""FOOD CONTACT SURFACE NOT KNOWN"
+"B1338""PEA"
+"F0003""NOT HEAT-TREATED"
+"J0001""PRESERVATION METHOD NOT KNOWN"
+"A1281""1100 VEGETABLES AND VEGETABLE PRODUCTS (USDA SR)"
+"A0152""VEGETABLE OR VEGETABLE PRODUCT (US CFR)"
+"H0003""NO TREATMENT APPLIED"
+"C0133""SEED, SKIN PRESENT, GERM PRESENT"
+"G0003""COOKING METHOD NOT APPLICABLE"
+"M0001""CONTAINER OR WRAPPING NOT KNOWN"

@@ -17,7 +17,7 @@ classdef Example2 < vsys
             
             % Creating normal air (standard atmosphere) for 20m^3. Will
             % have 2 bar of pressure because the store is actually smaller.
-            oAir = this.toStores.Atmos.createPhase('air', 20);
+            oAir = this.toStores.Atmos.createPhase('air', 10, [], [], 2e5);
             
             % Adding a default extract/merge processors to the phase
             matter.procs.exmes.gas(oAir, 'Out');
@@ -52,7 +52,7 @@ classdef Example2 < vsys
             % filterports are internal ones for the p2p processor to use.
             matter.procs.exmes.gas(oFlow,       'In');
             matter.procs.exmes.gas(oFlow,       'In_P2P');
-            matter.procs.exmes.gas(oFiltered,  	'Out');
+            matter.procs.exmes.gas(oFlow,    	'Out');
             matter.procs.exmes.gas(oFiltered,  	'Out_P2P');
             
             % Creating the p2p processor

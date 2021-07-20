@@ -1,0 +1,179 @@
+Source: USDA National Nutrient Database for Standard Reference 1 April 2018 Software v.3.9.5.3_2019-06-13
+Full Report (All Nutrients)
+Report Run at: September 05 2019 02:20 EDT
+"Nutrient data for: Beans, snap, green, raw"
+Food Group:  Vegetables and Vegetable Products
+Common Name:
+Carbohydrate Factor: Fat Factor: Protein Factor: Nitrogen to Protein Conversion Factor: 
+Refuse: Refuse Description: 
+Nutrient,Unit,1Value per 100 g,Data points,Std. Error,"1 cup 1/2"" pieces = 100.0g","10.0 beans (4"" long) = 55.0g",
+Proximates
+"Water",g,90.32,165,0.270,90.32,49.68
+"Energy",kcal,31,--,--,31,17
+"Energy",kJ,131,--,--,131,72
+"Protein",g,1.83,104,0.040,1.83,1.01
+"Total lipid (fat)",g,0.22,14,0.030,0.22,0.12
+"Ash",g,0.66,144,0.010,0.66,0.36
+"Carbohydrate, by difference",g,6.97,--,--,6.97,3.83
+"Fiber, total dietary",g,2.7,4,0.050,2.7,1.5
+"Sugars, total",g,3.26,4,0.230,3.26,1.79
+"Sucrose",g,0.36,4,0.160,0.36,0.20
+"Glucose (dextrose)",g,1.51,4,0.110,1.51,0.83
+"Fructose",g,1.39,4,0.200,1.39,0.76
+"Lactose",g,0.00,4,0.000,0.00,0.00
+"Maltose",g,0.00,4,0.000,0.00,0.00
+"Galactose",g,0.00,4,0.000,0.00,0.00
+"Starch",g,0.88,4,0.140,0.88,0.48
+Minerals
+"Calcium, Ca",mg,37,153,1.000,37,20
+"Iron, Fe",mg,1.03,155,0.070,1.03,0.57
+"Magnesium, Mg",mg,25,151,0.000,25,14
+"Phosphorus, P",mg,38,140,0.000,38,21
+"Potassium, K",mg,211,154,4.000,211,116
+"Sodium, Na",mg,6,154,0.000,6,3
+"Zinc, Zn",mg,0.24,152,0.020,0.24,0.13
+"Copper, Cu",mg,0.069,161,0.004,0.069,0.038
+"Manganese, Mn",mg,0.216,150,0.008,0.216,0.119
+"Selenium, Se",µg,0.6,1,--,0.6,0.3
+"Fluoride, F",µg,19.0,36,6.600,19.0,10.4
+Vitamins
+"Vitamin C, total ascorbic acid",mg,12.2,9,0.700,12.2,6.7
+"Thiamin",mg,0.082,102,0.002,0.082,0.045
+"Riboflavin",mg,0.104,102,0.003,0.104,0.057
+"Niacin",mg,0.734,12,0.030,0.734,0.404
+"Pantothenic acid",mg,0.225,4,0.023,0.225,0.124
+"Vitamin B-6",mg,0.141,4,0.002,0.141,0.078
+"Folate, total",µg,33,8,2.000,33,18
+"Folic acid",µg,0,--,--,0,0
+"Folate, food",µg,33,8,2.000,33,18
+"Folate, DFE",µg,33,--,--,33,18
+"Choline, total",mg,15.3,--,--,15.3,8.4
+"Betaine",mg,0.1,--,--,0.1,0.1
+"Vitamin B-12",µg,0.00,--,--,0.00,0.00
+"Vitamin B-12, added",µg,0.00,--,--,0.00,0.00
+"Vitamin A, RAE",µg,35,--,--,35,19
+"Retinol",µg,0,--,--,0,0
+"Carotene, beta",µg,379,77,48.000,379,208
+"Carotene, alpha",µg,69,70,10.000,69,38
+"Cryptoxanthin, beta",µg,0,21,0.000,0,0
+"Vitamin A, IU",IU,690,--,--,690,380
+"Lycopene",µg,0,6,0.000,0,0
+"Lutein + zeaxanthin",µg,640,6,50.000,640,352
+"Vitamin E (alpha-tocopherol)",mg,0.41,--,--,0.41,0.23
+"Vitamin E, added",mg,0.00,--,--,0.00,0.00
+"Vitamin D (D2 + D3)",µg,0.0,--,--,0.0,0.0
+"Vitamin D",IU,0,--,--,0,0
+"Vitamin K (phylloquinone)",µg,43.0,--,--,43.0,23.6
+Lipids
+"Fatty acids, total saturated",g,0.050,--,--,0.050,0.028
+"4:0",g,0.000,--,--,0.000,0.000
+"6:0",g,0.000,--,--,0.000,0.000
+"8:0",g,0.000,--,--,0.000,0.000
+"10:0",g,0.000,--,--,0.000,0.000
+"12:0",g,0.000,--,--,0.000,0.000
+"14:0",g,0.000,1,--,0.000,0.000
+"16:0",g,0.042,2,--,0.042,0.023
+"18:0",g,0.008,2,--,0.008,0.004
+"Fatty acids, total monounsaturated",g,0.010,--,--,0.010,0.006
+"16:1 undifferentiated",g,0.000,1,--,0.000,0.000
+"18:1 undifferentiated",g,0.008,2,--,0.008,0.004
+"20:1",g,0.000,--,--,0.000,0.000
+"22:1 undifferentiated",g,0.000,--,--,0.000,0.000
+"Fatty acids, total polyunsaturated",g,0.113,--,--,0.113,0.062
+"18:2 undifferentiated",g,0.044,2,--,0.044,0.024
+"18:3 undifferentiated",g,0.069,2,--,0.069,0.038
+"18:4",g,0.000,--,--,0.000,0.000
+"20:4 undifferentiated",g,0.000,--,--,0.000,0.000
+"20:5 n-3 (EPA)",g,0.000,--,--,0.000,0.000
+"22:5 n-3 (DPA)",g,0.000,--,--,0.000,0.000
+"22:6 n-3 (DHA)",g,0.000,--,--,0.000,0.000
+"Fatty acids, total trans",g,0.000,--,--,0.000,0.000
+"Cholesterol",mg,0,--,--,0,0
+Amino Acids
+"Tryptophan",g,0.019,--,--,0.019,0.010
+"Threonine",g,0.079,--,--,0.079,0.043
+"Isoleucine",g,0.066,--,--,0.066,0.036
+"Leucine",g,0.112,--,--,0.112,0.062
+"Lysine",g,0.088,--,--,0.088,0.048
+"Methionine",g,0.022,--,--,0.022,0.012
+"Cystine",g,0.018,--,--,0.018,0.010
+"Phenylalanine",g,0.067,--,--,0.067,0.037
+"Tyrosine",g,0.042,--,--,0.042,0.023
+"Valine",g,0.090,--,--,0.090,0.050
+"Arginine",g,0.073,--,--,0.073,0.040
+"Histidine",g,0.034,--,--,0.034,0.019
+"Alanine",g,0.084,--,--,0.084,0.046
+"Aspartic acid",g,0.255,--,--,0.255,0.140
+"Glutamic acid",g,0.187,--,--,0.187,0.103
+"Glycine",g,0.065,--,--,0.065,0.036
+"Proline",g,0.068,--,--,0.068,0.037
+"Serine",g,0.099,--,--,0.099,0.054
+Other
+"Alcohol, ethyl",g,0.0,--,--,0.0,0.0
+"Caffeine",mg,0,--,--,0,0
+"Theobromine",mg,0,--,--,0,0
+Flavonoids
+Flavan-3-ols
+"(+)-Catechin",mg,0.0,11,0.000,0.0,0.0
+"(-)-Epigallocatechin",mg,0.0,11,0.000,0.0,0.0
+"(-)-Epicatechin",mg,0.0,11,0.000,0.0,0.0
+"(-)-Epicatechin 3-gallate",mg,0.0,11,0.000,0.0,0.0
+"(-)-Epigallocatechin 3-gallate",mg,0.0,11,0.000,0.0,0.0
+"(+)-Gallocatechin",mg,0.0,11,0.000,0.0,0.0
+Flavones
+"Apigenin",mg,0.0,5,0.000,0.0,0.0
+"Luteolin",mg,0.1,8,0.130,0.1,0.1
+Flavonols
+"Kaempferol",mg,0.5,23,0.060,0.5,0.2
+"Myricetin",mg,0.1,9,0.120,0.1,0.1
+"Quercetin",mg,2.7,30,0.220,2.7,1.5
+Isoflavones
+"Daidzein",mg,0.01,4,0.006,0.01,0.00
+"Genistein",mg,0.01,4,0.010,0.01,0.01
+"Total isoflavones",mg,0.01,4,0.010,0.01,0.01
+"Biochanin A",mg,0.03,2,--,0.03,0.02
+"Formononetin",mg,0.15,2,--,0.15,0.08
+"Coumestrol",mg,0.00,2,--,0.00,0.00
+Proanthocyanidin
+"Proanthocyanidin dimers",mg,0.0,3,0.000,0.0,0.0
+"Proanthocyanidin trimers",mg,0.0,3,0.000,0.0,0.0
+
+
+Sources of Data
+1,"Nutrient Data Laboratory, ARS, USDA","National Food and Nutrient Anlaysis Program Wave 12h",2008,,BeltsvilleMD
+2,"J.D.B. Featherstone, Carol Shields","A Study of Fluoride Intake in New York State Residents",1988,New York State Fluoride Analysis Contract - report date 12/1/1988,MD
+3,"Stephen Adair, Dennis Leverett, Carol Shields","Fluoride Content of School Lunches from Optimally Fluoridated and a Fluoride-Deficient Community",1991,Journal of Food Composition and Analysis,4MD pp. 216-216
+4,"Robert Ophaug","Fluoride, Unpublished - Ophaug",,Microdiffision,MD pp. 216-216
+5,"A. Kingman","Unpublished data. NIDR/NIH, 1984",1984,Unpublished data. NIDR/NIH, 1984.,MD pp. 216-216
+6,"Y Wu, A K Perry, B P Klein","Vitamin C and beta-carotene in fresh and frozen green beans and broccoli in a simulated system.",1992,J. Food Quality,152 pp. 87-87
+7,"J L Bureau, R J Bushway","HPLC determination of carotenoids in fruits and vegetables in the United States",1986,J Food Sci,522 pp. 128-128
+8,"R J Bushway, A Yang, A M Yamani","Comparison of alpha- and beta-carotene content of supermarket versus roadside stand produce",1987,J Food Qual,92 pp. 437-437
+9,"F Khachik, M B Goli, G R Beecher, J Holden, W R Lusby, M D Tenoro, M R Barrera","Effect of food preparation on qualitative and quantitative distribution of major carotenoid constituents of tomatoes and several green vegetables.",1992,J. Agric Food Chem,402 pp. 390-390
+10,"Arts, I. C. W., van de Putte, B., and Hollman, P. C. H. ","Catechin content of foods commonly consumed in the Netherlands. 1. Fruits, vegetables, staple foods and processed foods.",2000,J. Agric. Food Chem.,48 pp. 1746-1746
+11,"de Pascual-Teresa, S., Santos-Buelga, C., & Rivas-Gonzalo, J.C. ","Quantitative analysis of flavan-3-ols in Spanish foodstuffs and beverages.",2000,J. Agric. Food Chem.,48 pp. 5331-5331
+12,"Franke, A.A., Custer, L.J., Arakaki, C., and Murphy, S.P.","Vitamin C and flavonoid levels of fruits and vegetables consumed in Hawaii.",2004,J. Food Comp. Anal.,17 pp. 1-1
+13,"Hertog, M. G. L., Hollman, P. C. H., and Katan, M. B. ","Content of potentially anticarcinogenic flavonoids of 28 vegetables and fruits commonly consumed in The Netherlands.",1992,J. Agric. Food Chem.,40 pp. 2379-2379
+14,"Arai, Yusuke, Watanabe, S., Kimira, M., Shimoi, K., Mochizuki, R., and Kinae, N.","Dietary intakes of flavonols and isoflavones by Japanese women and inverse correlation between quercetin intake and plasma LDL cholesterol concentration",2000,J. Nutr.,130 pp. 2243-2243
+15,"Hempel, J., and B?hm, H. ","Quality and quantity of prevailing flavonoid glycosides of yellow and green french beans (Phaseolus vulgaris L.).",1996,J. Agric. Food Chem.,44 pp. 2114-2114
+16,"Kevers, C., Falkowski, M., Tabart, J., Defraigne, J-O., Dommes, J., and Pincemail, J. ","Evolution of antioxidant capacity during storage of selected fruits and vegetables",2007,J. Agric. Food Chem.,55 pp. 8596-8596
+17,"Price, K. R., Colquhoun, I. J., Barnes, K. A., and Rhodes, M. J. C. ","Composition and content of flavonol glycosides in green beans and their fate during processing.",1998,J. Agric. Food Chem.,46 pp. 4898-4898
+18,"Andlauer, W., Stumpf, C., Hubert, M., Rings, A., and Furst, P. ","Influence of cooking process on phenolic marker compounds of vegetables.",2003,Int. J. Vitam. Nutr. Res.,732 pp. 152-152
+19,"Justesen, U., Knuthsen, P., and Leth, T.","Quantitative analysis of flavonols, flavones, and flavonones in fruits, vegetables and beverages by high-performance liquid chromatography with photo-diode array and mass spectrometric detection.",1998,J. Chromatogr. A,7992 pp. 101-101
+20,"de Pascual-Teresa, S., Santos-Buelga, C., and Rivas-Gonzalo, J.C.","Quantitative analysis of flavan-3-ols in Spanish foodstuffs and beverages",2000,J. Agric. Food Chem.,482 pp. 5331-5331
+21,"Horn-Ross, P. L., Barnes, S., Lee, M., Coward, L., Mandel, E., Koo, J., John, E. M., and Smith, M. ","Assesing phytoestrogen exposure in epidemiologic studies: development of a database (United States).",2000,Cancer Causes and Control,112 pp. 289-289
+22,"Liggins, J., Bluck, L. J. C., Runswick, C., Atkinson, C., Coward, W. A., and Bingham, S. A. ","Daidzein and genistein content of vegetables.",2000,Brit. J. Nutr.,842 pp. 717-717
+23,"Franke, A. A., Custer, L. J., Cerna, C. M., and Narala, K. ","Rapid HPLC analysis of dietary phytoestrogens from legumes and from human urine.",1995,Proc. Soc. Exp. Biol. Med.,2082 pp. 18-18
+Langual Code(s)
+"G0003""COOKING METHOD NOT APPLICABLE"
+"J0001""PRESERVATION METHOD NOT KNOWN"
+"F0003""NOT HEAT-TREATED"
+"A1281""1100 VEGETABLES AND VEGETABLE PRODUCTS (USDA SR)"
+"B1371""GREEN BEAN"
+"M0001""CONTAINER OR WRAPPING NOT KNOWN"
+"P0024""HUMAN FOOD, NO AGE SPECIFICATION"
+"K0003""NO PACKING MEDIUM USED"
+"E0150""WHOLE, NATURAL SHAPE"
+"H0003""NO TREATMENT APPLIED"
+"A0152""VEGETABLE OR VEGETABLE PRODUCT (US CFR)"
+"N0001""FOOD CONTACT SURFACE NOT KNOWN"
+"C0169""POD CONTAINING SMALL, IMMATURE SEED"

@@ -141,7 +141,7 @@ classdef Example_Multiple < vsys
             
             
             for iB = 1:length(this.aoBranches)
-                solver.matter.iterative.branch(this.aoBranches(iB));
+                solver.matter.interval.branch(this.aoBranches(iB));
             end
             
             this.setThermalSolvers();

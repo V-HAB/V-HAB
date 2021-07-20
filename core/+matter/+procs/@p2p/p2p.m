@@ -13,6 +13,16 @@ classdef (Abstract) p2p < matter.flow & event.source
         % therefore no thermal P2P exists and instead a thermal branch is
         % used to model the heat transfer of this P2P
         oThermalBranch;
+        
+        fSpecificHeatCapacityP2P;
+        
+        % The following three properties capture the pressure, temperature
+        % and partial mass state of the flow through this p2p. This is done
+        % in an effort to reduce the calls to calculateSpecificHeatCapacity
+        % in the matter table. See setMatterProperties() for details.
+        fPressureLastHeatCapacityUpdate;
+        fTemperatureLastHeatCapacityUpdate;
+        arPartialMassLastHeatCapacityUpdate;
     end
     
     properties (SetAccess = private, GetAccess = public)
@@ -32,10 +42,8 @@ classdef (Abstract) p2p < matter.flow & event.source
         bTriggersetMatterPropertiesCallbackBound = false;
     end
     
-    
-    
     methods
-        function this = p2p(oStore, sName, sPhaseAndPortIn, sPhaseAndPortOut)
+        function this = p2p(oStore, sName, xIn, xOut)
             %% p2p class constructor.
             %
             % creates a new P2P which can move individual substance from
@@ -56,112 +64,86 @@ classdef (Abstract) p2p < matter.flow & event.source
             % Parent constructor
             this@matter.flow(oStore);
             
-            % Phases / ports
-            [ sPhaseIn,  sExMeIn  ] = strtok(sPhaseAndPortIn,  '.');
-            [ sPhaseOut, sExMeOut ] = strtok(sPhaseAndPortOut, '.');
+            % Overwriting the this.sObjectType property that is inherited
+            % from matter.flow.
+            % In order to remove the need for numerous calls to isa(),
+            % especially in the matter table, this property can be used to see
+            % if an object is derived from this class.
+            this.sObjectType = 'p2p';
             
-            % Find the phases
-            try
-                oPhaseIn    = this.oStore.toPhases.(sPhaseIn);
-                oPhaseOut   = this.oStore.toPhases.(sPhaseOut);
-            catch
-                this.throw('p2p', 'Phase could not be found: in phase "%s", out phase "%s"', sPhaseIn, sPhaseOut);
+            if ischar(xIn)
+                % Phases / ports
+                [ sPhaseIn,  sExMeIn  ] = strtok(xIn,  '.');
+
+                % Find the phases
+                try
+                    oPhaseIn    = this.oStore.toPhases.(sPhaseIn);
+                catch
+                    this.throw('p2p', 'Phase could not be found: in phase "%s"', sPhaseIn);
+                end
+                if isempty(sExMeIn)
+                    matter.procs.exmes.(oPhaseIn.sType)(oPhaseIn,       [sName, '_In']);
+                    sExMeIn = ['.' , sName, '_In'];
+                end
+            else
+                % In this case the input should be a phase, and we have to
+                % create a new exme to which the P2P can be connected:
+                if ~isa(xIn, 'matter.phase')
+                    this.throw('p2p', 'Provided input for the P2P %s neither a string nor phase', sName)
+                end
+                oPhaseIn = xIn;
+                
+                if oPhaseIn.oStore ~= oStore
+                    error(['The store ', oStore.sName, ' in which the P2P ', sName,' is located and the store ', oPhaseIn.oStore.sName ,' in which the phase ', oPhaseIn.sName,' is located are not identical!'])
+                end
+                matter.procs.exmes.(oPhaseIn.sType)(oPhaseIn,       [sName, '_In']);
+                sExMeIn = ['.' , sName, '_In'];
+
             end
             
+            if ischar(xOut)
+                [ sPhaseOut, sExMeOut ] = strtok(xOut, '.');
+
+                % Find the phases
+                try
+                    oPhaseOut = this.oStore.toPhases.(sPhaseOut);
+                catch %#ok<CTCH>
+                    this.throw('p2p', 'Phase could not be found: out phase "%s"', sPhaseOut);
+                end
+                if isempty(sExMeOut)
+                    matter.procs.exmes.(oPhaseOut.sType)(oPhaseOut,       [sName, '_Out']);
+                    sExMeOut = ['.' , sName, '_Out'];
+                end
+            else
+                % In this case the input should be a phase, and we have to
+                % create a new exme to which the P2P can be connected:
+                if ~isa(xOut, 'matter.phase')
+                    this.throw('p2p', 'Provided input for the P2P %s neither a string nor phase', this.sName)
+                end
+                oPhaseOut = xOut;
+                if oPhaseOut.oStore ~= oStore
+                    error(['The store ', oStore.sName, ' in which the P2P ', sName,' is located and the store ', oPhaseOut.oStore.sName ,' in which the phase ', oPhaseOut.sName,' is located are not identical!'])
+                end
+                matter.procs.exmes.(oPhaseOut.sType)(oPhaseOut,       [sName, '_Out']);
+                sExMeOut = ['.' , sName, '_Out'];
+            end
             % Set name of P2P
             this.sName   = sName;
             
             % Can only be done after this.oStore is set, store checks that!
             this.oStore.addP2P(this);
             
-            
-            % If no port is given in sPaseAndPortIn or -Out, auto-create
-            % EXMEs, else add the flow to the given (by name) EXME
-            if isempty(sExMeIn)
-                sExMeIn = sprintf('.p2p_%s_in', this.sName);
-                
-                sPhaseType = oPhaseIn.sType;
-                
-                matter.procs.exmes.(sPhaseType)(oPhaseIn, sExMeIn(2:end));
-            end
-            
-            if isempty(sExMeOut)
-                sExMeOut = sprintf('.p2p_%s_out', this.sName);
-                
-                sPhaseType = oPhaseOut.sType;
-                
-                matter.procs.exmes.(sPhaseType)(oPhaseOut, sExMeOut(2:end));
-            end
-            
             oPhaseIn.toProcsEXME.(sExMeIn(2:end) ).addFlow(this);
             oPhaseOut.toProcsEXME.(sExMeOut(2:end)).addFlow(this);
-            
-            %% Construct asscociated thermal branch
-            % Create the respective thermal interfaces for the thermal
-            % branch
-            % Split to store name / ExMe name
-            oExMe = this.oStore.getExMe(sExMeIn(2:end));
-            thermal.procs.exme(oExMe.oPhase.oCapacity, sExMeIn(2:end));
-            
-            oExMe = this.oStore.getExMe(sExMeOut(2:end));
-            thermal.procs.exme(oExMe.oPhase.oCapacity, sExMeOut(2:end));
-            
-            % Now we automatically create a fluidic processor for the
-            % thermal heat transfer bound to the matter transferred by the
-            % P2P
-            try
-                thermal.procs.conductors.fluidic(this.oStore.oContainer, this.sName, this);
-                sCustomName = this.sName;
-            % The operation can fail because the P2Ps are local within a
-            % store and therefore can share common names acros multiple
-            % stores (e.g. you can have 5 Stores, each containing a P2P
-            % called "Absorber"). However, as F2Fs the thermal conductors
-            % are added to the parent system, and therefore must be unique
-            % for each system. Therefore we count a number up until we find
-            % a name that is not yet taken for the fluidic processor
-            catch oError 
-                if contains(oError.message, 'already exists.')
-                    bError = true;
-                    iCounter = 2;
-                    while bError == true
-                        % now we just try the name until we find one that
-                        % is not yet taken, increasing the counter each
-                        % time the creation of the proc failed
-                        try
-                            thermal.procs.conductors.fluidic(this.oStore.oContainer, [this.sName, '_', num2str(iCounter)], this);
-                            bError = false;
-                        catch oError
-                            if contains(oError.message, 'already exists.')
-                                iCounter = iCounter + 1;
-                            else
-                                % If it is another error than what we area looking for,
-                                % we do throw the error
-                                this.throw('P2P', oError.message)
-                            end
-                        end
-                        
-                        % If we reach 1000 Iterations, throw an error as we
-                        % are not likely to find a valid name anymore
-                        if iCounter >= 1000
-                            this.throw('P2P',[ 'could not find a valid name for the thermal fluidic conductor of P2P ', this.sName])
-                        end
-                    end
-                    sCustomName = [this.sName, '_', num2str(iCounter)];
-                else
-                    % If it is another error than what we area looking for,
-                    % we do throw the error
-                    this.throw('P2P', oError.message)
-                end
-            end
-            
-            % Now we generically create the corresponding thermal branch
-            % using the previously created fluidic conductor
-            this.oThermalBranch = thermal.branch(this.oStore.oContainer, [this.oStore.sName,  sExMeIn] , {sCustomName}, [this.oStore.sName,  sExMeOut], sCustomName, this);
             
             this.coExmes = {this.oIn, this.oOut};
             
             %% Register the post tick update for the P2P at the timer
             this.hBindPostTickUpdate = this.oTimer.registerPostTick(@this.update, 'matter', 'P2Ps');
+        end
+        
+        function setThermalBranch(this, oThermalBranch)
+            this.oThermalBranch = oThermalBranch;
         end
     end
     
@@ -208,6 +190,14 @@ classdef (Abstract) p2p < matter.flow & event.source
     
     
     methods (Access = protected)
+        % The update function is the only function allowed to use the
+        % setMatterProperties function, since that function actually
+        % changes the flowrates for the P2P, it must be ensured that the
+        % massupdate is always performed before this, which is done by
+        % never calling the update directly. Unfortunatly, since the child
+        % classes must be allowed to override the update function, it is
+        % possible to abuse this to directly call the update from other
+        % functions of the child class. THIS SHOULD NOT BE DONE!
         function update(this, fFlowRate, arPartials)
             %% update
             % Calculate new flow rate in [kg/s]. This function itself does
@@ -303,7 +293,17 @@ classdef (Abstract) p2p < matter.flow & event.source
             end
         end
         
-        function setMatterProperties(this, fFlowRate, arPartialMass, fTemperature, fPressure)
+        % The set matter properties function should only be called by the
+        % update function of this class. However, since it has to override
+        % the setMatterProperties function from its superclass matter.flow
+        % the access rights cannot be set to private. Usually the p2p
+        % updates are called  by the phase massupdates, therefore making it
+        % unnecessary for the P2Ps to call the massupdates. However, in
+        % some use cases (e.g. the manual P2P) it is not the phase
+        % massupdate which triggers recalculations for the P2Ps. To prevent
+        % these cases from accidentially performing invalid operations,
+        % this access restriction is necessary.
+        function setMatterProperties(this, fFlowRate, arPartialMass, fTemperature, fPressure, arCompoundMass)
             %% setMatterProperties
             % is the function used by the update function to actually set
             % the new partial mass flow rates of the P2P
@@ -325,32 +325,121 @@ classdef (Abstract) p2p < matter.flow & event.source
             % the ingoing Exme is used based on the fFlowRate. If fFlowRate
             % is not provided the current property fFlowRate is used
             
+            % Checking for the presence of the fFlowRate input argument
+            if (nargin < 2) || isempty(fFlowRate)
+                fFlowRate = this.fFlowRate; 
+            else
+                this.fFlowRate = fFlowRate;
+            end
             
-            if (nargin < 2) || isempty(fFlowRate), fFlowRate = this.fFlowRate; end
-            
-            % We're a p2p, so we're directly connected to EXMEs
+            % We use the sign of the flow rate to determine the exme from
+            % which we take the matter properties
             if fFlowRate >= 0
                 oExme = this.oIn;
             else
                 oExme = this.oOut;
             end
             
-            
+            % Checking for the presence of the arPartialMass input argument
             if nargin < 3 || isempty(arPartialMass)
-                arPartialMass = oExme.oPhase.arPartialMass;
+                this.arPartialMass = oExme.oPhase.arPartialMass;
+            else
+                this.arPartialMass = arPartialMass;
+            end
+
+            % Checking for the presence of the fTemperature input argument
+            if nargin > 3
+                bNoTemperature = isempty(fTemperature);
+            else
+                bNoTemperature = true;
             end
             
+            % Checking for the presence of the fPressure input argument
+            if nargin > 4
+                bNoPressure = isempty(fPressure);
+            else
+                bNoPressure = true;
+            end
             
-            % Get matter properties from in exme. 
-            [ fExMePressure, fExMeTemperature ] = oExme.getExMeProperties();
+            % If temperature or pressure are not given, we get those values
+            % from the inflowing exme.
+            if nargin < 4 || bNoTemperature || bNoPressure
+                [ fExMePressure, fExMeTemperature ] = oExme.getExMeProperties();
+            end
             
-            % Check temp and pressure. First temp ... cause that might
-            % change in a p2p ... pressure not really.
-            if (nargin < 4) || isempty(fTemperature), fTemperature = fExMeTemperature; end
-            if (nargin < 5) || isempty(fPressure), fPressure = fExMePressure; end
+            % Setting the fTemperature property
+            if (nargin < 4) || bNoTemperature
+                this.fTemperature = fExMeTemperature; 
+            else
+                this.fTemperature = fTemperature;
+            end
+            
+            % Setting the fPressure property
+            if (nargin < 5) || bNoPressure
+                this.fPressure = fExMePressure; 
+            else
+                this.fPressure = fPressure;
+            end
                 
+            if nargin > 5
+                this.arCompoundMass    = arCompoundMass;
+            else
+                if this.fFlowRate >= 0
+                    oPhase = this.oIn.oPhase;
+                else
+                    oPhase = this.oOut.oPhase;
+                end
+                this.arCompoundMass    = oPhase.arCompoundMass;
+            end
             
-            setMatterProperties@matter.flow(this, fFlowRate, arPartialMass, fTemperature, fPressure);
+            % Connected phases have to do a massupdate before we set the
+            % new flow rate - so the mass for the LAST time step, with the
+            % old flow rate, is actually moved from tank to tank.
+            this.oIn.oPhase.registerMassupdate();
+            this.oOut.oPhase.registerMassupdate();
+            
+            % If the flow rate is zero, 
+            if this.fFlowRate == 0
+                this.fSpecificHeatCapacityP2P = 0;
+                return;
+            end
+            
+            afMass = this.arPartialMass .* this.fFlowRate;
+            
+            this.fMolarMass = this.oMT.calculateMolarMass(afMass);
+            
+            if isempty(this.fPressureLastHeatCapacityUpdate) ||...
+               (abs(this.fPressureLastHeatCapacityUpdate - this.fPressure) > 100) ||...
+               (abs(this.fTemperatureLastHeatCapacityUpdate - this.fTemperature) > 1) ||...
+               (max(abs(this.arPartialMassLastHeatCapacityUpdate - this.arPartialMass)) > 0.01)
+           
+                % Calculating the number of mols for each species
+                afMols = afMass ./ this.oMT.afMolarMass; 
+
+                % Calculating the total number of mols
+                fGasAmount = sum(afMols);
+
+                % only proceed if there is something here, it may occur at
+                % very small (e-300 kg/s scale) p2p flowrates that this
+                % value becomes zero even though the flowrate is not zero,
+                % then we just keep the old heat capacity
+                if fGasAmount ~= 0
+                    % Calculating the partial amount of each species by mols
+                    arFractions = afMols ./ fGasAmount;
+
+                    % Calculating the partial pressures by multiplying with the
+                    % total pressure in the phase
+                    afPartialPressures = arFractions .* this.fPressure;
+
+                    afMass = this.oMT.resolveCompoundMass(afMass, this.oIn.oPhase.arCompoundMass);
+
+                    this.fSpecificHeatCapacityP2P = this.oMT.calculateSpecificHeatCapacity('mixture', afMass, this.fTemperature, afPartialPressures);
+
+                    this.fPressureLastHeatCapacityUpdate     = this.fPressure;
+                    this.fTemperatureLastHeatCapacityUpdate  = this.fTemperature;
+                    this.arPartialMassLastHeatCapacityUpdate = this.arPartialMass;
+                end
+            end
             
             if this.bTriggersetMatterPropertiesCallbackBound
                 this.trigger('setMatterProperties');

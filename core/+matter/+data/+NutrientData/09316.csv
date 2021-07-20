@@ -1,0 +1,246 @@
+Source: USDA National Nutrient Database for Standard Reference 1 April 2018 Software v.3.9.5.3_2019-06-13
+Full Report (All Nutrients)
+Report Run at: September 05 2019 02:22 EDT
+"Nutrient data for: Strawberries, raw"
+Food Group:  Fruits and Fruit Juices
+Common Name:
+Carbohydrate Factor: Fat Factor: Protein Factor: Nitrogen to Protein Conversion Factor: 
+Refuse: Refuse Description: 
+Nutrient,Unit,1Value per 100 g,Data points,Std. Error,"1 cup, halves = 152.0g","1 cup, pureed = 232.0g","1 cup, sliced = 166.0g","1 cup, whole = 144.0g","1 extra large (1-5/8"" dia) = 27.0g","1 large (1-3/8"" dia) = 18.0g","1 medium (1-1/4"" dia) = 12.0g","1 pint as purchased, yields = 357.0g","1 small (1"" dia) = 7.0g","1 NLEA serving = 147.0g",
+Proximates
+"Water",g,90.95,23,0.210,138.24,211.00,150.98,130.97,24.56,16.37,10.91,324.69,6.37,133.70
+"Energy",kcal,32,--,--,49,74,53,46,9,6,4,114,2,47
+"Energy",kJ,136,--,--,207,316,226,196,37,24,16,486,10,200
+"Protein",g,0.67,19,0.020,1.02,1.55,1.11,0.96,0.18,0.12,0.08,2.39,0.05,0.98
+"Total lipid (fat)",g,0.30,15,0.040,0.46,0.70,0.50,0.43,0.08,0.05,0.04,1.07,0.02,0.44
+"Ash",g,0.40,19,0.020,0.61,0.93,0.66,0.58,0.11,0.07,0.05,1.43,0.03,0.59
+"Carbohydrate, by difference",g,7.68,--,--,11.67,17.82,12.75,11.06,2.07,1.38,0.92,27.42,0.54,11.29
+"Fiber, total dietary",g,2.0,21,0.100,3.0,4.6,3.3,2.9,0.5,0.4,0.2,7.1,0.1,2.9
+"Sugars, total",g,4.89,--,--,7.43,11.34,8.12,7.04,1.32,0.88,0.59,17.46,0.34,7.19
+"Sucrose",g,0.47,15,0.320,0.71,1.09,0.78,0.68,0.13,0.08,0.06,1.68,0.03,0.69
+"Glucose (dextrose)",g,1.99,16,0.190,3.02,4.62,3.30,2.87,0.54,0.36,0.24,7.10,0.14,2.93
+"Fructose",g,2.44,16,0.190,3.71,5.66,4.05,3.51,0.66,0.44,0.29,8.71,0.17,3.59
+"Lactose",g,0.00,12,0.000,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+"Maltose",g,0.00,12,0.000,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+"Galactose",g,0.00,10,0.000,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+"Starch",g,0.04,8,0.020,0.06,0.09,0.07,0.06,0.01,0.01,0.00,0.14,0.00,0.06
+Minerals
+"Calcium, Ca",mg,16,73,0.000,24,37,27,23,4,3,2,57,1,24
+"Iron, Fe",mg,0.41,77,0.020,0.62,0.95,0.68,0.59,0.11,0.07,0.05,1.46,0.03,0.60
+"Magnesium, Mg",mg,13,74,0.000,20,30,22,19,4,2,2,46,1,19
+"Phosphorus, P",mg,24,73,0.000,36,56,40,35,6,4,3,86,2,35
+"Potassium, K",mg,153,76,4.000,233,355,254,220,41,28,18,546,11,225
+"Sodium, Na",mg,1,72,0.000,2,2,2,1,0,0,0,4,0,1
+"Zinc, Zn",mg,0.14,74,0.010,0.21,0.32,0.23,0.20,0.04,0.03,0.02,0.50,0.01,0.21
+"Copper, Cu",mg,0.048,70,0.004,0.073,0.111,0.080,0.069,0.013,0.009,0.006,0.171,0.003,0.071
+"Manganese, Mn",mg,0.386,73,0.018,0.587,0.896,0.641,0.556,0.104,0.069,0.046,1.378,0.027,0.567
+"Selenium, Se",µg,0.4,2,--,0.6,0.9,0.7,0.6,0.1,0.1,0.0,1.4,0.0,0.6
+"Fluoride, F",µg,4.4,10,0.400,6.7,10.2,7.3,6.3,1.2,0.8,0.5,15.7,0.3,6.5
+Vitamins
+"Vitamin C, total ascorbic acid",mg,58.8,9,2.400,89.4,136.4,97.6,84.7,15.9,10.6,7.1,209.9,4.1,86.4
+"Thiamin",mg,0.024,12,0.003,0.036,0.056,0.040,0.035,0.006,0.004,0.003,0.086,0.002,0.035
+"Riboflavin",mg,0.022,12,0.008,0.033,0.051,0.037,0.032,0.006,0.004,0.003,0.079,0.002,0.032
+"Niacin",mg,0.386,12,0.037,0.587,0.896,0.641,0.556,0.104,0.069,0.046,1.378,0.027,0.567
+"Pantothenic acid",mg,0.125,12,0.003,0.190,0.290,0.207,0.180,0.034,0.022,0.015,0.446,0.009,0.184
+"Vitamin B-6",mg,0.047,12,0.012,0.071,0.109,0.078,0.068,0.013,0.008,0.006,0.168,0.003,0.069
+"Folate, total",µg,24,3,5.000,36,56,40,35,6,4,3,86,2,35
+"Folic acid",µg,0,--,--,0,0,0,0,0,0,0,0,0,0
+"Folate, food",µg,24,3,5.000,36,56,40,35,6,4,3,86,2,35
+"Folate, DFE",µg,24,--,--,36,56,40,35,6,4,3,86,2,35
+"Choline, total",mg,5.7,--,--,8.7,13.2,9.5,8.2,1.5,1.0,0.7,20.3,0.4,8.4
+"Betaine",mg,0.2,1,--,0.3,0.5,0.3,0.3,0.1,0.0,0.0,0.7,0.0,0.3
+"Vitamin B-12",µg,0.00,--,--,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+"Vitamin B-12, added",µg,0.00,--,--,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+"Vitamin A, RAE",µg,1,6,0.000,2,2,2,1,0,0,0,4,0,1
+"Retinol",µg,0,--,--,0,0,0,0,0,0,0,0,0,0
+"Carotene, beta",µg,7,8,0.000,11,16,12,10,2,1,1,25,0,10
+"Carotene, alpha",µg,0,6,0.000,0,0,0,0,0,0,0,0,0,0
+"Cryptoxanthin, beta",µg,0,6,0.000,0,0,0,0,0,0,0,0,0,0
+"Vitamin A, IU",IU,12,6,0.000,18,28,20,17,3,2,1,43,1,18
+"Lycopene",µg,0,6,0.000,0,0,0,0,0,0,0,0,0,0
+"Lutein + zeaxanthin",µg,26,6,8.000,40,60,43,37,7,5,3,93,2,38
+"Vitamin E (alpha-tocopherol)",mg,0.29,8,0.020,0.44,0.67,0.48,0.42,0.08,0.05,0.03,1.04,0.02,0.43
+"Vitamin E, added",mg,0.00,--,--,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+"Tocopherol, beta",mg,0.01,8,0.002,0.02,0.02,0.02,0.01,0.00,0.00,0.00,0.04,0.00,0.01
+"Tocopherol, gamma",mg,0.08,8,0.010,0.12,0.19,0.13,0.12,0.02,0.01,0.01,0.29,0.01,0.12
+"Tocopherol, delta",mg,0.01,8,0.005,0.02,0.02,0.02,0.01,0.00,0.00,0.00,0.04,0.00,0.01
+"Tocotrienol, alpha",mg,0.01,8,0.000,0.02,0.02,0.02,0.01,0.00,0.00,0.00,0.04,0.00,0.01
+"Tocotrienol, beta",mg,0.00,8,0.000,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+"Tocotrienol, gamma",mg,0.00,8,0.000,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+"Tocotrienol, delta",mg,0.00,8,0.000,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+"Vitamin D (D2 + D3)",µg,0.0,--,--,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+"Vitamin D",IU,0,--,--,0,0,0,0,0,0,0,0,0,0
+"Vitamin K (phylloquinone)",µg,2.2,9,0.200,3.3,5.1,3.7,3.2,0.6,0.4,0.3,7.9,0.2,3.2
+Lipids
+"Fatty acids, total saturated",g,0.015,--,--,0.023,0.035,0.025,0.022,0.004,0.003,0.002,0.054,0.001,0.022
+"4:0",g,0.000,--,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"6:0",g,0.000,--,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"8:0",g,0.000,--,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"10:0",g,0.000,--,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"12:0",g,0.000,--,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"14:0",g,0.000,--,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"16:0",g,0.012,2,--,0.018,0.028,0.020,0.017,0.003,0.002,0.001,0.043,0.001,0.018
+"18:0",g,0.003,2,--,0.005,0.007,0.005,0.004,0.001,0.001,0.000,0.011,0.000,0.004
+"Fatty acids, total monounsaturated",g,0.043,--,--,0.065,0.100,0.071,0.062,0.012,0.008,0.005,0.154,0.003,0.063
+"16:1 undifferentiated",g,0.001,2,--,0.002,0.002,0.002,0.001,0.000,0.000,0.000,0.004,0.000,0.001
+"18:1 undifferentiated",g,0.042,2,--,0.064,0.097,0.070,0.060,0.011,0.008,0.005,0.150,0.003,0.062
+"20:1",g,0.000,--,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"22:1 undifferentiated",g,0.000,--,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"Fatty acids, total polyunsaturated",g,0.155,--,--,0.236,0.360,0.257,0.223,0.042,0.028,0.019,0.553,0.011,0.228
+"18:2 undifferentiated",g,0.090,2,--,0.137,0.209,0.149,0.130,0.024,0.016,0.011,0.321,0.006,0.132
+"18:3 undifferentiated",g,0.065,2,--,0.099,0.151,0.108,0.094,0.018,0.012,0.008,0.232,0.005,0.096
+"18:4",g,0.000,--,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"20:4 undifferentiated",g,0.000,--,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"20:5 n-3 (EPA)",g,0.000,--,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"22:5 n-3 (DPA)",g,0.000,--,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"22:6 n-3 (DHA)",g,0.000,--,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"Fatty acids, total trans",g,0.000,--,--,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+"Cholesterol",mg,0,--,--,0,0,0,0,0,0,0,0,0,0
+"Phytosterols",mg,12,--,--,18,28,20,17,3,2,1,43,1,18
+Amino Acids
+"Tryptophan",g,0.008,--,--,0.012,0.019,0.013,0.012,0.002,0.001,0.001,0.029,0.001,0.012
+"Threonine",g,0.020,--,--,0.030,0.046,0.033,0.029,0.005,0.004,0.002,0.071,0.001,0.029
+"Isoleucine",g,0.016,--,--,0.024,0.037,0.027,0.023,0.004,0.003,0.002,0.057,0.001,0.024
+"Leucine",g,0.034,--,--,0.052,0.079,0.056,0.049,0.009,0.006,0.004,0.121,0.002,0.050
+"Lysine",g,0.026,--,--,0.040,0.060,0.043,0.037,0.007,0.005,0.003,0.093,0.002,0.038
+"Methionine",g,0.002,--,--,0.003,0.005,0.003,0.003,0.001,0.000,0.000,0.007,0.000,0.003
+"Cystine",g,0.006,--,--,0.009,0.014,0.010,0.009,0.002,0.001,0.001,0.021,0.000,0.009
+"Phenylalanine",g,0.019,--,--,0.029,0.044,0.032,0.027,0.005,0.003,0.002,0.068,0.001,0.028
+"Tyrosine",g,0.022,--,--,0.033,0.051,0.037,0.032,0.006,0.004,0.003,0.079,0.002,0.032
+"Valine",g,0.019,--,--,0.029,0.044,0.032,0.027,0.005,0.003,0.002,0.068,0.001,0.028
+"Arginine",g,0.028,--,--,0.043,0.065,0.046,0.040,0.008,0.005,0.003,0.100,0.002,0.041
+"Histidine",g,0.012,--,--,0.018,0.028,0.020,0.017,0.003,0.002,0.001,0.043,0.001,0.018
+"Alanine",g,0.033,--,--,0.050,0.077,0.055,0.048,0.009,0.006,0.004,0.118,0.002,0.049
+"Aspartic acid",g,0.149,--,--,0.226,0.346,0.247,0.215,0.040,0.027,0.018,0.532,0.010,0.219
+"Glutamic acid",g,0.098,--,--,0.149,0.227,0.163,0.141,0.026,0.018,0.012,0.350,0.007,0.144
+"Glycine",g,0.026,--,--,0.040,0.060,0.043,0.037,0.007,0.005,0.003,0.093,0.002,0.038
+"Proline",g,0.020,--,--,0.030,0.046,0.033,0.029,0.005,0.004,0.002,0.071,0.001,0.029
+"Serine",g,0.025,--,--,0.038,0.058,0.042,0.036,0.007,0.005,0.003,0.089,0.002,0.037
+Other
+"Alcohol, ethyl",g,0.0,--,--,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+"Caffeine",mg,0,--,--,0,0,0,0,0,0,0,0,0,0
+"Theobromine",mg,0,--,--,0,0,0,0,0,0,0,0,0,0
+Flavonoids
+Anthocyanidins
+"Cyanidin",mg,1.7,156,0.060,2.6,3.9,2.8,2.4,0.5,0.3,0.2,6.0,0.1,2.5
+"Petunidin",mg,0.1,9,0.110,0.2,0.3,0.2,0.2,0.0,0.0,0.0,0.4,0.0,0.2
+"Delphinidin ",mg,0.3,9,0.290,0.5,0.7,0.5,0.4,0.1,0.1,0.0,1.1,0.0,0.5
+"Malvidin",mg,0.0,8,0.010,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+"Pelargonidin",mg,24.9,151,0.700,37.8,57.7,41.3,35.8,6.7,4.5,3.0,88.7,1.7,36.5
+"Peonidin",mg,0.1,8,0.050,0.1,0.1,0.1,0.1,0.0,0.0,0.0,0.2,0.0,0.1
+Flavan-3-ols
+"(+)-Catechin",mg,3.1,31,0.190,4.7,7.2,5.2,4.5,0.8,0.6,0.4,11.1,0.2,4.6
+"(-)-Epigallocatechin",mg,0.8,13,0.350,1.2,1.8,1.3,1.1,0.2,0.1,0.1,2.8,0.1,1.1
+"(-)-Epicatechin",mg,0.4,30,0.130,0.6,1.0,0.7,0.6,0.1,0.1,0.1,1.5,0.0,0.6
+"(-)-Epicatechin 3-gallate",mg,0.1,13,0.030,0.2,0.3,0.2,0.2,0.0,0.0,0.0,0.5,0.0,0.2
+"(-)-Epigallocatechin 3-gallate",mg,0.1,13,0.070,0.2,0.3,0.2,0.2,0.0,0.0,0.0,0.4,0.0,0.2
+"(+)-Gallocatechin",mg,0.0,12,0.010,0.0,0.1,0.0,0.0,0.0,0.0,0.0,0.1,0.0,0.0
+Flavanones
+"Hesperetin",mg,0.0,6,0.000,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+"Naringenin",mg,0.3,7,0.260,0.4,0.6,0.4,0.4,0.1,0.0,0.0,0.9,0.0,0.4
+Flavones
+"Apigenin",mg,0.0,21,0.000,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+"Luteolin",mg,0.0,18,0.000,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+Flavonols
+"Isorhamnetin",mg,0.0,1,--,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+"Kaempferol",mg,0.5,135,0.010,0.8,1.2,0.8,0.7,0.1,0.1,0.1,1.8,0.0,0.7
+"Myricetin",mg,0.0,24,0.040,0.1,0.1,0.1,0.1,0.0,0.0,0.0,0.1,0.0,0.1
+"Quercetin",mg,1.1,118,0.040,1.7,2.6,1.8,1.6,0.3,0.2,0.1,4.0,0.1,1.6
+Isoflavones
+"Daidzein",mg,0.00,4,0.000,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+"Genistein",mg,0.00,4,0.000,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+"Glycitein",mg,0.00,1,--,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+"Total isoflavones",mg,0.00,4,0.005,0.00,0.01,0.00,0.00,0.00,0.00,0.00,0.01,0.00,0.00
+"Formononetin",mg,0.00,1,--,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+"Coumestrol",mg,0.00,1,--,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+Proanthocyanidin
+"Proanthocyanidin dimers",mg,5.2,16,2.270,7.9,12.1,8.6,7.5,1.4,0.9,0.6,18.6,0.4,7.7
+"Proanthocyanidin trimers",mg,5.7,15,2.230,8.6,13.1,9.4,8.2,1.5,1.0,0.7,20.2,0.4,8.3
+"Proanthocyanidin 4-6mers",mg,23.3,12,8.940,35.4,54.1,38.7,33.6,6.3,4.2,2.8,83.3,1.6,34.3
+"Proanthocyanidin 7-10mers",mg,16.9,12,10.830,25.6,39.1,28.0,24.3,4.6,3.0,2.0,60.2,1.2,24.8
+"Proanthocyanidin polymers (>10mers)",mg,54.2,12,33.830,82.4,125.7,89.9,78.0,14.6,9.8,6.5,193.4,3.8,79.6
+
+
+Sources of Data
+1,"Nutrient Data Laboratory, ARS, USDA","National Food and Nutrient Analysis Program Wave 6k",2002,,BeltsvilleMD
+2,"Nutrient Data Laboratory, ARS, USDA","National Food and Nutrient Analysis Program Wave 4d",2001,,BeltsvilleMD
+3,"Nutrient Data Laboratory, ARS, USDA","National Food and Nutrient Analysis Program Wave 5L",2001,,BeltsvilleMD
+4,"Produce Marketing Association (PMA)","Nutrient Content of Strawberries",1989,,MD
+5,"Nutrient Data Laboratory, ARS, USDA","Investigation of the carbohydrate fraction of foods . . . raw, processed and prepared",1985,,BeltsvilleMD
+6,"California Strawberry Commission","Analyses for nutrition labeling of strawberries",2005,,WatsonvilleCA
+7,"Nutrient Data Laboratory, ARS, USDA","Variability of  the sugar content of foods",1989,,BeltsvilleMD
+8,"J Marlett","Content and composition of dietary fiber in 117 frequently consumed foods",1992,Journal of the American Dietetic Association,922
+9,"National Cancer Institute (NCI), DHHS","Total dietary fiber content of selected foods",1992,,2
+10,"Food and Drug Administration (FDA), DHHS","FDA Total Diet Study",1995,,2
+11,"Food and Drug Administration (FDA), DHHS","FDA Total Diet Study",1996,,2
+12,"Food and Drug Administration (FDA), DHHS","FDA Total Diet Study",1997,,2
+13,"Food and Drug Administration (FDA), DHHS","FDA Total Diet Study",1982,,2
+14,"Food and Drug Administration (FDA), DHHS","FDA Total Diet Study",1983,,2
+15,"Food and Drug Administration (FDA), DHHS","FDA Total Diet Study",1984,,2
+16,"Food and Drug Administration (FDA), DHHS","FDA Total Diet Study",1985,,2
+17,"Food and Drug Administration (FDA), DHHS","FDA Total Diet Study",1986,,2
+18,"Food and Drug Administration (FDA), DHHS","FDA Total Diet Study",1987,,2
+19,"Food and Drug Administration (FDA), DHHS","FDA Total Diet Study",1988,,2
+20,"Food and Drug Administration (FDA), DHHS","FDA Total Diet Study",1998,,2
+21,"Food and Drug Administration (FDA), DHHS","FDA Total Diet Study",1999,,2
+22,"Food and Drug Administration (FDA), DHHS","FDA Total Diet Study",1991,,2
+23,"Food and Drug Administration (FDA), DHHS","FDA Total Diet Study",1992,,2
+24,"Food and Drug Administration (FDA), DHHS","FDA Total Diet Study",1989,,2
+25,"Food and Drug Administration (FDA), DHHS","FDA Total Diet Study",1990,,2
+26,"Food and Drug Administration (FDA), DHHS","FDA Total Diet Study",1993,,2
+27,"Food and Drug Administration (FDA), DHHS","FDA Total Diet Study",1994,,2
+28,"Robert Ophaug","Fluoride, Unpublished - Ophaug",,Microdiffision,2
+29,"RD Jackson, EJ Brizendine, SA Kelly, R Hinesley, GK Stookey, AJ Dunipace","The fluoride content of foods and beverages from negligibly and optimally fluoridated communities.",2002,Community Dental Oral Epidemiology,305 pp. 382-382
+30,"R.J. Pawlosky, V.P. Flanagan, R.F. Doherty","A Mass Spectrometric Validated High-Performance Liquid Chromatography Procedure for the Determination of Folates in Foods",2003,Journal of Agricultural and Food Chemistry,5 pp. 382-382
+31,"Nutrient Data Laboratory, ARS, USDA","Food Analysis Laboratory and Control Center Folate Stability Study",2002,,BeltsvilleMD pp. 382-382
+32,"S.L. Booth, J.A. Sadowski, J.A. T. Pennington","Phylloquinone (Vitamin K) Content of Foods in the U.S. Food and Drug Administration's Total Diet Study",1995,Journal of Agricultural and Food Chemistry,436 pp. 1574-1574
+33,"Buend?a, B., Gil, M. I., Tudela, J. A., Gady, A. L., Medina, J. J., Soria, C., L?pez, J. M., and Tomas-Barber?n, F. A. ","PLC-MS analysis of proanthocyanidin oligomers and other phenolics in 15 strawberry cultivars.",2010,J. Agric. Food Chem.,58 pp. 3916-3916
+34,"da Silva, F. L., Escribano-Bail?n, M. T., P?rez-Alonso, J. J., Ricas-Gonzalo, J. C., and Santos-Buelga, C. ","Anthocyanin pigments in strawberry.",2007,LWT,40 pp. 374-374
+35,"Franke, A.A., Custer, L.J., Arakaki, C., and Murphy, S.P.","Vitamin C and flavonoid levels of fruits and vegetables consumed in Hawaii.",2004,J. Food Comp. Anal.,17 pp. 1-1
+36,"Garcia-Viguera, C., Zafrilla, P., and Tomas-Barber?n, F.A.","The use of acetone as an extraction solvent for anthocyanins from strawberry fruit.",1998,Phytochem. Anal.,9 pp. 274-274
+37,"Harnly, J. M., Doherty, R., Beecher, G. R., Holden, J. M., Haytowitz, D. B., and Bhagwat, S., and Gebhardt S. ","Flavonoid content of U.S. fruits, vegetables, and nuts",2006,J. Agric. Food Chem.,54 pp. 9966-9966
+38,"Hosseinian, F. S. and Beta, T.","Saskatoon and wild blueberries have higher anthocyanin contents than other Manitoba berries.",2007,J. Agric. Food Chem.,55 pp. 10832-10832
+39,"M??tt?, K. R., Kamal-Eldin, A., and Torronen, A.R. ","Identification and classification of phenolic compounds in berries of Fragaria and Rubus species (family Rosaceae).",2004,J. Agric. Food Chem.,52 pp. 6178-6178
+40,"Nyman, N. A. and Kumpulainen, J. T.","Determination of anthocyanins in berries and red wine by high-performance liquid chromatography.",2001,J. Agric. Food Chem.,49 pp. 4183-4183
+41,"Pinto, M. D. S., Lajolo, F. M., and Genovese, M. I.","Bioactive compounds and quantification of total ellagic acid in strawberries (Fragaria x ananasa Duch.).",2008,Food Chemistry,107 pp. 1629-1629
+42,"Wang, S.Y., and Lin, H-S.","Compost as a soil supplement increases the level of antioxidant compounds and oxygen radical absorbance capacity in strawberries",2003,J. Agric. Food Chem.,51 pp. 6844-6844
+43,"Wang, S.Y., Zheng, W., and Galleta, G. ","Cultural system affects fruit quality and antioxidant capacity in strawberries.",2002,J. Agric. Food Chem.,50 pp. 6534-6534
+44,"Wu, X., Beecher, G. R., Holden, J. M., Haytowitz, D. B., Gebhardt, S. E., and Prior, R. L.","Concentrations of anthocyanins in common foods in the United States and estimation of normal consumption. ",2006,J. Agric. Food Chem.,54 pp. 4069-4069
+45,"Arts, I. C. W., van de Putte, B., and Hollman, P. C. H. ","Catechin content of foods commonly consumed in the Netherlands. 1. Fruits, vegetables, staple foods and processed foods.",2000,J. Agric. Food Chem.,48 pp. 1746-1746
+46,"Breitfellner, F., Solar, S., and Sontag, G. ","Radiation induced chemical changes of phenolic compounds in strawberries.",2003,Radiat. Phys. Chem.,67 pp. 497-497
+47,"de Pascual-Teresa, S., Santos-Buelga, C., & Rivas-Gonzalo, J.C. ","Quantitative analysis of flavan-3-ols in Spanish foodstuffs and beverages.",2000,J. Agric. Food Chem.,48 pp. 5331-5331
+48,"Herrera, M.C., and de Castro, M.D.L.","Ultrasound-assisted extraction for the analysis of phenolic compounds in strawberries.",2004,Anal. Bioanal. Chem.,3797-8 pp. 1106-1106
+49,"Tsanova-Savova, S., Ribarova, F., and Gerova, M. ","(+)-Catechin and (-)-Epicatechin in Bulgarian fruits.",2005,J. Food Comp. Anal.,187-8 pp. 691-691
+50,"Hertog, M. G. L., Hollman, P. C. H., and Katan, M. B. ","Content of potentially anticarcinogenic flavonoids of 28 vegetables and fruits commonly consumed in The Netherlands.",1992,J. Agric. Food Chem.,407-8 pp. 2379-2379
+51,"Lugasi, A. and Hovari, J. ","Flavonoid aglycons in foods of plant origin II. Fresh and dried fruits.",2002,Acta Alimentaria,311 pp. 63-63
+52,"Ribani, H. F., Huber, L. S., and Ridriguez-Amaya, D. B.","Flavonols in fresh and processed Brazilian fruits.",2009,J. Food Comp. Anal.,221 pp. 263-263
+53,"Arai, Yusuke, Watanabe, S., Kimira, M., Shimoi, K., Mochizuki, R., and Kinae, N.","Dietary intakes of flavonols and isoflavones by Japanese women and inverse correlation between quercetin intake and plasma LDL cholesterol concentration",2000,J. Nutr.,1301 pp. 2243-2243
+54,"H?kkinen, S. H., K?renlampi, S. O., Mykk?nen, H. M., and T?rr?nen, A. R. ","Influence of domestic processing and storage on flavonol contents in berries.",2000,J. Agric. Food Chem.,481 pp. 2960-2960
+55,"H?kkinen, S. H., K?renlampi, S. O., Heinonen, I. M., Mykk?nen, H. M., and T?rr?nen, A. R. ","Content of flavonols quercetin, myricetin, and kaempferol in edible berries.",1999,J. Agric. Food Chem.,471 pp. 2274-2274
+56,"Jakobek L., ?eruga, M., Novak, I., and Medvidovic-Kosanovic, M.","Flavonols, phenolic acids and antioxidant activity of some red fruits.",2007,Deutsche Lebensmittel-Rundschau,1031 pp. 369-369
+57,"Justesen, U., Knuthsen, P., and Leth, T.","Quantitative analysis of flavonols, flavones, and flavonones in fruits, vegetables and beverages by high-performance liquid chromatography with photo-diode array and mass spectrometric detection.",1998,J. Chromatogr. A,7991 pp. 101-101
+58,"Kevers, C., Falkowski, M., Tabart, J., Defraigne, J-O., Dommes, J., and Pincemail, J. ","Evolution of antioxidant capacity during storage of selected fruits and vegetables",2007,J. Agric. Food Chem.,551 pp. 8596-8596
+59,"de Pascual-Teresa, S., Santos-Buelga, C., and Rivas-Gonzalo, J.C.","Quantitative analysis of flavan-3-ols in Spanish foodstuffs and beverages",2000,J. Agric. Food Chem.,481 pp. 5331-5331
+60,"Gu, L., Kelm, M.A., Hammerstone, J.F., Beecher, G., Holden, J., Haytowitz, D., Gebhardt, S., and Prior, R.L.","Concentrations of proanthocyanidins in common foods and estimations of normal consumption",2004,J. Nutr.,1341 pp. 613-613
+61,"Hellstr?m, T?rr?nen, A.R., and Matilla, P.H.","Proanthocyanidins in common food products of plant origin",2009,J. Agric. Food Chem.,571 pp. 7899-7899
+62,"M??tt?-Riihinen, K. R., Kamal-Eldin, A., and Torronen, A.R.","Identification and classification of phenolic compounds in berries of Fragaria and Rubus species (family Rosaceae)",2004,J. Agric. Food Chem.,521 pp. 6178-6178
+63,"Horn-Ross, P. L., Barnes, S., Lee, M., Coward, L., Mandel, E., Koo, J., John, E. M., and Smith, M. ","Assesing phytoestrogen exposure in epidemiologic studies: development of a database (United States).",2000,Cancer Causes and Control,111 pp. 289-289
+64,"Liggins, J., Bluck, L. J. C., Runswick, S., Atkinson, C., Coward, W. A., Bingham, S. A. ","Daidzein and genistein content of fruits and nuts.",2000,J. Nutr. Biochem.,111 pp. 326-326
+65,"Mazur, W. M., Uehara, M., W?h?l?, K., and Adlercreutz, H. ","Phyto-oestrogen content of berries, and plasma concentrations and urinary excretion of enterolactone after a single strawberry-meal in human subjects.",2000,Brit. J. Nutr.,831 pp. 381-381
+66,"Thompson, L. U., Boucher, B. A., Liu, Z., Cotterchio, M., and Kreiger, N. ","Phytoestrogen content of foods consumed in Canada, including isoflavones, lignans, and coumestan.",2006,Nutr. Cancer,541 pp. 184-184
+Footnotes
+(a)"Value based on the analysis of 5-methyltetrahydrofolate"
+Langual Code(s)
+"E0150""WHOLE, NATURAL SHAPE"
+"P0024""HUMAN FOOD, NO AGE SPECIFICATION"
+"N0001""FOOD CONTACT SURFACE NOT KNOWN"
+"F0003""NOT HEAT-TREATED"
+"A1279""0900 FRUITS AND FRUIT JUICES (USDA SR)"
+"K0003""NO PACKING MEDIUM USED"
+"G0003""COOKING METHOD NOT APPLICABLE"
+"H0003""NO TREATMENT APPLIED"
+"A0143""FRUIT OR FRUIT PRODUCT (US CFR)"
+"B1393""STRAWBERRY"
+"C0140""FRUIT, PEEL PRESENT, CORE, PIT OR SEED PRESENT"
+"M0001""CONTAINER OR WRAPPING NOT KNOWN"
+"J0001""PRESERVATION METHOD NOT KNOWN"

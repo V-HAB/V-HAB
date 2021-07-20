@@ -26,6 +26,7 @@ classdef table < base
         %   - Stefan-Boltzmann constant (fStefanBoltzmann) in W/(m^2 K^4)
         %   - Speed of light (fLightSpeed) in m/s
         %   - Planck constant (fPlanck) in (kg m^2) / s
+        %   - Faraday constant (fFaraday) in As/mol
         Const = struct( ...
             'fUniversalGas',     8.314472,      ...
             'fGravitation',      6.67384e-11,   ...
@@ -33,13 +34,14 @@ classdef table < base
             'fBoltzmann',        1.3806488e-23, ...
             'fStefanBoltzmann',  5.670373e-8,   ...
             'fLightSpeed',       2.998*10^8,    ...
-            'fPlanck',           6.626*10^-34   ...
+            'fPlanck',           6.626*10^-34,  ...
+            'fFaraday',          96485.3365     ...
             );
         
         % Struct containing standard values for use in any place where an
         % actual value is not given or needed.
         Standard = struct( ...
-            'Temperature', 288.15, ...    % K  (25 deg C)
+            'Temperature', 288.15, ...    % K  (15 deg C)
             'Pressure',    101325  ...    % Pa (sea-level pressure)
             );
     end
@@ -67,6 +69,27 @@ classdef table < base
         % values with simple for-loops.
         afMolarMass;
         
+        % An array containing the elemental charge of each substance 
+        % We keep this in a separate array to enable fast calculation of
+        % the total charge of a phase or flow. The order in which the
+        % substances are stored is identical to the order in ttxMatter.
+        % Also, using an array makes it easy to loop through the individual
+        % values with simple for-loops.
+        aiCharge;
+        
+        % An array containing the nutritional energy of each substance in
+        % J/kg to enable fast calculation of energy content for a phase.
+        % Note that "compound" food like a tomatoe must be split into its
+        % components by using the resolveCompoundMass function before it
+        % can correctly calculate the nutritional content
+        afNutritionalEnergy;
+        
+        % An array containing the dissocication constants for the
+        % corresponding substances. For acids, it contains the acid
+        % dissociation constants, for bases it contains the base
+        % dissociation constant
+        afDissociationConstant;
+        
         % This struct maps all substance names according to an index, hence
         % the name N2I, for 'name to index'. The index corresponds to the
         % order in which the substances are stored in ttxMatter.
@@ -83,6 +106,9 @@ classdef table < base
         % cell array for all edible substances
         csEdibleSubstances;
         
+        % boolean vector to identify edible compound mass
+        abEdibleSubstances;
+        
         % A cell array with the names of all substances contained in the
         % matter table
         csSubstances;
@@ -94,6 +120,9 @@ classdef table < base
         % defined in the matter table and contains the entry true for each
         % substance that can absorb something else
         abAbsorber;
+        
+        % A boolean array 
+        abCompound;
         
         % This struct allows the conversion of shortcut to name
         tsS2N;
@@ -194,7 +223,10 @@ classdef table < base
             % filled with data. This is done to preallocate the memory. If
             % it is not done, MATLAB gives a warning and suggests to do
             % this.
-            this.afMolarMass = zeros(1, this.iSubstances);
+            this.afMolarMass         = zeros(1, this.iSubstances);
+            this.afNutritionalEnergy = zeros(1, this.iSubstances);
+            this.abEdibleSubstances  = false(1, this.iSubstances);
+            
             this.tiN2I       = struct();
             this.tsS2N       = struct();
             this.tsN2S       = struct();
@@ -258,8 +290,11 @@ classdef table < base
                 end
                 
                 % And finally we create an entry in the molar mass array.
-                this.afMolarMass(iI) = fMolarMass;
+                this.afMolarMass(iI)            = fMolarMass;
+                this.aiCharge(iI)               = tSubstance.iCharge;
+                this.afDissociationConstant(iI)	= tSubstance.fDissociationConstant;
                 
+                this.afNutritionalEnergy(iI) = tSubstance.fNutritionalEnergy;
             end
             
             %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -311,6 +346,8 @@ classdef table < base
             % Get list of substance indices.
             this.csI2N = fieldnames(this.tiN2I);
             
+            % define all current substance to be no compounds
+            this.abCompound = false(1, this.iSubstances);
             
             %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Importing additional data %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -321,9 +358,10 @@ classdef table < base
             % cases, however, additional information is required for a
             % substance. The following functions import these data into the
             % matter table. 
-            importNutrientData(this);
             importAbsorberData(this);
             importAntoineData(this);
+            importNutrientData(this);
+            importPlantData(this);
             
             %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Saving the data %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -361,6 +399,16 @@ classdef table < base
             tElements = struct();   % Return struct
             sCurrentElement = '';          %
             sAtomCount   = '';
+            
+            % Remove ion denominators from the name of the molecule
+            iPlusStart = regexp(sMolecule, 'plus', 'once');
+            if ~isempty(iPlusStart)
+                sMolecule(iPlusStart:iPlusStart + 3) = [];
+            end
+            iMinusStart = regexp(sMolecule, 'minus', 'once');
+            if ~isempty(iMinusStart)
+                sMolecule(iMinusStart:iMinusStart + 4) = [];
+            end
             
             % Going through the input string character by character
             for iI = 1:length(sMolecule)

@@ -1,4 +1,4 @@
-function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatrices(this, bForceP2Pcalc)
+function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatrices(this, bForceP2Pcalc, bManipUpdate)
     %GENERATEMATRICES Generates matrices for system of equations
     % This function builds the Matrix described in the beginning and the
     % boundary condition vector. It is not updated all the time as this
@@ -13,6 +13,9 @@ function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatri
     if nargin < 2
         bForceP2Pcalc = false;
     end
+    if nargin < 3
+        bManipUpdate = false;
+    end
     
     this.afPressureDropCoeffsSum = nan(1, this.iBranches);
     
@@ -22,6 +25,7 @@ function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatri
     
     aafPhasePressuresAndFlowRates = zeros(iMatrixHeight, iMatrixHeight);
     afBoundaryConditions          = zeros(iMatrixHeight, 1);
+    this.miColIndexToBranchID     = zeros(1, iMatrixHeight);
     
     iRow = 0;
     
@@ -30,7 +34,7 @@ function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatri
     % DP = C * FR, or P_Left - P_Right = C * FR
     
     if bForceP2Pcalc
-        this.updateNetwork(bForceP2Pcalc);
+        this.updateNetwork(bForceP2Pcalc, bManipUpdate);
     end
     
     for iB = 1:this.iBranches
@@ -49,7 +53,7 @@ function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatri
             oE = oB.coExmes{iP};
             oP = oB.coExmes{iP}.oPhase;
             
-            if this.poBoundaryPhases.isKey(oP.sUUID)
+            if isfield(this.toBoundaryPhases, oP.sUUID)
                 % NEGATIVE - right side! For second iteration, sign would
                 % be negative - i.e. value added!
                 % If both are boundary conditions, that means
@@ -72,7 +76,7 @@ function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatri
                 if ~base.oDebug.bOff, this.out(1, 3, 'props', 'Phase %s-%s: Pressure %f', { oP.oStore.sName, oP.sName, oE.getExMeProperties() }); end
                 
             else
-                iCol = this.piObjUuidsToColIndex(oP.sUUID);
+                iCol = this.tiObjUuidsToColIndex.(oP.sUUID);
                 
                 aafPhasePressuresAndFlowRates(iRow, iCol) = iSign;
             end
@@ -87,9 +91,11 @@ function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatri
     % rates is zero (or the BC/p2p conds)
     for iP = 1:iVariablePressurePhases
         iRow   = iRow + 1;
-        oP     = this.poVariablePressurePhases(this.csVariablePressurePhases{iP});
+        oP     = this.toVariablePressurePhases.(this.csVariablePressurePhases{iP});
         fFrSum = 0;
         iAdded = 0;
+        
+        this.tiObjUuidsToRowIndex.(oP.sUUID) = iRow;
         
         miBranches = zeros(oP.iProcsEXME,1);
         
@@ -97,7 +103,7 @@ function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatri
         % Connected branches - col indices in matrix
         for iB = 1:oP.iProcsEXME
             % P2Ps definitely not solved by this solver.
-            if isa(oP.coProcsEXME{iB}.oFlow, 'matter.procs.p2p')
+            if oP.coProcsEXME{iB}.bFlowIsAProcP2P
                 continue;
             end
             
@@ -111,7 +117,7 @@ function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatri
             iSign = oP.coProcsEXME{iB}.iSign;
             
             % Not solved by us? Use as boundary cond flow rate!
-            if ~this.piObjUuidsToColIndex.isKey(oB.sUUID)
+            if ~isfield(this.tiObjUuidsToColIndex, oB.sUUID)
                 fFrSum = fFrSum - iSign * oB.fFlowRate;
                 if oB.fFlowRate ~= 0
                     bExternalBranch = true;
@@ -119,7 +125,9 @@ function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatri
             else
                 miBranches(iB) = find(this.aoBranches == oB);
                 
-                iCol = this.piObjUuidsToColIndex(oB.sUUID);
+                iCol = this.tiObjUuidsToColIndex.(oB.sUUID);
+                
+                this.miColIndexToBranchID(iCol) = miBranches(iB);
                 
                 aafPhasePressuresAndFlowRates(iRow, iCol) = iSign;
                 iAdded = iAdded + 1;

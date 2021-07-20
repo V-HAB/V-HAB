@@ -79,7 +79,8 @@ classdef timer < base
                                 'solver', cell.empty(),...
                                 'heatsources', cell.empty(),...
                                 'multibranch_solver', cell.empty(),...
-                                'residual_solver', cell.empty()),...
+                                'residual_solver', cell.empty(),...
+                                'flow_capacity_temperatureupdate', cell.empty()),...
                              ...
                              'post_physics', struct(...
                                 'timestep', cell.empty()));
@@ -140,6 +141,16 @@ classdef timer < base
         % and after that only the values changes
         cabPostTickControl;
         
+        % In order to accelerate the check if there are sill callbacks to
+        % be executed, this boolean array will be initialized false in the
+        % constructor with the same dimensions as cabPostTickControl. The
+        % values will be set to true once a callback is registered in
+        % registerPostTick(). Using this array, the number of cells in
+        % cabPostTickControl that need to be checked using the any() calls
+        % at the end of the while loop in tick() is greatly reduced for
+        % most models, thus increasing performance.
+        abCallbacksRegistered;
+        
         % In order to decide whether a newly bound post tick is from an
         % earlier group and level as the one we are currently execution
         % these two properties store the corresponding number from
@@ -153,6 +164,11 @@ classdef timer < base
         % stored here
         aiNumberOfPostTickLevel;
         
+        % The current overall time step in seconds. Note that this property
+        % is set before the new flowrates are calculated!
+        fTimeStep = 0;
+        
+        fTimeStepFinal = 0;
     end
     
     properties (SetAccess = protected, GetAccess = public)
@@ -226,6 +242,7 @@ classdef timer < base
             % when actually executing the callbacks.
             this.txPostTicks = txPostTicksFull;
             this.cabPostTickControl = cell(iPostTickGroups,iPostTickLevels);
+            this.abCallbacksRegistered = false(iPostTickGroups,iPostTickLevels);
             this.csPostTickGroups = fieldnames(this.txPostTicks);
         end
 
@@ -332,7 +349,7 @@ classdef timer < base
             this.abDependent = this.afTimeSteps == -1;
         end
         
-        function hSetPostTick = registerPostTick(this, hCallBackFunctionHandle, sPostTickGroup, sPostTickLevel)
+        function [hSetPostTick, hUnbindPostTick] = registerPostTick(this, hCallBackFunctionHandle, sPostTickGroup, sPostTickLevel)
             %REGISTERPOSTTICK Registers a post tick function handle
             % This function must be used to initialy register all post tick
             % updates at the timer. This enables the usage of a (mostly)
@@ -374,10 +391,18 @@ classdef timer < base
             % cell with a logical false, so it is not executed at first.
             this.cabPostTickControl{iPostTickGroup, iPostTickLevel}(iPostTickNumber) = false;
             
+            switch iPostTickGroup
+                case {1,2,3}
+                    this.abCallbacksRegistered(iPostTickGroup, iPostTickLevel) = true;
+                otherwise
+            end
+            
             % To allow the user to easily set the post tick that was
             % registered we return a function handle which already contains
             % the necessary input variables for this specific post tick
             hSetPostTick = @() this.bindPostTick(iPostTickGroup, iPostTickLevel, iPostTickNumber);
+            
+            hUnbindPostTick = @() this.unbindPostTick(iPostTickGroup, iPostTickLevel, iPostTickNumber);
         end
         
         function bindPostTick(this, iPostTickGroup, iPostTickLevel, iPostTickNumber)
@@ -417,11 +442,25 @@ classdef timer < base
             % callbacks
             
             this.cCallBacks(iCB)  = [];
-            this.afTimeStep(iCB)  = [];
+            this.afTimeSteps(iCB)  = [];
             this.abDependent(iCB) = [];
             this.afLastExec(iCB)  = [];
             this.ctPayload(iCB)   = [];
 
+        end
+        function unbindPostTick(this, iPostTickGroup, iPostTickLevel, iPostTickNumber)
+            % Since it would be to complicated for the post tick logic to
+            % adjust all numbers if something unbinds, the index remains
+            % registered.
+
+            % We set the control for this post tick to false, therefore it
+            % should not be called at all
+            this.cabPostTickControl{iPostTickGroup, iPostTickLevel}(iPostTickNumber) = false;
+            % For the function, we do not do anything, it still has the
+            % function handle it was previously assigned. Therefore, if the
+            % post tick is ever set, and the function handle became invalid
+            % (e.g. deleted object), an error will be thrown
+            % this.chPostTicks{iPostTickGroup, iPostTickLevel, iPostTickNumber} = hCallBackFunctionHandle;
         end
     end
     
@@ -465,7 +504,7 @@ classdef timer < base
             % Advance the timer one (global) time step
                         
             % Check if the minimum time step is sufficiently large to
-            % ensure a continoues time progress, if not increase it. This
+            % ensure a continuous time progress, if not increase it. This
             % is necessary for example for long simulations, where
             % otherwise the minimum time step can become smaller than
             % floating point precision compared to the total sim time.
@@ -473,22 +512,7 @@ classdef timer < base
                 this.fMinimumTimeStep = 10 * this.fMinimumTimeStep;
             end
             
-            % If time is -1 the min. time step - first tick, advance to zero
-            %if this.fTime == (-1 * this.fTimeStep)
-            %TODO throw out here. Include in solvers themselves.
-            if this.fTime <= (10 * this.fMinimumTimeStep)
-                fThisStep = this.fMinimumTimeStep;
-            else
-                % Determine next time step. Calculate last execution time plus
-                % current time step for every system that is not dependent,
-                % i.e. that has a 'real' time step set, not -1 which means that
-                % it is executed every timer tick.
-                fNextExecutionTime = min((this.afLastExec(~this.abDependent) + this.afTimeSteps(~this.abDependent)));
-                
-                % fNextExecutionTime is an absolute time, so subtract the
-                % current time to get the time step for this tick
-                fThisStep = fNextExecutionTime - this.fTime;
-            end
+            fThisStep = this.fTimeStepFinal;
             
             % Calculated step smaller than the min. time step?
             %TODO if one system has a time step of 0, the above calculation
@@ -498,6 +522,7 @@ classdef timer < base
                 fThisStep = this.fMinimumTimeStep;
             end
             
+            this.fTimeStep = fThisStep;
             % Set new time
             this.fTime = this.fTime + fThisStep;
             this.iTick = this.iTick + 1;
@@ -513,8 +538,9 @@ classdef timer < base
             if this.bSynchronizeExecuteCallBack
                 % tells the timer to executa all call backs
                 abExec = true(1, length(this.afTimeSteps));
-                
-                this.bSynchronizeExecuteCallBack = false;
+                bResetSynchronization = true;
+            else
+                bResetSynchronization = false;
             end
             
             aiExec  = find(abExec);
@@ -541,7 +567,9 @@ classdef timer < base
                     end
                 end
             end
-            
+            if bResetSynchronization
+                this.bSynchronizeExecuteCallBack = false;
+            end
             
             % Update last execution time - see above, abExec is logical, so
             % this works, don't need find!
@@ -595,10 +623,6 @@ classdef timer < base
                         while any(this.cabPostTickControl{iPostTickGroup, iPostTickLevel})
                             abExecutePostTicks = this.cabPostTickControl{iPostTickGroup, iPostTickLevel};
 
-                            % Now we store the cell array containing the
-                            % function handles for easier access
-                            chCurrentPostTicks = this.chPostTicks(iPostTickGroup, iPostTickLevel,:);
-
                             % And get the indices that should be executed
                             % in this tick
                             aiPostTicksToExecute = find(abExecutePostTicks);
@@ -608,7 +632,8 @@ classdef timer < base
                             for iIndex = 1:sum(abExecutePostTicks)
                                 iPostTick = aiPostTicksToExecute(iIndex);
         
-                                chCurrentPostTicks{iPostTick}();
+                                this.chPostTicks{iPostTickGroup, iPostTickLevel, iPostTick}();
+                                
                                 % The booelans are set to false after the
                                 % calculation to prevent the currently
                                 % executing post tick from binding an
@@ -624,7 +649,7 @@ classdef timer < base
                 % post ticks where set during execution of the previous
                 % ones, and if that is the case we iterate the post tick
                 % calculations
-                bExecutePostTicks = any(any(cellfun(@(cCell) any(cCell), this.cabPostTickControl(1:end-1,:))));
+                bExecutePostTicks = any(cellfun(@(cCell) any(cCell), this.cabPostTickControl(this.abCallbacksRegistered)), 'all');
             end
             
             %% Time Step post physics calculation
@@ -646,13 +671,12 @@ classdef timer < base
                 while any(this.cabPostTickControl{iPostTickGroup, iPostTickLevel})
                     abExecutePostTicks = this.cabPostTickControl{iPostTickGroup, iPostTickLevel};
 
-                    chCurrentPostTicks = this.chPostTicks(iPostTickGroup, iPostTickLevel,:);
-
                     aiPostTicksToExecute = find(abExecutePostTicks);
                     for iIndex = 1:sum(abExecutePostTicks)
                         iPostTick = aiPostTicksToExecute(iIndex);
                         
-                        chCurrentPostTicks{iPostTick}();
+                        this.chPostTicks{iPostTickGroup, iPostTickLevel, iPostTick}();
+                    
                         % The booelans are set to false after the
                         % calculation to prevent the currently executing
                         % post tick from binding an update directly again
@@ -666,6 +690,26 @@ classdef timer < base
             % are currently executing
             this.iCurrentPostTickGroup = 0;
             this.iCurrentPostTickLevel = 0;
+            
+            % If time is -1 the min. time step - first tick, advance to zero
+            %if this.fTime == (-1 * this.fTimeStep)
+            %TODO throw out here. Include in solvers themselves.
+            if this.fTime <= (10 * this.fMinimumTimeStep)
+                this.fTimeStepFinal = this.fMinimumTimeStep;
+            else
+                % Determine next time step. Calculate last execution time plus
+                % current time step for every system that is not dependent,
+                % i.e. that has a 'real' time step set, not -1 which means that
+                % it is executed every timer tick.
+                fNextExecutionTime = min((this.afLastExec(~this.abDependent) + this.afTimeSteps(~this.abDependent)));
+                
+                % fNextExecutionTime is an absolute time, so subtract the
+                % current time to get the time step for this tick
+                this.fTimeStepFinal = fNextExecutionTime - this.fTime;
+                if this.fTimeStepFinal < this.fMinimumTimeStep
+                    this.fTimeStepFinal = this.fMinimumTimeStep;
+                end
+            end
         end
     end
 end

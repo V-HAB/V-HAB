@@ -14,6 +14,8 @@ classdef boundary < thermal.capacity
             % never change. This is equivalent to an infinite heat
             % capacity, so that is exactly what we are setting here. 
             this.fTotalHeatCapacity = inf;
+            
+            this.bBoundary = true;
         end
         
         function setBoundaryTemperature(this, fTemperature)
