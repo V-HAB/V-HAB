@@ -1,665 +1,997 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mxfile host="app.diagrams.net" modified="2021-05-26T13:04:52.275Z" agent="5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36" etag="CNSuNAT0n9zUvx58S3wD" version="14.2.7" type="device">
-  <diagram id="JTS2t-WjiIyyPOJMtysM" name="Page-1">
-    <mxGraphModel dx="1408" dy="811" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+<mxfile host="Electron" modified="2021-07-21T13:32:52.428Z" agent="5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/14.5.1 Chrome/89.0.4389.82 Electron/12.0.1 Safari/537.36" etag="AoICNZTMDFyhXBqbQ0_W" version="14.5.1" type="device">
+  <diagram id="WVr-9bBsTvn4L951LNi2" name="Page-1">
+    <mxGraphModel dx="985" dy="660" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <object label="Setup" fSimTime="30*24*3600" sType="Setup" DumpLogFiles="true" TimeStepObserver="true" MassBalanceObserver="false" id="rjLiw1ouB-SMvJqF0zQi-1">
+        <object label="Setup" fSimTime="30*24*3600" sType="Setup" DumpLogFiles="true" TimeStepObserver="true" MassBalanceObserver="false" id="VtzrqL8gwkVYdRojpabA-1">
           <mxCell style="shape=internalStorage;whiteSpace=wrap;html=1;dx=15;dy=15;rounded=1;arcSize=8;strokeWidth=2;align=center;" parent="1" vertex="1">
-            <mxGeometry x="10.000000000000455" y="30" width="90" height="58" as="geometry" />
+            <mxGeometry x="250" y="280" width="90" height="58" as="geometry" />
           </mxCell>
         </object>
-        <object label="Spacecraft One" fTimeStep="" sType="System" id="rjLiw1ouB-SMvJqF0zQi-2">
-          <mxCell style="whiteSpace=wrap;html=1;dashed=1;verticalAlign=top;container=1;recursiveResize=0;" parent="1" vertex="1">
-            <mxGeometry x="32" y="111.5" width="2010" height="970" as="geometry" />
+        <object label="Spacecraft One" fTimeStep="" sType="System" id="VtzrqL8gwkVYdRojpabA-2">
+          <mxCell style="whiteSpace=wrap;html=1;dashed=1;verticalAlign=top;container=1;recursiveResize=0;flipH=0;" parent="1" vertex="1">
+            <mxGeometry x="40" y="361.5" width="2370" height="1288.5" as="geometry" />
           </mxCell>
         </object>
-        <object label="Cabin" sType="Store" bNoStoreCalculation="true" fVolume="100" id="rjLiw1ouB-SMvJqF0zQi-3">
-          <mxCell style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;container=1;" parent="rjLiw1ouB-SMvJqF0zQi-2" vertex="1">
-            <mxGeometry x="718.5" y="73" width="170" height="715" as="geometry" />
+        <object label="Waste Water Store" sType="Store" bNoStoreCalculation="true" fVolume="1" id="VtzrqL8gwkVYdRojpabA-105">
+          <mxCell style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;container=1;" parent="VtzrqL8gwkVYdRojpabA-2" vertex="1">
+            <mxGeometry x="1129.5" y="834.5" width="145" height="81.5" as="geometry" />
           </mxCell>
         </object>
-        <object label="Atmosphere" fPressureCO2="PLOT_400" fPressureN2="PLOT_8e4" fPressureO2="PLOT_2.1e4" fVolume="100" fTemperature="PLOT_293" sType="Gas" rRelHumidity="PLOT_0.5" id="rjLiw1ouB-SMvJqF0zQi-4">
-          <mxCell style="rounded=1;whiteSpace=wrap;html=1;container=1;" parent="rjLiw1ouB-SMvJqF0zQi-3" vertex="1">
+        <object label="Water" fVolume="1" fTemperature="293" sType="Liquid_Flow" fMassH2O="100" fPressure="1e5" id="VtzrqL8gwkVYdRojpabA-107">
+          <mxCell style="shape=dataStorage;whiteSpace=wrap;html=1;fixedSize=1;glass=0;size=5;collapsible=1;fontSize=12;" parent="VtzrqL8gwkVYdRojpabA-105" vertex="1">
+            <mxGeometry x="37.5" y="25" width="70" height="45" as="geometry" />
+          </mxCell>
+        </object>
+        <object label="Cabin" sType="Store" bNoStoreCalculation="true" fVolume="100" id="VtzrqL8gwkVYdRojpabA-3">
+          <mxCell style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;container=1;" parent="VtzrqL8gwkVYdRojpabA-2" vertex="1">
+            <mxGeometry x="945.5" y="78" width="170" height="715" as="geometry" />
+          </mxCell>
+        </object>
+        <object label="Atmosphere" fPressureCO2="PLOT_400" fPressureN2="PLOT_8e4" fPressureO2="PLOT_2.1e4" fVolume="100" fTemperature="PLOT_293" sType="Gas" rRelHumidity="PLOT_0.5" id="VtzrqL8gwkVYdRojpabA-4">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;container=1;" parent="VtzrqL8gwkVYdRojpabA-3" vertex="1">
             <mxGeometry x="30" y="50" width="110" height="611" as="geometry" />
           </mxCell>
         </object>
-        <object label="Human&lt;br&gt;" sType="Human" bMale="true" fAge="30" fMass="80" fHeight="1.80" fSleep="8" fExercise="2" iNumberOfCrew="4" id="rjLiw1ouB-SMvJqF0zQi-5">
-          <mxCell style="whiteSpace=wrap;html=1;dashed=1;verticalAlign=top;container=1;resizeWidth=1;resizeHeight=1;rotation=0;recursiveResize=0;" parent="rjLiw1ouB-SMvJqF0zQi-2" vertex="1">
-            <mxGeometry x="447" y="59" width="209" height="360" as="geometry" />
+        <object label="Human&lt;br&gt;" sType="Human" bMale="true" fAge="30" fMass="80" fHeight="1.80" fSleep="8" fExercise="2" iNumberOfCrew="6" id="VtzrqL8gwkVYdRojpabA-5">
+          <mxCell style="whiteSpace=wrap;html=1;dashed=1;verticalAlign=top;container=1;resizeWidth=1;resizeHeight=1;rotation=0;recursiveResize=0;" parent="VtzrqL8gwkVYdRojpabA-2" vertex="1">
+            <mxGeometry x="674" y="64" width="209" height="360" as="geometry" />
           </mxCell>
         </object>
-        <object label="Air" sType="Input" id="rjLiw1ouB-SMvJqF0zQi-6">
-          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;rotation=0;flipH=1;recursiveResize=0;" parent="rjLiw1ouB-SMvJqF0zQi-5" vertex="1">
+        <object label="Air" sType="Input" id="VtzrqL8gwkVYdRojpabA-6">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;rotation=0;flipH=1;recursiveResize=0;" parent="VtzrqL8gwkVYdRojpabA-5" vertex="1">
             <mxGeometry x="148" y="114.5" width="85" height="25" as="geometry" />
           </mxCell>
         </object>
-        <object label="Air" sType="Output" id="rjLiw1ouB-SMvJqF0zQi-7">
-          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;rotation=0;recursiveResize=0;" parent="rjLiw1ouB-SMvJqF0zQi-5" vertex="1">
+        <object label="Air" sType="Output" id="VtzrqL8gwkVYdRojpabA-7">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;rotation=0;recursiveResize=0;" parent="VtzrqL8gwkVYdRojpabA-5" vertex="1">
             <mxGeometry x="148" y="202" width="85" height="25" as="geometry" />
           </mxCell>
         </object>
-        <object label="Water" sType="Input" id="rjLiw1ouB-SMvJqF0zQi-8">
-          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;rotation=0;recursiveResize=0;" parent="rjLiw1ouB-SMvJqF0zQi-5" vertex="1">
+        <object label="Water" sType="Input" id="VtzrqL8gwkVYdRojpabA-8">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;rotation=0;recursiveResize=0;" parent="VtzrqL8gwkVYdRojpabA-5" vertex="1">
             <mxGeometry x="-26" y="177.5" width="85" height="25" as="geometry" />
           </mxCell>
         </object>
-        <object label="Urine" sType="Output" id="rjLiw1ouB-SMvJqF0zQi-10">
-          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;rotation=0;flipH=1;flipV=0;recursiveResize=0;" parent="rjLiw1ouB-SMvJqF0zQi-5" vertex="1">
+        <object label="Urine" sType="Output" id="VtzrqL8gwkVYdRojpabA-9">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;rotation=0;flipH=1;flipV=0;recursiveResize=0;" parent="VtzrqL8gwkVYdRojpabA-5" vertex="1">
             <mxGeometry x="-24" y="25" width="85" height="25" as="geometry" />
           </mxCell>
         </object>
-        <object label="Feces" sType="Output" id="rjLiw1ouB-SMvJqF0zQi-11">
-          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;rotation=0;flipH=1;recursiveResize=0;" parent="rjLiw1ouB-SMvJqF0zQi-5" vertex="1">
+        <object label="Feces" sType="Output" id="VtzrqL8gwkVYdRojpabA-10">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;rotation=0;flipH=1;recursiveResize=0;" parent="VtzrqL8gwkVYdRojpabA-5" vertex="1">
             <mxGeometry x="-24" y="128.5" width="85" height="25" as="geometry" />
           </mxCell>
         </object>
-        <mxCell id="rjLiw1ouB-SMvJqF0zQi-12" value="" style="shape=umlActor;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;verticalAlign=top;html=1;outlineConnect=0;rotation=0;recursiveResize=0;" parent="rjLiw1ouB-SMvJqF0zQi-5" vertex="1">
+        <mxCell id="VtzrqL8gwkVYdRojpabA-11" value="" style="shape=umlActor;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;verticalAlign=top;html=1;outlineConnect=0;rotation=0;recursiveResize=0;" parent="VtzrqL8gwkVYdRojpabA-5" vertex="1">
           <mxGeometry x="75.5" y="121" width="58" height="106" as="geometry" />
         </mxCell>
-        <object label="Food" sType="Input" id="rjLiw1ouB-SMvJqF0zQi-9">
-          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;rotation=0;recursiveResize=0;" parent="rjLiw1ouB-SMvJqF0zQi-5" vertex="1">
+        <object label="Food" sType="Input" id="VtzrqL8gwkVYdRojpabA-12">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;rotation=0;recursiveResize=0;" parent="VtzrqL8gwkVYdRojpabA-5" vertex="1">
             <mxGeometry x="-27" y="304.5" width="85" height="25" as="geometry" />
           </mxCell>
         </object>
-        <object label="" sType="Branch" sSolver="interval" sCustomName="" fFlowRate="PLOT_" id="rjLiw1ouB-SMvJqF0zQi-13">
-          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;strokeWidth=2;fillColor=#d5e8d4;strokeColor=#82b366;jumpStyle=arc;" parent="rjLiw1ouB-SMvJqF0zQi-2" source="rjLiw1ouB-SMvJqF0zQi-7" target="rjLiw1ouB-SMvJqF0zQi-4" edge="1">
+        <object label="" sType="Branch" sSolver="interval" sCustomName="" fFlowRate="PLOT_" id="VtzrqL8gwkVYdRojpabA-13">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;strokeWidth=2;fillColor=#d5e8d4;strokeColor=#82b366;jumpStyle=arc;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-7" target="VtzrqL8gwkVYdRojpabA-4" edge="1">
             <mxGeometry relative="1" as="geometry">
-              <mxPoint x="63.5" y="416" as="sourcePoint" />
-              <mxPoint x="187.5" y="471" as="targetPoint" />
+              <mxPoint x="290.5" y="421" as="sourcePoint" />
+              <mxPoint x="414.5" y="476" as="targetPoint" />
               <Array as="points">
-                <mxPoint x="740" y="274" />
-                <mxPoint x="740" y="274" />
+                <mxPoint x="967" y="279" />
+                <mxPoint x="967" y="279" />
               </Array>
             </mxGeometry>
           </mxCell>
         </object>
-        <object label="" sType="Branch" sSolver="interval" sCustomName="" fFlowRate="PLOT_" id="rjLiw1ouB-SMvJqF0zQi-14">
-          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;strokeWidth=2;fillColor=#d5e8d4;strokeColor=#82b366;jumpStyle=arc;" parent="rjLiw1ouB-SMvJqF0zQi-2" source="rjLiw1ouB-SMvJqF0zQi-4" target="rjLiw1ouB-SMvJqF0zQi-6" edge="1">
+        <object label="" sType="Branch" sSolver="interval" sCustomName="" fFlowRate="PLOT_" id="VtzrqL8gwkVYdRojpabA-14">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;strokeWidth=2;fillColor=#d5e8d4;strokeColor=#82b366;jumpStyle=arc;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-4" target="VtzrqL8gwkVYdRojpabA-6" edge="1">
             <mxGeometry relative="1" as="geometry">
-              <mxPoint x="203.5" y="396" as="sourcePoint" />
-              <mxPoint x="327.5" y="451" as="targetPoint" />
+              <mxPoint x="430.5" y="401" as="sourcePoint" />
+              <mxPoint x="554.5" y="456" as="targetPoint" />
               <Array as="points">
-                <mxPoint x="740" y="186" />
-                <mxPoint x="740" y="186" />
+                <mxPoint x="967" y="191" />
+                <mxPoint x="967" y="191" />
               </Array>
             </mxGeometry>
           </mxCell>
         </object>
-        <object label="Plant Preparation" sType="Store" bNoStoreCalculation="true" fVolume="2" id="rjLiw1ouB-SMvJqF0zQi-22">
-          <mxCell style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;container=1;" parent="rjLiw1ouB-SMvJqF0zQi-2" vertex="1">
-            <mxGeometry x="63.46970621744788" y="303" width="171" height="207" as="geometry" />
+        <object label="Plant Preparation" sType="Store" bNoStoreCalculation="true" fVolume="2" id="VtzrqL8gwkVYdRojpabA-15">
+          <mxCell style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;container=1;" parent="VtzrqL8gwkVYdRojpabA-2" vertex="1">
+            <mxGeometry x="290.4697062174479" y="308" width="171" height="207" as="geometry" />
           </mxCell>
         </object>
-        <object label="Inedible" fTemperature="293" sType="Mixture" sPhaseType="solid" fPressure="1e5" fMassH2O="0" id="rjLiw1ouB-SMvJqF0zQi-23">
-          <mxCell style="rounded=1;whiteSpace=wrap;html=1;container=1;" parent="rjLiw1ouB-SMvJqF0zQi-22" vertex="1">
+        <object label="Inedible" fTemperature="293" sType="Mixture" sPhaseType="solid" fPressure="1e5" fMassH2O="0" id="VtzrqL8gwkVYdRojpabA-16">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;container=1;" parent="VtzrqL8gwkVYdRojpabA-15" vertex="1">
             <mxGeometry x="42" y="142.11785714285716" width="87" height="53.22857142857143" as="geometry" />
           </mxCell>
         </object>
-        <object label="Edible" fTemperature="293" sType="Mixture" sPhaseType="solid" fPressure="1e5" fMassH2O="0" id="rjLiw1ouB-SMvJqF0zQi-24">
-          <mxCell style="rounded=1;whiteSpace=wrap;html=1;container=1;" parent="rjLiw1ouB-SMvJqF0zQi-22" vertex="1">
+        <object label="Edible" fTemperature="293" sType="Mixture" sPhaseType="solid" fPressure="1e5" fMassH2O="0" id="VtzrqL8gwkVYdRojpabA-17">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;container=1;" parent="VtzrqL8gwkVYdRojpabA-15" vertex="1">
             <mxGeometry x="42" y="48" width="87" height="50" as="geometry" />
           </mxCell>
         </object>
-        <object label="" sType="P2P" sP2P_Type="components.matter.P2Ps.ConstantMassP2P" sSubstance="Sweetpotato, Whitepotato, Rice, Drybean, Soybean, Tomato, Peanut, Lettuce, Wheat" id="rjLiw1ouB-SMvJqF0zQi-25">
-          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;strokeWidth=1;shape=flexArrow;" parent="rjLiw1ouB-SMvJqF0zQi-22" source="rjLiw1ouB-SMvJqF0zQi-23" target="rjLiw1ouB-SMvJqF0zQi-24" edge="1">
+        <object label="" sType="P2P" sP2P_Type="components.matter.P2Ps.ConstantMassP2P" sSubstance="Sweetpotato, Whitepotato, Rice, Drybean, Soybean, Tomato, Peanut, Lettuce, Wheat" id="VtzrqL8gwkVYdRojpabA-18">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;strokeWidth=1;shape=flexArrow;" parent="VtzrqL8gwkVYdRojpabA-15" source="VtzrqL8gwkVYdRojpabA-16" target="VtzrqL8gwkVYdRojpabA-17" edge="1">
             <mxGeometry relative="1" as="geometry">
               <mxPoint x="-69.96970621744788" y="154.5" as="sourcePoint" />
               <mxPoint x="-69.96970621744788" y="110.5" as="targetPoint" />
             </mxGeometry>
           </mxCell>
         </object>
-        <object label="" sType="Branch" sSolver="interval" sCustomName="" id="rjLiw1ouB-SMvJqF0zQi-26">
-          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;strokeWidth=2;fillColor=#d5e8d4;strokeColor=#82b366;jumpStyle=arc;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=0;exitY=0.75;exitDx=0;exitDy=0;" parent="rjLiw1ouB-SMvJqF0zQi-2" source="rjLiw1ouB-SMvJqF0zQi-4" target="0NrPgtLnqh-rqr72nA6v-2" edge="1">
+        <object label="" sType="Branch" sSolver="interval" sCustomName="" id="VtzrqL8gwkVYdRojpabA-19">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;strokeWidth=2;fillColor=#d5e8d4;strokeColor=#82b366;jumpStyle=arc;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=0;exitY=0.75;exitDx=0;exitDy=0;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-4" target="VtzrqL8gwkVYdRojpabA-90" edge="1">
             <mxGeometry relative="1" as="geometry">
-              <mxPoint x="695" y="184" as="sourcePoint" />
-              <mxPoint x="621" y="539" as="targetPoint" />
+              <mxPoint x="922" y="189" as="sourcePoint" />
+              <mxPoint x="848" y="544" as="targetPoint" />
             </mxGeometry>
           </mxCell>
         </object>
-        <object label="" sType="Branch" sSolver="interval" sCustomName="" id="rjLiw1ouB-SMvJqF0zQi-27">
-          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;strokeWidth=2;fillColor=#d5e8d4;strokeColor=#82b366;jumpStyle=arc;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=-0.011;entryY=0.685;entryDx=0;entryDy=0;entryPerimeter=0;" parent="rjLiw1ouB-SMvJqF0zQi-2" source="0NrPgtLnqh-rqr72nA6v-3" target="rjLiw1ouB-SMvJqF0zQi-4" edge="1">
+        <object label="" sType="Branch" sSolver="interval" sCustomName="" id="VtzrqL8gwkVYdRojpabA-20">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;strokeWidth=2;fillColor=#d5e8d4;strokeColor=#82b366;jumpStyle=arc;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=-0.011;entryY=0.685;entryDx=0;entryDy=0;entryPerimeter=0;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-91" target="VtzrqL8gwkVYdRojpabA-4" edge="1">
             <mxGeometry relative="1" as="geometry">
-              <mxPoint x="638.5529411764705" y="576.0294117647059" as="sourcePoint" />
-              <mxPoint x="594.5" y="551" as="targetPoint" />
+              <mxPoint x="865.5529411764705" y="581.0294117647059" as="sourcePoint" />
+              <mxPoint x="821.5" y="556" as="targetPoint" />
             </mxGeometry>
           </mxCell>
         </object>
-        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="rjLiw1ouB-SMvJqF0zQi-28">
-          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#000000;strokeWidth=3;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" parent="rjLiw1ouB-SMvJqF0zQi-2" source="0NrPgtLnqh-rqr72nA6v-7" target="rjLiw1ouB-SMvJqF0zQi-23" edge="1">
+        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="VtzrqL8gwkVYdRojpabA-21">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#000000;strokeWidth=3;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-94" target="VtzrqL8gwkVYdRojpabA-16" edge="1">
             <mxGeometry relative="1" as="geometry">
-              <mxPoint x="354.59411764705874" y="551.5588235294117" as="sourcePoint" />
-              <mxPoint x="555.1470588235293" y="289" as="targetPoint" />
+              <mxPoint x="581.5941176470587" y="556.5588235294117" as="sourcePoint" />
+              <mxPoint x="782.1470588235293" y="294" as="targetPoint" />
             </mxGeometry>
           </mxCell>
         </object>
-        <object label="Plant Supply" sType="Store" bNoStoreCalculation="true" fVolume="1" id="rjLiw1ouB-SMvJqF0zQi-29">
-          <mxCell style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;container=1;recursiveResize=0;" parent="rjLiw1ouB-SMvJqF0zQi-2" vertex="1">
-            <mxGeometry x="76.47" y="554.5" width="145" height="78" as="geometry" />
+        <object label="Plant Supply" sType="Store" bNoStoreCalculation="true" fVolume="1" id="VtzrqL8gwkVYdRojpabA-22">
+          <mxCell style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;container=1;recursiveResize=0;" parent="VtzrqL8gwkVYdRojpabA-2" vertex="1">
+            <mxGeometry x="303.47" y="559.5" width="145" height="78" as="geometry" />
           </mxCell>
         </object>
-        <object label="Nutrients" fVolume="1" fTemperature="293" sType="Liquid_Boundary" fPressure="1e5" fMassNO3="100" id="rjLiw1ouB-SMvJqF0zQi-31">
-          <mxCell style="rounded=1;whiteSpace=wrap;html=1;container=1;verticalAlign=middle;" parent="rjLiw1ouB-SMvJqF0zQi-29" vertex="1">
+        <object label="Nutrients" fVolume="1" fTemperature="293" sType="Liquid_Boundary" fPressure="1e5" fMassNO3="100" id="VtzrqL8gwkVYdRojpabA-23">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;container=1;verticalAlign=middle;" parent="VtzrqL8gwkVYdRojpabA-22" vertex="1">
             <mxGeometry x="29" y="32.46794871794873" width="87" height="28.346153846153843" as="geometry" />
           </mxCell>
         </object>
-        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="rjLiw1ouB-SMvJqF0zQi-33">
-          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#000000;strokeWidth=3;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="rjLiw1ouB-SMvJqF0zQi-2" source="rjLiw1ouB-SMvJqF0zQi-31" target="0NrPgtLnqh-rqr72nA6v-5" edge="1">
+        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="VtzrqL8gwkVYdRojpabA-24">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#000000;strokeWidth=3;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-23" target="VtzrqL8gwkVYdRojpabA-93" edge="1">
             <mxGeometry relative="1" as="geometry">
-              <mxPoint x="208.8636271158856" y="290" as="sourcePoint" />
-              <mxPoint x="376.5" y="622.5" as="targetPoint" />
+              <mxPoint x="435.8636271158856" y="295" as="sourcePoint" />
+              <mxPoint x="603.5" y="627.5" as="targetPoint" />
               <Array as="points">
-                <mxPoint x="149" y="653" />
+                <mxPoint x="376" y="658" />
               </Array>
             </mxGeometry>
           </mxCell>
         </object>
-        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="rjLiw1ouB-SMvJqF0zQi-34">
-          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#000000;strokeWidth=3;" parent="rjLiw1ouB-SMvJqF0zQi-2" source="rjLiw1ouB-SMvJqF0zQi-80" target="rjLiw1ouB-SMvJqF0zQi-9" edge="1">
+        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="VtzrqL8gwkVYdRojpabA-25">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#000000;strokeWidth=3;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-62" target="VtzrqL8gwkVYdRojpabA-12" edge="1">
             <mxGeometry relative="1" as="geometry">
-              <mxPoint x="-1.5" y="323.5" as="sourcePoint" />
-              <mxPoint x="-166" y="301" as="targetPoint" />
+              <mxPoint x="225.5" y="328.5" as="sourcePoint" />
+              <mxPoint x="61" y="306" as="targetPoint" />
               <Array as="points">
-                <mxPoint x="310" y="376" />
-                <mxPoint x="310" y="376" />
+                <mxPoint x="537" y="381" />
+                <mxPoint x="537" y="381" />
               </Array>
             </mxGeometry>
           </mxCell>
         </object>
-        <object label="Potable Water Store" sType="Store" bNoStoreCalculation="true" fVolume="1" id="rjLiw1ouB-SMvJqF0zQi-37">
-          <mxCell style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;container=1;" parent="rjLiw1ouB-SMvJqF0zQi-2" vertex="1">
-            <mxGeometry x="435.969706217448" y="800.5" width="145" height="101" as="geometry" />
+        <object label="Potable Water Store" sType="Store" bNoStoreCalculation="true" fVolume="1" id="VtzrqL8gwkVYdRojpabA-26">
+          <mxCell style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;container=1;" parent="VtzrqL8gwkVYdRojpabA-2" vertex="1">
+            <mxGeometry x="374.99970621744797" y="819.5" width="145" height="101" as="geometry" />
           </mxCell>
         </object>
-        <object label="Water" fTemperature="LOG_293" sType="Liquid" fMassH2O="PLOT_100" fPressure="1e5" id="rjLiw1ouB-SMvJqF0zQi-38">
-          <mxCell style="rounded=1;whiteSpace=wrap;html=1;" parent="rjLiw1ouB-SMvJqF0zQi-37" vertex="1">
+        <object label="Water" fTemperature="LOG_293" sType="Liquid" fMassH2O="PLOT_100" fPressure="1e5" id="VtzrqL8gwkVYdRojpabA-27">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;" parent="VtzrqL8gwkVYdRojpabA-26" vertex="1">
             <mxGeometry x="29.000000000000036" y="41.041806020066865" width="87" height="46.615384615384606" as="geometry" />
           </mxCell>
         </object>
-        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="rjLiw1ouB-SMvJqF0zQi-39">
-          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=3;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="rjLiw1ouB-SMvJqF0zQi-2" source="rjLiw1ouB-SMvJqF0zQi-38" target="rjLiw1ouB-SMvJqF0zQi-8" edge="1">
+        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="VtzrqL8gwkVYdRojpabA-29">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=3;entryX=0.25;entryY=1;entryDx=0;entryDy=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-27" target="VtzrqL8gwkVYdRojpabA-23" edge="1">
             <mxGeometry relative="1" as="geometry">
-              <mxPoint x="517.5" y="517" as="sourcePoint" />
-              <mxPoint x="1075.2058823529414" y="216.0588235294117" as="targetPoint" />
+              <mxPoint x="1019.8823529411766" y="880" as="sourcePoint" />
+              <mxPoint x="601.5" y="670" as="targetPoint" />
               <Array as="points">
-                <mxPoint x="33" y="865" />
-                <mxPoint x="33" y="249" />
+                <mxPoint x="354" y="884" />
               </Array>
             </mxGeometry>
           </mxCell>
         </object>
-        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="rjLiw1ouB-SMvJqF0zQi-40">
-          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=3;entryX=0.25;entryY=1;entryDx=0;entryDy=0;" parent="rjLiw1ouB-SMvJqF0zQi-2" source="rjLiw1ouB-SMvJqF0zQi-38" target="rjLiw1ouB-SMvJqF0zQi-31" edge="1">
-            <mxGeometry relative="1" as="geometry">
-              <mxPoint x="792.8823529411766" y="875" as="sourcePoint" />
-              <mxPoint x="374.5" y="665" as="targetPoint" />
-              <Array as="points">
-                <mxPoint x="127" y="865" />
-              </Array>
-            </mxGeometry>
-          </mxCell>
-        </object>
-        <object label="Feces Store" sType="Store" bNoStoreCalculation="true" fVolume="1" id="rjLiw1ouB-SMvJqF0zQi-41">
-          <mxCell style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;container=1;" parent="rjLiw1ouB-SMvJqF0zQi-2" vertex="1">
-            <mxGeometry x="66.96970621744799" y="136.5" width="145" height="101" as="geometry">
+        <object label="Feces Store" sType="Store" bNoStoreCalculation="true" fVolume="1" id="VtzrqL8gwkVYdRojpabA-30">
+          <mxCell style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;container=1;recursiveResize=0;" parent="VtzrqL8gwkVYdRojpabA-2" vertex="1">
+            <mxGeometry x="293.97" y="159" width="145" height="80" as="geometry">
               <mxRectangle x="1540" y="177" width="100" height="20" as="alternateBounds" />
             </mxGeometry>
           </mxCell>
         </object>
-        <object label="Feces" fTemperature="LOG_293" sType="Mixture" sPhaseType="solid" fPressure="1e5" fMassFeces="PLOT_1e-5" id="rjLiw1ouB-SMvJqF0zQi-42">
-          <mxCell style="rounded=1;whiteSpace=wrap;html=1;" parent="rjLiw1ouB-SMvJqF0zQi-41" vertex="1">
-            <mxGeometry x="29.000000000000036" y="41.041806020066865" width="87" height="46.615384615384606" as="geometry" />
+        <object label="Feces" fTemperature="LOG_293" sType="Mixture" sPhaseType="solid" fPressure="1e5" fMassFeces="PLOT_1e-5" id="VtzrqL8gwkVYdRojpabA-31">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;" parent="VtzrqL8gwkVYdRojpabA-30" vertex="1">
+            <mxGeometry x="29.000000000000036" y="23.501806020066866" width="87" height="45" as="geometry" />
           </mxCell>
         </object>
-        <object label="Urine Store" sType="Store" bNoStoreCalculation="true" fVolume="1" id="rjLiw1ouB-SMvJqF0zQi-43">
-          <mxCell style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;container=1;" parent="rjLiw1ouB-SMvJqF0zQi-2" vertex="1">
-            <mxGeometry x="66.96970621744799" y="23.5" width="145" height="101" as="geometry" />
+        <object label="Urine Store" sType="Store" bNoStoreCalculation="true" fVolume="1" id="VtzrqL8gwkVYdRojpabA-32">
+          <mxCell style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;container=1;" parent="VtzrqL8gwkVYdRojpabA-2" vertex="1">
+            <mxGeometry x="293.97" y="50" width="145" height="80" as="geometry" />
           </mxCell>
         </object>
-        <object label="Urine" fTemperature="LOG_293" sType="Mixture" sPhaseType="liquid" fPressure="1e5" fMassUrineSolids="PLOT_1e-5" fMassH2O="PLOT_1e-5" id="rjLiw1ouB-SMvJqF0zQi-44">
-          <mxCell style="rounded=1;whiteSpace=wrap;html=1;" parent="rjLiw1ouB-SMvJqF0zQi-43" vertex="1">
-            <mxGeometry x="29.000000000000036" y="41.041806020066865" width="87" height="46.615384615384606" as="geometry" />
+        <object label="Urine" fTemperature="LOG_293" sType="Mixture" sPhaseType="liquid" fPressure="1e5" fMassUrineSolids="PLOT_1e-5" fMassH2O="PLOT_1e-5" id="VtzrqL8gwkVYdRojpabA-33">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;" parent="VtzrqL8gwkVYdRojpabA-32" vertex="1">
+            <mxGeometry x="29" y="28.17610062893082" width="87" height="45.283018867924525" as="geometry" />
           </mxCell>
         </object>
-        <object label="" sType="Branch" sSolver="manual" sCustomName="Human_Feces_Out" id="rjLiw1ouB-SMvJqF0zQi-46">
-          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=3;" parent="rjLiw1ouB-SMvJqF0zQi-2" source="rjLiw1ouB-SMvJqF0zQi-11" target="rjLiw1ouB-SMvJqF0zQi-42" edge="1">
+        <object label="" sType="Branch" sSolver="manual" sCustomName="Human_Feces_Out" id="VtzrqL8gwkVYdRojpabA-34">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=3;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-10" target="VtzrqL8gwkVYdRojpabA-31" edge="1">
             <mxGeometry relative="1" as="geometry">
-              <mxPoint x="1315.8235294117649" y="310.8823529411766" as="sourcePoint" />
-              <mxPoint x="1352" y="136" as="targetPoint" />
+              <mxPoint x="1542.8235294117649" y="315.8823529411766" as="sourcePoint" />
+              <mxPoint x="1579" y="141" as="targetPoint" />
             </mxGeometry>
           </mxCell>
         </object>
-        <object label="" sType="Branch" sSolver="manual" sCustomName="Human_Urine_Out" id="rjLiw1ouB-SMvJqF0zQi-45">
-          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=3;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" parent="rjLiw1ouB-SMvJqF0zQi-2" source="rjLiw1ouB-SMvJqF0zQi-10" target="rjLiw1ouB-SMvJqF0zQi-44" edge="1">
+        <object label="" sType="Branch" sSolver="manual" sCustomName="Human_Urine_Out" id="VtzrqL8gwkVYdRojpabA-35">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=3;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-9" target="VtzrqL8gwkVYdRojpabA-33" edge="1">
             <mxGeometry relative="1" as="geometry">
-              <mxPoint x="1313.4705882352941" y="275.5882352941178" as="sourcePoint" />
-              <mxPoint x="7" y="208" as="targetPoint" />
+              <mxPoint x="1540.4705882352941" y="280.5882352941178" as="sourcePoint" />
+              <mxPoint x="410" y="100.5" as="targetPoint" />
               <Array as="points">
-                <mxPoint x="320" y="95" />
+                <mxPoint x="547" y="102" />
+                <mxPoint x="410" y="101" />
               </Array>
             </mxGeometry>
           </mxCell>
         </object>
-        <object label="CCAA&lt;br&gt;" sType="CCAA" fTimeStep="5" fCoolantTemperature="277" sCDRA="CDRA" id="rjLiw1ouB-SMvJqF0zQi-55">
-          <mxCell style="whiteSpace=wrap;html=1;dashed=1;verticalAlign=top;container=1;resizeWidth=1;resizeHeight=1;recursiveResize=0;" parent="rjLiw1ouB-SMvJqF0zQi-2" vertex="1">
-            <mxGeometry x="1003" y="553.5" width="265" height="348" as="geometry" />
+        <object label="CCAA&lt;br&gt;" sType="CCAA" fTimeStep="5" fCoolantTemperature="277" sCDRA="CDRA" id="VtzrqL8gwkVYdRojpabA-36">
+          <mxCell style="whiteSpace=wrap;html=1;dashed=1;verticalAlign=top;container=1;resizeWidth=1;resizeHeight=1;recursiveResize=0;" parent="VtzrqL8gwkVYdRojpabA-2" vertex="1">
+            <mxGeometry x="1347" y="558.5" width="265" height="356.5" as="geometry" />
           </mxCell>
         </object>
-        <object label="Air" sType="Input" id="rjLiw1ouB-SMvJqF0zQi-56">
-          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;" parent="rjLiw1ouB-SMvJqF0zQi-55" vertex="1">
+        <object label="Air" sType="Input" id="VtzrqL8gwkVYdRojpabA-37">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;" parent="VtzrqL8gwkVYdRojpabA-36" vertex="1">
             <mxGeometry x="-25" y="35.5" width="85" height="25" as="geometry" />
           </mxCell>
         </object>
-        <object label="Coolant" sType="Input" id="rjLiw1ouB-SMvJqF0zQi-57">
-          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="rjLiw1ouB-SMvJqF0zQi-55" vertex="1">
+        <object label="Coolant" sType="Input" id="VtzrqL8gwkVYdRojpabA-38">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="VtzrqL8gwkVYdRojpabA-36" vertex="1">
             <mxGeometry x="165" y="235" width="128" height="25" as="geometry" />
           </mxCell>
         </object>
-        <object label="Air" sType="Output" id="rjLiw1ouB-SMvJqF0zQi-58">
-          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="rjLiw1ouB-SMvJqF0zQi-55" vertex="1">
-            <mxGeometry x="-45" y="131" width="127" height="25" as="geometry" />
+        <object label="Air" sType="Output" id="VtzrqL8gwkVYdRojpabA-39">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="VtzrqL8gwkVYdRojpabA-36" vertex="1">
+            <mxGeometry x="-30" y="131" width="90" height="25" as="geometry" />
           </mxCell>
         </object>
-        <object label="Condensate" sType="Output" id="rjLiw1ouB-SMvJqF0zQi-60">
-          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;rotation=0;flipH=1;" parent="rjLiw1ouB-SMvJqF0zQi-55" vertex="1">
-            <mxGeometry x="-35" y="307" width="127" height="25" as="geometry" />
+        <object label="Condensate" sType="Output" id="VtzrqL8gwkVYdRojpabA-40">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;rotation=0;flipH=1;" parent="VtzrqL8gwkVYdRojpabA-36" vertex="1">
+            <mxGeometry x="-35" y="321" width="127" height="25" as="geometry" />
           </mxCell>
         </object>
-        <object label="Coolant" sType="Output" id="rjLiw1ouB-SMvJqF0zQi-61">
-          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;rotation=0;horizontal=1;flipV=1;flipH=0;" parent="rjLiw1ouB-SMvJqF0zQi-55" vertex="1">
+        <object label="Coolant" sType="Output" id="VtzrqL8gwkVYdRojpabA-41">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;rotation=0;horizontal=1;flipV=1;flipH=0;" parent="VtzrqL8gwkVYdRojpabA-36" vertex="1">
             <mxGeometry x="171.5" y="276.5" width="127" height="25" as="geometry" />
           </mxCell>
         </object>
-        <object label="CDRA Air" sType="Output" id="rjLiw1ouB-SMvJqF0zQi-62">
-          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;" parent="rjLiw1ouB-SMvJqF0zQi-55" vertex="1">
+        <object label="CDRA Air" sType="Output" id="VtzrqL8gwkVYdRojpabA-42">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;" parent="VtzrqL8gwkVYdRojpabA-36" vertex="1">
             <mxGeometry x="183.5" y="91.5" width="127" height="27" as="geometry" />
           </mxCell>
         </object>
-        <object label="Coolant" sType="Store" bNoStoreCalculation="true" fVolume="1" id="rjLiw1ouB-SMvJqF0zQi-63">
-          <mxCell style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;container=1;" parent="rjLiw1ouB-SMvJqF0zQi-2" vertex="1">
-            <mxGeometry x="1381.5" y="735" width="192" height="156" as="geometry" />
+        <object label="Coolant" sType="Store" bNoStoreCalculation="true" fVolume="1" id="VtzrqL8gwkVYdRojpabA-43">
+          <mxCell style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;container=1;" parent="VtzrqL8gwkVYdRojpabA-2" vertex="1">
+            <mxGeometry x="1725.5" y="740" width="192" height="156" as="geometry" />
           </mxCell>
         </object>
-        <object label="Water" fTemperature="PLOT_277" sType="Liquid" fMassH2O="100" fPressure="1e5" id="rjLiw1ouB-SMvJqF0zQi-64">
-          <mxCell style="rounded=1;whiteSpace=wrap;html=1;container=1;verticalAlign=top;recursiveResize=0;" parent="rjLiw1ouB-SMvJqF0zQi-63" vertex="1">
+        <object label="Water" fTemperature="PLOT_277" sType="Liquid" fMassH2O="100" fPressure="1e5" id="VtzrqL8gwkVYdRojpabA-44">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;container=1;verticalAlign=top;recursiveResize=0;" parent="VtzrqL8gwkVYdRojpabA-43" vertex="1">
             <mxGeometry x="38.4" y="36" width="115.19999999999999" height="104" as="geometry" />
           </mxCell>
         </object>
-        <object label="&lt;b&gt;&lt;font style=&quot;font-size: 19px&quot; color=&quot;#ff3333&quot;&gt;C&lt;/font&gt;&lt;/b&gt;" sType="HeatSource" sHeatSourceType="components.thermal.heatsources.ConstantTemperature" id="rjLiw1ouB-SMvJqF0zQi-65">
-          <mxCell style="shape=mxgraph.pid.heat_exchangers.shell_and_tube_heat_exchanger_2;html=1;align=center;verticalLabelPosition=middle;verticalAlign=middle;dashed=0;aspect=fixed;fillColor=#ffffff;strokeColor=#000000;labelPosition=center;" parent="rjLiw1ouB-SMvJqF0zQi-64" vertex="1">
+        <object label="&lt;b&gt;&lt;font style=&quot;font-size: 19px&quot; color=&quot;#ff3333&quot;&gt;C&lt;/font&gt;&lt;/b&gt;" sType="HeatSource" sHeatSourceType="components.thermal.heatsources.ConstantTemperature" id="VtzrqL8gwkVYdRojpabA-45">
+          <mxCell style="shape=mxgraph.pid.heat_exchangers.shell_and_tube_heat_exchanger_2;html=1;align=center;verticalLabelPosition=middle;verticalAlign=middle;dashed=0;aspect=fixed;fillColor=#ffffff;strokeColor=#000000;labelPosition=center;" parent="VtzrqL8gwkVYdRojpabA-44" vertex="1">
             <mxGeometry x="41.048275862068884" y="28.608695652173992" width="30" height="30" as="geometry" />
           </mxCell>
         </object>
-        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="rjLiw1ouB-SMvJqF0zQi-69">
-          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=3;" parent="rjLiw1ouB-SMvJqF0zQi-2" source="rjLiw1ouB-SMvJqF0zQi-61" target="rjLiw1ouB-SMvJqF0zQi-64" edge="1">
+        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="VtzrqL8gwkVYdRojpabA-46">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=3;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-41" target="VtzrqL8gwkVYdRojpabA-44" edge="1">
             <mxGeometry relative="1" as="geometry">
-              <mxPoint x="1242" y="413" as="sourcePoint" />
-              <mxPoint x="1022.272705078125" y="275.5" as="targetPoint" />
+              <mxPoint x="1586" y="418" as="sourcePoint" />
+              <mxPoint x="1366.272705078125" y="280.5" as="targetPoint" />
               <Array as="points">
-                <mxPoint x="1320" y="842" />
-                <mxPoint x="1320" y="842" />
+                <mxPoint x="1664" y="847" />
+                <mxPoint x="1664" y="847" />
               </Array>
             </mxGeometry>
           </mxCell>
         </object>
-        <object label="" sType="Branch" sSolver="manual" sCustomName="CCAA_Condensate" id="rjLiw1ouB-SMvJqF0zQi-66">
-          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=3;" parent="rjLiw1ouB-SMvJqF0zQi-2" source="rjLiw1ouB-SMvJqF0zQi-60" target="rjLiw1ouB-SMvJqF0zQi-38" edge="1">
+        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="VtzrqL8gwkVYdRojpabA-48">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=3;exitX=0.978;exitY=0.467;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1.006;entryY=0.937;entryDx=0;entryDy=0;entryPerimeter=0;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-39" target="VtzrqL8gwkVYdRojpabA-4" edge="1">
             <mxGeometry relative="1" as="geometry">
-              <mxPoint x="960.5714285714284" y="866.5" as="sourcePoint" />
-              <mxPoint x="552.4285714285716" y="866.5" as="targetPoint" />
-              <Array as="points">
-                <mxPoint x="648" y="873" />
-                <mxPoint x="648" y="873" />
-              </Array>
-            </mxGeometry>
-          </mxCell>
-        </object>
-        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="rjLiw1ouB-SMvJqF0zQi-77">
-          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=3;exitX=0.978;exitY=0.467;exitDx=0;exitDy=0;exitPerimeter=0;" parent="rjLiw1ouB-SMvJqF0zQi-2" source="rjLiw1ouB-SMvJqF0zQi-58" target="rjLiw1ouB-SMvJqF0zQi-4" edge="1">
-            <mxGeometry relative="1" as="geometry">
-              <mxPoint x="940" y="664" as="sourcePoint" />
-              <mxPoint x="805" y="440" as="targetPoint" />
-              <Array as="points">
-                <mxPoint x="961" y="696" />
-              </Array>
-            </mxGeometry>
-          </mxCell>
-        </object>
-        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="rjLiw1ouB-SMvJqF0zQi-78">
-          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=3;entryX=0.253;entryY=0.525;entryDx=0;entryDy=0;entryPerimeter=0;" parent="rjLiw1ouB-SMvJqF0zQi-2" source="rjLiw1ouB-SMvJqF0zQi-4" target="rjLiw1ouB-SMvJqF0zQi-56" edge="1">
-            <mxGeometry relative="1" as="geometry">
-              <mxPoint x="940.2" y="660" as="sourcePoint" />
-              <mxPoint x="940" y="612" as="targetPoint" />
-              <Array as="points">
-                <mxPoint x="873" y="602" />
-              </Array>
-            </mxGeometry>
-          </mxCell>
-        </object>
-        <object label="CCAA CDRA Interface" sType="Store" bNoStoreCalculation="true" fVolume="1e-6" id="rjLiw1ouB-SMvJqF0zQi-70">
-          <mxCell style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;container=1;" parent="rjLiw1ouB-SMvJqF0zQi-2" vertex="1">
-            <mxGeometry x="1610.2424112955728" y="601.5" width="137" height="89" as="geometry" />
-          </mxCell>
-        </object>
-        <object label="Interface" fPressureCO2="400" fPressureN2="8e4" fPressureO2="2.1e4" fVolume="1e-6" fTemperature="293" sType="Gas_Flow" rRelHumidity="0.5" id="rjLiw1ouB-SMvJqF0zQi-71">
-          <mxCell style="rounded=1;whiteSpace=wrap;html=1;" parent="rjLiw1ouB-SMvJqF0zQi-70" vertex="1">
-            <mxGeometry x="27.399999999999995" y="35.38461538461538" width="82.2" height="42.46153846153846" as="geometry" />
-          </mxCell>
-        </object>
-        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="rjLiw1ouB-SMvJqF0zQi-73">
-          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=3;" parent="rjLiw1ouB-SMvJqF0zQi-2" source="rjLiw1ouB-SMvJqF0zQi-62" target="rjLiw1ouB-SMvJqF0zQi-71" edge="1">
-            <mxGeometry relative="1" as="geometry">
-              <mxPoint x="1460.6536574590773" y="335.9047619047619" as="sourcePoint" />
-              <mxPoint x="1511.129847935268" y="348.2857142857142" as="targetPoint" />
-            </mxGeometry>
-          </mxCell>
-        </object>
-        <object label="CDRA&lt;br&gt;" sType="CDRA" ReferencePhase="Cabin.Atmosphere" id="rjLiw1ouB-SMvJqF0zQi-51">
-          <mxCell style="whiteSpace=wrap;html=1;dashed=1;verticalAlign=top;container=1;resizeWidth=1;resizeHeight=1;" parent="rjLiw1ouB-SMvJqF0zQi-2" vertex="1">
-            <mxGeometry x="1648.242411295573" y="163" width="249.5" height="182" as="geometry">
-              <mxRectangle x="1272.242411295573" y="360.5" width="70" height="20" as="alternateBounds" />
-            </mxGeometry>
-          </mxCell>
-        </object>
-        <object label="Air" sType="Input" id="rjLiw1ouB-SMvJqF0zQi-52">
-          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="rjLiw1ouB-SMvJqF0zQi-51" vertex="1">
-            <mxGeometry x="190" y="141.5" width="85" height="25" as="geometry" />
-          </mxCell>
-        </object>
-        <object label="CO2" sType="Output" id="rjLiw1ouB-SMvJqF0zQi-54">
-          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="rjLiw1ouB-SMvJqF0zQi-51" vertex="1">
-            <mxGeometry x="-28.999999999999773" y="92" width="85" height="25" as="geometry" />
-          </mxCell>
-        </object>
-        <object label="Air" sType="Output" id="rjLiw1ouB-SMvJqF0zQi-53">
-          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="rjLiw1ouB-SMvJqF0zQi-51" vertex="1">
-            <mxGeometry x="-28.999999999999773" y="25.5" width="85" height="25" as="geometry" />
-          </mxCell>
-        </object>
-        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="rjLiw1ouB-SMvJqF0zQi-72">
-          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=3;" parent="rjLiw1ouB-SMvJqF0zQi-2" source="rjLiw1ouB-SMvJqF0zQi-71" target="rjLiw1ouB-SMvJqF0zQi-52" edge="1">
-            <mxGeometry relative="1" as="geometry">
-              <mxPoint x="1585.383816189236" y="311.8888888888889" as="sourcePoint" />
-              <mxPoint x="1623.7233223620758" y="259.3888888888889" as="targetPoint" />
-              <Array as="points">
-                <mxPoint x="1980" y="659" />
-                <mxPoint x="1980" y="317" />
-              </Array>
-            </mxGeometry>
-          </mxCell>
-        </object>
-        <object label="Vacuum Store" sType="Store" bNoStoreCalculation="true" fVolume="100" id="rjLiw1ouB-SMvJqF0zQi-49">
-          <mxCell style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;container=1;" parent="rjLiw1ouB-SMvJqF0zQi-2" vertex="1">
-            <mxGeometry x="915" y="42" width="168" height="121" as="geometry" />
-          </mxCell>
-        </object>
-        <object label="Vacuum" fPressureCO2="0" fPressureN2="0" fPressureO2="0" fVolume="100" fTemperature="3" sType="Gas_Boundary" rRelHumidity="0" id="rjLiw1ouB-SMvJqF0zQi-50">
-          <mxCell style="rounded=1;whiteSpace=wrap;html=1;" parent="rjLiw1ouB-SMvJqF0zQi-49" vertex="1">
-            <mxGeometry x="33.6" y="46.538461538461526" width="100.80000000000001" height="55.84615384615384" as="geometry" />
-          </mxCell>
-        </object>
-        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="rjLiw1ouB-SMvJqF0zQi-79">
-          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=3;" parent="rjLiw1ouB-SMvJqF0zQi-2" source="rjLiw1ouB-SMvJqF0zQi-53" target="rjLiw1ouB-SMvJqF0zQi-4" edge="1">
-            <mxGeometry relative="1" as="geometry">
-              <mxPoint x="1440" y="669" as="sourcePoint" />
-              <mxPoint x="1538.0424112955734" y="525" as="targetPoint" />
-              <Array as="points">
-                <mxPoint x="1068" y="200" />
-                <mxPoint x="1068" y="200" />
-              </Array>
-            </mxGeometry>
-          </mxCell>
-        </object>
-        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="rjLiw1ouB-SMvJqF0zQi-67">
-          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=3;" parent="rjLiw1ouB-SMvJqF0zQi-2" source="rjLiw1ouB-SMvJqF0zQi-64" target="rjLiw1ouB-SMvJqF0zQi-57" edge="1">
-            <mxGeometry relative="1" as="geometry">
-              <mxPoint x="1154.272705078125" y="336.5" as="sourcePoint" />
-              <mxPoint x="1192.272705078125" y="274.5" as="targetPoint" />
-              <Array as="points">
-                <mxPoint x="1390" y="801" />
-                <mxPoint x="1390" y="801" />
-              </Array>
-            </mxGeometry>
-          </mxCell>
-        </object>
-        <object label="Food Store" sType="FoodStore" bNoStoreCalculation="true" fVolume="1" fMassFood="PLOT_100" id="rjLiw1ouB-SMvJqF0zQi-80">
-          <mxCell style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;container=0;" parent="rjLiw1ouB-SMvJqF0zQi-2" vertex="1" collapsed="1">
-            <mxGeometry x="279.969706217448" y="349" width="90" height="55" as="geometry">
-              <mxRectangle x="1160" y="392.5" width="145" height="101" as="alternateBounds" />
-            </mxGeometry>
-          </mxCell>
-        </object>
-        <object label="" sType="Branch" sSolver="residual" sCustomName="" id="rjLiw1ouB-SMvJqF0zQi-81">
-          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#000000;strokeWidth=3;" parent="rjLiw1ouB-SMvJqF0zQi-2" source="rjLiw1ouB-SMvJqF0zQi-24" target="rjLiw1ouB-SMvJqF0zQi-80" edge="1">
-            <mxGeometry relative="1" as="geometry">
-              <mxPoint x="322.46970621744777" y="484.2941176470588" as="sourcePoint" />
-              <mxPoint x="510.47577854671295" y="484.2941176470588" as="targetPoint" />
+              <mxPoint x="1284" y="669" as="sourcePoint" />
+              <mxPoint x="1085" y="696.5" as="targetPoint" />
               <Array as="points" />
             </mxGeometry>
           </mxCell>
         </object>
-        <object label="OGA&lt;br&gt;" sType="OGA" fTimeStep="10" fOutletTemperature="323" id="fb-80rxaNA2ocp0en3e6-1">
-          <mxCell style="whiteSpace=wrap;html=1;dashed=1;verticalAlign=top;container=1;resizeWidth=1;resizeHeight=1;recursiveResize=0;" parent="rjLiw1ouB-SMvJqF0zQi-2" vertex="1">
-            <mxGeometry x="1728" y="374" width="174" height="136" as="geometry">
+        <object label="CCAA CDRA Interface" sType="Store" bNoStoreCalculation="true" fVolume="1e-6" id="VtzrqL8gwkVYdRojpabA-50">
+          <mxCell style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;container=1;" parent="VtzrqL8gwkVYdRojpabA-2" vertex="1">
+            <mxGeometry x="1954.2424112955728" y="606.5" width="137" height="89" as="geometry" />
+          </mxCell>
+        </object>
+        <object label="Interface" fPressureCO2="400" fPressureN2="8e4" fPressureO2="2.1e4" fVolume="1e-6" fTemperature="293" sType="Gas_Flow" rRelHumidity="0.5" id="VtzrqL8gwkVYdRojpabA-51">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;" parent="VtzrqL8gwkVYdRojpabA-50" vertex="1">
+            <mxGeometry x="27.399999999999995" y="35.38461538461538" width="82.2" height="42.46153846153846" as="geometry" />
+          </mxCell>
+        </object>
+        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="VtzrqL8gwkVYdRojpabA-52">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=3;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-42" target="VtzrqL8gwkVYdRojpabA-51" edge="1">
+            <mxGeometry relative="1" as="geometry">
+              <mxPoint x="1804.6536574590773" y="340.9047619047619" as="sourcePoint" />
+              <mxPoint x="1855.129847935268" y="353.2857142857142" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="CDRA&lt;br&gt;" sType="CDRA" ReferencePhase="Cabin.Atmosphere" id="VtzrqL8gwkVYdRojpabA-53">
+          <mxCell style="whiteSpace=wrap;html=1;dashed=1;verticalAlign=top;container=1;resizeWidth=1;resizeHeight=1;" parent="VtzrqL8gwkVYdRojpabA-2" vertex="1">
+            <mxGeometry x="1992.242411295573" y="168" width="249.5" height="182" as="geometry">
               <mxRectangle x="1272.242411295573" y="360.5" width="70" height="20" as="alternateBounds" />
             </mxGeometry>
           </mxCell>
         </object>
-        <object label="H2" sType="Output" id="fb-80rxaNA2ocp0en3e6-2">
-          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="fb-80rxaNA2ocp0en3e6-1" vertex="1">
+        <object label="Air" sType="Input" id="VtzrqL8gwkVYdRojpabA-54">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="VtzrqL8gwkVYdRojpabA-53" vertex="1">
+            <mxGeometry x="190" y="141.5" width="85" height="25" as="geometry" />
+          </mxCell>
+        </object>
+        <object label="CO2" sType="Output" id="VtzrqL8gwkVYdRojpabA-55">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="VtzrqL8gwkVYdRojpabA-53" vertex="1">
+            <mxGeometry x="-28.999999999999773" y="92" width="85" height="25" as="geometry" />
+          </mxCell>
+        </object>
+        <object label="Air" sType="Output" id="VtzrqL8gwkVYdRojpabA-56">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="VtzrqL8gwkVYdRojpabA-53" vertex="1">
+            <mxGeometry x="-28.999999999999773" y="25.5" width="85" height="25" as="geometry" />
+          </mxCell>
+        </object>
+        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="VtzrqL8gwkVYdRojpabA-57">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=3;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-51" target="VtzrqL8gwkVYdRojpabA-54" edge="1">
+            <mxGeometry relative="1" as="geometry">
+              <mxPoint x="1929.383816189236" y="316.8888888888889" as="sourcePoint" />
+              <mxPoint x="1967.7233223620758" y="264.3888888888889" as="targetPoint" />
+              <Array as="points">
+                <mxPoint x="2324" y="664" />
+                <mxPoint x="2324" y="322" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="Vacuum Store" sType="Store" bNoStoreCalculation="true" fVolume="100" id="VtzrqL8gwkVYdRojpabA-58">
+          <mxCell style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;container=1;" parent="VtzrqL8gwkVYdRojpabA-2" vertex="1">
+            <mxGeometry x="1259" y="47" width="168" height="121" as="geometry" />
+          </mxCell>
+        </object>
+        <object label="Vacuum" fPressureCO2="0" fPressureN2="0" fPressureO2="0" fVolume="100" fTemperature="3" sType="Gas_Boundary" rRelHumidity="0" id="VtzrqL8gwkVYdRojpabA-59">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;" parent="VtzrqL8gwkVYdRojpabA-58" vertex="1">
+            <mxGeometry x="33.6" y="46.538461538461526" width="100.80000000000001" height="55.84615384615384" as="geometry" />
+          </mxCell>
+        </object>
+        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="VtzrqL8gwkVYdRojpabA-60">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=3;entryX=1.001;entryY=0.127;entryDx=0;entryDy=0;entryPerimeter=0;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-56" target="VtzrqL8gwkVYdRojpabA-4" edge="1">
+            <mxGeometry relative="1" as="geometry">
+              <mxPoint x="1784" y="674" as="sourcePoint" />
+              <mxPoint x="1202.5" y="205.00000000000023" as="targetPoint" />
+              <Array as="points">
+                <mxPoint x="1963" y="205" />
+                <mxPoint x="1412" y="205" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="VtzrqL8gwkVYdRojpabA-61">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=3;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-44" target="VtzrqL8gwkVYdRojpabA-38" edge="1">
+            <mxGeometry relative="1" as="geometry">
+              <mxPoint x="1498.272705078125" y="341.5" as="sourcePoint" />
+              <mxPoint x="1536.272705078125" y="279.5" as="targetPoint" />
+              <Array as="points">
+                <mxPoint x="1734" y="806" />
+                <mxPoint x="1734" y="806" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="Food Store" sType="FoodStore" bNoStoreCalculation="true" fVolume="1" fMassFood="PLOT_100" id="VtzrqL8gwkVYdRojpabA-62">
+          <mxCell style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;container=0;" parent="VtzrqL8gwkVYdRojpabA-2" vertex="1" collapsed="1">
+            <mxGeometry x="506.969706217448" y="354" width="90" height="55" as="geometry">
+              <mxRectangle x="1160" y="392.5" width="145" height="101" as="alternateBounds" />
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="" sType="Branch" sSolver="residual" sCustomName="" id="VtzrqL8gwkVYdRojpabA-63">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#000000;strokeWidth=3;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-17" target="VtzrqL8gwkVYdRojpabA-62" edge="1">
+            <mxGeometry relative="1" as="geometry">
+              <mxPoint x="549.4697062174478" y="489.2941176470588" as="sourcePoint" />
+              <mxPoint x="737.475778546713" y="489.2941176470588" as="targetPoint" />
+              <Array as="points" />
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="OGA&lt;br&gt;" sType="OGA" fTimeStep="10" fOutletTemperature="323" id="VtzrqL8gwkVYdRojpabA-64">
+          <mxCell style="whiteSpace=wrap;html=1;dashed=1;verticalAlign=top;container=1;resizeWidth=1;resizeHeight=1;recursiveResize=0;" parent="VtzrqL8gwkVYdRojpabA-2" vertex="1">
+            <mxGeometry x="2072" y="379" width="174" height="136" as="geometry">
+              <mxRectangle x="1272.242411295573" y="360.5" width="70" height="20" as="alternateBounds" />
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="H2" sType="Output" id="VtzrqL8gwkVYdRojpabA-65">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="VtzrqL8gwkVYdRojpabA-64" vertex="1">
             <mxGeometry x="-29" y="36" width="85" height="25" as="geometry" />
           </mxCell>
         </object>
-        <object label="Water" sType="Input" id="fb-80rxaNA2ocp0en3e6-3">
-          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="fb-80rxaNA2ocp0en3e6-1" vertex="1">
+        <object label="Water" sType="Input" id="VtzrqL8gwkVYdRojpabA-66">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="VtzrqL8gwkVYdRojpabA-64" vertex="1">
             <mxGeometry x="124.5" y="63.5" width="85" height="25" as="geometry" />
           </mxCell>
         </object>
-        <object label="O2" sType="Output" id="fb-80rxaNA2ocp0en3e6-4">
-          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="fb-80rxaNA2ocp0en3e6-1" vertex="1">
+        <object label="O2" sType="Output" id="VtzrqL8gwkVYdRojpabA-67">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="VtzrqL8gwkVYdRojpabA-64" vertex="1">
             <mxGeometry x="-29" y="94.5" width="85" height="25" as="geometry" />
           </mxCell>
         </object>
-        <object label="SCRA&lt;br&gt;" sType="SCRA" fTimeStep="10" fCoolantTemperature="277" id="fb-80rxaNA2ocp0en3e6-5">
-          <mxCell style="whiteSpace=wrap;html=1;dashed=1;verticalAlign=top;container=1;resizeWidth=1;resizeHeight=1;recursiveResize=0;" parent="rjLiw1ouB-SMvJqF0zQi-2" vertex="1">
-            <mxGeometry x="1038" y="223.5" width="230" height="182" as="geometry">
+        <object label="SCRA&lt;br&gt;" sType="SCRA" fTimeStep="10" fCoolantTemperature="277" id="VtzrqL8gwkVYdRojpabA-68">
+          <mxCell style="whiteSpace=wrap;html=1;dashed=1;verticalAlign=top;container=1;resizeWidth=1;resizeHeight=1;recursiveResize=0;" parent="VtzrqL8gwkVYdRojpabA-2" vertex="1">
+            <mxGeometry x="1382" y="228.5" width="230" height="182" as="geometry">
               <mxRectangle x="1272.242411295573" y="360.5" width="70" height="20" as="alternateBounds" />
             </mxGeometry>
           </mxCell>
         </object>
-        <object label="Condensate" sType="Output" id="fb-80rxaNA2ocp0en3e6-6">
-          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="fb-80rxaNA2ocp0en3e6-5" vertex="1">
+        <object label="Condensate" sType="Output" id="VtzrqL8gwkVYdRojpabA-69">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="VtzrqL8gwkVYdRojpabA-68" vertex="1">
             <mxGeometry x="-44" y="105.5" width="119" height="25" as="geometry" />
           </mxCell>
         </object>
-        <object label="Gas" sType="Output" id="fb-80rxaNA2ocp0en3e6-8">
-          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="fb-80rxaNA2ocp0en3e6-5" vertex="1">
+        <object label="Gas" sType="Output" id="VtzrqL8gwkVYdRojpabA-70">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="VtzrqL8gwkVYdRojpabA-68" vertex="1">
             <mxGeometry x="-40" y="43" width="85" height="25" as="geometry" />
           </mxCell>
         </object>
-        <object label="Coolant" sType="Input" id="fb-80rxaNA2ocp0en3e6-90">
-          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="fb-80rxaNA2ocp0en3e6-5" vertex="1">
+        <object label="Coolant" sType="Input" id="VtzrqL8gwkVYdRojpabA-71">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="VtzrqL8gwkVYdRojpabA-68" vertex="1">
             <mxGeometry x="135.25758870442678" y="102" width="128" height="25" as="geometry" />
           </mxCell>
         </object>
-        <object label="Coolant" sType="Output" id="fb-80rxaNA2ocp0en3e6-91">
-          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;rotation=0;horizontal=1;flipV=1;flipH=0;" parent="fb-80rxaNA2ocp0en3e6-5" vertex="1">
+        <object label="Coolant" sType="Output" id="VtzrqL8gwkVYdRojpabA-72">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;rotation=0;horizontal=1;flipV=1;flipH=0;" parent="VtzrqL8gwkVYdRojpabA-68" vertex="1">
             <mxGeometry x="134.25758870442678" y="143" width="127" height="25" as="geometry" />
           </mxCell>
         </object>
-        <object label="CO2" sType="Input" id="fb-80rxaNA2ocp0en3e6-92">
-          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="fb-80rxaNA2ocp0en3e6-5" vertex="1">
+        <object label="CO2" sType="Input" id="VtzrqL8gwkVYdRojpabA-73">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="VtzrqL8gwkVYdRojpabA-68" vertex="1">
             <mxGeometry x="176.24241129557322" y="27.5" width="85" height="25" as="geometry" />
           </mxCell>
         </object>
-        <object label="H2" sType="Input" id="fb-80rxaNA2ocp0en3e6-93">
-          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="fb-80rxaNA2ocp0en3e6-5" vertex="1">
+        <object label="H2" sType="Input" id="VtzrqL8gwkVYdRojpabA-74">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="VtzrqL8gwkVYdRojpabA-68" vertex="1">
             <mxGeometry x="176.24241129557322" y="66.5" width="85" height="25" as="geometry" />
           </mxCell>
         </object>
-        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="fb-80rxaNA2ocp0en3e6-96">
-          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=3;exitX=0.5;exitY=1;exitDx=0;exitDy=0;jumpStyle=arc;" parent="rjLiw1ouB-SMvJqF0zQi-2" source="rjLiw1ouB-SMvJqF0zQi-38" target="fb-80rxaNA2ocp0en3e6-3" edge="1">
+        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="VtzrqL8gwkVYdRojpabA-76">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#000000;strokeWidth=3;entryX=0.25;entryY=1;entryDx=0;entryDy=0;jumpStyle=arc;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-70" target="VtzrqL8gwkVYdRojpabA-59" edge="1">
             <mxGeometry relative="1" as="geometry">
-              <mxPoint x="951.826989619377" y="874.4705882352941" as="sourcePoint" />
-              <mxPoint x="561.5294117647059" y="874.4705882352941" as="targetPoint" />
+              <mxPoint x="723.9697062174482" y="391.5" as="sourcePoint" />
+              <mxPoint x="793.1999999999998" y="391.5" as="targetPoint" />
               <Array as="points">
-                <mxPoint x="507" y="888" />
-                <mxPoint x="507" y="940" />
-                <mxPoint x="1958" y="940" />
-                <mxPoint x="1958" y="452" />
+                <mxPoint x="1318" y="284" />
               </Array>
             </mxGeometry>
           </mxCell>
         </object>
-        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="fb-80rxaNA2ocp0en3e6-98">
-          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#000000;strokeWidth=3;entryX=0.25;entryY=1;entryDx=0;entryDy=0;jumpStyle=arc;" parent="rjLiw1ouB-SMvJqF0zQi-2" source="fb-80rxaNA2ocp0en3e6-8" target="rjLiw1ouB-SMvJqF0zQi-50" edge="1">
+        <object label="" sType="Branch" sSolver="manual" sCustomName="OGA_O2_Outlet" fFlowRate="PLOT_" id="VtzrqL8gwkVYdRojpabA-77">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=3;entryX=1.021;entryY=0.588;entryDx=0;entryDy=0;entryPerimeter=0;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-67" target="VtzrqL8gwkVYdRojpabA-4" edge="1">
             <mxGeometry relative="1" as="geometry">
-              <mxPoint x="379.9697062174482" y="386.5" as="sourcePoint" />
-              <mxPoint x="449.1999999999998" y="386.5" as="targetPoint" />
+              <mxPoint x="1964" y="225" as="sourcePoint" />
+              <mxPoint x="1202.5" y="488" as="targetPoint" />
               <Array as="points">
-                <mxPoint x="974" y="279" />
+                <mxPoint x="2043" y="488" />
+                <mxPoint x="1564" y="488" />
               </Array>
             </mxGeometry>
           </mxCell>
         </object>
-        <object label="" sType="Branch" sSolver="manual" sCustomName="OGA_O2_Outlet" fFlowRate="PLOT_" id="fb-80rxaNA2ocp0en3e6-99">
-          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=3;" parent="rjLiw1ouB-SMvJqF0zQi-2" source="fb-80rxaNA2ocp0en3e6-4" target="rjLiw1ouB-SMvJqF0zQi-4" edge="1">
+        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="VtzrqL8gwkVYdRojpabA-78">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=3;entryX=1;entryY=0.5;entryDx=0;entryDy=0;jumpStyle=arc;exitX=0.75;exitY=0;exitDx=0;exitDy=0;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-44" target="VtzrqL8gwkVYdRojpabA-71" edge="1">
             <mxGeometry relative="1" as="geometry">
-              <mxPoint x="1620" y="220" as="sourcePoint" />
-              <mxPoint x="868.5" y="220" as="targetPoint" />
+              <mxPoint x="1780.7424112955732" y="816" as="sourcePoint" />
+              <mxPoint x="1602.8000000000002" y="816" as="targetPoint" />
               <Array as="points">
-                <mxPoint x="1220" y="483" />
-                <mxPoint x="1220" y="483" />
+                <mxPoint x="1850" y="343" />
               </Array>
             </mxGeometry>
           </mxCell>
         </object>
-        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="fb-80rxaNA2ocp0en3e6-100">
-          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=3;entryX=1;entryY=0.5;entryDx=0;entryDy=0;jumpStyle=arc;exitX=0.75;exitY=0;exitDx=0;exitDy=0;" parent="rjLiw1ouB-SMvJqF0zQi-2" source="rjLiw1ouB-SMvJqF0zQi-64" target="fb-80rxaNA2ocp0en3e6-90" edge="1">
+        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="VtzrqL8gwkVYdRojpabA-79">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=3;entryX=0.25;entryY=0;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;jumpStyle=arc;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-72" target="VtzrqL8gwkVYdRojpabA-44" edge="1">
             <mxGeometry relative="1" as="geometry">
-              <mxPoint x="1436.7424112955732" y="811" as="sourcePoint" />
-              <mxPoint x="1258.8000000000002" y="811" as="targetPoint" />
-              <Array as="points">
-                <mxPoint x="1506" y="338" />
-              </Array>
+              <mxPoint x="1854" y="786" as="sourcePoint" />
+              <mxPoint x="1635" y="353" as="targetPoint" />
             </mxGeometry>
           </mxCell>
         </object>
-        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="fb-80rxaNA2ocp0en3e6-101">
-          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=3;entryX=0.25;entryY=0;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;jumpStyle=arc;" parent="rjLiw1ouB-SMvJqF0zQi-2" source="fb-80rxaNA2ocp0en3e6-91" target="rjLiw1ouB-SMvJqF0zQi-64" edge="1">
-            <mxGeometry relative="1" as="geometry">
-              <mxPoint x="1510" y="781" as="sourcePoint" />
-              <mxPoint x="1291" y="348" as="targetPoint" />
-            </mxGeometry>
+        <object label="CDRA SCRA Interface" sType="Store" bNoStoreCalculation="true" fVolume="1e-1" id="VtzrqL8gwkVYdRojpabA-81">
+          <mxCell style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;container=1;" parent="VtzrqL8gwkVYdRojpabA-2" vertex="1">
+            <mxGeometry x="1702" y="226.5" width="137" height="72" as="geometry" />
           </mxCell>
         </object>
-        <object label="" sType="Branch" sSolver="manual" sCustomName="SCRA_Condensate" fFlowRate="Plot" id="fb-80rxaNA2ocp0en3e6-103">
-          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=3;entryX=1;entryY=0.25;entryDx=0;entryDy=0;jumpStyle=arc;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" parent="rjLiw1ouB-SMvJqF0zQi-2" source="fb-80rxaNA2ocp0en3e6-6" target="rjLiw1ouB-SMvJqF0zQi-38" edge="1">
-            <mxGeometry relative="1" as="geometry">
-              <mxPoint x="988" y="341.5" as="sourcePoint" />
-              <mxPoint x="1458.1428571428573" y="781.6428571428573" as="targetPoint" />
-              <Array as="points">
-                <mxPoint x="908" y="342" />
-                <mxPoint x="908" y="853" />
-              </Array>
-            </mxGeometry>
-          </mxCell>
-        </object>
-        <object label="CDRA SCRA Interface" sType="Store" bNoStoreCalculation="true" fVolume="1e-1" id="fb-80rxaNA2ocp0en3e6-104">
-          <mxCell style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;container=1;" parent="rjLiw1ouB-SMvJqF0zQi-2" vertex="1">
-            <mxGeometry x="1358" y="221.5" width="137" height="72" as="geometry" />
-          </mxCell>
-        </object>
-        <object label="Interface" fPressureCO2="10" fPressureN2="0" fPressureO2="0" fVolume="1e-1" fTemperature="293" sType="Gas_Flow" rRelHumidity="0" rMaxChangeTemperature="1" id="fb-80rxaNA2ocp0en3e6-105">
-          <mxCell style="rounded=1;whiteSpace=wrap;html=1;" parent="fb-80rxaNA2ocp0en3e6-104" vertex="1">
+        <object label="Interface" fPressureCO2="10" fPressureN2="0" fPressureO2="0" fVolume="1e-1" fTemperature="293" sType="Gas_Flow" rRelHumidity="0" rMaxChangeTemperature="1" id="VtzrqL8gwkVYdRojpabA-82">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;" parent="VtzrqL8gwkVYdRojpabA-81" vertex="1">
             <mxGeometry x="27.399999999999995" y="28.6257562662057" width="82.2" height="34.35090751944684" as="geometry" />
           </mxCell>
         </object>
-        <object label="" sType="Branch" sSolver="manual" sCustomName="CDRA_CO2_Outlet" fFlowRate="Plot_" id="rjLiw1ouB-SMvJqF0zQi-68">
-          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#f8cecc;strokeColor=#FF3333;strokeWidth=3;jumpStyle=arc;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="rjLiw1ouB-SMvJqF0zQi-2" source="rjLiw1ouB-SMvJqF0zQi-54" target="fb-80rxaNA2ocp0en3e6-105" edge="1">
+        <object label="" sType="Branch" sSolver="manual" sCustomName="CDRA_CO2_Outlet" fFlowRate="Plot_" id="VtzrqL8gwkVYdRojpabA-83">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#f8cecc;strokeColor=#FF3333;strokeWidth=3;jumpStyle=arc;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-55" target="VtzrqL8gwkVYdRojpabA-82" edge="1">
             <mxGeometry relative="1" as="geometry">
-              <mxPoint x="1678" y="390.5" as="sourcePoint" />
-              <mxPoint x="2097.272705078125" y="-124" as="targetPoint" />
+              <mxPoint x="2022" y="395.5" as="sourcePoint" />
+              <mxPoint x="2441.272705078125" y="-119" as="targetPoint" />
             </mxGeometry>
           </mxCell>
         </object>
-        <object label="" sType="Branch" sSolver="manual" sCustomName="SCRA_CO2_Inlet" fFlowRate="Plot_" id="fb-80rxaNA2ocp0en3e6-106">
-          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#f8cecc;strokeColor=#FF3333;strokeWidth=3;jumpStyle=arc;entryX=1;entryY=0.75;entryDx=0;entryDy=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" parent="rjLiw1ouB-SMvJqF0zQi-2" source="fb-80rxaNA2ocp0en3e6-105" target="fb-80rxaNA2ocp0en3e6-92" edge="1">
+        <object label="" sType="Branch" sSolver="manual" sCustomName="SCRA_CO2_Inlet" fFlowRate="Plot_" id="VtzrqL8gwkVYdRojpabA-84">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#f8cecc;strokeColor=#FF3333;strokeWidth=3;jumpStyle=arc;entryX=1;entryY=0.75;entryDx=0;entryDy=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-82" target="VtzrqL8gwkVYdRojpabA-73" edge="1">
             <mxGeometry relative="1" as="geometry">
-              <mxPoint x="1630.2220031323081" y="276.07142857142867" as="sourcePoint" />
-              <mxPoint x="1471" y="133.21428571428578" as="targetPoint" />
+              <mxPoint x="1974.2220031323081" y="281.07142857142867" as="sourcePoint" />
+              <mxPoint x="1815" y="138.21428571428578" as="targetPoint" />
             </mxGeometry>
           </mxCell>
         </object>
-        <object label="OGA SCRA Interface" sType="Store" bNoStoreCalculation="true" fVolume="1e-6" id="fb-80rxaNA2ocp0en3e6-107">
-          <mxCell style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;container=1;" parent="rjLiw1ouB-SMvJqF0zQi-2" vertex="1">
-            <mxGeometry x="1531" y="376" width="137" height="72" as="geometry" />
+        <object label="OGA SCRA Interface" sType="Store" bNoStoreCalculation="true" fVolume="1e-6" id="VtzrqL8gwkVYdRojpabA-85">
+          <mxCell style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;container=1;" parent="VtzrqL8gwkVYdRojpabA-2" vertex="1">
+            <mxGeometry x="1875" y="381" width="137" height="72" as="geometry" />
           </mxCell>
         </object>
-        <object label="Interface" fPressureCO2="0" fPressureN2="0" fPressureO2="0" fVolume="1e-6" fTemperature="293" sType="Gas_Flow" rRelHumidity="0" fPressureH2="1e5" id="fb-80rxaNA2ocp0en3e6-108">
-          <mxCell style="rounded=1;whiteSpace=wrap;html=1;" parent="fb-80rxaNA2ocp0en3e6-107" vertex="1">
+        <object label="Interface" fPressureCO2="0" fPressureN2="0" fPressureO2="0" fVolume="1e-6" fTemperature="293" sType="Gas_Flow" rRelHumidity="0" fPressureH2="1e5" id="VtzrqL8gwkVYdRojpabA-86">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;" parent="VtzrqL8gwkVYdRojpabA-85" vertex="1">
             <mxGeometry x="27.399999999999995" y="28.6257562662057" width="82.2" height="34.35090751944684" as="geometry" />
           </mxCell>
         </object>
-        <object label="" sType="Branch" sSolver="manual" sCustomName="SCRA_H2_Inlet" fFlowRate="Plot_" id="fb-80rxaNA2ocp0en3e6-97">
-          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#e1d5e7;strokeColor=#9673a6;strokeWidth=3;jumpStyle=arc;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" parent="rjLiw1ouB-SMvJqF0zQi-2" source="fb-80rxaNA2ocp0en3e6-108" target="fb-80rxaNA2ocp0en3e6-93" edge="1">
+        <object label="" sType="Branch" sSolver="manual" sCustomName="SCRA_H2_Inlet" fFlowRate="Plot_" id="VtzrqL8gwkVYdRojpabA-87">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#e1d5e7;strokeColor=#9673a6;strokeWidth=3;jumpStyle=arc;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-86" target="VtzrqL8gwkVYdRojpabA-74" edge="1">
             <mxGeometry relative="1" as="geometry">
-              <mxPoint x="1615.7424112955732" y="276.5" as="sourcePoint" />
-              <mxPoint x="1289.2424112955732" y="276.5" as="targetPoint" />
+              <mxPoint x="1959.7424112955732" y="281.5" as="sourcePoint" />
+              <mxPoint x="1633.2424112955732" y="281.5" as="targetPoint" />
               <Array as="points">
-                <mxPoint x="1518" y="422" />
-                <mxPoint x="1518" y="303" />
+                <mxPoint x="1862" y="427" />
+                <mxPoint x="1862" y="308" />
               </Array>
             </mxGeometry>
           </mxCell>
         </object>
-        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="fb-80rxaNA2ocp0en3e6-110">
-          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#e1d5e7;strokeColor=#9673a6;strokeWidth=3;jumpStyle=arc;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="rjLiw1ouB-SMvJqF0zQi-2" source="fb-80rxaNA2ocp0en3e6-2" target="fb-80rxaNA2ocp0en3e6-108" edge="1">
+        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="VtzrqL8gwkVYdRojpabA-88">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#e1d5e7;strokeColor=#9673a6;strokeWidth=3;jumpStyle=arc;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-65" target="VtzrqL8gwkVYdRojpabA-86" edge="1">
             <mxGeometry relative="1" as="geometry">
-              <mxPoint x="1568.3333333333335" y="431.66666666666674" as="sourcePoint" />
-              <mxPoint x="1293.6868557400176" y="313.3333333333335" as="targetPoint" />
+              <mxPoint x="1912.3333333333335" y="436.66666666666674" as="sourcePoint" />
+              <mxPoint x="1637.6868557400176" y="318.3333333333335" as="targetPoint" />
             </mxGeometry>
           </mxCell>
         </object>
-        <object label="Plants&lt;br&gt;" sType="Subsystem" sPlantSpecies="Sweetpotato, Whitepotato, Rice, Drybean, Soybean, Tomato, Peanut, Lettuce, Wheat" fGrowthArea="2, 8, 2, 10, 0, 5, 10, 2, 18" fHarvestTime="120, 138, 88, 63, 86, 80, 110, 30, 62" fEmergeTime="0, 0, 0, 0, 0, 0, 0, 0, 0" fPPFD="650, 650, 764, 370, 650, 625, 625, 295, 1333" fPhotoperiod="18, 12, 12, 12, 12, 12, 12, 16, 20" sSubsystemPath="components.matter.PlantModule.PlantCulture" fTimeStep="3600" iSubcultures="1, 4, 1, 4, 1, 5, 5, 4, 6" id="0NrPgtLnqh-rqr72nA6v-1">
-          <mxCell style="whiteSpace=wrap;html=1;dashed=1;verticalAlign=top;container=1;resizeWidth=1;resizeHeight=1;recursiveResize=0;" vertex="1" parent="rjLiw1ouB-SMvJqF0zQi-2">
-            <mxGeometry x="378" y="498.5" width="230" height="183" as="geometry" />
+        <object label="Plants&lt;br&gt;" sType="Plants" sPlantSpecies="Sweetpotato, Whitepotato, Rice, Drybean, Soybean, Tomato, Peanut, Lettuce, Wheat" fTimeStep="3600" iAssumedPreviousPlantGrowthDays="118" mfEmergeTime="0, 0, 0, 0, 0, 0, 0, 0, 0" mfPlantArea="2, 8, 2, 10, 0, 5, 10, 2, 18" mfHarvestTime="120, 138, 88, 63, 86, 80, 110, 30, 62" mfPPFD="650, 650, 764, 370, 650, 625, 625, 295, 1333" mfPhotoperiod="18, 12, 12, 12, 12, 12, 12, 16, 20" miSubcultures="1, 4, 1, 4, 1, 5, 5, 4, 6" id="VtzrqL8gwkVYdRojpabA-89">
+          <mxCell style="whiteSpace=wrap;html=1;dashed=1;verticalAlign=top;container=1;resizeWidth=1;resizeHeight=1;recursiveResize=0;" parent="VtzrqL8gwkVYdRojpabA-2" vertex="1">
+            <mxGeometry x="605" y="503.5" width="230" height="183" as="geometry" />
           </mxCell>
         </object>
-        <object label="Air" sType="Input" id="0NrPgtLnqh-rqr72nA6v-2">
-          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" vertex="1" parent="0NrPgtLnqh-rqr72nA6v-1">
+        <object label="Air" sType="Input" id="VtzrqL8gwkVYdRojpabA-90">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="VtzrqL8gwkVYdRojpabA-89" vertex="1">
             <mxGeometry x="165" y="70" width="85" height="25" as="geometry" />
           </mxCell>
         </object>
-        <object label="Air" sType="Output" id="0NrPgtLnqh-rqr72nA6v-3">
-          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;" vertex="1" parent="0NrPgtLnqh-rqr72nA6v-1">
+        <object label="Air" sType="Output" id="VtzrqL8gwkVYdRojpabA-91">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;" parent="VtzrqL8gwkVYdRojpabA-89" vertex="1">
             <mxGeometry x="173" y="30" width="85" height="25" as="geometry" />
           </mxCell>
         </object>
-        <mxCell id="0NrPgtLnqh-rqr72nA6v-4" value="" style="shape=mxgraph.signs.nature.maple_leaf;html=1;fillColor=#d5e8d4;strokeColor=#82b366;verticalLabelPosition=bottom;verticalAlign=top;align=center;" vertex="1" parent="0NrPgtLnqh-rqr72nA6v-1">
+        <mxCell id="VtzrqL8gwkVYdRojpabA-92" value="" style="shape=mxgraph.signs.nature.maple_leaf;html=1;fillColor=#d5e8d4;strokeColor=#82b366;verticalLabelPosition=bottom;verticalAlign=top;align=center;" parent="VtzrqL8gwkVYdRojpabA-89" vertex="1">
           <mxGeometry x="77" y="57.5" width="88" height="98" as="geometry" />
         </mxCell>
-        <object label="Nutrient" sType="Input" id="0NrPgtLnqh-rqr72nA6v-5">
-          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;" vertex="1" parent="0NrPgtLnqh-rqr72nA6v-1">
+        <object label="Nutrient" sType="Input" id="VtzrqL8gwkVYdRojpabA-93">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;" parent="VtzrqL8gwkVYdRojpabA-89" vertex="1">
             <mxGeometry x="-25.5" y="142" width="85" height="25" as="geometry" />
           </mxCell>
         </object>
-        <object label="Biomass" sType="Output" id="0NrPgtLnqh-rqr72nA6v-7">
-          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" vertex="1" parent="0NrPgtLnqh-rqr72nA6v-1">
+        <object label="Biomass" sType="Output" id="VtzrqL8gwkVYdRojpabA-94">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="VtzrqL8gwkVYdRojpabA-89" vertex="1">
             <mxGeometry x="-25.5" y="32.5" width="85" height="25" as="geometry" />
           </mxCell>
         </object>
-        <object label="Nutrient" sType="Output" id="0NrPgtLnqh-rqr72nA6v-8">
-          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" vertex="1" parent="0NrPgtLnqh-rqr72nA6v-1">
+        <object label="Nutrient" sType="Output" id="VtzrqL8gwkVYdRojpabA-95">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="VtzrqL8gwkVYdRojpabA-89" vertex="1">
             <mxGeometry x="-25.5" y="90" width="85" height="25" as="geometry" />
           </mxCell>
         </object>
-        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="0NrPgtLnqh-rqr72nA6v-9">
-          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#000000;strokeWidth=3;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="rjLiw1ouB-SMvJqF0zQi-2" source="0NrPgtLnqh-rqr72nA6v-8" target="rjLiw1ouB-SMvJqF0zQi-31">
+        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="VtzrqL8gwkVYdRojpabA-96">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#000000;strokeWidth=3;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-95" target="VtzrqL8gwkVYdRojpabA-23" edge="1">
             <mxGeometry relative="1" as="geometry">
-              <mxPoint x="158.97000000000025" y="639.3141025641025" as="sourcePoint" />
-              <mxPoint x="382.5" y="663" as="targetPoint" />
+              <mxPoint x="385.97000000000025" y="644.3141025641025" as="sourcePoint" />
+              <mxPoint x="609.5" y="668" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="WPA" sType="Subsystem" sSubsystemPath="components.matter.WPA.WPA" fTimeStep="60" id="VtzrqL8gwkVYdRojpabA-97">
+          <mxCell style="whiteSpace=wrap;html=1;dashed=1;verticalAlign=top;container=1;resizeWidth=1;resizeHeight=1;recursiveResize=0;" parent="VtzrqL8gwkVYdRojpabA-2" vertex="1">
+            <mxGeometry x="674" y="793" width="220" height="111.5" as="geometry">
+              <mxRectangle x="2018" y="891" width="100" height="20" as="alternateBounds" />
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="Air" sType="Output" id="VtzrqL8gwkVYdRojpabA-98">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="VtzrqL8gwkVYdRojpabA-97" vertex="1">
+            <mxGeometry x="-30.47" y="37" width="85" height="25" as="geometry" />
+          </mxCell>
+        </object>
+        <object label="Water" sType="Input" id="VtzrqL8gwkVYdRojpabA-99">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="VtzrqL8gwkVYdRojpabA-97" vertex="1">
+            <mxGeometry x="159.53" y="76.5" width="85" height="25" as="geometry" />
+          </mxCell>
+        </object>
+        <object label="Water" sType="Output" id="VtzrqL8gwkVYdRojpabA-100">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="VtzrqL8gwkVYdRojpabA-97" vertex="1">
+            <mxGeometry x="-30.47" y="78.5" width="85" height="25" as="geometry" />
+          </mxCell>
+        </object>
+        <object label="Air" sType="Input" id="VtzrqL8gwkVYdRojpabA-101">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=1;" parent="VtzrqL8gwkVYdRojpabA-97" vertex="1">
+            <mxGeometry x="159.53" y="37" width="85" height="25" as="geometry" />
+          </mxCell>
+        </object>
+        <object label="" sType="Branch" sSolver="manual" sCustomName="CCAA_Condensate" id="VtzrqL8gwkVYdRojpabA-47">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=3;entryX=1;entryY=0.75;entryDx=0;entryDy=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-40" target="VtzrqL8gwkVYdRojpabA-107" edge="1">
+            <mxGeometry relative="1" as="geometry">
+              <mxPoint x="1304.5714285714284" y="871.5" as="sourcePoint" />
+              <mxPoint x="896.4285714285716" y="871.5" as="targetPoint" />
+              <Array as="points">
+                <mxPoint x="1312" y="893" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="VtzrqL8gwkVYdRojpabA-110">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=3;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=0.25;exitY=1;exitDx=0;exitDy=0;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-4" target="VtzrqL8gwkVYdRojpabA-101" edge="1">
+            <mxGeometry relative="1" as="geometry">
+              <mxPoint x="1005" y="739.5" as="sourcePoint" />
+              <mxPoint x="1095.5" y="711.175" as="targetPoint" />
+              <Array as="points">
+                <mxPoint x="1005" y="739" />
+                <mxPoint x="1005" y="843" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="VtzrqL8gwkVYdRojpabA-111">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=3;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.001;entryY=0.961;entryDx=0;entryDy=0;entryPerimeter=0;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-98" edge="1" target="VtzrqL8gwkVYdRojpabA-4">
+            <mxGeometry relative="1" as="geometry">
+              <mxPoint x="1068" y="749" as="sourcePoint" />
+              <mxPoint x="910" y="714.5" as="targetPoint" />
+              <Array as="points">
+                <mxPoint x="624" y="842" />
+                <mxPoint x="624" y="715" />
+                <mxPoint x="880" y="715" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="" sType="Branch" sSolver="manual" sCustomName="SCRA_Condensate" fFlowRate="Plot" id="VtzrqL8gwkVYdRojpabA-113">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=3;entryX=1;entryY=0.5;entryDx=0;entryDy=0;jumpStyle=arc;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-100" target="VtzrqL8gwkVYdRojpabA-27" edge="1">
+            <mxGeometry relative="1" as="geometry">
+              <mxPoint x="1060" y="892" as="sourcePoint" />
+              <mxPoint x="908.5299999999997" y="892" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="Biowaste" sType="Store" bNoStoreCalculation="true" fVolume="1" id="VtzrqL8gwkVYdRojpabA-119">
+          <mxCell style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;container=1;recursiveResize=0;" parent="VtzrqL8gwkVYdRojpabA-2" vertex="1">
+            <mxGeometry x="60" y="418.5" width="145" height="80" as="geometry">
+              <mxRectangle x="1540" y="177" width="100" height="20" as="alternateBounds" />
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="Waste" fTemperature="293" sType="Mixture" sPhaseType="solid" fPressure="1e5" fMassFeces="PLOT_1e-5" id="VtzrqL8gwkVYdRojpabA-120">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;" parent="VtzrqL8gwkVYdRojpabA-119" vertex="1">
+            <mxGeometry x="29.000000000000036" y="23.501806020066866" width="87" height="45" as="geometry" />
+          </mxCell>
+        </object>
+        <object label="" sType="Branch" sSolver="manual" sCustomName="Human_Feces_Out" id="VtzrqL8gwkVYdRojpabA-122">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.25;entryDx=0;entryDy=0;strokeWidth=3;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-31" target="VtzrqL8gwkVYdRojpabA-120" edge="1">
+            <mxGeometry relative="1" as="geometry">
+              <mxPoint x="660" y="215" as="sourcePoint" />
+              <mxPoint x="419.97" y="215.00180602006685" as="targetPoint" />
+              <Array as="points">
+                <mxPoint x="230" y="205" />
+                <mxPoint x="230" y="453" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="" sType="Branch" sSolver="manual" sCustomName="Human_Feces_Out" id="VtzrqL8gwkVYdRojpabA-123">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.75;entryDx=0;entryDy=0;strokeWidth=3;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-16" target="VtzrqL8gwkVYdRojpabA-120" edge="1">
+            <mxGeometry relative="1" as="geometry">
+              <mxPoint x="332.97" y="215.00180602006685" as="sourcePoint" />
+              <mxPoint x="193.5" y="479.7518060200671" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="VtzrqL8gwkVYdRojpabA-28">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=3;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;jumpStyle=arc;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-27" target="VtzrqL8gwkVYdRojpabA-8" edge="1">
+            <mxGeometry relative="1" as="geometry">
+              <mxPoint x="744.5" y="522" as="sourcePoint" />
+              <mxPoint x="1302.2058823529414" y="221.0588235294117" as="targetPoint" />
+              <Array as="points">
+                <mxPoint x="260" y="884" />
+                <mxPoint x="260" y="254" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="UPA" sType="Subsystem" sSubsystemPath="components.matter.UPA.UPA" fTimeStep="60" id="VtzrqL8gwkVYdRojpabA-114">
+          <mxCell style="whiteSpace=wrap;html=1;dashed=1;verticalAlign=top;container=1;resizeWidth=1;resizeHeight=1;recursiveResize=0;" parent="VtzrqL8gwkVYdRojpabA-2" vertex="1">
+            <mxGeometry x="170" y="933.5" width="150" height="111.5" as="geometry">
+              <mxRectangle x="2018" y="891" width="100" height="20" as="alternateBounds" />
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="Brine" sType="Output" id="VtzrqL8gwkVYdRojpabA-115">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=0;" parent="VtzrqL8gwkVYdRojpabA-114" vertex="1">
+            <mxGeometry x="90" y="80" width="85" height="25" as="geometry" />
+          </mxCell>
+        </object>
+        <object label="Urine" sType="Input" id="VtzrqL8gwkVYdRojpabA-116">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=0;" parent="VtzrqL8gwkVYdRojpabA-114" vertex="1">
+            <mxGeometry x="-20" y="37" width="85" height="25" as="geometry" />
+          </mxCell>
+        </object>
+        <object label="Water" sType="Output" id="VtzrqL8gwkVYdRojpabA-117">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=0;" parent="VtzrqL8gwkVYdRojpabA-114" vertex="1">
+            <mxGeometry x="90" y="37" width="85" height="25" as="geometry" />
+          </mxCell>
+        </object>
+        <object label="BPA" sType="Subsystem" sSubsystemPath="components.matter.BPA.BPA" fTimeStep="60" id="VtzrqL8gwkVYdRojpabA-125">
+          <mxCell style="whiteSpace=wrap;html=1;dashed=1;verticalAlign=top;container=1;resizeWidth=1;resizeHeight=1;recursiveResize=0;" parent="VtzrqL8gwkVYdRojpabA-2" vertex="1">
+            <mxGeometry x="955.5" y="994.5" width="150" height="111.5" as="geometry">
+              <mxRectangle x="2018" y="891" width="100" height="20" as="alternateBounds" />
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="Air" sType="Input" id="VtzrqL8gwkVYdRojpabA-127">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=0;" parent="VtzrqL8gwkVYdRojpabA-125" vertex="1">
+            <mxGeometry x="-20" y="37" width="85" height="25" as="geometry" />
+          </mxCell>
+        </object>
+        <object label="Air" sType="Output" id="VtzrqL8gwkVYdRojpabA-128">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=0;" parent="VtzrqL8gwkVYdRojpabA-125" vertex="1">
+            <mxGeometry x="90" y="37" width="85" height="25" as="geometry" />
+          </mxCell>
+        </object>
+        <object label="Brine" sType="Input" id="VtzrqL8gwkVYdRojpabA-129">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=0;" parent="VtzrqL8gwkVYdRojpabA-125" vertex="1">
+            <mxGeometry x="-20" y="80" width="85" height="25" as="geometry" />
+          </mxCell>
+        </object>
+        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="VtzrqL8gwkVYdRojpabA-49">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=3;entryX=0.253;entryY=0.525;entryDx=0;entryDy=0;entryPerimeter=0;exitX=0.995;exitY=0.786;exitDx=0;exitDy=0;exitPerimeter=0;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-4" target="VtzrqL8gwkVYdRojpabA-37" edge="1">
+            <mxGeometry relative="1" as="geometry">
+              <mxPoint x="1202.5" y="607.166666666667" as="sourcePoint" />
+              <mxPoint x="1284" y="617" as="targetPoint" />
+              <Array as="points">
+                <mxPoint x="1085" y="607" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="BrineStorage" sType="Store" bNoStoreCalculation="true" fVolume="1" id="VtzrqL8gwkVYdRojpabA-130">
+          <mxCell style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;container=1;recursiveResize=0;" parent="VtzrqL8gwkVYdRojpabA-2" vertex="1">
+            <mxGeometry x="550" y="1040.5" width="145" height="80" as="geometry">
+              <mxRectangle x="1540" y="177" width="100" height="20" as="alternateBounds" />
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="Brine" fTemperature="293" sType="Mixture" sPhaseType="liquid" fPressure="1e5" fMassFeces="PLOT_1e-5" id="VtzrqL8gwkVYdRojpabA-131">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;" parent="VtzrqL8gwkVYdRojpabA-130" vertex="1">
+            <mxGeometry x="29.000000000000036" y="23.501806020066866" width="87" height="45" as="geometry" />
+          </mxCell>
+        </object>
+        <object label="" sType="Branch" sSolver="manual" sCustomName="Human_Urine_Out" id="VtzrqL8gwkVYdRojpabA-132">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=3;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;noJump=1;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-33" target="VtzrqL8gwkVYdRojpabA-116" edge="1">
+            <mxGeometry relative="1" as="geometry">
+              <mxPoint x="660" y="111.5" as="sourcePoint" />
+              <mxPoint x="419.97" y="110.81761006289298" as="targetPoint" />
+              <Array as="points">
+                <mxPoint x="50" y="101" />
+                <mxPoint x="50" y="983" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="" sType="Branch" sSolver="manual" sCustomName="Human_Urine_Out" id="VtzrqL8gwkVYdRojpabA-133">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=3;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-115" target="VtzrqL8gwkVYdRojpabA-131" edge="1">
+            <mxGeometry relative="1" as="geometry">
+              <mxPoint x="332.97" y="110.81761006289298" as="sourcePoint" />
+              <mxPoint x="180" y="1028.0000000000002" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="" sType="Branch" sSolver="manual" sCustomName="Human_Urine_Out" id="VtzrqL8gwkVYdRojpabA-134">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=3;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-131" target="VtzrqL8gwkVYdRojpabA-129" edge="1">
+            <mxGeometry relative="1" as="geometry">
+              <mxPoint x="355" y="1071" as="sourcePoint" />
+              <mxPoint x="494" y="1102.5018060200669" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="VtzrqL8gwkVYdRojpabA-136">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=3;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-4" target="VtzrqL8gwkVYdRojpabA-127" edge="1">
+            <mxGeometry relative="1" as="geometry">
+              <mxPoint x="1140.5" y="1088" as="sourcePoint" />
+              <mxPoint x="1068" y="749" as="targetPoint" />
+              <Array as="points">
+                <mxPoint x="1031" y="939" />
+                <mxPoint x="900" y="939" />
+                <mxPoint x="900" y="1044" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="CROP" sType="Subsystem" sSubsystemPath="components.matter.CROP.CROP" fTimeStep="60" id="VtzrqL8gwkVYdRojpabA-137">
+          <mxCell style="whiteSpace=wrap;html=1;dashed=1;verticalAlign=top;container=1;resizeWidth=1;resizeHeight=1;recursiveResize=0;" parent="VtzrqL8gwkVYdRojpabA-2" vertex="1">
+            <mxGeometry x="955.5" y="1120.5" width="150" height="151.5" as="geometry">
+              <mxRectangle x="2018" y="891" width="100" height="20" as="alternateBounds" />
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="Air" sType="Input" id="VtzrqL8gwkVYdRojpabA-138">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=0;" parent="VtzrqL8gwkVYdRojpabA-137" vertex="1">
+            <mxGeometry x="-20" y="37" width="85" height="25" as="geometry" />
+          </mxCell>
+        </object>
+        <object label="Air" sType="Output" id="VtzrqL8gwkVYdRojpabA-139">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=0;" parent="VtzrqL8gwkVYdRojpabA-137" vertex="1">
+            <mxGeometry x="90" y="37" width="85" height="25" as="geometry" />
+          </mxCell>
+        </object>
+        <object label="Urine" sType="Input" id="VtzrqL8gwkVYdRojpabA-140">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=0;" parent="VtzrqL8gwkVYdRojpabA-137" vertex="1">
+            <mxGeometry x="-20" y="80" width="85" height="25" as="geometry" />
+          </mxCell>
+        </object>
+        <object label="Solution" sType="Output" id="VtzrqL8gwkVYdRojpabA-141">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=0;" parent="VtzrqL8gwkVYdRojpabA-137" vertex="1">
+            <mxGeometry x="90" y="80" width="85" height="25" as="geometry" />
+          </mxCell>
+        </object>
+        <object label="Calcite" sType="Input" id="VtzrqL8gwkVYdRojpabA-142">
+          <mxCell style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fixedSize=1;flipH=0;" parent="VtzrqL8gwkVYdRojpabA-137" vertex="1">
+            <mxGeometry x="-20" y="120" width="85" height="25" as="geometry" />
+          </mxCell>
+        </object>
+        <object label="" sType="Branch" sSolver="manual" sCustomName="Human_Urine_Out" id="VtzrqL8gwkVYdRojpabA-143">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=3;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-33" target="VtzrqL8gwkVYdRojpabA-140" edge="1">
+            <mxGeometry relative="1" as="geometry">
+              <mxPoint x="332.97000000000025" y="110.81761006289275" as="sourcePoint" />
+              <mxPoint x="180" y="993" as="targetPoint" />
+              <Array as="points">
+                <mxPoint x="50" y="101" />
+                <mxPoint x="50" y="1213" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="VtzrqL8gwkVYdRojpabA-145">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=3;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-4" target="VtzrqL8gwkVYdRojpabA-138" edge="1">
+            <mxGeometry relative="1" as="geometry">
+              <mxPoint x="1040.5" y="749" as="sourcePoint" />
+              <mxPoint x="965.5" y="1054" as="targetPoint" />
+              <Array as="points">
+                <mxPoint x="1031" y="939" />
+                <mxPoint x="900" y="939" />
+                <mxPoint x="900" y="1170" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="VtzrqL8gwkVYdRojpabA-135">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=3;entryX=0.75;entryY=1;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;noJump=1;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-128" target="VtzrqL8gwkVYdRojpabA-4" edge="1">
+            <mxGeometry relative="1" as="geometry">
+              <mxPoint x="1013" y="749" as="sourcePoint" />
+              <mxPoint x="908.53" y="852.4999999999998" as="targetPoint" />
+              <Array as="points">
+                <mxPoint x="1150" y="1044" />
+                <mxPoint x="1150" y="939" />
+                <mxPoint x="1058" y="939" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="VtzrqL8gwkVYdRojpabA-146">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=3;entryX=0.75;entryY=1;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-139" target="VtzrqL8gwkVYdRojpabA-4" edge="1">
+            <mxGeometry relative="1" as="geometry">
+              <mxPoint x="1140.5" y="1054" as="sourcePoint" />
+              <mxPoint x="1068" y="749" as="targetPoint" />
+              <Array as="points">
+                <mxPoint x="1150" y="1170" />
+                <mxPoint x="1150" y="939" />
+                <mxPoint x="1058" y="939" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="" sType="Branch" sSolver="manual" sCustomName="SCRA_Condensate" fFlowRate="Plot" id="VtzrqL8gwkVYdRojpabA-108">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=3;entryX=1;entryY=0.5;entryDx=0;entryDy=0;jumpStyle=arc;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-107" target="VtzrqL8gwkVYdRojpabA-99" edge="1">
+            <mxGeometry relative="1" as="geometry">
+              <mxPoint x="1290.4999999999995" y="356.5" as="sourcePoint" />
+              <mxPoint x="1074.999706217448" y="1026" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="" sType="Branch" sSolver="manual" sCustomName="SCRA_Condensate" fFlowRate="Plot" id="VtzrqL8gwkVYdRojpabA-124">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=3;entryX=0.5;entryY=1;entryDx=0;entryDy=0;jumpStyle=arc;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-117" target="VtzrqL8gwkVYdRojpabA-107" edge="1">
+            <mxGeometry relative="1" as="geometry">
+              <mxPoint x="1060" y="892" as="sourcePoint" />
+              <mxPoint x="908.5299999999997" y="892" as="targetPoint" />
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="VtzrqL8gwkVYdRojpabA-75">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=3;exitX=0.5;exitY=1;exitDx=0;exitDy=0;jumpStyle=arc;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-27" target="VtzrqL8gwkVYdRojpabA-66" edge="1">
+            <mxGeometry relative="1" as="geometry">
+              <mxPoint x="1178.826989619377" y="879.4705882352941" as="sourcePoint" />
+              <mxPoint x="788.5294117647059" y="879.4705882352941" as="targetPoint" />
+              <Array as="points">
+                <mxPoint x="448" y="954" />
+                <mxPoint x="2300" y="954" />
+                <mxPoint x="2300" y="457" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="VtzrqL8gwkVYdRojpabA-147">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#000000;strokeWidth=3;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;jumpStyle=arc;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-141" target="VtzrqL8gwkVYdRojpabA-23" edge="1">
+            <mxGeometry relative="1" as="geometry">
+              <mxPoint x="385.9699999999998" y="630.3141025641025" as="sourcePoint" />
+              <mxPoint x="609.5" y="668" as="targetPoint" />
+              <Array as="points">
+                <mxPoint x="1150" y="1213" />
+                <mxPoint x="1150" y="1279" />
+                <mxPoint x="30" y="1279" />
+                <mxPoint x="30" y="606" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="" sType="Branch" sSolver="manual" sCustomName="SCRA_Condensate" fFlowRate="Plot" id="VtzrqL8gwkVYdRojpabA-80">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=3;entryX=1;entryY=0.25;entryDx=0;entryDy=0;jumpStyle=arc;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-69" target="VtzrqL8gwkVYdRojpabA-107" edge="1">
+            <mxGeometry relative="1" as="geometry">
+              <mxPoint x="1332" y="346.5" as="sourcePoint" />
+              <mxPoint x="1802.1428571428573" y="786.6428571428573" as="targetPoint" />
+              <Array as="points">
+                <mxPoint x="1280" y="347" />
+                <mxPoint x="1280" y="871" />
+              </Array>
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="CalciteStore" sType="Store" bNoStoreCalculation="true" fVolume="1" id="VtzrqL8gwkVYdRojpabA-148">
+          <mxCell style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;container=1;recursiveResize=0;" parent="VtzrqL8gwkVYdRojpabA-2" vertex="1">
+            <mxGeometry x="280" y="1106" width="145" height="80" as="geometry">
+              <mxRectangle x="1540" y="177" width="100" height="20" as="alternateBounds" />
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <object label="Calcite" fTemperature="293" sType="Mixture" sPhaseType="solid" fPressure="1e5" fMassCaCO3="PLOT_10000" id="VtzrqL8gwkVYdRojpabA-149">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;" parent="VtzrqL8gwkVYdRojpabA-148" vertex="1">
+            <mxGeometry x="29.000000000000036" y="23.501806020066866" width="87" height="45" as="geometry" />
+          </mxCell>
+        </object>
+        <object label="" sType="Branch" sSolver="manual" sCustomName="" id="VtzrqL8gwkVYdRojpabA-150">
+          <mxCell style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fillColor=#dae8fc;strokeColor=#000000;strokeWidth=3;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;jumpStyle=arc;" parent="VtzrqL8gwkVYdRojpabA-2" source="VtzrqL8gwkVYdRojpabA-149" target="VtzrqL8gwkVYdRojpabA-142" edge="1">
+            <mxGeometry relative="1" as="geometry">
+              <mxPoint x="1140.5" y="1223" as="sourcePoint" />
+              <mxPoint x="342.47000000000025" y="616.1410256410259" as="targetPoint" />
+              <Array as="points">
+                <mxPoint x="353" y="1253" />
+              </Array>
             </mxGeometry>
           </mxCell>
         </object>

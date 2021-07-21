@@ -19,7 +19,7 @@ csPhases = {'Gas', 'Gas_Boundary', 'Gas_Flow', 'Liquid', 'Liquid_Boundary', 'Liq
 % Add the implemented library F2Fs that can be converted
 csF2F = {'pipe', 'fan_simple', 'fan', 'pump', 'checkvalve', 'valve'};
 
-csSystems = {'Human', 'CDRA', 'CCAA', 'OGA', 'SCRA', 'Subsystem'};
+csSystems = {'Human', 'CDRA', 'CCAA', 'OGA', 'SCRA', 'Plants', 'Subsystem'};
 
 csValidTypes = [csValidTypes, csPhases, csF2F, csSystems];
 

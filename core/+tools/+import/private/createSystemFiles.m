@@ -9,7 +9,48 @@ for iSystem = 1:length(tVHAB_Objects.System)
     sSystemFile = fopen([sPath, filesep, sSystemName, '.m'], 'w');
     
     fprintf(sSystemFile, ['\n classdef ', sSystemName,' < vsys\n']);
-    fprintf(sSystemFile, '\n properties\n end\n \n methods\n');
+    fprintf(sSystemFile, '\n properties\n');
+
+    if ~isempty(tCurrentSystem.Human{1})
+        tHuman = tCurrentSystem.Human{1};
+        fprintf(sSystemFile, ['iCrewMembers = ',tHuman.iNumberOfCrew,';\n']);
+    else
+        fprintf(sSystemFile, 'iCrewMembers = 0;\n');
+    end
+    % If plants are used add the respective properties for them
+    if ~isempty(tVHAB_Objects.Plants{1})
+        if length(tVHAB_Objects.Plants) > 1
+            error('Currently the GUI only allows the addition of one plant module, if you want to add more you have to adjust the properties in the code/ define the other plant cultures in the code')
+        end
+        tPlants = tVHAB_Objects.Plants{1};
+        % All plants for which models are available are used. The values
+        % for lighting etc are based on BVAD table 4-117 and 4.96
+        % Areas are assumed per crew member and are designed to supply a
+        % nearly closed diet for the crew. 0 days emerge time are assumed
+        % because sprouts are assumed to be grown outside the PGC and then
+        % be transplanted once emerged
+        
+        fprintf(sSystemFile, ['\n iAssumedPreviousPlantGrowthDays = ', tPlants.iAssumedPreviousPlantGrowthDays,';\n']);
+        fprintf(sSystemFile, ' csPlants        = {''Sweetpotato'',   ''Whitepotato'',  ''Rice''  , ''Drybean'' , ''Soybean'' , ''Tomato''  , ''Peanut''  , ''Lettuce'' ,	''Wheat''};\n');
+        
+        csVariable  = {'mfPlantArea', 'mfHarvestTime', 'miSubcultures', 'mfPhotoperiod', 'mfPPFD', 'mfEmergeTime'};
+        csUnit      = {'m^2 / CM', 'days', '-', 'h/day', 'micromol/m^2 s', 'days'};
+        
+        for iVariable = 1:length(csVariable)
+            sVariable = erase(tPlants.(csVariable{iVariable}), ' ');
+            csCurrentVariable = strsplit(sVariable, ',');
+            fprintf(sSystemFile, [' ',csVariable{iVariable},'     = [ ',csCurrentVariable{1},'           ,   ',csCurrentVariable{2},'            ,  ',csCurrentVariable{3},'       , ',csCurrentVariable{4},'        , ',csCurrentVariable{5},'         , ',csCurrentVariable{6},'         , ',csCurrentVariable{7},'        , ',csCurrentVariable{8},'         ,   ',csCurrentVariable{9},'];       	%% ', csUnit{iVariable},'\n']);
+        end
+        
+        fprintf(sSystemFile, 'mfInedibleGrowth= [ 225         ,   90.25        ,  211.58  , 150       , 68.04     , 127.43    , 168.75    , 7.3       ,   300];      	%% g/(m^2 d)\n');
+        fprintf(sSystemFile, 'mfEdibleGrowth  = [ 24.7        ,   105.3        ,  10.3    , 11.11     , 5.04      , 173.76    , 5.96      , 131.35    ,   22.73];      	%% g/(m^2 d)\n');
+        
+        fprintf(sSystemFile, '%% plant lighting energy demand in W during the photoperiod\n');
+        fprintf(sSystemFile, 'mfPlantLightEnergy;\n');
+        fprintf(sSystemFile, 'tfPlantControlParameters;\n');
+    end
+    fprintf(sSystemFile, 'end\n \n methods\n');
+
     fprintf(sSystemFile, ['     function this = ', sSystemName,'(oParent, sName)\n']);
     if ~isempty(tCurrentSystem.fTimeStep)
         fprintf(sSystemFile, ['          this@vsys(oParent, sName, ', tCurrentSystem.fTimeStep,');\n']);
@@ -58,10 +99,20 @@ for iSystem = 1:length(tVHAB_Objects.System)
         sCrewPlaner = [sCrewPlaner, 'txCrewPlaner.tMealTimes   = tMealTimes;\n\n']; %#ok
         
         fprintf(sSystemFile, sCrewPlaner);
-        fprintf(sSystemFile, ['             components.matter.Human(this, ''', tHuman.label, ''', ', tHuman.bMale, ', ', tHuman.fAge, ', ',  tHuman.fMass, ', ',  tHuman.fHeight, ', txCrewPlaner, ', tHuman.iNumberOfCrew,');\n']);
-    
+        
+        
+        fprintf(sSystemFile, ['for iCrewMember = 1:', tHuman.iNumberOfCrew]);
+        fprintf(sSystemFile,  '     txCrewPlaner.ctEvents = ctEvents(:, iCrewMember);');
+        fprintf(sSystemFile,  '     txCrewPlaner.ctEvents = ctEvents(:, iCrewMember);');
+        fprintf(sSystemFile,  '     txCrewPlaner.tMealTimes = tMealTimes;');
+        fprintf(sSystemFile,  '     components.matter.DetailedHuman.Human(this, [''Human_'', num2str(iCrewMember)], txCrewPlaner, 60);');
+        fprintf(sSystemFile,  '     clear txCrewPlaner;');
+        fprintf(sSystemFile,  'end');
     end
     
+    fprintf(sSystemFile, '\n');
+    fprintf(sSystemFile, 'this.mfPlantArea = this.mfPlantArea .* this.iCrewMembers;\n');
+            
     fprintf(sSystemFile, '\n');
     
     for iCCAA = 1:length(tCurrentSystem.CCAA)

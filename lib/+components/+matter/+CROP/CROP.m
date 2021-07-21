@@ -26,7 +26,7 @@ classdef CROP < vsys
     end
     
     methods
-        function this = CROP(oParent, sName, fTimeStep)
+        function this = CROP(oParent, sName, fTimeStep, ~)
             if nargin < 3
                 fTimeStep = 300;
             end
