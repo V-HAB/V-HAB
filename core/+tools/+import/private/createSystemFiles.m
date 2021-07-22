@@ -18,11 +18,11 @@ for iSystem = 1:length(tVHAB_Objects.System)
         fprintf(sSystemFile, 'iCrewMembers = 0;\n');
     end
     % If plants are used add the respective properties for them
-    if ~isempty(tVHAB_Objects.Plants{1})
-        if length(tVHAB_Objects.Plants) > 1
+    if ~isempty(tCurrentSystem.Plants{1})
+        if length(tCurrentSystem.Plants) > 1
             error('Currently the GUI only allows the addition of one plant module, if you want to add more you have to adjust the properties in the code/ define the other plant cultures in the code')
         end
-        tPlants = tVHAB_Objects.Plants{1};
+        tPlants = tCurrentSystem.Plants{1};
         % All plants for which models are available are used. The values
         % for lighting etc are based on BVAD table 4-117 and 4.96
         % Areas are assumed per crew member and are designed to supply a
@@ -101,17 +101,67 @@ for iSystem = 1:length(tVHAB_Objects.System)
         fprintf(sSystemFile, sCrewPlaner);
         
         
-        fprintf(sSystemFile, ['for iCrewMember = 1:', tHuman.iNumberOfCrew]);
-        fprintf(sSystemFile,  '     txCrewPlaner.ctEvents = ctEvents(:, iCrewMember);');
-        fprintf(sSystemFile,  '     txCrewPlaner.ctEvents = ctEvents(:, iCrewMember);');
-        fprintf(sSystemFile,  '     txCrewPlaner.tMealTimes = tMealTimes;');
-        fprintf(sSystemFile,  '     components.matter.DetailedHuman.Human(this, [''Human_'', num2str(iCrewMember)], txCrewPlaner, 60);');
-        fprintf(sSystemFile,  '     clear txCrewPlaner;');
-        fprintf(sSystemFile,  'end');
+        fprintf(sSystemFile, ['for iCrewMember = 1:', tHuman.iNumberOfCrew, '\n']);
+        fprintf(sSystemFile,  '     txCrewPlaner.ctEvents = ctEvents(:, iCrewMember);\n');
+        fprintf(sSystemFile,  '     txCrewPlaner.ctEvents = ctEvents(:, iCrewMember);\n');
+        fprintf(sSystemFile,  '     txCrewPlaner.tMealTimes = tMealTimes;\n');
+        fprintf(sSystemFile,  '     components.matter.DetailedHuman.Human(this, [''Human_'', num2str(iCrewMember)], txCrewPlaner, 60);\n');
+        fprintf(sSystemFile,  '     clear txCrewPlaner;\n');
+        fprintf(sSystemFile,  'end\n');
     end
     
     fprintf(sSystemFile, '\n');
-    fprintf(sSystemFile, 'this.mfPlantArea = this.mfPlantArea .* this.iCrewMembers;\n');
+    if ~isempty(tCurrentSystem.Plants{1})
+        tPlants = tCurrentSystem.Plants{1};
+        fprintf(sSystemFile, '%%%% Plants');
+        fprintf(sSystemFile, 'this.mfPlantArea = this.mfPlantArea .* this.iCrewMembers;\n');
+        fprintf(sSystemFile, '\n');
+        fprintf(sSystemFile, 'tInput = struct();\n');
+        fprintf(sSystemFile, 'abEmptyPlants = false(1, length(this.csPlants));\n');
+        fprintf(sSystemFile, 'for iPlant = 1:length(this.csPlants)\n');
+        fprintf(sSystemFile, '	mfFirstSowTimeInit = 0 : this.mfHarvestTime(iPlant) / this.miSubcultures(iPlant) : this.mfHarvestTime(iPlant);\n');
+        fprintf(sSystemFile, '	mfFirstSowTimeInit = mfFirstSowTimeInit - this.iAssumedPreviousPlantGrowthDays;\n');
+        fprintf(sSystemFile, '	mfFirstSowTimeInit(end) = [];\n');
+        fprintf(sSystemFile, '	mfPlantTimeInit     = zeros(length(mfFirstSowTimeInit),1);\n');
+        fprintf(sSystemFile, '	mfPlantTimeInit(mfFirstSowTimeInit < 0) = -mfFirstSowTimeInit(mfFirstSowTimeInit < 0);\n');
+        fprintf(sSystemFile, '	 mfPlantTimeInit = mod(mfPlantTimeInit, this.mfHarvestTime(iPlant));\n');
+        fprintf(sSystemFile, '\n');
+        fprintf(sSystemFile, '	 for iSubculture = 1:this.miSubcultures(iPlant)\n');
+        fprintf(sSystemFile, '	 	if this.mfPlantArea(iPlant) == 0\n');
+        fprintf(sSystemFile, '	 		abEmptyPlants(iPlant) = true;\n');
+        fprintf(sSystemFile, '	 		continue;\n');
+        fprintf(sSystemFile, '	 	end\n');
+        fprintf(sSystemFile, '	 	tInput(iPlant, iSubculture).sName            = [this.csPlants{iPlant}, ''_'', num2str(iSubculture)];\n');
+        fprintf(sSystemFile, '	 	tInput(iPlant, iSubculture).sPlantSpecies    = this.csPlants{iPlant};\n');
+        fprintf(sSystemFile, '	 	tInput(iPlant, iSubculture).fGrowthArea      = this.mfPlantArea(iPlant) ./ this.miSubcultures(iPlant); %% m^2\n');
+        fprintf(sSystemFile, '	 	tInput(iPlant, iSubculture).fHarvestTime     = this.mfHarvestTime(iPlant); %% days\n');
+        fprintf(sSystemFile, '	 	tInput(iPlant, iSubculture).fEmergeTime      = this.mfEmergeTime(iPlant); %% days\n');
+        fprintf(sSystemFile, '	 	tInput(iPlant, iSubculture).fPPFD            = this.mfPPFD(iPlant); %% micromol/m^2s\n');
+        fprintf(sSystemFile, '	 	tInput(iPlant, iSubculture).fPhotoperiod     = this.mfPhotoperiod(iPlant); %% h\n');
+        fprintf(sSystemFile, '	 	tInput(iPlant, iSubculture).iConsecutiveGenerations     = 1 + ceil(iLengthOfMission / this.mfHarvestTime(iPlant));\n');
+        fprintf(sSystemFile, '	 	tInput(iPlant, iSubculture).mfSowTime                   = zeros(1, tInput(iPlant, iSubculture).iConsecutiveGenerations);\n');
+        fprintf(sSystemFile, '	 	if mfFirstSowTimeInit(iSubculture) > 0\n');
+        fprintf(sSystemFile, '	 		tInput(iPlant, iSubculture).mfSowTime(1) = mfFirstSowTimeInit(iSubculture) * 24 * 3600;\n');
+        fprintf(sSystemFile, '	 	end\n');
+        fprintf(sSystemFile, '	 	\n');
+        fprintf(sSystemFile, '	 	components.matter.PlantModule.PlantCulture(...\n');
+        fprintf(sSystemFile, '	 		this, ...\n');
+        fprintf(sSystemFile, '	 		tInput(iPlant, iSubculture).sName,...\n');
+        fprintf(sSystemFile, ['	 		',tPlants.fTimeStep,',...\n']);
+        fprintf(sSystemFile, '	 		tInput(iPlant, iSubculture),...\n');
+        fprintf(sSystemFile, '	 		mfPlantTimeInit(iSubculture));\n');
+        fprintf(sSystemFile, '	 end\n');
+        fprintf(sSystemFile, 'end\n');
+        fprintf(sSystemFile, '\n');
+        fprintf(sSystemFile, 'this.csPlants(abEmptyPlants)        = [];');
+        fprintf(sSystemFile, 'this.mfHarvestTime(abEmptyPlants)   = [];');
+        fprintf(sSystemFile, 'this.miSubcultures(abEmptyPlants)   = [];');
+        fprintf(sSystemFile, 'this.mfPhotoperiod(abEmptyPlants)   = [];');
+        fprintf(sSystemFile, 'this.mfPPFD(abEmptyPlants)          = [];');
+        fprintf(sSystemFile, 'this.mfEmergeTime(abEmptyPlants)    = [];');
+        fprintf(sSystemFile, 'this.mfInedibleGrowth(abEmptyPlants)= [];');
+        fprintf(sSystemFile, 'this.mfEdibleGrowth(abEmptyPlants)  = [];');
+    end
             
     fprintf(sSystemFile, '\n');
     
