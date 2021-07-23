@@ -1,8 +1,11 @@
-function createSetupFile(tVHAB_Objects, sPath, sSystemLabel, sRootName, csPhases, csF2F, oMT, tSystemIDtoLabel, bHumanModel)
+function createSetupFile(tVHAB_Objects, sPath, sSystemLabel, sRootName, csPhases, csF2F, oMT, tSystemIDtoLabel)
 %% Create Setup File
 sSetupFileID = fopen([sPath, filesep, 'setup.m'], 'w');
 
-fprintf(sSetupFileID, '\n classdef setup < simulation.infrastructure\n \n properties\n end\n \n methods\n\n');
+fprintf(sSetupFileID, '\n classdef setup < simulation.infrastructure\n \n properties\n');
+fprintf(sSetupFileID, 'tiPLantLogs;\n');
+fprintf(sSetupFileID, 'tiLogIndexes;\n');
+fprintf(sSetupFileID, 'end\n \n methods\n\n');
 fprintf(sSetupFileID, '    function  this = setup(ptConfigParams, tSolverParams) \n');
 
 fprintf(sSetupFileID, '         %s Creating the monitors struct\n', '%');
@@ -63,6 +66,8 @@ for iSystem = 1:length(tVHAB_Objects.System)
     tSystem = tVHAB_Objects.System{iSystem};
     % check log and plot for system
     sSystemPath = ['         oLogger.addValue(''', tSystem.sFullPath];
+    
+    fprintf(sSetupFileID, [sSystemPath,  '.oTimer'',                                	''fTimeStepFinal'',                            ''s'',   ''Timestep'');\n']);
     
     tVHAB_Objects.System{iSystem}.csLoggedNames = cell(0);
     csToLog = {tSystem.csToPlot{:}, tSystem.csToLog{:}};%#ok
@@ -231,6 +236,26 @@ for iSystem = 1:length(tVHAB_Objects.System)
         
         % TO DO: log plot F2Fs
     end
+    
+    fprintf(sSetupFileID, '     	oLogger = this.toMonitors.oLogger;\n');
+    fprintf(sSetupFileID, ['     	oSystem = this.oSimulationContainer.toChildren.', tSystem.label,';\n']);
+    
+    csSubsystemTypes = {'Human', 'CDRA', 'CCAA', 'OGA', 'SCRA', 'Plants', 'Subsystem'};
+
+    for iSubsystemType = 1:length(csSubsystemTypes)
+        sSubsystemType = csSubsystemTypes{iSubsystemType};
+        for iSubsystem = 1:length(tSystem.(sSubsystemType))
+            tSubsystem = tSystem.(csSubsystemTypes{iSubsystemType}){iSubsystem};
+            
+            if isfield(tSubsystem, 'bCreateBaseLogging') && strcmp(tSubsystem.bCreateBaseLogging, 'true')
+                if strcmp(tSubsystem.sType, 'Human')
+                    fprintf(sSetupFileID, '     	tools.postprocessing.Helper.addCrewLogging(oLogger, oSystem);\n');
+                elseif strcmp(tSubsystem.sType, 'Plants')
+                    fprintf(sSetupFileID, '     	tools.postprocessing.Helper.addPlantLogging(oLogger, oSystem, this);\n');
+                end
+            end
+        end
+    end
 end
 fprintf(sSetupFileID, '     end\n\n');
 
@@ -370,6 +395,28 @@ for iSystem = 1:length(tVHAB_Objects.System)
         fprintf(sSetupFileID, '         coPlot = cell(0);\n');
         fprintf(sSetupFileID, ['         coPlot{1,1} = oPlotter.definePlot(', tPlots.(csPlots{iPlot}),', ''',  tSystem.label, ' ', csPlots{iPlot}, ''');\n']);
         fprintf(sSetupFileID, ['         oPlotter.defineFigure(coPlot,  ''', tSystem.label, ' ', csPlots{iPlot}, ''');\n']);
+    end
+    
+    
+    
+    fprintf(sSetupFileID, '     	tPlotOptions.sTimeUnit = ''days'';\n');
+    fprintf(sSetupFileID, ['     	oSystem = this.oSimulationContainer.toChildren.', tSystem.label,';\n']);
+    
+    csSubsystemTypes = {'Human', 'CDRA', 'CCAA', 'OGA', 'SCRA', 'Plants', 'Subsystem'};
+
+    for iSubsystemType = 1:length(csSubsystemTypes)
+        sSubsystemType = csSubsystemTypes{iSubsystemType};
+        for iSubsystem = 1:length(tSystem.(sSubsystemType))
+            tSubsystem = tSystem.(csSubsystemTypes{iSubsystemType}){iSubsystem};
+            
+            if isfield(tSubsystem, 'bCreateBasePlotting') && strcmp(tSubsystem.bCreateBasePlotting, 'true')
+                if strcmp(tSubsystem.sType, 'Human')
+                    fprintf(sSetupFileID, '     	tools.postprocessing.Helper.addCrewPlotting(oPlotter, oSystem, tPlotOptions);\n');
+                elseif strcmp(tSubsystem.sType, 'Plants')
+                    fprintf(sSetupFileID, '     	tools.postprocessing.Helper.addPlantPlotting(oPlotter, tPlotOptions, this);\n');
+                end
+            end
+        end
     end
     
 end
