@@ -41,7 +41,21 @@ for iStore = 1:length(tCurrentSystem.Stores)
             
             if isfield(tPhase, 'rMaxChangeTemperature')
                 
+                    fprintf(sSystemFile, '          tTimeStepProperties = struct();\n');
                     fprintf(sSystemFile, ['          tTimeStepProperties.rMaxChange = ', tPhase.rMaxChangeTemperature ,';\n']);
+                    fprintf(sSystemFile, ['          this.toStores.', tStore.label,'.toPhases.', tPhase.label,'.oCapacity.setTimeStepProperties(tTimeStepProperties);\n']);
+            end
+            if isfield(tPhase, 'rMaxChange')
+                
+                    fprintf(sSystemFile, '          tTimeStepProperties = struct();\n');
+                    fprintf(sSystemFile, ['          tTimeStepProperties.rMaxChange = ', tPhase.rMaxChange ,';\n']);
+                    fprintf(sSystemFile, ['          this.toStores.', tStore.label,'.toPhases.', tPhase.label,'.setTimeStepProperties(tTimeStepProperties);\n']);
+            end
+            if isfield(tPhase, 'fMaxTimeStep')
+                
+                    fprintf(sSystemFile, '          tTimeStepProperties = struct();\n');
+                    fprintf(sSystemFile, ['          tTimeStepProperties.fMaxStep = ', tPhase.fMaxTimeStep ,';\n']);
+                    fprintf(sSystemFile, ['          this.toStores.', tStore.label,'.toPhases.', tPhase.label,'.setTimeStepProperties(tTimeStepProperties);\n']);
                     fprintf(sSystemFile, ['          this.toStores.', tStore.label,'.toPhases.', tPhase.label,'.oCapacity.setTimeStepProperties(tTimeStepProperties);\n']);
             end
         end

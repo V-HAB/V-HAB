@@ -113,8 +113,10 @@ for iSystem = 1:length(tVHAB_Objects.System)
     fprintf(sSystemFile, '\n');
     if ~isempty(tCurrentSystem.Plants{1})
         tPlants = tCurrentSystem.Plants{1};
-        fprintf(sSystemFile, '%%%% Plants');
-        fprintf(sSystemFile, 'this.mfPlantArea = this.mfPlantArea .* this.iCrewMembers;\n');
+        fprintf(sSystemFile, '%%%% Plants \n');
+        if strcmp(tPlants.bMultiplyPlantAreaWithNumberOfCrew, 'true') || strcmp(tPlants.bMultiplyPlantAreaWithNumberOfCrew, '1')
+            fprintf(sSystemFile, 'this.mfPlantArea = this.mfPlantArea .* this.iCrewMembers;\n');
+        end
         fprintf(sSystemFile, '\n');
         fprintf(sSystemFile, 'tInput = struct();\n');
         fprintf(sSystemFile, 'abEmptyPlants = false(1, length(this.csPlants));\n');
@@ -168,6 +170,11 @@ for iSystem = 1:length(tVHAB_Objects.System)
     for iCCAA = 1:length(tCurrentSystem.CCAA)
         tCCAA = tCurrentSystem.CCAA{iCCAA};
         fprintf(sSystemFile, ['             components.matter.CCAA.CCAA(this, ''', tCCAA.label, ''', ', tCCAA.fTimeStep, ', ', tCCAA.fCoolantTemperature, ', [], ''',  tCCAA.sCDRA, ''');\n']);
+        
+        if isfield(tCCAA, 'sLoadAlternativeProperties')
+            fprintf(sSystemFile, ['             load(', tCCAA.sLoadAlternativeProperties,');\n']);
+            fprintf(sSystemFile, ['             this.toChildren.', tCCAA.label,'.setParameterOverwrite(tParameters);\n']);
+        end
     end
     
     fprintf(sSystemFile, '\n');
@@ -260,6 +267,19 @@ for iSystem = 1:length(tVHAB_Objects.System)
     fprintf(sSystemFile, 'methods (Access = protected)\n');
     fprintf(sSystemFile, '      function exec(this, ~)\n');
     fprintf(sSystemFile, '          exec@vsys(this);\n');
+    fprintf(sSystemFile, '\n');
+    
+    if isfield(tCurrentSystem, 'exec')
+        for iExecCode = 1:length(tCurrentSystem.exec)
+            sString = tCurrentSystem.exec{iExecCode};
+            abNonASCII = sString > 127;
+            sString(abNonASCII) = ' ';
+            fprintf(sSystemFile, sString);
+            fprintf(sSystemFile, '\n');
+            fprintf(sSystemFile, '\n');
+        end
+    end
+
     fprintf(sSystemFile, '      end\n');
     fprintf(sSystemFile, 'end\n');
     fprintf(sSystemFile, 'end');
