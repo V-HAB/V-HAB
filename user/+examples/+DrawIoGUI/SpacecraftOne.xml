@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mxfile host="app.diagrams.net" modified="2021-08-27T06:29:09.096Z" agent="5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36" etag="fptABEQwXqE0Q3XwamHH" version="14.9.1" type="device">
+<mxfile host="app.diagrams.net" modified="2021-08-30T09:59:44.362Z" agent="5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36" etag="Z-6dmjglCXurzXzUbpFV" version="14.9.1" type="device">
   <diagram id="WVr-9bBsTvn4L951LNi2" name="Page-1">
-    <mxGraphModel dx="3413" dy="1752" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+    <mxGraphModel dx="2926" dy="1501" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -10,9 +10,9 @@
             <mxGeometry x="250" y="280" width="90" height="58" as="geometry" />
           </mxCell>
         </object>
-        <object label="Spacecraft One" fTimeStep="" sType="System" id="VtzrqL8gwkVYdRojpabA-2">
+        <object label="Spacecraft One" fTimeStep="300" sType="System" id="VtzrqL8gwkVYdRojpabA-2">
           <mxCell style="whiteSpace=wrap;html=1;dashed=1;verticalAlign=top;container=1;recursiveResize=0;flipH=0;" parent="1" vertex="1">
-            <mxGeometry x="40" y="361.5" width="2370" height="1288.5" as="geometry" />
+            <mxGeometry x="40" y="361.5" width="2370" height="1318.5" as="geometry" />
           </mxCell>
         </object>
         <object label="Waste Water Store" sType="Store" bNoStoreCalculation="true" fVolume="1" id="VtzrqL8gwkVYdRojpabA-105">
@@ -33,6 +33,11 @@
         <object label="Atmosphere" fPressureCO2="PLOT_400" fPressureN2="PLOT_8e4" fPressureO2="PLOT_2.1e4" fVolume="500" fTemperature="PLOT_293" sType="Gas" rRelHumidity="PLOT_0.5" id="VtzrqL8gwkVYdRojpabA-4">
           <mxCell style="rounded=1;whiteSpace=wrap;html=1;container=1;" parent="VtzrqL8gwkVYdRojpabA-3" vertex="1">
             <mxGeometry x="30" y="50" width="130.5" height="611" as="geometry" />
+          </mxCell>
+        </object>
+        <object label="CabinHeatSource" sType="HeatSource" fHeatFlow="0" sHeatSourceType="thermal.heatsource" id="CJNlPReFB5XPnHgh3yK2-97">
+          <mxCell style="shape=mxgraph.pid.heat_exchangers.shell_and_tube_heat_exchanger_2;html=1;align=center;verticalLabelPosition=bottom;verticalAlign=top;dashed=0;aspect=fixed;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="VtzrqL8gwkVYdRojpabA-4">
+            <mxGeometry x="50.5" y="337.5" width="30" height="30" as="geometry" />
           </mxCell>
         </object>
         <object label="Human&lt;br&gt;" sType="Human" bMale="true" fAge="30" fMass="80" fHeight="1.80" fSleep="8" fExercise="2" iNumberOfCrew="6" bCreateBaseLogging="true" bCreateBasePlotting="true" id="VtzrqL8gwkVYdRojpabA-5">
@@ -1011,15 +1016,18 @@
           </mxCell>
         </object>
         <mxCell id="CJNlPReFB5XPnHgh3yK2-93" value="Exec" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;align=left;verticalAlign=top;" vertex="1" parent="VtzrqL8gwkVYdRojpabA-2">
-          <mxGeometry x="1917.5" y="1128.25" width="420" height="136" as="geometry">
+          <mxGeometry x="1890" y="968.5" width="420" height="336" as="geometry">
             <mxRectangle x="430" y="60" width="60" height="26" as="alternateBounds" />
           </mxGeometry>
         </mxCell>
         <mxCell id="CJNlPReFB5XPnHgh3yK2-94" value="if this.toStores.Cabin.toPhases.Atmosphere.afPP(this.oMT.tiN2I.CO2) &lt; 50&#xa;    this.toBranches.CO2_To_Cabin.oHandler.setMassTransfer(2.7, 300);&#xa;elseif this.toStores.Cabin.toPhases.Atmosphere.afPP(this.oMT.tiN2I.CO2) &lt; 100&#xa;    this.toBranches.CO2_To_Cabin.oHandler.setMassTransfer(1.5, 300);&#xa;end" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="CJNlPReFB5XPnHgh3yK2-93">
           <mxGeometry y="26" width="420" height="84" as="geometry" />
         </mxCell>
+        <mxCell id="CJNlPReFB5XPnHgh3yK2-98" value="fCurrentPowerConsumptionPlants = 0;&#xa;for iPlant = 1:length(this.csPlants)&#xa;    for iSubculture = 1:this.miSubcultures(iPlant)&#xa;        sCultureName = [this.csPlants{iPlant},&#39;_&#39;, num2str(iSubculture)];&#xa;&#xa;        fCurrentPowerConsumptionPlants = fCurrentPowerConsumptionPlants + this.toChildren.(sCultureName).fPower;&#xa;    end&#xa;end&#xa;&#xa;% The consumed power must also be modelled as produced heat in&#xa;% the corresponding air phases. For the greenhouse, we assume&#xa;% 20% of the power consumption to be heat&#xa;this.toStores.Cabin.toPhases.Atmosphere.oCapacity.toHeatSources.CabinHeatSource.setHeatFlow(0.2 * fCurrentPowerConsumptionPlants);" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="CJNlPReFB5XPnHgh3yK2-93">
+          <mxGeometry y="110" width="420" height="200" as="geometry" />
+        </mxCell>
         <mxCell id="CJNlPReFB5XPnHgh3yK2-95" value="this.oTimer.synchronizeCallBacks();" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="CJNlPReFB5XPnHgh3yK2-93">
-          <mxGeometry y="110" width="420" height="26" as="geometry" />
+          <mxGeometry y="310" width="420" height="26" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

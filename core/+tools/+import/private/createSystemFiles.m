@@ -274,6 +274,10 @@ for iSystem = 1:length(tVHAB_Objects.System)
             sString = tCurrentSystem.exec{iExecCode};
             abNonASCII = sString > 127;
             sString(abNonASCII) = ' ';
+            % Since fprintf does not directly print % we have to replace
+            % every occurance of it with %%
+            sString = replace(sString, '%', '%%');
+            
             fprintf(sSystemFile, sString);
             fprintf(sSystemFile, '\n');
             fprintf(sSystemFile, '\n');
