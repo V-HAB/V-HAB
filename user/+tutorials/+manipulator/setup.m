@@ -1,33 +1,12 @@
 classdef setup < simulation.infrastructure
-    %SETUP This class is used to setup a simulation
-    %   There should always be a setup file present for each project. It is
-    %   used for the following:
-    %   - instantiate the root object
-    %   - register branches to their appropriate solvers
-    %   - determine which items are logged
-    %   - set the simulation duration
-    %   - provide methods for plotting the results
-    
-    properties
-    end
-    
     methods
-        function this = setup(ptConfigParams, tSolverParams) % Constructor function
+        function this = setup(ptConfigParams, tSolverParams)
             
-            % Possible to change the constructor paths and params for the
-            % monitors
             ttMonitorConfig = struct();
-            
-            % First we call the parent constructor and tell it the name of
-            % this simulation we are creating.
             this@simulation.infrastructure('Tutorial_Manipulator', ptConfigParams, tSolverParams, ttMonitorConfig);
-            
-            % Creating the root object
             tutorials.manipulator.systems.Example(this.oSimulationContainer, 'Example');
             
             %% Simulation length
-            % Stop when specific time in sim is reached
-            % or after specific amount of ticks (bUseTime true/false).
             this.fSimTime = 2000; % In seconds
             this.iSimTicks = 600;
             this.bUseTime = true;
@@ -54,10 +33,8 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Example:s:Reactor.toPhases.FlowPhase.toManips.substance', 'afPartialFlows(this.oMT.tiN2I.C)', 'kg/s', 'Bosch C Flow Rate');
         end
         
-        function plot(this) % Plotting the results
-            
-            %% Define Plots
-            
+        function plot(this)
+            %% Plotting
             close all
             oPlotter = plot@simulation.infrastructure(this);
             
@@ -89,9 +66,5 @@ classdef setup < simulation.infrastructure
             
             oPlotter.plot();
         end
-        
     end
-    
 end
-
-
