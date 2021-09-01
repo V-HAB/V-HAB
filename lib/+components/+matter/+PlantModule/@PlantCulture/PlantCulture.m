@@ -515,6 +515,10 @@ classdef PlantCulture < vsys
             
             this.tfUnlimitedBiomass.fInitialInedible = this.toStores.Plant_Culture.toPhases.Plants.afMass(this.iInedibleBiomass);
             
+            %% Bind update to phase updates:
+            this.toStores.Plant_Culture.toPhases.Plants.bind(           'update_post', @this.registerUpdate);
+            this.toStores.Plant_Culture.toPhases.PlantAtmosphere.bind(	'update_post', @this.registerUpdate);
+            
             %% Assign thermal solvers
             this.setThermalSolvers();
         end
