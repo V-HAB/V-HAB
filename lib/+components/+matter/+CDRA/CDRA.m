@@ -1000,11 +1000,19 @@ classdef CDRA < vsys
                 % Change Airsave to vacuum desorption
                 if fCDRA_OperationTime > (this.tTimeProperties.fLastCycleSwitch + this.tTimeProperties.fAirSafeTime)
                     if this.iCycleActive == 1
-                        this.toProcsF2F.Valve_5A_2_Airsave.setOpen(false);
-                        this.toProcsF2F.Valve_5A_2_Vacuum.setOpen(true);
+                        iBed = 2;
                     else
-                        this.toProcsF2F.Valve_5A_1_Airsave.setOpen(false);
-                        this.toProcsF2F.Valve_5A_1_Vacuum.setOpen(true);
+                        iBed = 1;
+                    end
+                    fWaterMass = 0;
+                    for iCell = 1:this.tGeometry.Zeolite5A.iCellNumber
+                        fWaterMass = fWaterMass + this.toStores.(['Zeolite5A_', num2str(iBed)]).toPhases.(['Absorber_', num2str(iCell)]).afMass(this.oMT.tiN2I.H2O);
+                    end
+                    % Only deactivate air safe if the water mass is small
+                    % that would otherwise be lost:
+                    if fWaterMass < 0.25
+                        this.toProcsF2F.(['Valve_5A_', num2str(iBed),'_Airsave']).setOpen(false);
+                        this.toProcsF2F.(['Valve_5A_', num2str(iBed),'_Vacuum']).setOpen(true);
                     end
                 end
 
