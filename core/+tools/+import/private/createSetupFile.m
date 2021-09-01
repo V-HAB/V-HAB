@@ -237,8 +237,23 @@ for iSystem = 1:length(tVHAB_Objects.System)
         % TO DO: log plot F2Fs
     end
     
-    fprintf(sSetupFileID, '     	oLogger = this.toMonitors.oLogger;\n');
-    fprintf(sSetupFileID, ['     	oSystem = this.oSimulationContainer.toChildren.', tSystem.label,';\n']);
+    bSubsystem = true;
+    sSystemPath = tSystem.label;
+    tParentSystem = tSystem;
+    while bSubsystem
+        try
+            sParent = tSystemIDtoLabel.(tParentSystem.ParentID);
+            sSystemPath = [sParent '.toChildren.', sSystemPath]; %#ok
+            for iParentSys = 1:length(tVHAB_Objects.System)
+                if strcmp(tVHAB_Objects.System{iParentSys}.id, tParentSystem.ParentID)
+                    tParentSystem = tVHAB_Objects.System{iParentSys};
+                end
+            end
+        catch
+            bSubsystem = false;
+        end
+    end
+    fprintf(sSetupFileID, ['     	oSystem = this.oSimulationContainer.toChildren.', sSystemPath,';\n']);
     
     csSubsystemTypes = {'Human', 'CDRA', 'CCAA', 'OGA', 'SCRA', 'Plants', 'Subsystem'};
 
@@ -400,7 +415,25 @@ for iSystem = 1:length(tVHAB_Objects.System)
     
     
     fprintf(sSetupFileID, '     	tPlotOptions.sTimeUnit = ''days'';\n');
-    fprintf(sSetupFileID, ['     	oSystem = this.oSimulationContainer.toChildren.', tSystem.label,';\n']);
+    
+    bSubsystem = true;
+    sSystemPath = tSystem.label;
+    tParentSystem = tSystem;
+    while bSubsystem
+        try
+            sParent = tSystemIDtoLabel.(tParentSystem.ParentID);
+            sSystemPath = [sParent '.toChildren.', sSystemPath]; %#ok
+            for iParentSys = 1:length(tVHAB_Objects.System)
+                if strcmp(tVHAB_Objects.System{iParentSys}.id, tParentSystem.ParentID)
+                    tParentSystem = tVHAB_Objects.System{iParentSys};
+                end
+            end
+        catch
+            bSubsystem = false;
+        end
+    end
+    
+    fprintf(sSetupFileID, ['     	oSystem = this.oSimulationContainer.toChildren.', sSystemPath,';\n']);
     
     csSubsystemTypes = {'Human', 'CDRA', 'CCAA', 'OGA', 'SCRA', 'Plants', 'Subsystem'};
 

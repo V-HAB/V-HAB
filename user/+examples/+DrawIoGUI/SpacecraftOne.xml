@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mxfile host="app.diagrams.net" modified="2021-09-01T06:11:23.363Z" agent="5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36" etag="VbW0nQkW7C4bsGX_vR9m" version="15.0.3">
+<mxfile host="app.diagrams.net" modified="2021-09-01T07:46:48.539Z" agent="5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36" etag="vmPWOMZJ9h4JZPD6blzV" version="15.0.3">
   <diagram id="WVr-9bBsTvn4L951LNi2" name="Page-1">
-    <mxGraphModel dx="1408" dy="868" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+    <mxGraphModel dx="1408" dy="811" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -1002,7 +1002,7 @@
             <mxGeometry x="980.5" y="8" width="90" height="59" as="geometry" />
           </mxCell>
         </object>
-        <object label="CO2" sType="Gas_Boundary" fVolume="1e6" fTemperature="3" fPressureN2="3" rRelHumidity="0" id="CJNlPReFB5XPnHgh3yK2-89">
+        <object label="CO2" sType="Gas_Boundary" fVolume="1e6" fTemperature="293" rRelHumidity="0" fPressureCO2="1e5" id="CJNlPReFB5XPnHgh3yK2-89">
           <mxCell style="shape=ext;double=1;rounded=1;whiteSpace=wrap;html=1;glass=0;collapsible=1;fontSize=10;" parent="CJNlPReFB5XPnHgh3yK2-87" vertex="1">
             <mxGeometry x="10" y="24" width="70" height="30" as="geometry" />
           </mxCell>
@@ -1016,18 +1016,18 @@
           </mxCell>
         </object>
         <mxCell id="CJNlPReFB5XPnHgh3yK2-93" value="Exec" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;align=left;verticalAlign=top;" parent="VtzrqL8gwkVYdRojpabA-2" vertex="1">
-          <mxGeometry x="1890" y="958.5" width="420" height="356" as="geometry">
+          <mxGeometry x="1580" y="958.5" width="770" height="356" as="geometry">
             <mxRectangle x="430" y="60" width="60" height="26" as="alternateBounds" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="CJNlPReFB5XPnHgh3yK2-94" value="if ~this.toBranches.CO2_To_Cabin.oHandler.bMassTransferActive&#xa;    if this.toStores.Cabin.toPhases.Atmosphere.afPP(this.oMT.tiN2I.CO2) &lt; 50&#xa;        this.toBranches.CO2_To_Cabin.oHandler.setMassTransfer(10, 30);&#xa;    elseif this.toStores.Cabin.toPhases.Atmosphere.afPP(this.oMT.tiN2I.CO2) &lt; 100&#xa;        this.toBranches.CO2_To_Cabin.oHandler.setMassTransfer(5, 30);&#xa;    end&#xa;end" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="CJNlPReFB5XPnHgh3yK2-93" vertex="1">
-          <mxGeometry y="26" width="420" height="104" as="geometry" />
+        <mxCell id="CJNlPReFB5XPnHgh3yK2-94" value="if ~this.toBranches.CO2_To_Cabin.oHandler.bMassTransferActive&#xa;    if this.toStores.Cabin.toPhases.Atmosphere.afPP(this.oMT.tiN2I.CO2) &lt; 50&#xa;        this.toBranches.CO2_To_Cabin.oHandler.setMassTransfer(5, 30);&#xa;    elseif this.toStores.Cabin.toPhases.Atmosphere.afPP(this.oMT.tiN2I.CO2) &lt; 100&#xa;        this.toBranches.CO2_To_Cabin.oHandler.setMassTransfer(2.5, 30);&#xa;    end&#xa;end" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="CJNlPReFB5XPnHgh3yK2-93" vertex="1">
+          <mxGeometry y="26" width="770" height="104" as="geometry" />
         </mxCell>
         <mxCell id="CJNlPReFB5XPnHgh3yK2-98" value="fCurrentPowerConsumptionPlants = 0;&#xa;for iPlant = 1:length(this.csPlants)&#xa;    for iSubculture = 1:this.miSubcultures(iPlant)&#xa;        sCultureName = [this.csPlants{iPlant},&#39;_&#39;, num2str(iSubculture)];&#xa;&#xa;        fCurrentPowerConsumptionPlants = fCurrentPowerConsumptionPlants + this.toChildren.(sCultureName).fPower;&#xa;    end&#xa;end&#xa;&#xa;% The consumed power must also be modelled as produced heat in&#xa;% the corresponding air phases. For the greenhouse, we assume&#xa;% 20% of the power consumption to be heat&#xa;this.toStores.Cabin.toPhases.Atmosphere.oCapacity.toHeatSources.CabinHeatSource.setHeatFlow(0.2 * fCurrentPowerConsumptionPlants);" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="CJNlPReFB5XPnHgh3yK2-93" vertex="1">
-          <mxGeometry y="130" width="420" height="200" as="geometry" />
+          <mxGeometry y="130" width="770" height="200" as="geometry" />
         </mxCell>
         <mxCell id="CJNlPReFB5XPnHgh3yK2-95" value="this.oTimer.synchronizeCallBacks();" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="CJNlPReFB5XPnHgh3yK2-93" vertex="1">
-          <mxGeometry y="330" width="420" height="26" as="geometry" />
+          <mxGeometry y="330" width="770" height="26" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

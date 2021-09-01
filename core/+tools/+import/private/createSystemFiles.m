@@ -11,14 +11,14 @@ for iSystem = 1:length(tVHAB_Objects.System)
     fprintf(sSystemFile, ['\n classdef ', sSystemName,' < vsys\n']);
     fprintf(sSystemFile, '\n properties\n');
 
-    if ~isempty(tCurrentSystem.Human{1})
+    if ~isempty(tCurrentSystem.Human)
         tHuman = tCurrentSystem.Human{1};
         fprintf(sSystemFile, ['iCrewMembers = ',tHuman.iNumberOfCrew,';\n']);
     else
         fprintf(sSystemFile, 'iCrewMembers = 0;\n');
     end
     % If plants are used add the respective properties for them
-    if ~isempty(tCurrentSystem.Plants{1})
+    if ~isempty(tCurrentSystem.Plants)
         if length(tCurrentSystem.Plants) > 1
             error('Currently the GUI only allows the addition of one plant module, if you want to add more you have to adjust the properties in the code/ define the other plant cultures in the code')
         end
@@ -111,7 +111,7 @@ for iSystem = 1:length(tVHAB_Objects.System)
     end
     
     fprintf(sSystemFile, '\n');
-    if ~isempty(tCurrentSystem.Plants{1})
+    if ~isempty(tCurrentSystem.Plants)
         tPlants = tCurrentSystem.Plants{1};
         fprintf(sSystemFile, '%%%% Plants \n');
         if strcmp(tPlants.bMultiplyPlantAreaWithNumberOfCrew, 'true') || strcmp(tPlants.bMultiplyPlantAreaWithNumberOfCrew, '1')
