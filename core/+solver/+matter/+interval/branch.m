@@ -159,15 +159,31 @@ classdef branch < solver.matter.base.branch
             
             fPressureDifference = fPressureLeft - fPressureRight;
             
-            
+            bCheckValve = false;
             if fPreviousFlowRate == 0
                 % previous flowrate was 0, check if another solution should
                 % apply
                 fFlowRate = 1e-8;
-                if fPressureDifference >= 0
-                    iDir = 1;
-                elseif fPressureDifference < 0
-                    iDir = -1;
+                % Check if the branch contains a check valve:
+                for iFlowProc = 1:this.oBranch.iFlowProcs
+                    if this.oBranch.aoFlowProcs(iFlowProc).bCheckValve
+                        % Check valve only lets flows pass in one
+                        % direction. To prevent oscillations we set the
+                        % direction based on this if a check valve is used
+                        if this.oBranch.aoFlowProcs(iFlowProc).bReversed
+                            iDir = -1;
+                        else
+                            iDir = 1;
+                        end
+                        bCheckValve = true;
+                    end
+                end
+                if ~bCheckValve
+                    if fPressureDifference >= 0
+                        iDir = 1;
+                    elseif fPressureDifference < 0
+                        iDir = -1;
+                    end
                 end
             else
                 iDir = sign(fPreviousFlowRate);
@@ -176,6 +192,15 @@ classdef branch < solver.matter.base.branch
             
             [fError, fPressureRise, ~, mfData] = this.calculatePressureDrops(iDir, fFlowRate, fPressureDifference);
                         
+            if sign(fPressureDifference + fPressureRise) ~= iDir
+                % In this case the valve is closed and will
+                % stay closed. Since the flowrate is already 0
+                % simply return a Flowrate of 0
+                fFlowRate   = 0;
+                afDeltaP	= mfData(:, 1);
+                return
+            end
+
             if abs(fError) < this.fMaxError
                 % if the error is already smaller we have the solution
                 fFlowRate   = iDir * fFlowRate;
@@ -211,12 +236,12 @@ classdef branch < solver.matter.base.branch
                             % can set a inf pressure drop for zero flow due
                             % to the fact that they would otherwise always
                             % open after beeing closed
-                            fSecondFlowRate = iDir * 1e-12;
+                            fSecondFlowRate = iDir * 1e-18;
 
                             [fSecondError, ~, ~, ~] = this.calculatePressureDrops(iDir, fSecondFlowRate, fPressureDifference);
                             
                         end
-                    elseif sign(fPressureDifference + fPressureRise) ~= sign(iDir)
+                    elseif ~bCheckValve && sign(fPressureDifference + fPressureRise) ~= sign(iDir)
                         % in this case the possible solution is at the
                         % opposite flow direction than the initial guess
                         iDir = -1 * iDir;

@@ -258,20 +258,24 @@ classdef branch < solver.thermal.base.branch
                 % fRequiredHeatFlowRight  = fTemperatureChangePerSecond * oCapacityRight.fTotalHeatCapacity;
                 % fSolverHeatFlowRight    = fRequiredHeatFlowRight - fCurrentHeatFlowRight;
 
-                % For a positive value of the respective heat flows the
-                % phase is supposed to increase in temperature, for the
-                % left side a negative value in the solver heat flow would
-                % represent an increase in temperature. Therefore we set 
-                %
-                % In order to equalize small differences in the
-                % temperature, the following term is also added (the
-                % difference can occur e.g. because the total heat capacity
-                % changes etc. However these errors should be small and the
-                % temperature of both capacities should be nearly identical
-                % all the time)
-                fEqualizationTemperatureChange = (oCapacityLeft.fTemperature - oCapacityRight.fTemperature) / 2;
+                % If small differences in the temperature occur (e.g.
+                % because of changes in the total heat capacity) we
+                % calculated the equalization temperature here and use it
+                % to calculate a heat flow to normalize the two phase
+                % temperatures
+                fEqualizationTemperature    = (oCapacityLeft.fTemperature * oCapacityLeft.fTotalHeatCapacity + oCapacityRight.fTemperature * oCapacityRight.fTotalHeatCapacity) / (oCapacityLeft.fTotalHeatCapacity + oCapacityRight.fTotalHeatCapacity);
+                % heat flow assuming the equalization occurs within the
+                % maximum time step of the smaller capacity
+                if oCapacityRight.fTotalHeatCapacity < oCapacityLeft.fTotalHeatCapacity
+                    fEqualizationTimeStep = oCapacityRight.fMaxStep;
+                else
+                    fEqualizationTimeStep = oCapacityLeft.fMaxStep;
+                end
+                fEqualizationHeatFlowLeft   = ((oCapacityLeft.fTemperature - fEqualizationTemperature) * oCapacityLeft.fTotalHeatCapacity) / fEqualizationTimeStep;
+                % can be used for sanity check, should be identical to left
+                % fEqualizationHeatFlowRight  = ((fEqualizationTemperature - oCapacityRight.fTemperature ) * oCapacityRight.fTotalHeatCapacity) / fEqualizationTimeStep;
 
-                fHeatFlow = -fSolverHeatFlowLeft + (fEqualizationTemperatureChange * (oCapacityLeft.fTotalHeatCapacity + oCapacityRight.fTotalHeatCapacity) / 2);
+                fHeatFlow = -fSolverHeatFlowLeft + fEqualizationHeatFlowLeft;
                 
             end
             
