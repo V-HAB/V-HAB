@@ -102,11 +102,7 @@ for iSystem = 1:length(tVHAB_Objects.System)
         
         
         fprintf(sSystemFile, ['for iCrewMember = 1:', tHuman.iNumberOfCrew, '\n']);
-        fprintf(sSystemFile,  '     txCrewPlaner.ctEvents = ctEvents(:, iCrewMember);\n');
-        fprintf(sSystemFile,  '     txCrewPlaner.ctEvents = ctEvents(:, iCrewMember);\n');
-        fprintf(sSystemFile,  '     txCrewPlaner.tMealTimes = tMealTimes;\n');
         fprintf(sSystemFile,  '     components.matter.DetailedHuman.Human(this, [''Human_'', num2str(iCrewMember)], txCrewPlaner, 60);\n');
-        fprintf(sSystemFile,  '     clear txCrewPlaner;\n');
         fprintf(sSystemFile,  'end\n');
     end
     
