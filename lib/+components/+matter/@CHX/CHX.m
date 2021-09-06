@@ -186,6 +186,8 @@ classdef CHX < vsys
         % iMaxIterations limits the maximum number of iterations calculated
         % before the calculation is aborted.
         iMaxIterations = 50;
+        
+        oInterpolation;
     end
     
     methods
@@ -256,6 +258,10 @@ classdef CHX < vsys
             % table function
             afTemperature = 273:333;
             this.defineVaporPressureInterpolation(afTemperature);
+            
+            arRelativeInputDeviationLimits = 0.01 .* ones(1, 16);
+            this.oInterpolation = tools.growingInterpolation(this, [this.sName, '_Interpolation'], @this.calculateCHX, arRelativeInputDeviationLimits);
+            
         end
         
         function setNumericProperties(this, tProperties)
@@ -336,6 +342,49 @@ classdef CHX < vsys
         
         function ThermalUpdate(this)
             this.update();
+        end
+        function mfOutputs = calculateCHX(this, mfInputs)
+            
+            Fluid_1.fMassflow                = mfInputs(1);
+            Fluid_1.fEntry_Temperature       = mfInputs(2);
+            Fluid_1.fDynamic_Viscosity       = mfInputs(3);
+            Fluid_1.fDensity                 = mfInputs(4);
+            Fluid_1.fThermal_Conductivity    = mfInputs(5);
+            Fluid_1.fSpecificHeatCapacity    = mfInputs(6);
+            Fluid_1.rPartialMassH2O        	 = mfInputs(7);
+            Fluid_1.fPressure                = mfInputs(8);
+
+            Fluid_2 = struct();
+            Fluid_2.fMassflow                = mfInputs(9);
+            Fluid_2.fEntry_Temperature       = mfInputs(10);
+            Fluid_2.fDynamic_Viscosity       = mfInputs(11);
+            Fluid_2.fDensity                 = mfInputs(12);
+            Fluid_2.fThermal_Conductivity    = mfInputs(13);
+            Fluid_2.fSpecificHeatCapacity    = mfInputs(14);
+            Fluid_2.rPartialMassH2O          = mfInputs(15);
+            Fluid_2.fPressure                = mfInputs(16);
+            
+            try
+                oFlows_1 = this.oF2F_1.getInFlow(); 
+            catch
+                oFlows_1 = this.oF2F_1.aoFlows(1);
+            end
+            
+            try
+                oFlows_2 = this.oF2F_2.getInFlow(); 
+            catch
+                oFlows_2 = this.oF2F_2.aoFlows(1);
+            end
+            Fluid_1.oFlow                   = oFlows_1;
+            Fluid_2.oFlow                 	= oFlows_2;
+            
+            Fluid_1.arPartialMass       	= oFlows_1.arPartialMass;
+            Fluid_2.arPartialMass          	= oFlows_2.arPartialMass;
+            
+            [fTempOut_1, fTempOut_2, fDeltaPress_1, fDeltaPress_2] = this.(this.sCHX_type)(this.tCHX_Parameters, Fluid_1, Fluid_2, this.fThermalConductivityHeatExchangerMaterial, this.miIncrements);
+            
+            mfOutputs = [fTempOut_1, fTempOut_2, fDeltaPress_1, fDeltaPress_2, this.afCondensateMassFlow(this.oMT.tiN2I.H2O)];
+            
         end
         function update(this, afPartialInFlowsGas)
             
@@ -446,43 +495,36 @@ classdef CHX < vsys
                 fDynVisc_2 = oFlows_2.getDynamicViscosity();
                 fConductivity_2 = oFlows_1.oMT.calculateThermalConductivity(oFlows_2);
             
-                %sets the structs for the two fluids according to the
-                %definition from HX_main
-                Fluid_1.fMassflow                = fMassFlow_1;
-                Fluid_1.fEntry_Temperature       = fEntryTemp_1;
-                Fluid_1.fDynamic_Viscosity       = fDynVisc_1;
-                Fluid_1.fDensity                 = fDensity_1;
-                Fluid_1.fThermal_Conductivity    = fConductivity_1;
-                Fluid_1.fSpecificHeatCapacity    = fCp_1;
-                Fluid_1.oFlow                    = oFlows_1;
-                
-                Fluid_2 = struct();
-                Fluid_2.fMassflow                = fMassFlow_2;
-                Fluid_2.fEntry_Temperature       = fEntryTemp_2;
-                Fluid_2.fDynamic_Viscosity       = fDynVisc_2;
-                Fluid_2.fDensity                 = fDensity_2;
-                Fluid_2.fThermal_Conductivity    = fConductivity_2;
-                Fluid_2.fSpecificHeatCapacity    = fCp_2;
-                Fluid_2.oFlow                    = oFlows_2;
+                rPartialMassH2O_1 = oFlows_1.arPartialMass(this.oMT.tiN2I.H2O);
+                rPartialMassH2O_2 = oFlows_2.arPartialMass(this.oMT.tiN2I.H2O);
                 
                 %function call for HX_main to get outlet values
                 % as first value the this struct from object HX is given to
                 % the function HX_main
-                [fTempOut_1, fTempOut_2, fDeltaPress_1, fDeltaPress_2] =...
-                    this.(this.sCHX_type)(this.tCHX_Parameters, Fluid_1, Fluid_2, this.fThermalConductivityHeatExchangerMaterial, this.miIncrements);        
-
-                % If an error is encountered, try recalculting the CHX
-                % without initialized values. This can solve some errors
-                if any(isnan([fTempOut_1, fTempOut_2, fDeltaPress_1, fDeltaPress_2])) || fTempOut_1 < 0 || fTempOut_2 < 0
-                    [fTempOut_1, fTempOut_2, fDeltaPress_1, fDeltaPress_2] =...
-                        this.(this.sCHX_type)(this.tCHX_Parameters, Fluid_1, Fluid_2, this.fThermalConductivityHeatExchangerMaterial, this.miIncrements, true);
-                end
+                mfInputs = [fMassFlow_1, fEntryTemp_1, fDynVisc_1, fDensity_1, fConductivity_1, fCp_1, rPartialMassH2O_1, oFlows_1.fPressure ...
+                        	fMassFlow_2, fEntryTemp_2, fDynVisc_2, fDensity_2, fConductivity_2, fCp_2, rPartialMassH2O_2, oFlows_2.fPressure];
+                mfClosestOutputs = this.oInterpolation.calculateOutputs(mfInputs);
                 
-                if any(isnan([fTempOut_1, fTempOut_2, fDeltaPress_1, fDeltaPress_2])) || fTempOut_1 < 0 || fTempOut_2 < 0
-                    % if you encounter this keyboard, something really went
-                    % wrong during the calculation of the CHX
-                    keyboard()
-                end
+                fTempOut_1      = mfClosestOutputs(1);
+                fTempOut_2      = mfClosestOutputs(2);
+                fDeltaPress_1 	= mfClosestOutputs(3);
+                fDeltaPress_2  	= mfClosestOutputs(4);
+                
+%                 [fTempOut_1, fTempOut_2, fDeltaPress_1, fDeltaPress_2] =...
+%                     this.(this.sCHX_type)(this.tCHX_Parameters, Fluid_1, Fluid_2, this.fThermalConductivityHeatExchangerMaterial, this.miIncrements);        
+
+%                 % If an error is encountered, try recalculting the CHX
+%                 % without initialized values. This can solve some errors
+%                 if any(isnan([fTempOut_1, fTempOut_2, fDeltaPress_1, fDeltaPress_2])) || fTempOut_1 < 0 || fTempOut_2 < 0
+%                     [fTempOut_1, fTempOut_2, fDeltaPress_1, fDeltaPress_2] =...
+%                         this.(this.sCHX_type)(this.tCHX_Parameters, Fluid_1, Fluid_2, this.fThermalConductivityHeatExchangerMaterial, this.miIncrements, true);
+%                 end
+%                 
+%                 if any(isnan([fTempOut_1, fTempOut_2, fDeltaPress_1, fDeltaPress_2])) || fTempOut_1 < 0 || fTempOut_2 < 0
+%                     % if you encounter this keyboard, something really went
+%                     % wrong during the calculation of the CHX
+%                     keyboard()
+%                 end
                 %sets the outlet temperatures into the respective variable
                 %inside the heat exchanger object for plotting purposes
                 this.fTempOut_Fluid1 = fTempOut_1;
