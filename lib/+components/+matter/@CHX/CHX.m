@@ -201,6 +201,12 @@ classdef CHX < vsys
             end
           
             this.tCHX_Parameters = tCHX_Parameters;
+            
+            % TO DO: Make adaptive!
+            this.tCHX_Parameters.Vapor	 = 'H2O';					% Vapor
+            this.tCHX_Parameters.Inertgas = 'Air';					% Inertgas
+            this.tCHX_Parameters.Coolant  = 'H2O';					% Coolant
+            
             this.sCHX_type = sCHX_type;      
             if isscalar(miIncrements)
                 miIncrements = [miIncrements, miIncrements];
@@ -259,8 +265,13 @@ classdef CHX < vsys
             afTemperature = 273:333;
             this.defineVaporPressureInterpolation(afTemperature);
             
-            arRelativeInputDeviationLimits = 0.01 .* ones(1, 16);
-            this.oInterpolation = tools.growingInterpolation(this, [this.sName, '_Interpolation'], @this.calculateCHX, arRelativeInputDeviationLimits);
+            arRelativeInputDeviationLimits = 1e-2 .* ones(1, 16);
+            arRelativeInputDeviationLimits(7) = 1e-3; % for the relative humidity, react to changes smaller than 1%
+            afAbsoluteInputDeviationLimits = inf .* ones(1, 16);
+            afAbsoluteInputDeviationLimits(2)  = this.fTempChangeToRecalc;
+            afAbsoluteInputDeviationLimits(10) = this.fTempChangeToRecalc;
+            
+            this.oInterpolation = tools.growingInterpolation(this, [this.sName, '_Interpolation'], @this.calculateCHX, arRelativeInputDeviationLimits, afAbsoluteInputDeviationLimits);
             
         end
         
@@ -321,6 +332,15 @@ classdef CHX < vsys
                 end
                 
                 this.(sField) = xProperty;
+                
+                if strcmp(sField, 'fTempChangeToRecalc')
+                    arRelativeInputDeviationLimits = this.oInterpolation.arRelativeInputDeviationLimits;
+                    afAbsoluteInputDeviationLimits = inf .* ones(1, 16);
+                    afAbsoluteInputDeviationLimits(2)  = this.fTempChangeToRecalc;
+                    afAbsoluteInputDeviationLimits(10) = this.fTempChangeToRecalc;
+                    
+                    this.oInterpolation.adjustLimits(arRelativeInputDeviationLimits, afAbsoluteInputDeviationLimits);
+                end
             end
         end
         
@@ -381,9 +401,15 @@ classdef CHX < vsys
             Fluid_1.arPartialMass       	= oFlows_1.arPartialMass;
             Fluid_2.arPartialMass          	= oFlows_2.arPartialMass;
             
-            [fTempOut_1, fTempOut_2, fDeltaPress_1, fDeltaPress_2] = this.(this.sCHX_type)(this.tCHX_Parameters, Fluid_1, Fluid_2, this.fThermalConductivityHeatExchangerMaterial, this.miIncrements);
+            [fTempOut_1, fTempOut_2, fDeltaPress_1, fDeltaPress_2, fNewTotalHeatFlow, fFluid1HeatFlow, fCondensateFlow, fRe, fSc] = this.(this.sCHX_type)(this.tCHX_Parameters, Fluid_1, Fluid_2, this.fThermalConductivityHeatExchangerMaterial, this.miIncrements);
             
-            mfOutputs = [fTempOut_1, fTempOut_2, fDeltaPress_1, fDeltaPress_2, this.afCondensateMassFlow(this.oMT.tiN2I.H2O)];
+            % If an error is encountered, try recalculting the CHX
+            % without initialized values. This can solve some errors
+            if any(isnan([fTempOut_1, fTempOut_2, fDeltaPress_1, fDeltaPress_2])) || fTempOut_1 < 0 || fTempOut_2 < 0
+                [fTempOut_1, fTempOut_2, fDeltaPress_1, fDeltaPress_2, fNewTotalHeatFlow, fFluid1HeatFlow, fCondensateFlow, fRe, fSc] = this.(this.sCHX_type)(this.tCHX_Parameters, Fluid_1, Fluid_2, this.fThermalConductivityHeatExchangerMaterial, this.miIncrements, true);
+            end
+            
+            mfOutputs = [fTempOut_1, fTempOut_2, fDeltaPress_1, fDeltaPress_2, fNewTotalHeatFlow, fFluid1HeatFlow, fCondensateFlow, fRe, fSc];
             
         end
         function update(this, afPartialInFlowsGas)
@@ -510,21 +536,16 @@ classdef CHX < vsys
                 fDeltaPress_1 	= mfClosestOutputs(3);
                 fDeltaPress_2  	= mfClosestOutputs(4);
                 
-%                 [fTempOut_1, fTempOut_2, fDeltaPress_1, fDeltaPress_2] =...
-%                     this.(this.sCHX_type)(this.tCHX_Parameters, Fluid_1, Fluid_2, this.fThermalConductivityHeatExchangerMaterial, this.miIncrements);        
+                this.fTotalHeatFlow                     = mfClosestOutputs(5);
+                this.txCHX_Parameters.fFluid1HeatFlow   = mfClosestOutputs(6);
 
-%                 % If an error is encountered, try recalculting the CHX
-%                 % without initialized values. This can solve some errors
-%                 if any(isnan([fTempOut_1, fTempOut_2, fDeltaPress_1, fDeltaPress_2])) || fTempOut_1 < 0 || fTempOut_2 < 0
-%                     [fTempOut_1, fTempOut_2, fDeltaPress_1, fDeltaPress_2] =...
-%                         this.(this.sCHX_type)(this.tCHX_Parameters, Fluid_1, Fluid_2, this.fThermalConductivityHeatExchangerMaterial, this.miIncrements, true);
-%                 end
-%                 
-%                 if any(isnan([fTempOut_1, fTempOut_2, fDeltaPress_1, fDeltaPress_2])) || fTempOut_1 < 0 || fTempOut_2 < 0
-%                     % if you encounter this keyboard, something really went
-%                     % wrong during the calculation of the CHX
-%                     keyboard()
-%                 end
+                this.afCondensateMassFlow(this.oMT.tiN2I.(this.tCHX_Parameters.Vapor)) = mfClosestOutputs(7);
+
+                this.fTotalCondensateHeatFlow   = sum(this.afCondensateMassFlow .* this.mPhaseChangeEnthalpy);
+
+                this.txCHX_Parameters.fReynoldsNumberGas    = mfClosestOutputs(8);
+                this.txCHX_Parameters.fSchmidtNumberGas     = mfClosestOutputs(9);
+                
                 %sets the outlet temperatures into the respective variable
                 %inside the heat exchanger object for plotting purposes
                 this.fTempOut_Fluid1 = fTempOut_1;

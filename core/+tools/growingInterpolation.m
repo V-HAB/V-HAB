@@ -26,13 +26,18 @@ classdef growingInterpolation < base & event.source
             end
  
         end
-        function [mfClosestOutputs, bFoundMatch, fRSS] = calculateOutputs(this, mfInputs)
+        function [mfClosestOutputs, bFoundMatch, fRSS] = calculateOutputs(this, mfInputs, bForceNewCalculation)
             % bFoundMatch = 0 means value was newly calculate as no available
             % data point matched the inputs
             % bFoundMatch = 1 means a value in the stored data was close
             % enough to be a match and was used for the outputs
+            if nargin < 3
+                bForceNewCalculation = false;
+            end
+            
             bFoundMatch = this.checkMatch(mfInputs);
-            if bFoundMatch
+            
+            if bFoundMatch && ~bForceNewCalculation
                 [mfClosestOutputs, fRSS] = this.findClosestMatch(mfInputs);
                 
             else
@@ -41,6 +46,13 @@ classdef growingInterpolation < base & event.source
                 mfClosestOutputs = this.hFunction(mfInputs);
                 
                 this.addDataPoint(mfInputs, mfClosestOutputs);
+            end
+        end
+        function adjustLimits(this, arRelativeInputDeviationLimits, afAbsoluteInputDeviationLimits)
+            this.arRelativeInputDeviationLimits = arRelativeInputDeviationLimits;
+                
+            if nargin > 4
+                this.afAbsoluteInputDeviationLimits = afAbsoluteInputDeviationLimits;
             end
         end
     end
