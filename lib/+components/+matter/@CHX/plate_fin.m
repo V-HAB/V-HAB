@@ -1,4 +1,4 @@
-function [fOutlet_Temp_1, fOutlet_Temp_2, fDelta_P_1, fDelta_P_2] = ...
+function [fOutlet_Temp_1, fOutlet_Temp_2, fDelta_P_1, fDelta_P_2, fTotalHeatFlow, fFluid1HeatFlow, fCondensateFlow, fReynoldsNumberGas, fSchmidtNumberGas] = ...
     plate_fin(oCHX, tCHX_Parameters, Fluid_1, Fluid_2, fThermalConductivitySolid, miIncrements, bResetInit)
 
 % Function used to calculate the outlet temperatures and pressure drop of a
@@ -202,11 +202,6 @@ else
     % air layer, which makes sense because then all coolant layers can use
     % the full coolant contact area
     tCHX_Parameters.fMassFlowCoolant    = Fluid_2.fMassflow/(iIncrementsCoolant * (tCHX_Parameters.iLayers + 1));	% Mass flow rate of coolant [kg/s]
-
-    % TO DO: Make adaptive!
-    tCHX_Parameters.Vapor	 = 'H2O';					% Vapor
-    tCHX_Parameters.Inertgas = 'Air';					% Inertgas
-    tCHX_Parameters.Coolant  = 'H2O';					% Coolant
 
     tCHX_Parameters.fCellLength                 = fIncrementalLength;
     tCHX_Parameters.fCellBroadness              = fIncrementalBroadness;
@@ -568,10 +563,21 @@ end
 % calculated using the input specific heat capacity. Since the discretized
 % solution is more accurate, we use the inlet specific heat capacities to
 % calculate the heat flows based on the outlet temperatures:
-oCHX.fTotalHeatFlow                     = (fOutlet_Temp_2 - Fluid_2.fEntry_Temperature) * fInletSpecificHeatCapacityCoolant  * Fluid_2.fMassflow;
-oCHX.txCHX_Parameters.fFluid1HeatFlow   = (Fluid_1.fEntry_Temperature - fOutlet_Temp_1) * fInletSpecificHeatCapacityGas      * Fluid_1.fMassflow;
+fTotalHeatFlow      = (fOutlet_Temp_2 - Fluid_2.fEntry_Temperature) * fInletSpecificHeatCapacityCoolant  * Fluid_2.fMassflow;
+fFluid1HeatFlow     = (Fluid_1.fEntry_Temperature - fOutlet_Temp_1) * fInletSpecificHeatCapacityGas      * Fluid_1.fMassflow;
 
+fCondensateFlow     = sum(sum(sum(sum(mCondensateFlowRate))));
 
+fReynoldsNumberGas 	= tCHX_Parameters.tDimensionlessQuantitiesGas.fRe;
+fSchmidtNumberGas  	= tCHX_Parameters.tDimensionlessQuantitiesGas.fSc;
+
+% We store the calculate coolant flows, to use them as the initialization
+% parameter for the next calculation of the CHX
+oCHX.txCHX_Parameters.mOutlet_Temp_1        = mOutlet_Temp_1;
+oCHX.txCHX_Parameters.mOutlet_Temp_2        = mOutlet_Temp_2;
+oCHX.txCHX_Parameters.mCondensateFlowRate   = mCondensateFlowRate;
+
+%%
 % Outcomment this code and run it to get the data formatted into 2D for
 % each layer, which makes plotting easier. Note that the coolant flow
 % follows the baffles!
@@ -614,16 +620,4 @@ oCHX.txCHX_Parameters.fFluid1HeatFlow   = (Fluid_1.fEntry_Temperature - fOutlet_
 % ylabel('y Cell Number')
 % zlabel('Temperature / K')
 
-oCHX.afCondensateMassFlow(oCHX.oMT.tiN2I.(tCHX_Parameters.Vapor)) = sum(sum(sum(sum(mCondensateFlowRate))));
-
-oCHX.fTotalCondensateHeatFlow   = sum(oCHX.afCondensateMassFlow .* oCHX.mPhaseChangeEnthalpy);
-
-% We store the calculate coolant flows, to use them as the initialization
-% parameter for the next calculation of the CHX
-oCHX.txCHX_Parameters.mOutlet_Temp_1        = mOutlet_Temp_1;
-oCHX.txCHX_Parameters.mOutlet_Temp_2        = mOutlet_Temp_2;
-oCHX.txCHX_Parameters.mCondensateFlowRate   = mCondensateFlowRate;
-
-oCHX.txCHX_Parameters.fReynoldsNumberGas    = tCHX_Parameters.tDimensionlessQuantitiesGas.fRe;
-oCHX.txCHX_Parameters.fSchmidtNumberGas     = tCHX_Parameters.tDimensionlessQuantitiesGas.fSc;
 end
