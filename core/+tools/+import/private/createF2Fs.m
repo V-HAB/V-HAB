@@ -7,7 +7,7 @@ csInputValues.fan_simple    = {'fMaxDeltaP', 'bReverse'};
 csInputValues.fan           = {'fSpeedSetpoint', 'sDirection'};
 csInputValues.pump          = {'fFlowRateSP'};
 csInputValues.checkvalve    = {'bReversed', 'fPressureDropCoefficient'};
-csInputValues.valve         = {'fFlowCoefficient', 'bOpen'};
+csInputValues.valve         = {'bOpen'};
 
 for iF2FType = 1:length(csF2F)
     sF2F = csF2F{iF2FType};
