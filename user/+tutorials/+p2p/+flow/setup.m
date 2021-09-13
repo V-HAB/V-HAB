@@ -1,32 +1,16 @@
-classdef setup_2 < simulation.infrastructure
-    %SETUP This class is used to setup a simulation
-    %   There should always be a setup file present for each project. It is
-    %   used for the following:
-    %   - instantiate the root object
-    %   - register branches to their appropriate solvers
-    %   - determine which items are logged
-    %   - set the simulation duration
-    %   - provide methods for plotting the results
-    
+classdef setup < simulation.infrastructure
     properties
-        
         tiLog = struct();
     end
     
     methods
-        function this = setup_2(ptConfigParams, tSolverParams)
+        function this = setup(ptConfigParams, tSolverParams)
             
-            % Possible to change the constructor paths and params for the
-            % monitors
             ttMonitorConfig = struct();
             
-            % First we call the parent constructor and tell it the name of
-            % this simulation we are creating.
             this@simulation.infrastructure('Tutorial_p2p', ptConfigParams, tSolverParams, ttMonitorConfig);
             
-            
-            % Creating the root object
-             tutorials.p2p.systems.Example2(this.oSimulationContainer, 'Example');
+             tutorials.p2p.flow.systems.Example(this.oSimulationContainer, 'Example');
             
             %% Simulation length
             % Stop when specific time in sim is reached
@@ -43,8 +27,13 @@ classdef setup_2 < simulation.infrastructure
             csStores = fieldnames(this.oSimulationContainer.toChildren.Example.toStores);
             for iStore = 1:length(csStores)
                 oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'this.fMass * this.fMassToPressure',	'Pa', [csStores{iStore}, ' Pressure']);
+                oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'this.afPP(this.oMT.tiN2I.CO2)',        'Pa', [csStores{iStore}, ' CO2 Pressure']);
+                oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'this.afPP(this.oMT.tiN2I.H2O)',        'Pa', [csStores{iStore}, ' H2O Pressure']);
                 oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fTemperature',	'K',  [csStores{iStore}, ' Temperature']);
             end
+            
+            oLog.addValue('Example.toStores.Filter.toPhases.FilteredPhase',	'this.afMass(this.oMT.tiN2I.CO2)',	'kg',  'Adsorbed CO2');
+            oLog.addValue('Example.toStores.Filter.toPhases.FilteredPhase',	'this.afMass(this.oMT.tiN2I.H2O)',	'kg',  'Adsorbed H2O');
             
             csBranches = fieldnames(this.oSimulationContainer.toChildren.Example.toBranches);
             for iBranch = 1:length(csBranches)
@@ -60,13 +49,16 @@ classdef setup_2 < simulation.infrastructure
             close all
             oPlotter = plot@simulation.infrastructure(this);
             
-            
             csStores = fieldnames(this.oSimulationContainer.toChildren.Example.toStores);
-            csPressures = cell(length(csStores),1);
-            csTemperatures = cell(length(csStores),1);
+            csPressures     = cell(length(csStores),1);
+            csTemperatures  = cell(length(csStores),1);
+            csCO2           = cell(length(csStores),1);
+            csH2O           = cell(length(csStores),1);
             for iStore = 1:length(csStores)
                 csPressures{iStore} = ['"', csStores{iStore}, ' Pressure"'];
                 csTemperatures{iStore} = ['"', csStores{iStore}, ' Temperature"'];
+                csCO2{iStore} = ['"', csStores{iStore}, ' CO2 Pressure"'];
+                csH2O{iStore} = ['"', csStores{iStore}, ' H2O Pressure"'];
             end
             
             csBranches = fieldnames(this.oSimulationContainer.toChildren.Example.toBranches);
@@ -78,9 +70,12 @@ classdef setup_2 < simulation.infrastructure
             tPlotOptions.sTimeUnit = 'seconds';
             tFigureOptions = struct('bTimePlot', false, 'bPlotTools', false);
 
-            coPlots{1,1} = oPlotter.definePlot(csPressures,     'Pressures', tPlotOptions);
-            coPlots{2,1} = oPlotter.definePlot(csFlowRates,     'Flow Rates', tPlotOptions);
-            coPlots{1,2} = oPlotter.definePlot(csTemperatures,  'Temperatures', tPlotOptions);
+            coPlots{1,1} = oPlotter.definePlot(csPressures,         'Pressures', tPlotOptions);
+            coPlots{2,2} = oPlotter.definePlot(csFlowRates,         'Flow Rates', tPlotOptions);
+            coPlots{1,2} = oPlotter.definePlot({'"Adsorbed CO2"', '"Adsorbed H2O"'},	'Adsorbed Masses', tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot(csCO2,               'CO2', tPlotOptions);
+            coPlots{3,1} = oPlotter.definePlot(csH2O,               'H2O', tPlotOptions);
+            coPlots{3,2} = oPlotter.definePlot(csTemperatures,    	'Temperatures', tPlotOptions);
             oPlotter.defineFigure(coPlots,  'Plots', tFigureOptions);
             
             oPlotter.plot();
