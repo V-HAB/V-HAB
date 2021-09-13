@@ -38,9 +38,11 @@ classdef BPA < vsys
     end
     
     methods
-        function this = BPA(oParent, sName)
-            % Set the initial time step to 60 s
-            this@vsys(oParent, sName, 60);
+        function this = BPA(oParent, sName, fTimeStep, ~)
+            if nargin < 3
+                fTimeStep = 60;
+            end
+            this@vsys(oParent, sName, fTimeStep);
             
             eval(this.oRoot.oCfgParams.configCode(this));
             

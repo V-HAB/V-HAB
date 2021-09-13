@@ -305,7 +305,7 @@ for iStore = 1:length(tCurrentSystem.Stores)
             fprintf(sSystemFile,  'oP2P.setFlowRate(afFlowRates);\n\n');
             
         elseif strcmp(tP2P.sP2P_Type, 'components.matter.P2Ps.ConstantMassP2P')
-            fprintf(sSystemFile,  [tP2P.sP2P_Type, '(this.toStores.', tStore.label, ', ''', tP2P.label, ''', ''', sSource, ', ''', sTarget, ', {''', tP2P.sSubstance, '''}, 1);\n']);
+            fprintf(sSystemFile,  [tP2P.sP2P_Type, '(this.toStores.', tStore.label, ', ''', tP2P.label, ''', ''', sSource, ', ''', sTarget, ', {', tP2P.sSubstance, '}, 1);\n']);
             
         else
             fprintf(sSystemFile,  [tP2P.sP2P_Type, '(this.toStores.', tStore.label, ', ''', tP2P.label, ''', ''', sSource, ', ''', sTarget, ');\n']);

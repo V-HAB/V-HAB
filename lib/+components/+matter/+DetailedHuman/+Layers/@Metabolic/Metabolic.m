@@ -290,7 +290,6 @@ classdef Metabolic < vsys
             this.fMaximumGlucoseContetLiver = this.fAverageMaximumGlucoseContetLiver;
             this.fMaximumGlucoseContetMuscle = this.fAverageMaximumGlucoseContetMuscle;
             
-            
             % Value can be between 0 and 1.5. It is the current VO2/VO2_max
             this.rActivityLevel                 = oParent.fNominalAcitivityLevel;
             this.rExerciseTargetActivityLevel   = oParent.fNominalAcitivityLevel;
@@ -482,6 +481,11 @@ classdef Metabolic < vsys
             components.matter.P2Ps.ManualP2P(this.toStores.Metabolism, 'Metabolism_to_AdiposeTissue',   oMetabolism, oAdiposeTissue);
             components.matter.P2Ps.ManualP2P(this.toStores.Metabolism, 'Metabolism_to_MuscleTissue',    oMetabolism, oMuscleTissue);
             
+            this.fBodyMass     	= this.fInitialBodyMassWithoutFatOrMuslce + this.toStores.Metabolism.toPhases.AdiposeTissue.afMass(this.oMT.tiN2I.C51H98O6) + this.toStores.Metabolism.toPhases.MuscleTissue.afMass(this.oMT.tiN2I.Human_Tissue);
+            
+            this.fLeanBodyMass	= this.fBodyMass - this.toStores.Metabolism.toPhases.AdiposeTissue.afMass(this.oMT.tiN2I.C51H98O6);
+            this.fBMI           = this.fBodyMass / this.oParent.fHeight^2; 
+            this.fRestingDailyEnergyExpenditure = (370 + 21.6 * this.fLeanBodyMass) * 4184;
         end
         
         

@@ -62,7 +62,10 @@ for iBranch = 1:length(tVHAB_Objects.Branch)
             end
         end
     end
-    bLeftSideInterface = false;
+    bLeftSideInterface  = false;
+    % Special branches are created seperatly e.g. for the human and plant
+    % models
+    bSpecialBranch      = false;
     
     if isempty(sLeftSideBranch)
         
@@ -73,13 +76,36 @@ for iBranch = 1:length(tVHAB_Objects.Branch)
                 
                 for iOutput = 1:length(tSubsystem.Output)
                     tOutput = tSubsystem.Output{iOutput};
+                    
                     if strcmp(tOutput.id, tBranch.SourceID)
-                        
-                        sLeftSideInterface = ['''', tSubsystem.label, '_', tOutput.label, '_Out'''];
-                        sLeftSideBranch = sLeftSideInterface;
-                        sLeftSideSystemID = tSubsystem.ParentID;
-                        
-                        bLeftSideInterface = true;
+                        if strcmp(csSystems{iSubsystemType}, 'Human')
+                            % Special handling of human subsystem
+                            if strcmp(tOutput.label, 'Air')
+                                tVHAB_Objects.(csSystems{iSubsystemType}){iSubsytem}.toInterfacePhases.oCabin = sRightSideBranch;
+                            elseif strcmp(tOutput.label, 'Urine')
+                                tVHAB_Objects.(csSystems{iSubsystemType}){iSubsytem}.toInterfacePhases.oUrine = sRightSideBranch;
+                            elseif strcmp(tOutput.label, 'Feces')
+                                tVHAB_Objects.(csSystems{iSubsystemType}){iSubsytem}.toInterfacePhases.oFeces = sRightSideBranch;
+                            end
+                            bSpecialBranch = true;
+                        elseif strcmp(csSystems{iSubsystemType}, 'Plants')
+                            % Special handling of plant subsystem
+                            if strcmp(tOutput.label, 'Air')
+                                tVHAB_Objects.(csSystems{iSubsystemType}){iSubsytem}.toInterfacePhases.oCabin = sRightSideBranch;
+                            elseif strcmp(tOutput.label, 'Nutrient')
+                                tVHAB_Objects.(csSystems{iSubsystemType}){iSubsytem}.toInterfacePhases.oNutrient = sRightSideBranch;
+                            elseif strcmp(tOutput.label, 'Biomass')
+                                tVHAB_Objects.(csSystems{iSubsystemType}){iSubsytem}.toInterfacePhases.oBiomass = sRightSideBranch;
+                            end
+                            bSpecialBranch = true;
+                        else
+
+                            sLeftSideInterface = ['''', tSubsystem.label, '_', tOutput.label, '_Out'''];
+                            sLeftSideBranch = sLeftSideInterface;
+                            sLeftSideSystemID = tSubsystem.ParentID;
+                            bLeftSideInterface = true;
+
+                        end
                         break
                     end
                 end
@@ -87,30 +113,29 @@ for iBranch = 1:length(tVHAB_Objects.Branch)
                 for iInput = 1:length(tSubsystem.Input)
                     tInput = tSubsystem.Input{iInput};
                     if strcmp(tBranch.TargetID, tInput.id)
-                        sSubsystemTargetLabel = tSubsystem.label;
-                        sInputLabel = tInput.label;
+                        if iSubsystemType == 1
+                            % Special handling of human subsystem
+                            if strcmp(tInput.label, 'Food')
+                                for iFoodStore = 1:length(tVHAB_Objects.FoodStore)
+                                    tFoodStore = tVHAB_Objects.FoodStore{iFoodStore};
+                                    if strcmp(tFoodStore.id, tBranch.SourceID)
+                                        tVHAB_Objects.(csSystems{iSubsystemType}){iSubsytem}.toInterfacePhases.oFoodStore = tFoodStore.label;
+                                    end
+                                end
+                            end
+
+                            bSpecialBranch = true;
+                        end
                     end
                 end
             end
         end
     end
     
-    if isempty(sLeftSideBranch)
-        
-        for iFoodStore = 1:length(tVHAB_Objects.FoodStore)
-            tFoodStore = tVHAB_Objects.FoodStore{iFoodStore};
-            if strcmp(tFoodStore.id, tBranch.SourceID)
-                sBranch = ['requestFood = this.toStores.', tFoodStore.label, '.registerHuman(''', sSubsystemTargetLabel, '_', sInputLabel,'_In'');\n'];
-                sBranch = [sBranch, 'this.toChildren.', sSubsystemTargetLabel, '.bindRequestFoodFunction(requestFood);\n'];
-                
-                tVHAB_Objects.System{iSystem}.csBranches{end+1} = sBranch;
-                tVHAB_Objects.System{iSystem}.csSolvers{end+1} = [];
-                tVHAB_Objects.System{iSystem}.csBranchNames{end+1} = [];
-            end
-        end
-    end
-    % In this case we have a branch without F2Fs
-    if ~isempty(sLeftSideBranch) && ~isempty(sRightSideBranch)
+    if bSpecialBranch
+        continue
+        % In this case we have a branch without F2Fs
+    elseif ~isempty(sLeftSideBranch) && ~isempty(sRightSideBranch)
         if strcmp(sLeftSideSystemID, sRightSideSystemID)
             % The branch is internal to one system, we can define it
             % without interfaces
@@ -217,7 +242,7 @@ for iBranch = 1:length(tVHAB_Objects.Branch)
                     sRightSideInterface = ['''', tConvertIDs.tIDtoLabel.(sRightSideSystemID), '_', tools.normalizePath(tFoodStore.label), ''''];
                 end
             end
-            
+            bSpecialBranch = false;
             for iSubsystemType = 1:length(csSystems)
                 for iSubsytem = 1:length(tVHAB_Objects.(csSystems{iSubsystemType}))
                     
@@ -225,36 +250,53 @@ for iBranch = 1:length(tVHAB_Objects.Branch)
                     for iInput = 1:length(tSubsystem.Input)
                         tInput = tSubsystem.Input{iInput};
                         if strcmp(tInput.id, tBranch.TargetID)
-                            sRightSideSystemID  = tSubsystem.ParentID;
-                            sRightSideInterface = ['''', tSubsystem.label, '_', tInput.label, '_In'''];
-                            sRightSideBranch    = sRightSideInterface;
                             
-                            % Since Parent to Subsystem Interface in V-HAB
-                            % can only be defined in one direction (but we
-                            % want to allow both here) we switch the sides
-                            % and the order of the F2Fs in this branch
-                            A = sLeftSideBranch;
-                            B = sLeftSideInterface;
-                            C = sLeftSideSystemID;
-                            
-                            sLeftSideBranch     = sRightSideBranch;
-                            sLeftSideInterface  = sRightSideInterface;
-                            sLeftSideSystemID   = sRightSideSystemID;
-                            
-                            sRightSideBranch    = A;
-                            sRightSideInterface = B;
-                            sRightSideSystemID  = C;
-                            
-                            csF2FinBranches = fliplr(csF2FinBranches);
-                            
-                            bLeftSideInterface = true;
+                            if strcmp(csSystems{iSubsystemType}, 'Human')
+                                % Special handling of human subsystem
+                                if strcmp(tInput.label, 'Water')
+                                    tVHAB_Objects.(csSystems{iSubsystemType}){iSubsytem}.toInterfacePhases.oWater = sLeftSideBranch;
+                                end
+                                bSpecialBranch      = true;
+                                sRightSideBranch    = 'special';
+                                
+                            elseif strcmp(csSystems{iSubsystemType}, 'Plants')
+                                % Special handling of plant subsystem
+                                bSpecialBranch = true;
+                                sRightSideBranch    = 'special';
+                            else
+                                sRightSideSystemID  = tSubsystem.ParentID;
+                                sRightSideInterface = ['''', tSubsystem.label, '_', tInput.label, '_In'''];
+                                sRightSideBranch    = sRightSideInterface;
+
+                                % Since Parent to Subsystem Interface in V-HAB
+                                % can only be defined in one direction (but we
+                                % want to allow both here) we switch the sides
+                                % and the order of the F2Fs in this branch
+                                A = sLeftSideBranch;
+                                B = sLeftSideInterface;
+                                C = sLeftSideSystemID;
+
+                                sLeftSideBranch     = sRightSideBranch;
+                                sLeftSideInterface  = sRightSideInterface;
+                                sLeftSideSystemID   = sRightSideSystemID;
+
+                                sRightSideBranch    = A;
+                                sRightSideInterface = B;
+                                sRightSideSystemID  = C;
+
+                                csF2FinBranches = fliplr(csF2FinBranches);
+
+                                bLeftSideInterface = true;
+                            end
                             break
                         end
                     end
                 end
             end
             
-            if bTargetFound
+            if bSpecialBranch
+                break
+            elseif bTargetFound
                 % In this case we have to look for the next branch in the
                 % loop
                 bNextBranchFound = false;
@@ -285,6 +327,9 @@ for iBranch = 1:length(tVHAB_Objects.Branch)
             
         end
         
+        if bSpecialBranch
+            continue
+        end
         % Now we have found all parts relevant for the branch and we can
         % define it
         sBranch = ['matter.branch(this, ', sLeftSideBranch, ', {'];
@@ -436,6 +481,24 @@ for iBranch = 1:length(tVHAB_Objects.Branch)
             % throwing the V-HAB error makes more sense as the output is
             % more verbose
             % error('we could not find the left side of the branch. Check if the all branches in draw io are connected correctly and if all phases are placed correctly inside the store')
+        end
+    end
+end
+
+% assigning the toInterfacePhases to the other subsystem ref:
+for iSystem = 1:length(tVHAB_Objects.System)
+    for iHuman = 1:length(tVHAB_Objects.System{iSystem}.Human)
+        for iParentRef = 1:length(tVHAB_Objects.Human)
+            if strcmp(tVHAB_Objects.Human{iParentRef}.id, tVHAB_Objects.System{iSystem}.Human{iHuman}.id)
+                tVHAB_Objects.System{iSystem}.Human{iHuman}.toInterfacePhases = tVHAB_Objects.Human{iParentRef}.toInterfacePhases;
+            end
+        end
+    end
+    for iPlant = 1:length(tVHAB_Objects.System{iSystem}.Plants)
+        for iParentRef = 1:length(tVHAB_Objects.Plants)
+            if strcmp(tVHAB_Objects.Plants{iParentRef}.id, tVHAB_Objects.System{iSystem}.Plants{iPlant}.id)
+                tVHAB_Objects.System{iSystem}.Plants{iPlant}.toInterfacePhases = tVHAB_Objects.Plants{iParentRef}.toInterfacePhases;
+            end
         end
     end
 end
