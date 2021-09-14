@@ -16,124 +16,71 @@ classdef Example < vsys
     
     methods
         function this = Example(oParent, sName)
-            % Call parent constructor. Third parameter defined how often
-            % the .exec() method of this subsystem is called. This can be
-            % used to change the system state, e.g. close valves or switch
-            % on/off components.
-            % Values can be: 0-inf for interval in [s] (zero means with
-            % lowest time step set for the timer). -1 means with every TICK
-            % of the timer, which is determined by the smallest time step
-            % of any of the systems. Providing a logical false (def) means
-            % the .exec method is called when the oParent.exec() is
-            % executed (see this .exec() method - always call exec@vsys as
-            % well!).
             this@vsys(oParent, sName);
             
-            
-            %TODO -> DOCUMENT!
-            %   -> here, just process Ctor params and set e.g. defualt
-            %      properties
-            %   -> ALSO, add subsystems
-            
-            
-            % Adding the subsystem
+            % If you want to use subsystem, you should add them in the
+            % constructor of the parent class (which in this case, is this
+            % example)
             tutorials.subsystems.subsystems.ExampleSubsystem(this, 'SubSystem');
             
-            
-            
-            
-            % THEN do this:
             eval(this.oRoot.oCfgParams.configCode(this));
-            % -> COnfig params
-            
-            
-            
-            
-            
-            % MAtter stuff in createMatterStructure, solvers in
-            % createSovlerStructure. Stuff like connectIfs has to be done
-            % in createMatterStructure!
-            
         end
         
         
         function createMatterStructure(this)
             createMatterStructure@vsys(this);
             
-            % Creating a store, volume 1 m^3
-            matter.store(this, 'Tank_1', 1);
+            matter.store(this, 'Tank_1', 10);
+            oGasPhase = this.toStores.Tank_1.createPhase('air', 10, 293, 0.5, 2e5);
             
-            % Adding a phase to the store 'Tank_1', 2 m^3 air
-            oGasPhase = this.toStores.Tank_1.createPhase('air', 1, 293, 0.5, 2e5);
+            matter.store(this, 'Tank_2', 10);
+            oAirPhase = this.toStores.Tank_2.createPhase('air', 10);
             
-            % Creating a second store, volume 1 m^3
-            matter.store(this, 'Tank_2', 1);
-            
-            % Adding a phase to the store 'Tank_2', 1 m^3 air
-            oAirPhase = this.toStores.Tank_2.createPhase('air', 1);
-            
-            % Adding extract/merge processors to the phase
-            matter.procs.exmes.gas(oGasPhase, 'Port_1');
-            matter.procs.exmes.gas(oAirPhase, 'Port_2');
-            
-            
-                        
-            %% Adding some pipes
             components.matter.pipe(this, 'Pipe1', 1, 0.005);
             components.matter.pipe(this, 'Pipe2', 1, 0.005);
             
-            % Creating the flowpath (=branch) into a subsystem
-            % Input parameter format is always: 
-            % 'Interface port name', {'f2f-processor, 'f2fprocessor'}, 'store.exme'
-            matter.branch(this, 'SubsystemInput', {'Pipe1'}, 'Tank_1.Port_1');
+            %% Create Subsystem Connections:
+            % Interface branches between the system and its subsystems are
+            % always from the subsystem to the parent system, which means a
+            % positive flowrate of the branch represents matter entering
+            % the parent system and leaving the subsystem. Therefore, the
+            % interfaces in the branch definition are always on the "left"
+            % side! As interface, a string without any dots is used, as
+            % string with dots (like e.g. 'Tank.Port1') represent a
+            % Store.ExMe combination. These interfaces are then used in the
+            % setIfFlows function to connect the branches of the parent
+            % system to the corresponding branches in the subsystem. Note
+            % that the branches will be removed from the parent system
+            % (they will no longer be in the aoBranches or toBranches
+            % struct of the parent system) as the logic is, that interface
+            % branches belong to the respective subsystem (which therefore
+            % also assigns the solvers etc.). The F2F components of the two
+            % branches are combined to create one single branch. So any
+            % F2Fs on the subsystem side are added to the left of the F2Fs
+            % defined here! (They are the lower indices in the
+            % oBranch.aoFlowProcs property)
+            matter.branch(this, 'SubsystemInput', {'Pipe1'}, oGasPhase);
+            matter.branch(this, 'SubsystemOutput', {'Pipe2'}, oAirPhase);
             
-            % Creating the flowpath (=branch) out of a subsystem
-            % Input parameter format is always: 
-            % 'Interface port name', {'f2f-processor, 'f2fprocessor'}, 'store.exme'
-            matter.branch(this, 'SubsystemOutput', {'Pipe2'}, 'Tank_2.Port_2');
-            
-            
-            
-            
-            %%% NOTE!!! setIfFlows has to be done in createMatterStructure!
-            
-            % Now we need to connect the subsystem with the top level system (this one). This is
-            % done by a method provided by the subsystem.
+            % The order in which the interfaces are handed to the
+            % setIfFlows function depends on its function definition.
+            % Please view the subsystem file for more information.
             this.toChildren.SubSystem.setIfFlows('SubsystemInput', 'SubsystemOutput');
             
-            
-            
-            % Seal - means no more additions of stores etc can be done to
-            % this system.
-            %this.seal();
-            % NOT ANY MORE!
         end
         
         
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
             
-            
-            % SOLVERS ETC!
-            
-            % specific properties for rMaxChange etc, possibly depending on
-            % this.tSolverProperties.XXX
-            % OR this.oRoot.tSolverProperties !!!
-            
             this.setThermalSolvers();
         end
     end
     
      methods (Access = protected)
-        
         function exec(this, ~)
-            % exec(ute) function for this system
-            % Here it only calls its parent's exec function
             exec@vsys(this);
             
         end
-        
      end
-    
 end
-

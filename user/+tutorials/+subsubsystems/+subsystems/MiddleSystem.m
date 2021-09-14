@@ -1,6 +1,7 @@
 classdef MiddleSystem < vsys
-    %EXAMPLESUBSYSTEM A subsystem containing a filter and a pipe
-    
+    %EXAMPLESUBSYSTEM A subsystem containing nothin except another
+    % subsystem. This is just used to showcase "pass-through" branches and
+    % hierarchical subsystem in V-HAB
     
     properties
     end
@@ -12,11 +13,11 @@ classdef MiddleSystem < vsys
             
             eval(this.oRoot.oCfgParams.configCode(this));
             
-            % Adding the subsystem
-            tutorials.subsubsystems.subsystems.ExampleSubsystem(this, 'SubSystem');
+            % Adding the subsystem. For this purpose, we reuse the
+            % subsystem from the subsystem example:
+            tutorials.subsystems.subsystems.ExampleSubsystem(this, 'SubSystem');
             
         end
-        
         
         function createMatterStructure(this)
             createMatterStructure@vsys(this);
@@ -24,9 +25,12 @@ classdef MiddleSystem < vsys
             components.matter.pipe(this, 'Pipe3', 1, 0.005);
             components.matter.pipe(this, 'Pipe4', 1, 0.005);
             
+            % Pass through branches are branches, which only have interface
+            % and are not connected to any phase within the current system.
+            % In this example, the branches connect the subsystem with the
+            % parent system.
             matter.branch(this, 'FromSubOut', {'Pipe3'}, 'ToSupIn');
-            
-            matter.branch(this, 'FromSubIn', {'Pipe4'}, 'ToSupOut');
+            matter.branch(this, 'FromSubIn',  {'Pipe4'}, 'ToSupOut');
             
             this.toChildren.SubSystem.setIfFlows('FromSubIn', 'FromSubOut');
             
@@ -39,27 +43,14 @@ classdef MiddleSystem < vsys
         end
         
         function setIfFlows(this, sToSupIn, sToSupOut)
-            % This function connects the system and subsystem level branches with each other. It
-            % uses the connectIF function provided by the matter.container class
-            
             this.connectIF('ToSupIn',  sToSupIn);
             this.connectIF('ToSupOut', sToSupOut);
-            
         end
     end
     
      methods (Access = protected)
-        
         function exec(this, ~)
             exec@vsys(this);
-            
-            % See above - time step of this .exec() method is set above,
-            % can be used to update some stuff (e.g. apply external
-            % disturbances as closing a valve).
-  
         end
-        
      end
-    
 end
-
