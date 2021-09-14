@@ -35,7 +35,11 @@ classdef setup < simulation.infrastructure
             % the logger object.
             oLogger = this.toMonitors.oLogger;
 
-            % Adding the tank temperatures to the log
+            % Adding the tank temperatures to the log. For the path the
+            % following shorthands are available:
+            % :c: for .toChildren.
+            % :s: for .toStores.
+            % :p: for .toPhases.
             oLogger.addValue('Example:s:Tank_1:p:Tank_1_Phase_1', 'fTemperature', 'K', 'Temperature Phase 1');
             oLogger.addValue('Example:s:Tank_2:p:Tank_2_Phase_1', 'fTemperature', 'K', 'Temperature Phase 2');
             
@@ -71,8 +75,5 @@ classdef setup < simulation.infrastructure
             oPlotter.plot();
             
         end
-        
     end
-    
 end
-

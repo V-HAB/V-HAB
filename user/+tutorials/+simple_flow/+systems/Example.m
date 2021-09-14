@@ -59,7 +59,6 @@ classdef Example < vsys
             
         end
         
-        
         function createThermalStructure(this)
             % This function creates all simulation objects in the thermal
             % domain. 
@@ -76,7 +75,6 @@ classdef Example < vsys
             % conductive heat transfer.
             
         end
-        
         
         function createSolverStructure(this)
             % This function creates all of the solver objects required for
@@ -109,8 +107,5 @@ classdef Example < vsys
             exec@vsys(this);
             
         end
-        
      end
-    
 end
-
