@@ -42,7 +42,7 @@ classdef Example < vsys
             
             % use the P2P from the P2P example, if you want to learn more
             % about P2Ps please view that tutorial!
-            tutorials.p2p.components.AbsorberExample(this.toStores.Reactor, 'FilterProc', 'FlowPhase.FilterPortIn', 'FilteredPhase.FilterPortOut', 'C', inf);
+            components.matter.P2Ps.ConstantMassP2P(this.toStores.Reactor, 'FilterProc', 'FlowPhase.FilterPortIn', 'FilteredPhase.FilterPortOut', {'C'}, 1);
             
             components.matter.pipe(this, 'Pipe_1', 0.5, 0.005);
             components.matter.pipe(this, 'Pipe_2', 0.5, 0.005);

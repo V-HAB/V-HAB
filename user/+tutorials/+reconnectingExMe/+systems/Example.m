@@ -1,8 +1,9 @@
 classdef Example < vsys
-    %EXAMPLE This example is based on the subsystem example. The only
-    %difference here is, that during the simulation the way the branches
-    %are connected will be changed at tick 100 in the simulation. For more
-    %information on how to change this, view the exec function of this file
+    %EXAMPLE This example uses three stores with different temperature and
+    % pressure conditions to show how to reconnect exmes during a
+    % simulation. The way the branches are connected will be changed at tick
+    % 1000 in the simulation. For more information on how to change this,
+    % view the exec function of this file
     properties
         
     end
@@ -11,10 +12,6 @@ classdef Example < vsys
         function this = Example(oParent, sName)
             this@vsys(oParent, sName, -1);
             
-            % Adding the subsystem
-            tutorials.reconnectingExMe.subsystems.MiddleSystem(this, 'MiddleSystem');
-            
-            
             eval(this.oRoot.oCfgParams.configCode(this));
         end
         
@@ -22,51 +19,26 @@ classdef Example < vsys
         function createMatterStructure(this)
             createMatterStructure@vsys(this);
             
-            % Creating a store, volume 1 m^3
-            matter.store(this, 'Tank_1', 1);
+            matter.store(this, 'Store1', 10, false);
+            oAir1 = this.toStores.Store1.createPhase(   'gas',          'Air',	10,     struct('N2', 1e5, 'O2', 0, 'CO2', 0),	293,    0);
             
-            % Adding a phase to the store 'Tank_1', 2 m^3 air
-            oGasPhase = this.toStores.Tank_1.createPhase('air', 1, 293, 0.5, 2e5);
+            matter.store(this, 'Store2', 10);
+            oAir2 = this.toStores.Store2.createPhase(   'gas',          'Air',	10,     struct('N2', 0, 'O2', 10e5, 'CO2', 0),	303,    0);
             
-            % Creating a second store, volume 1 m^3
-            matter.store(this, 'Tank_2', 1);
+            matter.store(this, 'Store3', 10);
+                    this.toStores.Store3.createPhase(   'gas',          'Air',	10,     struct('N2', 0, 'O2', 0, 'CO2', 10e5),	283,    0.5);
             
-            % Adding a phase to the store 'Tank_2', 1 m^3 air
-            oAirPhase = this.toStores.Tank_2.createPhase('air', 1);
+            components.matter.pipe(this, 'Pipe', 1, 0.005);
             
-            % Adding extract/merge processors to the phase
-            matter.procs.exmes.gas(oGasPhase, 'Port_1');
-            matter.procs.exmes.gas(oAirPhase, 'Port_2');
+            matter.branch(this, oAir2, {'Pipe'}, oAir1, 'AirExchange');
             
-            
-                        
-            %% Adding some pipes
-            components.matter.pipe(this, 'Pipe1', 1, 0.005);
-            components.matter.pipe(this, 'Pipe2', 1, 0.005);
-            
-            % Creating the flowpath (=branch) into a subsystem
-            % Input parameter format is always: 
-            % 'Interface port name', {'f2f-processor, 'f2fprocessor'}, 'store.exme'
-            matter.branch(this, 'MiddleSystemInput', {'Pipe1'}, 'Tank_1.Port_1');
-            
-            % Creating the flowpath (=branch) out of a subsystem
-            % Input parameter format is always: 
-            % 'Interface port name', {'f2f-processor, 'f2fprocessor'}, 'store.exme'
-            matter.branch(this, 'MiddleSystemOutput', {'Pipe2'}, 'Tank_2.Port_2');
-            
-            
-            
-            
-            %%% NOTE!!! setIfFlows has to be done in createMatterStructure!
-            
-            % Now we need to connect the subsystem with the top level system (this one). This is
-            % done by a method provided by the subsystem.
-            this.toChildren.MiddleSystem.setIfFlows('MiddleSystemOutput', 'MiddleSystemInput');
         end
         
         
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
+            
+            solver.matter.interval.branch(this.aoBranches(1));
             
             this.setThermalSolvers();
         end
@@ -93,13 +65,9 @@ classdef Example < vsys
             % located in the subsystem, to a phase in the parent system or
             % a different subsystem, this will result in an error since it
             % can lead to inconsistent system states.
-            if this.oTimer.iTick == 100
-                this.toChildren.MiddleSystem.toChildren.SubSystem.toBranches.Filter_Inlet.coExmes{2}.reconnectExMe(this.toStores.Tank_2.toPhases.Tank_2_Phase_1);
-                this.toChildren.MiddleSystem.toChildren.SubSystem.toBranches.Filter_Outlet.coExmes{2}.reconnectExMe(this.toStores.Tank_1.toPhases.Tank_1_Phase_1);
+            if this.oTimer.iTick == 1000
+                this.toBranches.AirExchange.coExmes{1}.reconnectExMe(this.toStores.Store3.toPhases.Air);
             end
         end
-        
      end
-    
 end
-
