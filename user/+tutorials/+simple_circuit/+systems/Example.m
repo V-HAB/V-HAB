@@ -7,20 +7,8 @@ classdef Example < vsys
     
     methods
         function this = Example(oParent, sName)
-            % Call parent constructor. Third parameter defined how often
-            % the .exec() method of this subsystem is called. This can be
-            % used to change the system state, e.g. close valves or switch
-            % on/off components.
-            % Values can be: 0-inf for interval in [s] (zero means with
-            % lowest time step set for the timer). -1 means with every TICK
-            % of the timer, which is determined by the smallest time step
-            % of any of the systems. Providing a logical false (def) means
-            % the .exec method is called when the oParent.exec() is
-            % executed (see this .exec() method - always call exec@vsys as
-            % well!).
             this@vsys(oParent, sName);
             
-            % Make the system configurable
             eval(this.oRoot.oCfgParams.configCode(this));
             
             % In order to make components in the other domains (matter,
@@ -98,8 +86,5 @@ classdef Example < vsys
             % Here it only calls its parent's exec function
             exec@vsys(this);
         end
-        
      end
-    
 end
-
