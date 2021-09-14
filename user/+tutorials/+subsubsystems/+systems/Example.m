@@ -27,11 +27,11 @@ classdef Example < vsys
         function createMatterStructure(this)
             createMatterStructure@vsys(this);
             
-            matter.store(this, 'Tank_1', 10);
-            oGasPhase = this.toStores.Tank_1.createPhase('air', 10, 293, 0.5, 2e5);
+            matter.store(this, 'Tank_1', 20);
+            oGasPhase = this.toStores.Tank_1.createPhase('air', 20, 293, 0.5, 2e5);
             
-            matter.store(this, 'Tank_2', 10);
-            oAirPhase = this.toStores.Tank_2.createPhase('air', 10);
+            matter.store(this, 'Tank_2', 20);
+            oAirPhase = this.toStores.Tank_2.createPhase('air', 20);
             
             components.matter.pipe(this, 'Pipe1', 1, 0.005);
             components.matter.pipe(this, 'Pipe2', 1, 0.005);

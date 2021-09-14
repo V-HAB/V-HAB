@@ -30,11 +30,11 @@ classdef Example < vsys
         function createMatterStructure(this)
             createMatterStructure@vsys(this);
             
-            matter.store(this, 'Tank_1', 10);
-            oGasPhase = this.toStores.Tank_1.createPhase('air', 10, 293, 0.5, 2e5);
+            matter.store(this, 'Tank_1', 100);
+            oGasPhase = this.toStores.Tank_1.createPhase('air', 20, 293, 0.5, 2e5);
             
-            matter.store(this, 'Tank_2', 10);
-            oAirPhase = this.toStores.Tank_2.createPhase('air', 10);
+            matter.store(this, 'Tank_2', 100);
+            oAirPhase = this.toStores.Tank_2.createPhase('air', 20);
             
             components.matter.pipe(this, 'Pipe1', 1, 0.005);
             components.matter.pipe(this, 'Pipe2', 1, 0.005);
@@ -59,7 +59,7 @@ classdef Example < vsys
             % F2Fs on the subsystem side are added to the left of the F2Fs
             % defined here! (They are the lower indices in the
             % oBranch.aoFlowProcs property)
-            matter.branch(this, 'SubsystemInput', {'Pipe1'}, oGasPhase);
+            matter.branch(this, 'SubsystemInput',  {'Pipe1'}, oGasPhase);
             matter.branch(this, 'SubsystemOutput', {'Pipe2'}, oAirPhase);
             
             % The order in which the interfaces are handed to the

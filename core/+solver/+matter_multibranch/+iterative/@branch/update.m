@@ -692,7 +692,12 @@ function update(this)
                         fP2PFlowDiff = sum(afP2PFlowsAfter) - sum(afP2PFlowsBefore);
                         fTotalOutFlow = sum(abs(this.afFlowRates(miOutflowBranches)));
                         for iOutflow = 1:length(miOutflowBranches)
-                            this.afFlowRates(miOutflowBranches(iOutflow)) = this.afFlowRates(miOutflowBranches(iOutflow)) - (abs(this.afFlowRates(miOutflowBranches(iOutflow)) / fTotalOutFlow) * fP2PFlowDiff);
+                            fOutflowReduction = (abs(this.afFlowRates(miOutflowBranches(iOutflow)) / fTotalOutFlow) * fP2PFlowDiff);
+                            if fOutflowReduction > this.afFlowRates(miOutflowBranches(iOutflow)) 
+                                this.afFlowRates(miOutflowBranches(iOutflow)) = 0;
+                            else
+                                this.afFlowRates(miOutflowBranches(iOutflow)) = this.afFlowRates(miOutflowBranches(iOutflow)) - fOutflowReduction;
+                            end
                         end
                     end
                 end
