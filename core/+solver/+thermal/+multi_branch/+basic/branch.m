@@ -192,6 +192,9 @@ classdef branch < base & event.source
             % the thermal network we want to solve here
             this.initializeNetwork();
             
+            if ~islogical(bChildCall)
+                error('The basic multibranch solver was provided a non boolean input it does not recognize!')
+            end
             if ~bChildCall
                 % Now we register the solver at the timer, specifying the post
                 % tick level in which the solver should be executed. For more

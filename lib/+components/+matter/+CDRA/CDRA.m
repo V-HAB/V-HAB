@@ -760,7 +760,7 @@ classdef CDRA < vsys
             oSolver = solver.matter_multibranch.iterative.branch(this.aoBranches, 'complex');
             oSolver.setSolverProperties(tSolverProperties);
             
-            solver.thermal.multi_branch.basic.branch(this.aoThermalMultiSolverBranches, this.fTimeStep);
+            solver.thermal.multi_branch.basic.branch(this.aoThermalMultiSolverBranches);
             
             csStores = fieldnames(this.toStores);
             % sets numerical properties for the phases of CDRA
