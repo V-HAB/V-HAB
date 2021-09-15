@@ -23,7 +23,7 @@ classdef setup < simulation.infrastructure
             this@simulation.infrastructure('Example_Condensing_Heat_Exchanger', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             % Creating the root object
-            examples.condensing_heat_exchanger.systems.Example(this.oSimulationContainer, 'Example');
+            examples.CHX.systems.Example(this.oSimulationContainer, 'Example');
             
             %% Simulation length
             % Stop when specific time in simulation is reached or after

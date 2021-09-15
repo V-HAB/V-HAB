@@ -7,8 +7,6 @@ classdef setup < simulation.infrastructure
         function this = setup(ptConfigParams, tSolverParams) % Constructor function
             
             ttMonitorConfig = struct();
-%             ttMonitorConfig.oTimeStepObserver.sClass = 'simulation.monitors.timestepObserver';
-%             ttMonitorConfig.oTimeStepObserver.cParams = { 0 };
             this@simulation.infrastructure('Example', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             % Creating the root object
@@ -89,10 +87,6 @@ classdef setup < simulation.infrastructure
             % Stop when specific time in sim is reached
             % or after specific amount of ticks (bUseTime true/false).
             this.fSimTime = 1 * 300; % In seconds
-%             this.iSimTicks = 600;
-%             this.bUseTime = true;
-            
-%             warning('off','all');
             
         end
         
@@ -143,9 +137,5 @@ classdef setup < simulation.infrastructure
             oPlotter.plot()
             
         end
-        
     end
-    
 end
-    
-

@@ -1,21 +1,10 @@
 classdef setup < simulation.infrastructure
-    %SETUP This class is used to setup a simulation
-    %   There should always be a setup file present for each project. It is
-    %   used for the following:
-    %   - instantiate the root object
-    %   - register branches to their appropriate solvers
-    %   - determine which items are logged
-    %   - set the simulation duration
-    %   - provide methods for plotting the results
     
     properties
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams) % Constructor function
-            
-            % Possible to change the constructor paths and params for the
-            % monitors
+        function this = setup(ptConfigParams, tSolverParams)
             ttMonitorConfig = struct();
             
             this@simulation.infrastructure('Example_CCAA', ptConfigParams, tSolverParams, ttMonitorConfig);
@@ -26,7 +15,11 @@ classdef setup < simulation.infrastructure
             this.fSimTime = 10; % In seconds
             this.bUseTime = true;
             
-            % Creating the root object
+            % Creating the root object, here two possibilities exist,
+            % either the user provided additional parameters
+            % (ptConfigParams) during the vhab.exec call, or not. Depending
+            % on the case an empty struct or the addtional parameters are
+            % provided to the Example system.
             if isempty(ptConfigParams)
                 examples.CCAA.systems.Example(this.oSimulationContainer, 'Example', struct());
             else

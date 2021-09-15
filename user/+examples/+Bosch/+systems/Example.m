@@ -1,6 +1,7 @@
 classdef Example < vsys
-    %BOSCHSYSTEM Summary of this class goes here
-    %   Detailed explanation goes here
+    %EXAMPLE of a V-HAB system which contains a Bosch Reactor. This system
+    % includes all required interfaces for the reactor, the reactor itself
+    % is located in the lib
     
     
     methods
@@ -66,8 +67,6 @@ classdef Example < vsys
             
             this.toChildren.BoschReactor.toBranches.H2_Inlet.oHandler.setFlowRate(-fH2FlowRate);
             this.toChildren.BoschReactor.toBranches.CO2_Inlet.oHandler.setFlowRate(-fCO2FlowRate);
-%             this.toChildren.BoschReactor.toBranches.Compressor_Condensator.oHandler.setFlowRate(fH2FlowRate + fCO2FlowRate);
-            
         end
     end
 end

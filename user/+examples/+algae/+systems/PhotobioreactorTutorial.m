@@ -24,7 +24,7 @@ classdef PhotobioreactorTutorial< vsys
             this@vsys(oParent, sName, 3600);
             
             %% Create Photobioreactor
-           
+            
             %Number of CrewMember goes here:
             this.iCrewMembers = 4;
             %set some important input values. set[] for value if should not
@@ -32,120 +32,120 @@ classdef PhotobioreactorTutorial< vsys
             this.txPhotobioreactorProperties = ...
                 struct(...
                 'sLightColor',              'RedExperimental', ...          %Radiation energy source (light) of photobioreactor. options:Red, Blue, Yellow, Green, Daylight, RedExperimental
-                'fSurfacePPFD',             400, ...                        %[µmol/m2s] irradiance on surface of PBR. best performance when selecting a value at or just below inhibition -> maximum of PBR in saturated growth zone. Above inhibition growth would be inhibited. 
+                'fSurfacePPFD',             400, ...                        %[µmol/m2s] irradiance on surface of PBR. best performance when selecting a value at or just below inhibition -> maximum of PBR in saturated growth zone. Above inhibition growth would be inhibited.
                 'fGrowthVolume',            this.iCrewMembers * 0.0625, ... %[m3]. Algal growth volume filled with growth medium.
-                'fDepthBelowSurface',       0.0025, ...                     %[m]. depth of the photobioreactor below the irradiated surface. Typically has strong influence on growth because of radiation attenuation at high depths.     
+                'fDepthBelowSurface',       0.0025, ...                     %[m]. depth of the photobioreactor below the irradiated surface. Typically has strong influence on growth because of radiation attenuation at high depths.
                 'fMembraneSurface',         10, ...                         %[m2]. Area of air exchange membrane. can be limiting when pressure gradient is low and surface small
                 'fMembraneThickness',       0.0001, ...                     %[m]. Thickness of air exchange membrane.
                 'sMembraneMaterial',        'SSP-M823 Silicone',...         %type of air exchange membrane. options: 'none', 'SSP-M823 Silicone' or 'Cole Parmer Silicone' (details see AtmosphericGasExchange P2P of algae module)
                 'fCirculationVolumetricFlowPerFilter', 4.167*10^-7,...      %[m3/s] equal to 25ml/min. Volumetric flow to each filter of the harvester. More means higher ciruclation and faster harvesting capability
                 'fNumberOfParallelFilters', 30, ...                         %number of parallel filters since one is not enough for large volumes.
                 'bUseUrine',                true);                          %should urine be used for supply or just nitrate (then set to false).
-        
-         %create photobioreactor object and pass the set properties. If not
-         %specified here, the struct does not have to be passed and values
-         %will be set automatically by the photobioreactor system. This
-         %automatically set photobioreactor is capable of supporting one
-         %human in terms of air revitalization and water processing.
-         %Further changes, e.g. to the growth rate (large potential for
-         %size decrease)
-        
-        components.matter.PBR.systems.Photobioreactor(this, 'Photobioreactor', this.txPhotobioreactorProperties);
-        %photobioreactor class creates algae as its own child system
-        
-        %% Create CCAA subsystem from V-HAB tutorial for CCAA
-        % Initial ratio for amount of flow that is channeled through the
-        % CHX
-        % temperature for the coolant passing through the CCAA
-        fCoolantTemperature = 280;
-        % Struct containg basic atmospheric values for the
-        % initialization of the CCAA
-        tAtmosphere.fTemperature = 295;
-        tAtmosphere.rRelHumidity = 0.8;
-        tAtmosphere.fPressure = 101325;
-        % name for the asscociated CDRA subsystem, leave empty if CCAA
-        % is used as standalone
-        sCDRA = [];
-        
-        % Adding the subsystem CCAA
-        components.matter.CCAA.CCAA(this, 'CCAA', 60, fCoolantTemperature, tAtmosphere, sCDRA);
-        
-        
-        %% Add Human to cabin from V-HAB tutorial for Human Model
-        
-        % crew planer
-        % Since the crew schedule follows the same pattern every day,
-        % it was changed to a loop. Thereby, longer mission durations
-        % can easily be set just by changing the iLengthOfMission
-        % parameter. Currently, 10 days are set. If the number is
-        % higher tan the actual simulation time, this does not make any
-        % difference. If it is too short, the impact of the humans
-        % stops somewhen during the simulation time and the simulation
-        % is not usable. So make sure to ajust the parameter properly.
-        
-        iLengthOfMission = 200; % [d
-        ctEvents = cell(iLengthOfMission, this.iCrewMembers);
-        
-        % Nominal Operation
-        tMealTimes.Breakfast = 0.1*3600;
-        tMealTimes.Lunch = 6*3600;
-        tMealTimes.Dinner = 15*3600;
-        
-        for iCrewMember = 1:this.iCrewMembers
             
-            iEvent = 1;
+            %create photobioreactor object and pass the set properties. If not
+            %specified here, the struct does not have to be passed and values
+            %will be set automatically by the photobioreactor system. This
+            %automatically set photobioreactor is capable of supporting one
+            %human in terms of air revitalization and water processing.
+            %Further changes, e.g. to the growth rate (large potential for
+            %size decrease)
             
-            for iDay = 1:iLengthOfMission
-                if iCrewMember == 1 || iCrewMember == 4
+            components.matter.PBR.systems.Photobioreactor(this, 'Photobioreactor', this.txPhotobioreactorProperties);
+            %photobioreactor class creates algae as its own child system
+            
+            %% Create CCAA subsystem from V-HAB tutorial for CCAA
+            % Initial ratio for amount of flow that is channeled through the
+            % CHX
+            % temperature for the coolant passing through the CCAA
+            fCoolantTemperature = 280;
+            % Struct containg basic atmospheric values for the
+            % initialization of the CCAA
+            tAtmosphere.fTemperature = 295;
+            tAtmosphere.rRelHumidity = 0.8;
+            tAtmosphere.fPressure = 101325;
+            % name for the asscociated CDRA subsystem, leave empty if CCAA
+            % is used as standalone
+            sCDRA = [];
+            
+            % Adding the subsystem CCAA
+            components.matter.CCAA.CCAA(this, 'CCAA', 60, fCoolantTemperature, tAtmosphere, sCDRA);
+            
+            
+            %% Add Human to cabin from V-HAB tutorial for Human Model
+            
+            % crew planer
+            % Since the crew schedule follows the same pattern every day,
+            % it was changed to a loop. Thereby, longer mission durations
+            % can easily be set just by changing the iLengthOfMission
+            % parameter. Currently, 10 days are set. If the number is
+            % higher tan the actual simulation time, this does not make any
+            % difference. If it is too short, the impact of the humans
+            % stops somewhen during the simulation time and the simulation
+            % is not usable. So make sure to ajust the parameter properly.
+            
+            iLengthOfMission = 200; % [d
+            ctEvents = cell(iLengthOfMission, this.iCrewMembers);
+            
+            % Nominal Operation
+            tMealTimes.Breakfast = 0.1*3600;
+            tMealTimes.Lunch = 6*3600;
+            tMealTimes.Dinner = 15*3600;
+            
+            for iCrewMember = 1:this.iCrewMembers
+                
+                iEvent = 1;
+                
+                for iDay = 1:iLengthOfMission
+                    if iCrewMember == 1 || iCrewMember == 4
+                        
+                        ctEvents{iEvent, iCrewMember}.State = 2;
+                        ctEvents{iEvent, iCrewMember}.Start = ((iDay-1) * 24 +  1) * 3600;
+                        ctEvents{iEvent, iCrewMember}.End = ((iDay-1) * 24 +  2) * 3600;
+                        ctEvents{iEvent, iCrewMember}.Started = false;
+                        ctEvents{iEvent, iCrewMember}.Ended = false;
+                        ctEvents{iEvent, iCrewMember}.VO2_percent = 0.75;
+                        
+                    elseif iCrewMember==2 || iCrewMember ==5
+                        ctEvents{iEvent, iCrewMember}.State = 2;
+                        ctEvents{iEvent, iCrewMember}.Start = ((iDay-1) * 24 +  5) * 3600;
+                        ctEvents{iEvent, iCrewMember}.End = ((iDay-1) * 24 +  6) * 3600;
+                        ctEvents{iEvent, iCrewMember}.Started = false;
+                        ctEvents{iEvent, iCrewMember}.Ended = false;
+                        ctEvents{iEvent, iCrewMember}.VO2_percent = 0.75;
+                        
+                    elseif iCrewMember ==3 || iCrewMember == 6
+                        ctEvents{iEvent, iCrewMember}.State = 2;
+                        ctEvents{iEvent, iCrewMember}.Start = ((iDay-1) * 24 +  9) * 3600;
+                        ctEvents{iEvent, iCrewMember}.End = ((iDay-1) * 24 +  10) * 3600;
+                        ctEvents{iEvent, iCrewMember}.Started = false;
+                        ctEvents{iEvent, iCrewMember}.Ended = false;
+                        ctEvents{iEvent, iCrewMember}.VO2_percent = 0.75;
+                    end
                     
-                    ctEvents{iEvent, iCrewMember}.State = 2;
-                    ctEvents{iEvent, iCrewMember}.Start = ((iDay-1) * 24 +  1) * 3600;
-                    ctEvents{iEvent, iCrewMember}.End = ((iDay-1) * 24 +  2) * 3600;
+                    iEvent = iEvent + 1;
+                    
+                    ctEvents{iEvent, iCrewMember}.State = 0;
+                    ctEvents{iEvent, iCrewMember}.Start =   ((iDay-1) * 24 +  14) * 3600;
+                    ctEvents{iEvent, iCrewMember}.End =     ((iDay-1) * 24 +  22) * 3600;
                     ctEvents{iEvent, iCrewMember}.Started = false;
                     ctEvents{iEvent, iCrewMember}.Ended = false;
-                    ctEvents{iEvent, iCrewMember}.VO2_percent = 0.75;
                     
-                elseif iCrewMember==2 || iCrewMember ==5
-                    ctEvents{iEvent, iCrewMember}.State = 2;
-                    ctEvents{iEvent, iCrewMember}.Start = ((iDay-1) * 24 +  5) * 3600;
-                    ctEvents{iEvent, iCrewMember}.End = ((iDay-1) * 24 +  6) * 3600;
-                    ctEvents{iEvent, iCrewMember}.Started = false;
-                    ctEvents{iEvent, iCrewMember}.Ended = false;
-                    ctEvents{iEvent, iCrewMember}.VO2_percent = 0.75;
-                    
-                elseif iCrewMember ==3 || iCrewMember == 6
-                    ctEvents{iEvent, iCrewMember}.State = 2;
-                    ctEvents{iEvent, iCrewMember}.Start = ((iDay-1) * 24 +  9) * 3600;
-                    ctEvents{iEvent, iCrewMember}.End = ((iDay-1) * 24 +  10) * 3600;
-                    ctEvents{iEvent, iCrewMember}.Started = false;
-                    ctEvents{iEvent, iCrewMember}.Ended = false;
-                    ctEvents{iEvent, iCrewMember}.VO2_percent = 0.75;
+                    iEvent = iEvent + 1;
                 end
-                
-                iEvent = iEvent + 1;
-                
-                ctEvents{iEvent, iCrewMember}.State = 0;
-                ctEvents{iEvent, iCrewMember}.Start =   ((iDay-1) * 24 +  14) * 3600;
-                ctEvents{iEvent, iCrewMember}.End =     ((iDay-1) * 24 +  22) * 3600;
-                ctEvents{iEvent, iCrewMember}.Started = false;
-                ctEvents{iEvent, iCrewMember}.Ended = false;
-                
-                iEvent = iEvent + 1;
             end
-        end
-        
-        for iCrewMember = 1:this.iCrewMembers
-
-            txCrewPlaner.ctEvents = ctEvents(:, iCrewMember);
-            txCrewPlaner.tMealTimes = tMealTimes;
-
-            components.matter.DetailedHuman.Human(this, ['Human_', num2str(iCrewMember)], txCrewPlaner, 60);
-
-            clear txCrewPlaner;
-        end
-        
-        eval(this.oRoot.oCfgParams.configCode(this));
-        
+            
+            for iCrewMember = 1:this.iCrewMembers
+                
+                txCrewPlaner.ctEvents = ctEvents(:, iCrewMember);
+                txCrewPlaner.tMealTimes = tMealTimes;
+                
+                components.matter.DetailedHuman.Human(this, ['Human_', num2str(iCrewMember)], txCrewPlaner, 60);
+                
+                clear txCrewPlaner;
+            end
+            
+            eval(this.oRoot.oCfgParams.configCode(this));
+            
         end
         
         
