@@ -10,8 +10,6 @@ classdef setup < simulation.infrastructure
         function this = setup(ptConfigParams, tSolverParams)
             
             ttMonitorConfig = struct();
-%             ttMonitorConfig.oTimeStepObserver.sClass = 'simulation.monitors.timestepObserver';
-%             ttMonitorConfig.oTimeStepObserver.cParams = { 0 };
             
             this@simulation.infrastructure('ELY_FC', ptConfigParams, tSolverParams, ttMonitorConfig);
             examples.ELY_FC.system.ELY_FC(this.oSimulationContainer,'ELY_FC');
@@ -26,7 +24,9 @@ classdef setup < simulation.infrastructure
             oLogger = this.toMonitors.oLogger;
             
             
-            % Fuel Cell Logging
+            % Fuel Cell Logging, currently outcommented because the Fuel
+            % Cell is not simulated due to lacking literature data for
+            % verification
 %             oLogger.addValue('ELY_FC:c:FuelCell', 'rEfficiency',      '-',  	'Fuel Cell Efficiency');
 %             oLogger.addValue('ELY_FC:c:FuelCell', 'fStackCurrent',    'A',    'Fuel Cell Current');
 %             oLogger.addValue('ELY_FC:c:FuelCell', 'fStackVoltage',    'V',    'Fuel Cell Voltage');
@@ -58,9 +58,9 @@ classdef setup < simulation.infrastructure
             
             close all % closes all currently open figures
             
-            oPlotter = plot@simulation.infrastructure(this);
-            
             oELY_FC = this.oSimulationContainer.toChildren.ELY_FC;
+            
+            h = gobjects(length(oELY_FC.mfPressure), 3);
             
             oLogger = this.toMonitors.oLogger;
             % oLogger.afTime
@@ -148,7 +148,7 @@ classdef setup < simulation.infrastructure
                 scatter(mfCurrentDensityOhmic,      mfOverpotentialOhmic,   'MarkerEdgeColor', miPlotColor(iTemperature,:), 'Marker', '>')
                 scatter(mfCurrentDensityMass,       mfOverpotentialMass,    'MarkerEdgeColor', miPlotColor(iTemperature,:), 'Marker', 'o')
             end
-            % We jsut add empty plots to better create a legend for this
+            % We just add empty plots to better create a legend for this
             % plot
             h(iTemperature+1, 1) = plot(0, 0, 'Color', 'k', 'LineStyle', '-');
             h(iTemperature+1, 2) = plot(0, 0, 'Color', 'k', 'LineStyle', '--');
@@ -162,7 +162,10 @@ classdef setup < simulation.infrastructure
             xlim([0,4])
              
             
-            
+            %% V-HAB Plotting
+            % In case it is of interest to plot the electrolyzer values
+            % within the V-HAB framework, thix code can be reimplemented
+%             oPlotter = plot@simulation.infrastructure(this);
 %             coPlotsOhmic            = cell(length(oELY_FC.mfPressure), length(oELY_FC.mfTemperature));
 %             coPlotsKinetic          = cell(length(oELY_FC.mfPressure), length(oELY_FC.mfTemperature));
 %             coPlotsConcentration    = cell(length(oELY_FC.mfPressure), length(oELY_FC.mfTemperature));

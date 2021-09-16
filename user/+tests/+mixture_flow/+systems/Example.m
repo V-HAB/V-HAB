@@ -9,17 +9,6 @@ classdef Example < vsys
     
     methods
         function this = Example(oParent, sName)
-            % Call parent constructor. Third parameter defined how often
-            % the .exec() method of this subsystem is called. This can be
-            % used to change the system state, e.g. close valves or switch
-            % on/off components.
-            % Values can be: 0-inf for interval in [s] (zero means with
-            % lowest time step set for the timer). -1 means with every TICK
-            % of the timer, which is determined by the smallest time step
-            % of any of the systems. Providing a logical false (def) means
-            % the .exec method is called when the oParent.exec() is
-            % executed (see this .exec() method - always call exec@vsys as
-            % well!).
             this@vsys(oParent, sName, 60);
             
         end
@@ -27,15 +16,11 @@ classdef Example < vsys
         function createMatterStructure(this)
             createMatterStructure@vsys(this);
             
-            % Creating a store
             matter.store(this, 'WaterTank_1', 2);
-            
-            % Creating a second store
             matter.store(this, 'WaterTank_2', 2);
             
             fDensityH2O = this.oMT.calculateDensity('liquid', struct('H2O', 100), 293, 101325);
             
-            % Adding a phase with liquid water to the store
             oWaterPhase1 = matter.phases.mixture(this.toStores.WaterTank_1, ...  Store in which the phase is located
                                                 'Water_Phase', ...        Phase name
                                                 'liquid',...
@@ -43,9 +28,6 @@ classdef Example < vsys
                                                 293.15, ...                Phase temperature
                                                 101325);                 % Phase pressure
             
-            
-            % Adding an empty phase to the second store, this represents an
-            % empty tank
             oWaterPhase2 = matter.phases.mixture(this.toStores.WaterTank_2, ...   Store in which the phase is located
                                                 'Water_Phase', ...         Phase name
                                                 'liquid',...
@@ -171,8 +153,5 @@ classdef Example < vsys
             exec@vsys(this);
             
         end
-        
      end
-    
 end
-

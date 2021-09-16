@@ -8,7 +8,7 @@ classdef setup < simulation.infrastructure
             
             this@simulation.infrastructure('Test_Solver_MultiBranch_4', ptConfigParams, tSolverParams, ttMonitorConfig);
             
-            examples.multibranch_solver.systems.Example_4(this.oSimulationContainer, 'Example');
+            tests.multibranch_solver_4.systems.Example_4(this.oSimulationContainer, 'Example');
             
 
             %% Simulation length

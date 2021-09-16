@@ -4,41 +4,18 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams, fSimTime, bExample2) % Constructor function
+        function this = setup(ptConfigParams, tSolverParams)
             
+            this@simulation.infrastructure('Tutorial_f2f', ptConfigParams, tSolverParams);
             
-            % Example for _Mutiple
-            % vhab.exec('examples.valve_examples.setup', [], struct('rUpdateFrequency', 0.05, 'rHighestMaxChangeDecrease', 500), 3600 * 0.1, true)
-            % vhab.exec('examples.valve_examples.setup', containers.Map({'Example'}, {struct('piPipeLengths', containers.Map({ 6, 7, 9 }, { 10, 10, 10 }))}), struct('rUpdateFrequency', 0.05, 'rHighestMaxChangeDecrease', 500), 3600 * 0.1, true)
+            tutorials.f2f.systems.Example(this.oSimulationContainer, 'Example');
             
-            this@simulation.infrastructure('Tutorial_Valve_Examples', ptConfigParams, tSolverParams);
-            
-            % Creating the 'Example' system as a child of the root system
-            % of this simulation. 
-            if (nargin >= 4) && ~isempty(bExample2) && islogical(bExample2) && (bExample2 == true)
-                examples.valve_examples.systems.Example_Multiple(this.oSimulationContainer, 'Example');
-            else
-                examples.valve_examples.systems.Example(this.oSimulationContainer, 'Example');
-            end
-            
-            
-            
-
-            %% Simulation length
-            
-            if nargin < 3 || isempty(fSimTime)
-                fSimTime = 3600 * 3;
-            end
-            
-            % Stop when specific time in simulation is reached or after 
-            % specific amount of ticks (bUseTime true/false).
-            this.fSimTime = fSimTime; % In seconds
+            this.fSimTime = 3600 * 3; % In seconds
             this.iSimTicks = 1500;
             this.bUseTime = true;
         end
         
         function configureMonitors(this)
-            
             %% Logging
             oLog = this.toMonitors.oLogger;
             
@@ -55,10 +32,8 @@ classdef setup < simulation.infrastructure
             
         end
         
-        function plot(this, varargin) % Plotting the results
-            
-            %% Define Plots
-            
+        function plot(this, varargin)
+            %% Plotting
             close all
             oPlotter = plot@simulation.infrastructure(this);
             
@@ -87,7 +62,5 @@ classdef setup < simulation.infrastructure
             
             oPlotter.plot();
         end
-        
     end
-    
 end
