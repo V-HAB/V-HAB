@@ -329,7 +329,7 @@ classdef CDRA < vsys
             
             % Define the standard values used for pipes
             fPipelength         = 1;
-            fPipeDiameter       = 0.1;
+            fPipeDiameter       = 0.05;
             fFrictionFactor     = 2e-4;
             
             % Now all values to create the system are defined and the 6
@@ -556,7 +556,7 @@ classdef CDRA < vsys
             % Inlet of sylobed one (the outlet requires another interface
             % because the location from which the air is supplied is
             % different
-            fInterfacePipeLength = 0.01;
+            fInterfacePipeLength = 0.1;
             
             components.matter.pipe(this, 'InletPipe', fInterfacePipeLength, fPipeDiameter, fFrictionFactor);
             sBranchName = 'CDRA_Air_In';
@@ -564,8 +564,9 @@ classdef CDRA < vsys
             this.tMassNetwork.InterfaceBranches.(sBranchName) = oBranch;
             
             components.matter.pipe(this, 'OutletPipe', fInterfacePipeLength, fPipeDiameter, fFrictionFactor);
+            components.matter.CDRA.components.Filter_F2F(this, 'OutletFilter');
             sBranchName = 'CDRA_Air_Out';
-            oBranch = matter.branch(this, oAirOutlet, {'OutletPipe'}, 'CDRA_Air_Out', sBranchName);
+            oBranch = matter.branch(this, oAirOutlet, {'OutletPipe', 'OutletFilter'}, 'CDRA_Air_Out', sBranchName);
             this.tMassNetwork.InterfaceBranches.(sBranchName) = oBranch;
             
             components.matter.pipe(this, 'VacuumPipe', fInterfacePipeLength, fPipeDiameter, fFrictionFactor);
@@ -624,7 +625,7 @@ classdef CDRA < vsys
             components.matter.valve(this, 'Valve_13x1_to_Fan', 0);
             components.matter.valve(this, 'Valve_13x2_to_Fan', 0);
             components.matter.pipe(this, 'Pipe_13x_to_5A', fPipelength, fPipeDiameter, fFrictionFactor);
-            components.matter.fan_simple(this, 'CDRA_Fan', 0.5e5);
+            components.matter.CDRA.components.CDRA_Fan(this, 'CDRA_Fan');
             
             sBranchName = 'Zeolite13x1_to_5A1';
             oBranch = matter.branch(this, ['Zeolite13x_1.Outflow_', num2str(this.tGeometry.Zeolite13x.iCellNumber)], {'Valve_13x1_to_Fan'}, oDessicantThreeWay, sBranchName);
