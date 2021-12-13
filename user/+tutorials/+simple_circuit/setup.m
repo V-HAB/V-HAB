@@ -30,11 +30,18 @@ classdef setup < simulation.infrastructure
             
             oPlotter = plot@simulation.infrastructure(this);
             
-            tPlotOptions = struct(); 
+            % Initializing the plot options struct
+            tPlotOptions = struct();
+
+            % Defining a filter for voltages
+            tPlotOptions.tFilter = struct('sUnit','V');
+            
             % Creating the voltage plot
             coPlots{1,1} = oPlotter.definePlot(this.ciLogValues, 'Voltages', tPlotOptions);
+
+            % Defining a filter for currents
+            tPlotOptions.tFilter = struct('sUnit','A');
             
-            tPlotOptions = struct(); 
             % Creating the current plot
             coPlots{2,1} = oPlotter.definePlot(this.ciLogValues, 'Currents', tPlotOptions);
             
