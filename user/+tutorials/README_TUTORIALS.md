@@ -11,4 +11,4 @@ For a basic introduction into the thermal domain view the simple_thermal tutoria
 
 For a basic introduction into the electric domain, view the simple_circuit tutorial.
 
-The other tutorials cover basic components of V-HAB and basically repeat and enhance information from the wiki. You can use these whenever you want to remember how to work with a sepcific aspect of V-HAB. E.g. for manipulators you open the manipulator tutorial and for P2Ps you open the P2P tutorial. The commenting in the tutorials is focused on the aspect the tutorials wants to show, so in the P2P tutorial only the P2P implementation and the P2Ps are commented.
+The other tutorials cover basic components of V-HAB and basically repeat and enhance information from the wiki. You can use these whenever you want to remember how to work with a specific aspect of V-HAB. E.g. for manipulators you open the manipulator tutorial and for P2Ps you open the P2P tutorial. The commenting in the tutorials is focused on the aspect the tutorials wants to show, so in the P2P tutorial only the P2P implementation and the P2Ps are commented.

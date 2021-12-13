@@ -11,14 +11,12 @@ classdef setup < simulation.infrastructure
             
             tutorials.thermal.systems.Example(this.oSimulationContainer, 'Example');
             
-            %% Simulation length
-            this.fSimTime = 3600 * 1; % In seconds
+            this.fSimTime = 3600 * 1;
             this.bUseTime = true;
         end
         
         function configureMonitors(this)
             
-            %% Logging
             oLog = this.toMonitors.oLogger;
             this.tiLogIndexes.iTempIdx1 = oLog.addValue('Example.toProcsF2F.Pipe.aoFlows(1)', 'fTemperature', 'K', 'Flow Temperature - Left', 'flow_temp_left');
             this.tiLogIndexes.iTempIdx2 = oLog.addValue('Example.toProcsF2F.Pipe.aoFlows(2)', 'fTemperature', 'K', 'Flow Temperature - Right', 'flow_temp_right');
@@ -62,7 +60,6 @@ classdef setup < simulation.infrastructure
         end
         
         function plot(this) 
-            %% Define plots
             
             oPlotter = plot@simulation.infrastructure(this);
             

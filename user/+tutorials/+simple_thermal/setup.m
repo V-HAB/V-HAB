@@ -12,9 +12,7 @@ classdef setup < simulation.infrastructure
         end
         
         function configureMonitors(this)
-            oLogger = this.toMonitors.oLogger;
-            
-            oLogger.add('Example', 'thermalProperties');
+            this.toMonitors.oLogger.add('Example', 'thermalProperties');
         end
         
         function plot(this) 

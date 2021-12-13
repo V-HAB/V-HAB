@@ -40,6 +40,8 @@ classdef setup < simulation.infrastructure
             % :c: for .toChildren.
             % :s: for .toStores.
             % :p: for .toPhases.
+            % :b: for .toBranches.
+            % :t: for .toThermalBranches.
             oLogger.addValue('Example:s:Tank_1:p:Tank_1_Phase_1', 'fTemperature', 'K', 'Temperature Phase 1');
             oLogger.addValue('Example:s:Tank_2:p:Tank_2_Phase_1', 'fTemperature', 'K', 'Temperature Phase 2');
             

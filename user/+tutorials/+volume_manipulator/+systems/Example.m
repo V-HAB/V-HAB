@@ -1,7 +1,7 @@
 classdef Example < vsys
-    %EXAMPLE Example simulation for a system which contain variable
-    % volumes. And example for this would be the bladder in a space suit,
-    % which is flexible and therefore changes its volume.
+    %EXAMPLE A system that contains variable volumes
+    % And example for this would be the bladder in a space suit, which is
+    % flexible and therefore changes its volume.
     
     properties
     end

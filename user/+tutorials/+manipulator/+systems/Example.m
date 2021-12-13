@@ -1,6 +1,6 @@
 classdef Example < vsys
     %EXAMPLE Example simulation for V-HAB including a manipulator
-    %   Creates two tanks with 1 and 2  atmospheres of pressure,
+    %   Creates two tanks with 1 and 2 atmospheres of pressure,
     %   respectively. The tanks are connected via two pipes. In between the
     %   pipes, there is a simple model of a Bosch reactor system, removing
     %   CO2 from the air flow and reducing it to C and O2. 
@@ -40,7 +40,7 @@ classdef Example < vsys
             % manipulators.
             tutorials.manipulator.components.DummyBoschProcess('DummyBoschProcess', oFlowPhase);
             
-            % use the P2P from the P2P example, if you want to learn more
+            % Use the P2P from the P2P example, if you want to learn more
             % about P2Ps please view that tutorial!
             components.matter.P2Ps.ConstantMassP2P(this.toStores.Reactor, 'FilterProc', 'FlowPhase.FilterPortIn', 'FilteredPhase.FilterPortOut', {'C'}, 1);
             

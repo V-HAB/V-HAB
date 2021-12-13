@@ -1,5 +1,5 @@
 classdef Example < vsys
-    %EXAMPLE Example simulation for a simple thermal problem in V-HAB 2.0
+    %EXAMPLE Example simulation for a simple thermal problem in V-HAB 2
     %   Two tanks filled with gas at different temperatures with a
     %   conductive thermal interface (metal bar) connecting them
     
@@ -9,9 +9,7 @@ classdef Example < vsys
     methods
         function this = Example(oParent, sName)
             this@vsys(oParent, sName, 30);
-            
         end
-        
         
         function createMatterStructure(this)
             createMatterStructure@vsys(this);

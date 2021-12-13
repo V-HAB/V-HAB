@@ -1,8 +1,9 @@
 classdef Example < vsys
-    %EXAMPLE Example simulation for a thermal system in V-HAB. View the png
-    % file of this system for a description. This system is inteded to
-    % showcase the combination of matter and thermal domain and different
-    % thermal problem (conduction, convection, radiation)
+    %EXAMPLE Example simulation for a thermal system in V-HAB
+    % View the png file of this system for a description. This system is
+    % inteded to showcase the combination of matter and thermal domain and
+    % the different thermal heat transfer mechanisms (conduction,
+    % convection, radiation).
     
     properties (SetAccess = protected, GetAccess = public)
         fPipeLength   = 1.5;
@@ -54,16 +55,20 @@ classdef Example < vsys
         function createThermalStructure(this)
             createThermalStructure@vsys(this);
             
-            % Add a heat source to the gas phase in tank 1:
+            % Getting a local variable for the capacity we will be working
+            % on to make the code more legible.
             oCapacityTank_1 = this.toStores.Tank_1.toPhases.Tank1Air.oCapacity;
+
             % The heat source is a basic thermal component which can either
             % increase the temperature of a capacity (positive heat flow)
             % or decrease it (negative heat flow). It can be defined by
             % first creating a heat source object and then adding that heat
             % source to the desired capacity. Afterwards, the heat source
             % can be accessed from the capacity with
-            % oCapacity.toHeatsources.HeatSourceName
+            % oCapacity.toHeatsources.<HeatSourceName>
             oHeatSource = thermal.heatsource('Heater', 0);
+            
+            % Actually adding the heat source to the capacity object.
             oCapacityTank_1.addHeatSource(oHeatSource);
             
             % Add another heat source to the gas phase in Tank 2. This one

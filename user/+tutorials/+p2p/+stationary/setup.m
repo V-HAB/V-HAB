@@ -10,21 +10,17 @@ classdef setup < simulation.infrastructure
             
             tutorials.p2p.stationary.systems.Example(this.oSimulationContainer, 'Example');
             
-            %% Simulation length
-            % Simulation length - stop when specific time in sim is reached
-            % or after specific amount of ticks (bUseTime true/false).
             this.fSimTime = 5000 * 1;
             
             if nargin >= 3 && ~isempty(fSimTime)
                 this.fSimTime = fSimTime;
             end
-            this.iSimTicks = 3000;
+
             this.bUseTime = true;
         end
         
         function configureMonitors(this)
             
-            %% Logging
             oLog = this.toMonitors.oLogger;
             
             csStores = fieldnames(this.oSimulationContainer.toChildren.Example.toStores);
@@ -49,9 +45,8 @@ classdef setup < simulation.infrastructure
             end
         end
         
-        function plot(this) % Plotting the results
+        function plot(this) 
             
-            %% Define Plots
             close all
             oPlotter = plot@simulation.infrastructure(this);
             

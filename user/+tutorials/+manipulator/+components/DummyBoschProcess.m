@@ -69,6 +69,7 @@ classdef DummyBoschProcess < matter.manips.substance.stationary
             % initialize a zero vector for this, as most mass flows of the
             % manip will be zero
             afPartialFlows = zeros(1, this.oPhase.oMT.iSubstances);
+            
             % Now we can set the specific mass flow rates for the
             % substances that shall be converted. Note that the sum of
             % afPartialFlows should always be 0. Mass that is consumed must

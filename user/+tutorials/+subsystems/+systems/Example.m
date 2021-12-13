@@ -18,9 +18,8 @@ classdef Example < vsys
         function this = Example(oParent, sName)
             this@vsys(oParent, sName);
             
-            % If you want to use subsystem, you should add them in the
-            % constructor of the parent class (which in this case, is this
-            % example)
+            % If you want to use subsystems, you should add them here in
+            % the constructor of the parent object.
             tutorials.subsystems.subsystems.ExampleSubsystem(this, 'SubSystem');
             
             eval(this.oRoot.oCfgParams.configCode(this));

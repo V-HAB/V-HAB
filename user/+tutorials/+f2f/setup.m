@@ -10,30 +10,28 @@ classdef setup < simulation.infrastructure
             
             tutorials.f2f.systems.Example(this.oSimulationContainer, 'Example');
             
-            this.fSimTime = 3600 * 3; % In seconds
+            this.fSimTime = 3600 * 3;
             this.iSimTicks = 1500;
             this.bUseTime = true;
         end
         
         function configureMonitors(this)
-            %% Logging
             oLog = this.toMonitors.oLogger;
             
             csStores = fieldnames(this.oSimulationContainer.toChildren.Example.toStores);
             for iStore = 1:length(csStores)
-                oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'this.fMass * this.fMassToPressure',	'Pa', [csStores{iStore}, ' Pressure']);
-                oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fTemperature',	'K',  [csStores{iStore}, ' Temperature']);
+                oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'], 'this.fMass * this.fMassToPressure', 'Pa', [csStores{iStore}, ' Pressure']);
+                oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'], 'fTemperature', 'K', [csStores{iStore}, ' Temperature']);
             end
             
             csBranches = fieldnames(this.oSimulationContainer.toChildren.Example.toBranches);
             for iBranch = 1:length(csBranches)
-                oLog.addValue(['Example.toBranches.', csBranches{iBranch}],             'fFlowRate',    'kg/s', [csBranches{iBranch}, ' Flowrate']);
+                oLog.addValue(['Example.toBranches.', csBranches{iBranch}], 'fFlowRate', 'kg/s', [csBranches{iBranch}, ' Flowrate']);
             end
             
         end
         
         function plot(this, varargin)
-            %% Plotting
             close all
             oPlotter = plot@simulation.infrastructure(this);
             

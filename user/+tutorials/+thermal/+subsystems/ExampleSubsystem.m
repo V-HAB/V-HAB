@@ -24,7 +24,7 @@ classdef ExampleSubsystem < vsys
             matter.store(this, 'Filter', fFilterVolume);
             oFiltered = matter.phases.mixture(this.toStores.Filter, 'FilteredPhase', 'solid', struct('Zeolite13x', 1), 293, 1e5);
             
-            oFlow = this.toStores.Filter.createPhase(	'gas',      'FlowPhase',	fFilterVolume - oFiltered.fVolume,   struct('N2', 8e4, 'O2', 2e4, 'CO2', 500),       293,	0.5);
+            oFlow = this.toStores.Filter.createPhase('gas', 'FlowPhase', fFilterVolume - oFiltered.fVolume, struct('N2', 8e4, 'O2', 2e4, 'CO2', 500), 293, 0.5);
             
             tutorials.p2p.stationary.components.AbsorberExample(this.toStores.Filter, 'filterproc', oFlow, oFiltered);
             
@@ -36,8 +36,8 @@ classdef ExampleSubsystem < vsys
         function createThermalStructure(this)
             createThermalStructure@vsys(this);
             
-            oCapacityFlow       = this.toStores.Filter.toPhases.FlowPhase.oCapacity;
-            oCapacityFiltered   = this.toStores.Filter.toPhases.FilteredPhase.oCapacity;
+            oCapacityFlow     = this.toStores.Filter.toPhases.FlowPhase.oCapacity;
+            oCapacityFiltered = this.toStores.Filter.toPhases.FilteredPhase.oCapacity;
             
             % just like for the matter domain, we can also define
             % conductors in both parts of interfaces branches, in the

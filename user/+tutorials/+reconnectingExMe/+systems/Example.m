@@ -1,11 +1,12 @@
 classdef Example < vsys
-    %EXAMPLE This example uses three stores with different temperature and
+    %EXAMPLE Simple system showing ExMe reconfiguration
+    % This example uses three stores with different temperature and
     % pressure conditions to show how to reconnect exmes during a
-    % simulation. The way the branches are connected will be changed at tick
-    % 1000 in the simulation. For more information on how to change this,
-    % view the exec function of this file
+    % simulation. The way the branches are connected will be changed at
+    % tick 1000 in the simulation. For more information on how to change
+    % this, view the exec function of this file.
+
     properties
-        
     end
     
     methods
@@ -20,13 +21,13 @@ classdef Example < vsys
             createMatterStructure@vsys(this);
             
             matter.store(this, 'Store1', 10, false);
-            oAir1 = this.toStores.Store1.createPhase(   'gas',          'Air',	10,     struct('N2', 1e5, 'O2', 0, 'CO2', 0),	293,    0);
+            oAir1 = this.toStores.Store1.createPhase('gas', 'Air', 10, struct('N2', 1e5, 'O2',    0, 'CO2',    0), 293, 0);
             
             matter.store(this, 'Store2', 10);
-            oAir2 = this.toStores.Store2.createPhase(   'gas',          'Air',	10,     struct('N2', 0, 'O2', 10e5, 'CO2', 0),	303,    0);
+            oAir2 = this.toStores.Store2.createPhase('gas', 'Air', 10, struct('N2',   0, 'O2', 10e5, 'CO2',    0), 303, 0);
             
             matter.store(this, 'Store3', 10);
-                    this.toStores.Store3.createPhase(   'gas',          'Air',	10,     struct('N2', 0, 'O2', 0, 'CO2', 10e5),	283,    0.5);
+                    this.toStores.Store3.createPhase('gas', 'Air', 10, struct('N2',   0, 'O2',    0, 'CO2', 10e5), 283, 0.5);
             
             components.matter.pipe(this, 'Pipe', 1, 0.005);
             

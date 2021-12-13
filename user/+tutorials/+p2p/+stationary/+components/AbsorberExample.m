@@ -88,6 +88,7 @@ classdef AbsorberExample < matter.procs.p2ps.stationary
             % To save calculation time (since we require this sum twice) we
             % store the sum of the adsorption flowrates in a variable
             fFlowRate = sum(afAdsorptionFlowrates);
+            
             if fFlowRate ~= 0
                 % Since a P2P is derived from branches (or more precisly
                 % flows), which have a flowrate and a vector containing the
@@ -99,6 +100,7 @@ classdef AbsorberExample < matter.procs.p2ps.stationary
             else
                 arExtractPartials = zeros(1, this.oMT.iSubstances);
             end
+
             % Now we write the flowrate and partial mass ratios to the P2P
             % which are then set as the this.fFlowRate and
             % this.arPartialMass values.

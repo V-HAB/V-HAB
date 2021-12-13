@@ -1,11 +1,11 @@
 classdef Example < vsys
-    %EXAMPLE simulation demonstrating stationary P2P processors in V-HAB 2
-    % 
+    %EXAMPLE Simulation demonstrating stationary P2P processors in V-HAB 2
     %   Creates two tanks, one with ~two bars of pressure, one with ~one
     %   bar and a filter in between. The tanks are connected to the filter
-    %   with pipes of 50cm length and 5mm diameter.
+    %   with pipes of 50 cm length and 5 mm diameter.
     %   The filter removes CO2, and H2O based on the material used in the
     %   filter and the corresponding calculation from the matter table.
+
     properties
     end
     
@@ -30,7 +30,6 @@ classdef Example < vsys
             
             oFlow = this.toStores.Filter.createPhase(	'gas',   	'FlowPhase',	fFilterVolume - oFiltered.fVolume,   struct('N2', 8e4, 'O2', 2e4, 'CO2', 500),       293,	0.5);
             
-            
             % Creating the p2p processor.  The filepath
             % "tutorials.p2p.stationary.components.AbsorberExample" depends
             % on the location of the class file for the p2p we want to add.
@@ -38,17 +37,16 @@ classdef Example < vsys
             % class. Please open the p2p file of this tutorial to find
             % additional information with regard to manipulators.
             %
-            % a stationary p2p means it is fix for one time step within
+            % A stationary p2p means it is fixed for one time step within
             % V-HAB and usually does not change its flowrate multiple times
             % within a single time step. However, over multiple time steps,
             % it is indeed variable and dynamic. The difference to the flow
             % P2Ps is, that flow P2Ps are called by the matter multibranch
-            % solver to ensure the correct P2P flowrates are used at flow
+            % solver to ensure the correct P2P flowrates are used on flow
             % phases (for highly dynamic processes at small volumes). The
             % stationary P2P is best suited to slower processes which do
             % not change significantly in a short amount of time.
             tutorials.p2p.stationary.components.AbsorberExample(this.toStores.Filter, 'filterproc', oFlow, oFiltered);
-            
             
             components.matter.fan(this, 'Fan', 40000, true);
             
@@ -58,8 +56,6 @@ classdef Example < vsys
             
             matter.branch(this, oAir,	{ 'Pipe_1', 'Fan', 'Pipe_2' },  oFlow);
             matter.branch(this, oFlow,  { 'Pipe_3' },                   oAir);
-            
-            
         end
         
         

@@ -3,15 +3,12 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams) % Constructor function
+        function this = setup(ptConfigParams, tSolverParams)
             
             this@simulation.infrastructure('Tutorial_ReconnectingExMe', ptConfigParams, tSolverParams);
             
             tutorials.reconnectingExMe.systems.Example(this.oSimulationContainer, 'Example');
             
-            %% Simulation length
-            % Stop after 2000 ticks
-            this.fSimTime = 900 * 1; % In seconds
             this.iSimTicks = 2000;
             this.bUseTime = false;
             
@@ -19,7 +16,6 @@ classdef setup < simulation.infrastructure
         
         function configureMonitors(this)
             
-            %% Logging
             oLog = this.toMonitors.oLogger;
             
             csStores = fieldnames(this.oSimulationContainer.toChildren.Example.toStores);
@@ -38,8 +34,6 @@ classdef setup < simulation.infrastructure
         end
         
         function plot(this, varargin)
-            
-            %% Define Plots
             
             close all
             oPlotter = plot@simulation.infrastructure(this);

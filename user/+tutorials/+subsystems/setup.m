@@ -8,14 +8,12 @@ classdef setup < simulation.infrastructure
             
             tutorials.subsystems.systems.Example(this.oSimulationContainer, 'Example');
             
-            %% Simulation length
-            this.fSimTime = 3600 * 2; % In seconds
+            this.fSimTime = 3600 * 2;
             this.bUseTime = true;
         end
         
         function configureMonitors(this)
             
-            %% Logging
             oLog = this.toMonitors.oLogger;
             
             csStores = fieldnames(this.oSimulationContainer.toChildren.Example.toStores);
@@ -41,9 +39,8 @@ classdef setup < simulation.infrastructure
             end
         end
         
-        function plot(this, varargin) % Plotting the results
+        function plot(this, varargin)
             
-            %% Define Plots
             close all
             oPlotter = plot@simulation.infrastructure(this);
             

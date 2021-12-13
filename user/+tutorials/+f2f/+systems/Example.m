@@ -1,28 +1,38 @@
 classdef Example < vsys
-    %EXAMPLE Example simulation for a simple flow in V-HAB 2.0
-    %   Two tanks filled with gas at different pressures and a pipe in between
+    %EXAMPLE Example simulation demonstrating the use of f2f processors
+    %   The model contains three tanks filled with gas at different
+    %   pressures. Between each tank are two pipes with a valve in the
+    %   middle, connecting the tanks in series. Use the arrays in the
+    %   editable properties section to vary the volumes and pressures.
+    %   In the exec() method of this class the valves are cycled several
+    %   times during a simulation run to show the effects on the flow rates
+    %   throughout the system.
     
+    % Fixed properties
     properties (SetAccess = protected, GetAccess = public)
+        % Standard pipe length for this tutorial
         fPipeLength   = 1.0;
+
+        % Standard pipe diameter for this tutorial
         fPipeDiameter = 0.0035;
-        
-        
-        % Store volumes in m3
-        afStoreVolumes = [ 50 50 50 ];
         
         % How many exmes to create?
         aiExmes = [ 1 2 1 ];
+    end
+    
+    % Editable properties
+    properties
+        % Store volumes in m3
+        afStoreVolumes = [ 50 50 50 ];
         
         % For air helper - create air for how much volume (multiple of
         % fVolume)
         arPressures = [ 2 1 3 ];
-        
     end
     
     methods
         function this = Example(oParent, sName)
             this@vsys(oParent, sName, 100);
-            
             
             eval(this.oRoot.oCfgParams.configCode(this));
         end
@@ -31,55 +41,55 @@ classdef Example < vsys
         function createMatterStructure(this)
             createMatterStructure@vsys(this);
             
-            
-            % Create three stores with three phases each. Also create
-            % exmes, if several - append number!
-            for iS = 1:length(this.afStoreVolumes)
-                sS = sprintf('Tank_%i', iS);
+            iNumberOfTanks = length(this.afStoreVolumes);
+
+            % Create three stores with one phase each. Also create
+            % exmes on each phase, if there are several - append number!
+            for iStore = 1:iNumberOfTanks
+                sStoreName = sprintf('Tank_%i', iStore);
                 
-                matter.store(this, sS, this.afStoreVolumes(iS));
+                matter.store(this, sStoreName, this.afStoreVolumes(iStore));
                 
-                this.toStores.(sS).createPhase('air', this.toStores.(sS).fVolume, 293, 0.5, 10^5 * this.arPressures(iS));
+                this.toStores.(sStoreName).createPhase('air', this.toStores.(sStoreName).fVolume, 293, 0.5, 10^5 * this.arPressures(iStore));
                 
-                if this.aiExmes(iS) == 1
-                    matter.procs.exmes.gas(this.toStores.(sS).aoPhases(1), 'Port');
+                if this.aiExmes(iStore) == 1
+                    matter.procs.exmes.gas(this.toStores.(sStoreName).aoPhases(1), 'Port');
                 else
-                    for iE = 1:this.aiExmes(iS)
-                        matter.procs.exmes.gas(this.toStores.(sS).aoPhases(1), sprintf('Port_%i', iE));
+                    for iExMe = 1:this.aiExmes(iStore)
+                        matter.procs.exmes.gas(this.toStores.(sStoreName).aoPhases(1), sprintf('Port_%i', iExMe));
                     end
                 end
             end
             
-            
             % Create branches with pipes and valves
-            iLen = length(this.afStoreVolumes) - 1;
+            iNumberOfBranches = iNumberOfTanks - 1;
             
-            for iB = 1:iLen
+            for iBranch = 1:iNumberOfBranches
                 csFlowProcs = {
-                    components.matter.pipe(this, sprintf('Pipe_%i%i_1', iB, iB + 1), this.fPipeLength, this.fPipeDiameter).sName;
-                	components.matter.valve(this, sprintf('Valve_%i%i',  iB, iB + 1)).sName;
-                	components.matter.pipe(this, sprintf('Pipe_%i%i_2', iB, iB + 1), this.fPipeLength, this.fPipeDiameter).sName;
+                    components.matter.pipe(this,  sprintf('Pipe_%i%i_1', iBranch, iBranch + 1), this.fPipeLength, this.fPipeDiameter).sName;
+                	components.matter.valve(this, sprintf('Valve_%i%i',  iBranch, iBranch + 1)).sName;
+                	components.matter.pipe(this,  sprintf('Pipe_%i%i_2', iBranch, iBranch + 1), this.fPipeLength, this.fPipeDiameter).sName;
                 };
                 
-                if iB == 1
-                    csFlowProcs{end + 1} = components.matter.checkvalve(this, sprintf('Checkvalve_%i%i',  iB, iB + 1)).sName;
+                if iBranch == 1
+                    csFlowProcs{4} = components.matter.checkvalve(this, sprintf('Checkvalve_%i%i',  iBranch, iBranch + 1)).sName;
                 end
                 
-                if iB == 1
+                if iBranch == 1
                     sString = 'Tank_%i.Port';
                 else
                     sString = 'Tank_%i.Port_2';
                 end
-                sStoreLeft  = sprintf(sString, iB);
-                if iB == iLen
+
+                sStoreLeft  = sprintf(sString, iBranch);
+
+                if iBranch == iNumberOfBranches
                     sString = 'Tank_%i.Port';
                 else
                     sString = 'Tank_%i.Port_1';
                 end
-                sStoreRight = sprintf(sString, iB + 1);
-                
-                %fprintf('%s -> ', sStoreLeft, csFlowProcs{:}, sStoreRight);
-                %fprintf('\n');
+
+                sStoreRight = sprintf(sString, iBranch + 1);
                 
                 matter.branch(this, sStoreLeft, csFlowProcs, sStoreRight);
             end
@@ -89,7 +99,6 @@ classdef Example < vsys
         
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
-            
             
             for iB = 1:(length(this.afStoreVolumes) - 1)
                 solver.matter.interval.branch(this.aoBranches(iB));
@@ -102,15 +111,11 @@ classdef Example < vsys
      methods (Access = protected)
         
         function exec(this, ~)
-            % exec(ute) function for this system
-            % Here it only calls its parent's exec function
+            
             exec@vsys(this);
             
-            
-            % Compare to fStartTime - this.fTimeStep -> .exec might get
-            % executed slightly earlier than defined through time step.
-            
-            % Open/Close valves
+            % Open/Close valves every 50 seconds (setTimeStep(50)) between
+            % 7200 and 9000 seconds into the simulation.
             if this.oTimer.fTime > (7200 - this.fTimeStep) && this.oTimer.fTime < 9000
                 if this.fTimeStep ~= 1
                     this.setTimeStep(50);

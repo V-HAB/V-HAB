@@ -15,14 +15,14 @@ classdef Example < vsys
             this@vsys(oParent, sName, 60);
             
             matter.store(this, 'Atmos', 10, false);
-            oAir1 = this.toStores.Atmos.createPhase(    'gas',          'Air',          10,     struct('N2', 1.6e5, 'O2', 4e4, 'CO2', 1000),    303,    0.5);
+            oAir1 = this.toStores.Atmos.createPhase('gas', 'Air', 10, struct('N2', 1.6e5, 'O2', 4e4, 'CO2', 1000), 303, 0.5);
             
             matter.store(this, 'Atmos2', 10);
-            oAir2 = this.toStores.Atmos2.createPhase(   'gas',          'Air',          10,     struct('N2', 8e4, 'O2', 2e4, 'CO2', 500),       293,    0.5);
+            oAir2 = this.toStores.Atmos2.createPhase('gas', 'Air', 10, struct('N2', 8e4, 'O2', 2e4, 'CO2', 500), 293, 0.5);
             
             fFilterVolume = 1;
             matter.store(this, 'Filter', fFilterVolume);
-            oFlow = this.toStores.Filter.createPhase(	'gas',  'flow',	'FlowPhase',	1e-6,   struct('N2', 8e4, 'O2', 2e4, 'CO2', 500),       293,	0.5);
+            oFlow = this.toStores.Filter.createPhase('gas', 'flow',	'FlowPhase', 1e-6, struct('N2', 8e4, 'O2', 2e4, 'CO2', 500), 293,	0.5);
             
             oFiltered = matter.phases.mixture(this.toStores.Filter, 'FilteredPhase', 'solid', struct('Zeolite13x', 1), 293, 1e5);
             

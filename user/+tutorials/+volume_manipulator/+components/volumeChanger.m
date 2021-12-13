@@ -1,5 +1,6 @@
 classdef volumeChanger < matter.manips.volume.continous
-    % a simple volume manipulator which compresses the volume of the phase
+    %VOLUMECHANGER Changes the volume of a phase
+    % A simple volume manipulator that compresses the volume of the phase
     % to which it is added. It inherites from the base class
     % matter.manips.volume.continous, the other available base class is 
     % matter.manips.volume.step. The difference between these two classes

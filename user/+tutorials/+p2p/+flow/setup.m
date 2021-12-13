@@ -10,18 +10,13 @@ classdef setup < simulation.infrastructure
             
             this@simulation.infrastructure('Tutorial_p2p', ptConfigParams, tSolverParams, ttMonitorConfig);
             
-             tutorials.p2p.flow.systems.Example(this.oSimulationContainer, 'Example');
+            tutorials.p2p.flow.systems.Example(this.oSimulationContainer, 'Example');
             
-            %% Simulation length
-            % Stop when specific time in sim is reached
-            % or after specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 2000; % In seconds
-            this.iSimTicks = 600;
+            this.fSimTime = 2000;
             this.bUseTime = true;
         end
         function configureMonitors(this)
             
-            %% Logging
             oLog = this.toMonitors.oLogger;
             
             csStores = fieldnames(this.oSimulationContainer.toChildren.Example.toStores);
@@ -42,9 +37,7 @@ classdef setup < simulation.infrastructure
             
         end
         
-        function plot(this) % Plotting the results
-            
-            %% Define Plots
+        function plot(this)
             
             close all
             oPlotter = plot@simulation.infrastructure(this);

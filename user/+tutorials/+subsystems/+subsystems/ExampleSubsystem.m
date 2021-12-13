@@ -2,8 +2,8 @@ classdef ExampleSubsystem < vsys
     %EXAMPLESUBSYSTEM A subsystem containing a filter and a pipe
     %   This example shows a vsys child representing a subsystem of a 
     %   larger system. It has a filter which removes O2 from the mass flow 
-    %   through the subsystem and it provides the neccessary setIfFlows 
-    %   function so the subsystem branches can be connected to the system 
+    %   through the subsystem and it provides the neccessary setIfFlows() 
+    %   method so the subsystem branches can be connected to the system 
     %   level branches.
     
     properties
