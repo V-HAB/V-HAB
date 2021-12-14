@@ -79,7 +79,7 @@ classdef Example < vsys
                 matter.procs.exmes.gas(coFlowNodeAir{iCell},       ['P2P_Air', num2str(iCell)]);
                 matter.procs.exmes.mixture(coFlowNodeWater{iCell}, ['P2P_Water', num2str(iCell)]);
                 
-                examples.mixture_flow.components.Adsorber(this.toStores.FlowPath, ['Adsorber_', num2str(iCell)], [coFlowNodeAir{iCell}.sName, '.P2P_Air', num2str(iCell)], [coFlowNodeWater{iCell}.sName, '.P2P_Water', num2str(iCell)]);
+                tests.mixture_flow.components.Adsorber(this.toStores.FlowPath, ['Adsorber_', num2str(iCell)], [coFlowNodeAir{iCell}.sName, '.P2P_Air', num2str(iCell)], [coFlowNodeWater{iCell}.sName, '.P2P_Water', num2str(iCell)]);
             end
             
             fAirPipeLength = 0.1;

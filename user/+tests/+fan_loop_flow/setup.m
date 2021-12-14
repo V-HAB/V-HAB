@@ -4,14 +4,16 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams)
-            ttMonitorConfig = struct();
+        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig, fSimTime)
             
             this@simulation.infrastructure('Example_Fan_Loop_Flow', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             tests.fan_loop_flow.systems.Example(this.oSimulationContainer, 'Example');
             
-            this.fSimTime = 3600 * 1; 
+            if nargin < 4
+                fSimTime = 3600;
+            end
+            this.fSimTime = fSimTime; 
             this.iSimTicks = 600;
             this.bUseTime = true;
         end

@@ -117,7 +117,7 @@ classdef setup < simulation.infrastructure
             
             % Creating the 'Example' system as a child of the root system
             % of this simulation.
-            oExample = tutorials.p2p.systems.Example1(this.oSimulationContainer, 'Example');
+            oExample = tutorials.p2p.stationary.systems.Example(this.oSimulationContainer, 'Example');
             
             
             

@@ -3,12 +3,14 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        function this = setup(varargin) 
-            this@simulation.infrastructure('Equalizer_Example', containers.Map(), struct(), struct());
+        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig, fSimTime)
+            this@simulation.infrastructure('Equalizer_Example', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             tests.equalizer.systems.Example(this.oSimulationContainer, 'Example');
-            
-            this.fSimTime = 3600;
+            if nargin < 4
+                fSimTime = 3600;
+            end
+            this.fSimTime = fSimTime;
         end
         
         function configureMonitors(this)
