@@ -1,5 +1,5 @@
 classdef setup < simulation.infrastructure
-    % setup file for the Greenhouse system
+    %SETUP Setup file for the Greenhouse system
     
     properties
         tmCultureParametersValues = struct();
@@ -10,26 +10,22 @@ classdef setup < simulation.infrastructure
         function this = setup(ptConfigParams, tSolverParams)
             % Possible to change the constructor paths and params for the
             % monitors
-%             ttMonitorConfig = struct();
             ttMonitorConfig = struct('oLogger', struct('cParams', {{ true }}));
             
             % call superconstructor (with possible altered monitor configs)
             this@simulation.infrastructure('CAMRAS_Test_Rig', ptConfigParams, tSolverParams, ttMonitorConfig);
             
-            warning('off', 'all');
+%             warning('off', 'all');
             
             % Create Root Object - Initializing system 'Greenhouse'
             examples.CAMRAS.systems.Example(this.oSimulationContainer, 'CAMRAS_Test_Rig');
             
             % set simulation time
-            this.fSimTime  = 1 * 9 * 3600 ;      % [s]
+            this.fSimTime  = 1 * 9 * 3600 ;
             
             % if true, use fSimTime for simulation duration, if false use
             % iSimTicks below
             this.bUseTime  = true;
-            
-            % set amount of simulation tickso
-            this.iSimTicks = 400;       % [ticks]
         end
         
         function configureMonitors(this)
@@ -39,8 +35,6 @@ classdef setup < simulation.infrastructure
             
             %% Atmosphere Store
             oLog.addValue('CAMRAS_Test_Rig.toStores.Atmosphere.toPhases.Atmosphere_Phase_1', 'fPressure', 'Pa',  'Atmosphere Total Pressure');
-%             oLog.addValue('CAMRAS_Test_Rig.toStores.Atmosphere.toPhases.Atmosphere_Phase_1', 'this.afPP(this.oMT.tiN2I.H2O) * 0.007500617', 'Pa',  'Atmosphere Partial Pressure H2O');
-%             oLog.addValue('CAMRAS_Test_Rig.toStores.Atmosphere.toPhases.Atmosphere_Phase_1', 'this.afPP(this.oMT.tiN2I.CO2) * 0.007500617', 'Pa',  'Atmosphere Partial Pressure CO2');
             oLog.addValue('CAMRAS_Test_Rig.toStores.Atmosphere.toPhases.Atmosphere_Phase_1', 'afPP(this.oMT.tiN2I.H2O)', 'Pa',  'Atmosphere Partial Pressure H2O');
             oLog.addValue('CAMRAS_Test_Rig.toStores.Atmosphere.toPhases.Atmosphere_Phase_1', 'afPP(this.oMT.tiN2I.CO2)', 'Pa',  'Atmosphere Partial Pressure CO2');
             

@@ -37,7 +37,7 @@ classdef Example < vsys
             
             %% Insert CAMRAS subsystem
             % The required inputs for CAMRAS are:   oParent, sName,     fTimeStep,  fVolumetricFlowrateMain,    sCase)
-            components.matter.CAMRAS.CAMRAS(        this,    'CAMRAS',  1,          0.0122706,                  'exercise');
+            components.matter.CAMRAS.CAMRAS(this, 'CAMRAS', 1, 0.0122706, 'exercise'); 
             % Description of the Inputs:
             % case: Adjusts the cycle time of CAMRAS. It has three possible
             %       cases: 'nominal', 'exercise' and 'sleep'. These reflect
@@ -56,7 +56,7 @@ classdef Example < vsys
             fTemperatureInit = 295;         % [K] equals 70 °F
             fPressureInit    = 101325;      % [Pa]
             fRelHumidityInit = 0.2;         % Chosen to match test data
-            fCO2Percent= 0.002;             % Chosen to match test data
+            fCO2Percent      = 0.002;       % Chosen to match test data
             
             
             %% Atmosphere of Orion Test Rig
@@ -98,11 +98,10 @@ classdef Example < vsys
             oCO2Supply = matter.phases.gas(...
                 this.toStores.CO2Supply, ...   % store containing phase
                 'CO2Supply', ...               % phase name
-                struct(...                          % phase contens     [kg]
+                struct(...                     % phase contents    [kg]
                 'CO2', 50), ...
-                2, ...                              % phase volume      [m^3]
+                2, ...                         % phase volume      [m^3]
                 fTemperatureInit);             % phase temperature [K]
-            
             
             matter.procs.exmes.gas(oCO2Supply, 'To_Atmosphere');
             
@@ -115,8 +114,7 @@ classdef Example < vsys
                 struct(...                          % phase contents    [kg]
                 'N2', 50), ...
                 2, ...                              % phase volume      [m^3]
-                fTemperatureInit);              % phase temperature [K]
-            
+                fTemperatureInit);                  % phase temperature [K]
             
             matter.procs.exmes.gas(oN2Supply, 'To_Atmosphere');
             
@@ -126,10 +124,10 @@ classdef Example < vsys
             oO2Supply = matter.phases.gas(...
                 this.toStores.O2Supply, ...   % store containing phase
                 'O2Supply', ...               % phase name
-                struct(...                          % phase contens     [kg]
+                struct(...                    % phase contents    [kg]
                 'O2', 50), ...
-                2, ...                              % phase volume      [m^3]
-                fTemperatureInit);              % phase temperature [K]
+                2, ...                        % phase volume      [m^3]
+                fTemperatureInit);            % phase temperature [K]
             
             
             matter.procs.exmes.gas(oO2Supply, 'To_Atmosphere');
@@ -138,10 +136,10 @@ classdef Example < vsys
             
             matter.store(this, 'Vacuum', 100000);
             oVacuum = matter.phases.gas(this.toStores.Vacuum, ...
-                'Vacuum_Phase', ...     	% Phase name
+                'Vacuum_Phase', ...     	   % Phase name
                 struct('N2',1.12*100000), ...  % Phase contents
-                100000, ...               % Phase volume
-                293.15);                  % Phase temperature
+                100000, ...                    % Phase volume
+                293.15);                       % Phase temperature
             
             matter.procs.exmes.gas(oVacuum, 'FromCAMRAS_C1_Desorb');
             matter.procs.exmes.gas(oVacuum, 'FromCAMRAS_C2_Desorb');
@@ -176,10 +174,10 @@ classdef Example < vsys
             
             %% Branches
             % create branches exclusive to this section
-            matter.branch(this, 'WaterSupply.To_Atmosphere',       {}, 'Atmosphere.From_H2O',       'H2OBufferSupply');
-            matter.branch(this, 'CO2Supply.To_Atmosphere',         {}, 'Atmosphere.From_CO2',       'CO2BufferSupply');
-            matter.branch(this, 'N2Supply.To_Atmosphere',          {}, 'Atmosphere.From_N2',        'N2BufferSupply');
-            matter.branch(this, 'O2Supply.To_Atmosphere',          {}, 'Atmosphere.From_O2',        'O2BufferSupply');
+            matter.branch(this, 'WaterSupply.To_Atmosphere', {}, 'Atmosphere.From_H2O', 'H2OBufferSupply');
+            matter.branch(this, 'CO2Supply.To_Atmosphere',   {}, 'Atmosphere.From_CO2', 'CO2BufferSupply');
+            matter.branch(this, 'N2Supply.To_Atmosphere',    {}, 'Atmosphere.From_N2',  'N2BufferSupply');
+            matter.branch(this, 'O2Supply.To_Atmosphere',    {}, 'Atmosphere.From_O2',  'O2BufferSupply');
             
             
             %% All stuff needed for a second CAMRAS goes here. If only one CAMRAS is used --> Comment this section

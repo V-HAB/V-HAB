@@ -1,9 +1,10 @@
 classdef Example < vsys
-    %   The testloop consists of one tank which simulates the
-    %   volume of the space suit. Two tanks with CO2 and H2O supply the
-    %   distributer with gas to simulate the metabolic consumption of a crew
-    %   member. Another O2 tank is added that compansates the mass that is
-    %   lost to the loop through the filter process in the RCA filter beds.
+    %EXAMPLE System containing an RCA
+    %   The testloop consists of one tank which simulates the volume of the
+    %   space suit. Two tanks with CO2 and H2O supply the distributer with
+    %   gas to simulate the metabolic consumption of a crew member. Another
+    %   O2 tank is added that compansates the mass that is lost to the loop
+    %   through the filter process in the RCA filter beds.
     
     properties
         toManualBranches = struct();
@@ -26,6 +27,7 @@ classdef Example < vsys
             fInitialTemperature = 298.65;
             
             createMatterStructure@vsys(this);
+
             %% Building Test Loop
             % Creating a store simulating the gaseous part of the space suit
             % Influence of residence mass can/should be analyzed in a future work
@@ -41,12 +43,14 @@ classdef Example < vsys
             
             % Creating a H2O store to simulate metabolic rates
             matter.store(this, 'H2OStore', 10);
+
             % Add Phase: gas(oStore, sName, tfMasses, fVolume, fTemp)
             oH2OGas = matter.phases.gas(this.toStores.H2OStore, 'H2OGas', struct('H2O', 1), 10, fInitialTemperature);
             matter.procs.exmes.gas(oH2OGas, 'H2OPort');
             
             % Creating a CO2 store to simulate metabolic rates
             matter.store(this, 'CO2Store', 10);
+            
             % Add Phase: gas(oStore, sName, tfMasses, fVolume, fTemp)
             oCO2Gas = matter.phases.gas(this.toStores.CO2Store, 'CO2Gas', struct('CO2', 1), 10, fInitialTemperature);
             matter.procs.exmes.gas(oCO2Gas, 'CO2Port');

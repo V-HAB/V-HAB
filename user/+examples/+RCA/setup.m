@@ -38,16 +38,16 @@ classdef setup < simulation.infrastructure
             %% Logging
             oLogger = this.toMonitors.oLogger;
             
-            tiLog.RCA_Beds.A_sorp                        = oLogger.addValue('Test.toChildren.RCA.toStores.Bed_A.toProcsP2P.SorptionProcessor', 'fFlowRate_ads', 'kg/s', 'Adsorption Flow Rate Bed A');
-            tiLog.RCA_Beds.B_sorp                        = oLogger.addValue('Test.toChildren.RCA.toStores.Bed_B.toProcsP2P.SorptionProcessor', 'fFlowRate_ads', 'kg/s', 'Adsorption Flow Rate Bed B');
-            tiLog.RCA_CO2_Values.SplitterPartialMass     = oLogger.addValue('Test/RCA:s:Splitter:p:Splitter_Phase_1', 'arPartialMass(this.oMT.tiN2I.CO2)', '-', 'Splitter CO2 Partial Mass');
-            tiLog.RCA_CO2_Values.MergerPartialMass       = oLogger.addValue('Test/RCA:s:Merger:p:Merger_Phase_1', 'arPartialMass(this.oMT.tiN2I.CO2)', '-', 'Merger CO2 Partial Mass');
-            tiLog.RCA_CO2_Values.BedAFlowPartialMass     = oLogger.addValue('Test/RCA:s:Bed_A:p:FlowPhase', 'arPartialMass(this.oMT.tiN2I.CO2)', '-', 'Bed A Flow Phase CO2 Partial Mass');
-            tiLog.RCA_CO2_Values.BedBFlowPartialMass     = oLogger.addValue('Test/RCA:s:Bed_B:p:FlowPhase', 'arPartialMass(this.oMT.tiN2I.CO2)', '-', 'Bed B Flow Phase CO2 Partial Mass');
-            tiLog.RCA_CO2_Values.SplitterPartialPressure = oLogger.addValue('Test/RCA:s:Splitter:p:Splitter_Phase_1', 'afPP(this.oMT.tiN2I.CO2)', 'Pa', 'Splitter CO2 Partial Pressure');
-            tiLog.RCA_CO2_Values.MergerPartialPressure   = oLogger.addValue('Test/RCA:s:Merger:p:Merger_Phase_1', 'afPP(this.oMT.tiN2I.CO2)', 'Pa', 'Merger CO2 Partial Pressure');
-            tiLog.RCA_CO2_Values.BedAFlowPartialPressure = oLogger.addValue('Test/RCA:s:Bed_A:p:FlowPhase', 'afPP(this.oMT.tiN2I.CO2)', 'Pa', 'Bed A Flow Phase CO2 Partial Pressure');
-            tiLog.RCA_CO2_Values.BedBFlowPartialPressure = oLogger.addValue('Test/RCA:s:Bed_B:p:FlowPhase', 'afPP(this.oMT.tiN2I.CO2)', 'Pa', 'Bed B Flow Phase CO2 Partial Pressure');
+            oLogger.addValue('Test.toChildren.RCA.toStores.Bed_A.toProcsP2P.SorptionProcessor', 'fFlowRate_ads', 'kg/s', 'Adsorption Flow Rate Bed A');
+            oLogger.addValue('Test.toChildren.RCA.toStores.Bed_B.toProcsP2P.SorptionProcessor', 'fFlowRate_ads', 'kg/s', 'Adsorption Flow Rate Bed B');
+            oLogger.addValue('Test/RCA:s:Splitter:p:Splitter_Phase_1', 'arPartialMass(this.oMT.tiN2I.CO2)', '-', 'Splitter CO2 Partial Mass');
+            oLogger.addValue('Test/RCA:s:Merger:p:Merger_Phase_1', 'arPartialMass(this.oMT.tiN2I.CO2)', '-', 'Merger CO2 Partial Mass');
+            oLogger.addValue('Test/RCA:s:Bed_A:p:FlowPhase', 'arPartialMass(this.oMT.tiN2I.CO2)', '-', 'Bed A Flow Phase CO2 Partial Mass');
+            oLogger.addValue('Test/RCA:s:Bed_B:p:FlowPhase', 'arPartialMass(this.oMT.tiN2I.CO2)', '-', 'Bed B Flow Phase CO2 Partial Mass');
+            oLogger.addValue('Test/RCA:s:Splitter:p:Splitter_Phase_1', 'afPP(this.oMT.tiN2I.CO2)', 'Pa', 'Splitter CO2 Partial Pressure');
+            oLogger.addValue('Test/RCA:s:Merger:p:Merger_Phase_1', 'afPP(this.oMT.tiN2I.CO2)', 'Pa', 'Merger CO2 Partial Pressure');
+            oLogger.addValue('Test/RCA:s:Bed_A:p:FlowPhase', 'afPP(this.oMT.tiN2I.CO2)', 'Pa', 'Bed A Flow Phase CO2 Partial Pressure');
+            oLogger.addValue('Test/RCA:s:Bed_B:p:FlowPhase', 'afPP(this.oMT.tiN2I.CO2)', 'Pa', 'Bed B Flow Phase CO2 Partial Pressure');
             
             csStores = fieldnames(this.oSimulationContainer.toChildren.Test.toStores);
             for iStore = 1:length(csStores)
@@ -69,7 +69,6 @@ classdef setup < simulation.infrastructure
             close all
             oPlotter = plot@simulation.infrastructure(this);
             
-            
             csStores = fieldnames(this.oSimulationContainer.toChildren.Test.toStores);
             csPressures = cell(length(csStores),1);
             csTemperatures = cell(length(csStores),1);
@@ -87,9 +86,9 @@ classdef setup < simulation.infrastructure
             tPlotOptions.sTimeUnit = 'seconds';
             tFigureOptions = struct('bTimePlot', false, 'bPlotTools', false);
 
-            coPlots{1,1} = oPlotter.definePlot(csPressures,     'Pressures', tPlotOptions);
-            coPlots{2,1} = oPlotter.definePlot(csFlowRates,     'Flow Rates', tPlotOptions);
-            coPlots{1,2} = oPlotter.definePlot(csTemperatures,  'Temperatures', tPlotOptions);
+            coPlots{1,1} = oPlotter.definePlot(csPressures,    'Pressures',    tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot(csFlowRates,    'Flow Rates',   tPlotOptions);
+            coPlots{1,2} = oPlotter.definePlot(csTemperatures, 'Temperatures', tPlotOptions);
             oPlotter.defineFigure(coPlots,  'Plots', tFigureOptions);
             
             oPlotter.plot();

@@ -4,7 +4,7 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams) % Constructor function
+        function this = setup(ptConfigParams, tSolverParams)
             
             ttMonitorConfig = struct();
             this@simulation.infrastructure('Example', ptConfigParams, tSolverParams, ttMonitorConfig);
@@ -14,7 +14,6 @@ classdef setup < simulation.infrastructure
         end
         
         function configureMonitors(this)
-            %% Logging
             oLog = this.toMonitors.oLogger;
             
             
@@ -83,14 +82,11 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Example:c:BoschReactor:s:MembraneReactorH2.toProcsP2P.H2FilterProc', 	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2)',     	'kg/s',    	'Membrane Reactor H2 Flow');
             oLog.addValue('Example:c:BoschReactor:s:CFR.toProcsP2P.CFRFilterProc',                  'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C)',     	'kg/s',    	'CFR C Flow');
             
-            %% Simulation length
-            % Stop when specific time in sim is reached
-            % or after specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 1 * 300; % In seconds
+            this.fSimTime = 1 * 300;
             
         end
         
-        function plot(this) % Plotting the results
+        function plot(this)
             close all
             oPlotter = plot@simulation.infrastructure(this);
             
@@ -100,7 +96,6 @@ classdef setup < simulation.infrastructure
             tPlotOptions.sTimeUnit = 'hours';
             tFigureOptions = struct('bTimePlot', false, 'bPlotTools', false);
             
-            %% RGWS
             coPlots = [];
             csNames = {'"RWGS Molar Inflow CO2"', '"RWGS Molar Outflow CO2"'};
             coPlots{1,1} = oPlotter.definePlot(csNames,     'Molar Flows CO2 RWGS', tPlotOptions);

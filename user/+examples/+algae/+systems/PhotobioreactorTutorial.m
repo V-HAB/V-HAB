@@ -1,16 +1,21 @@
 classdef PhotobioreactorTutorial< vsys
-    %Cabin system that incorporates human, CCAA and PBR (PBR has algae as
-    %subsysstem). The cabin system and human are based on the V-HAB
-    %tutorial of the human model
+    %PHOTOBIOREACTORTUTORIAL 
+    %   Cabin system that incorporates human, CCAA and PBR (PBR has algae
+    %   as subsysstem). The cabin system and human are based on the V-HAB
+    %   tutorial of the human model.
     
     
     
     properties (SetAccess = protected, GetAccess = public)
-        %% Photobioreactor
-        txPhotobioreactorProperties  %struct with Photobioreactor Properties
-        oPBR                    %PBR object
+        % Photobioreactor
         
-        %% human (from V-HAB Human Tutorial)
+        % Struct with Photobioreactor Properties
+        txPhotobioreactorProperties;
+        
+        % PBR object
+        oPBR;
+        
+        % Human (from V-HAB Human Tutorial)
         tCurrentFoodRequest;
         cScheduledFoodRequest = cell(0,0);
         fFoodPrepTime = 3*60;
@@ -25,10 +30,10 @@ classdef PhotobioreactorTutorial< vsys
             
             %% Create Photobioreactor
             
-            %Number of CrewMember goes here:
+            % Number of CrewMember goes here:
             this.iCrewMembers = 4;
-            %set some important input values. set[] for value if should not
-            %be specified. E.g. struct('sLightColor', [])
+            % Set some important input values. set[] for value if should
+            % not be specified. E.g. struct('sLightColor', [])
             this.txPhotobioreactorProperties = ...
                 struct(...
                 'sLightColor',              'RedExperimental', ...          %Radiation energy source (light) of photobioreactor. options:Red, Blue, Yellow, Green, Daylight, RedExperimental
@@ -42,38 +47,38 @@ classdef PhotobioreactorTutorial< vsys
                 'fNumberOfParallelFilters', 30, ...                         %number of parallel filters since one is not enough for large volumes.
                 'bUseUrine',                true);                          %should urine be used for supply or just nitrate (then set to false).
             
-            %create photobioreactor object and pass the set properties. If not
-            %specified here, the struct does not have to be passed and values
-            %will be set automatically by the photobioreactor system. This
-            %automatically set photobioreactor is capable of supporting one
-            %human in terms of air revitalization and water processing.
-            %Further changes, e.g. to the growth rate (large potential for
-            %size decrease)
-            
+            % Create photobioreactor object and pass the set properties. If
+            % not specified here, the struct does not have to be passed and
+            % values will be set automatically by the photobioreactor
+            % system. This automatically set photobioreactor is capable of
+            % supporting one human in terms of air revitalization and water
+            % processing. Further changes, e.g. to the growth rate (large
+            % potential for size decrease)
+            % Photobioreactor class creates algae as its own child system
             components.matter.PBR.systems.Photobioreactor(this, 'Photobioreactor', this.txPhotobioreactorProperties);
-            %photobioreactor class creates algae as its own child system
             
             %% Create CCAA subsystem from V-HAB tutorial for CCAA
-            % Initial ratio for amount of flow that is channeled through the
-            % CHX
+            % Initial ratio for amount of flow that is channeled through
+            % the CHX
             % temperature for the coolant passing through the CCAA
             fCoolantTemperature = 280;
+            
             % Struct containg basic atmospheric values for the
             % initialization of the CCAA
             tAtmosphere.fTemperature = 295;
             tAtmosphere.rRelHumidity = 0.8;
             tAtmosphere.fPressure = 101325;
-            % name for the asscociated CDRA subsystem, leave empty if CCAA
+            
+            % Name for the asscociated CDRA subsystem, leave empty if CCAA
             % is used as standalone
             sCDRA = [];
             
             % Adding the subsystem CCAA
             components.matter.CCAA.CCAA(this, 'CCAA', 60, fCoolantTemperature, tAtmosphere, sCDRA);
             
-            
             %% Add Human to cabin from V-HAB tutorial for Human Model
             
-            % crew planer
+            % Crew planer
             % Since the crew schedule follows the same pattern every day,
             % it was changed to a loop. Thereby, longer mission durations
             % can easily be set just by changing the iLengthOfMission
@@ -152,8 +157,7 @@ classdef PhotobioreactorTutorial< vsys
         function createMatterStructure(this)
             createMatterStructure@vsys(this);
             
-            %% cabin stores
-            % cabin store
+            %% Cabin store
             % atmosphere
             matter.store(this, 'Cabin', 65);
             
@@ -179,9 +183,9 @@ classdef PhotobioreactorTutorial< vsys
             oFecesPhase = matter.phases.mixture(this.toStores.FecesStorage, 'Feces', 'solid', struct('Feces', 1), 295, 101325);
             
             % Nitrate Supply
-            oStore = matter.store(this,     'NutrientSupply',    0.1);
+            oStore = matter.store(this, 'NutrientSupply', 0.1); 
             
-            oNutrientSupply 	= oStore.createPhase(	'liquid',   'boundary', 'NutrientSupply',   	oStore.fVolume,	struct('H2O', 0.1, 'NO3', 0.9),	oCabinPhase.fTemperature,	oCabinPhase.fPressure);
+            oNutrientSupply = oStore.createPhase( 'liquid', 'boundary', 'NutrientSupply', oStore.fVolume, struct('H2O', 0.1, 'NO3', 0.9), oCabinPhase.fTemperature, oCabinPhase.fPressure); 
             
             % Adds a food store to the system
             tfFood = struct('Food', 1000);

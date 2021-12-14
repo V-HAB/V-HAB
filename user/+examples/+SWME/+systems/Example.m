@@ -69,12 +69,12 @@ classdef Example < vsys
             
             % Two standard pipes, which connect the SWME to the super
             % system
-            components.matter.pipe(this, 'Pipe_1', 0.01, 0.0127);
-            components.matter.pipe(this, 'Pipe_2', 0.01, 0.0127);
+            components.matter.pipe(this, 'Pipe_Inlet', 0.01, 0.0127);
+            components.matter.pipe(this, 'Pipe_Outlet', 0.01, 0.0127);
             
             % Creating the flowpath between the components.
-            matter.branch(this, 'SWME_Inlet', {'Pipe_1'}, oWaterInlet, 'InletBranch');
-            matter.branch(this, 'SWME_Outlet', {'Pipe_2'}, oWaterOutlet, 'OutletBranch');
+            matter.branch(this, 'SWME_Inlet', {'Pipe_Inlet'}, oWaterInlet, 'InletBranch');
+            matter.branch(this, 'SWME_Outlet', {'Pipe_Outlet'}, oWaterOutlet, 'OutletBranch');
             matter.branch(this, 'SWME_Vapor', {}, oEnvironment, 'VaporBranch');
             
             this.toChildren.SWME.setInterfaces('SWME_Inlet','SWME_Outlet', 'SWME_Vapor');
