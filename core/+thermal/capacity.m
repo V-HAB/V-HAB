@@ -116,7 +116,7 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
         fMaxTemperatureChange = inf;
         
         % The minimal and maximal time step of the capacity:
-        fMaxStep = 20;
+        fMaxStep = 60;
         fMinStep = 1e-8;
         
         % as for the phase in the matter domain, the time step for the
