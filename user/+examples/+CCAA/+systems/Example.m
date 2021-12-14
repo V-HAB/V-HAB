@@ -22,17 +22,6 @@ classdef Example < vsys
     
     methods
         function this = Example(oParent, sName, tParameters)
-            % Call parent constructor. Third parameter defined how often
-            % the .exec() method of this subsystem is called. This can be
-            % used to change the system state, e.g. close valves or switch
-            % on/off components.
-            % Values can be: 0-inf for interval in [s] (zero means with
-            % lowest time step set for the timer). -1 means with every TICK
-            % of the timer, which is determined by the smallest time step
-            % of any of the systems. Providing a logical false (def) means
-            % the .exec method is called when the oParent.exec() is
-            % executed (see this .exec() method - always call exec@vsys as
-            % well!).
             this@vsys(oParent, sName);
             
             if nargin < 3
@@ -172,8 +161,6 @@ classdef Example < vsys
     methods (Access = protected)
         
         function exec(this, ~)
-            % exec(ute) function for this system
-            % Here it only calls its parent's exec function
             exec@vsys(this);
             
         end

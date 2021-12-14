@@ -37,8 +37,11 @@ classdef WPA < vsys
         bContinousWaterProcessingMode = false;
     end
     methods
-        function this = WPA(oParent, sName)
-            this@vsys(oParent, sName, 60);
+        function this = WPA(oParent, sName, fTimeStep, ~)
+            if nargin < 3
+                fTimeStep = 60;
+            end
+            this@vsys(oParent, sName, fTimeStep);
             eval(this.oRoot.oCfgParams.configCode(this));
             %connecting subystems
             

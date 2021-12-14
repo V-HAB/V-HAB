@@ -1,11 +1,7 @@
 classdef setup < simulation.infrastructure
-    %SETUP This class is used to setup a simulation
-    %   There should always be a setup file present for each project. It is
-    %   used for the following:
-    %   - instantiate the root object
-    %   - determine which items are logged
-    %   - set the simulation duration
-    %   - provide methods for plotting the results
+    %SETUP Setup class for plotting example
+    %   The plot() method of this class contains a variety of examples for
+    %   different features for plotting simulation results with V-HAB.
     
     properties
         % Property where indices of logs can be stored
@@ -13,17 +9,11 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        % Constructor function
         function this = setup(varargin) 
             
-            ttMonitorConfig.oMassBalanceObserver.sClass = 'simulation.monitors.massbalanceObserver';
-            fAccuracy = 1e-8;
-            fMaxMassBalanceDifference = inf;
-            bSetBreakPoints = false;
-            ttMonitorConfig.oMassBalanceObserver.cParams = { fAccuracy, fMaxMassBalanceDifference, bSetBreakPoints };
-            % First we call the parent constructor and tell it the name of
+            % Now we call the parent constructor and tell it the name of
             % this simulation we are creating.
-            this@simulation.infrastructure('Example_Plotting', containers.Map(), struct(), ttMonitorConfig);
+            this@simulation.infrastructure('Example_Plotting');
             
             % Creating the 'Example' system as a child of the root system
             % of this simulation. 
@@ -60,37 +50,40 @@ classdef setup < simulation.infrastructure
             % path (it will be displayed in the top of the window). In the
             % definition of the path to the log value you can use these
             % shorthands: 
-            %   - :s: = toStores
-            %   - :c: = toChildren
-            
-            this.tiLogIndexes.iTempIdx1 = oLog.addValue('Example.toProcsF2F.Pipe.aoFlows(1)', 'fTemperature', 'K', 'Flow Temperature - Left', 'flow_temp_left');
-            this.tiLogIndexes.iTempIdx2 = oLog.addValue('Example.toProcsF2F.Pipe.aoFlows(2)', 'fTemperature', 'K', 'Flow Temperature - Right', 'flow_temp_right');
-            
-            
+            % :c: for .toChildren.
+            % :s: for .toStores.
+            % :p: for .toPhases.
+            % :b: for .toBranches.
+            % :t: for .toThermalBranches.
+
             % The log is built like this:
             %
-            %             Path to the object containing the log value       Log Value                       Unit    Label of log value (used for legends and to plot the value) 
-            oLog.addValue('Example:s:Tank_1.aoPhases(1)',                   'afPP(this.oMT.tiN2I.CO2)',     'Pa',   'Partial Pressure CO_2 Tank 1', 'ppCO2_Tank1');
-            oLog.addValue('Example:s:Tank_2.aoPhases(1)',                   'afPP(this.oMT.tiN2I.CO2)',     'Pa',   'Partial Pressure CO_2 Tank 2', 'ppCO2_Tank2');
+            %              Path to the object containing the log value   Log Value                   Unit   Label of log value (used for legends and to plot the value)   String identifier of the log item (can be used in the plotter to reference this item)
+            oLog.addValue('Example:s:Tank_1:p:Tank1Air',                'afPP(this.oMT.tiN2I.CO2)', 'Pa',  'Partial Pressure CO_2 Tank 1',                               'ppCO2_Tank1');
+            oLog.addValue('Example:s:Tank_2:p:Tank2Air',                'afPP(this.oMT.tiN2I.CO2)', 'Pa',  'Partial Pressure CO_2 Tank 2', 'ppCO2_Tank2');
             
-            % it is also possible to define a calculation as log value and
-            % e.g. multiply two values from the object.
-            
-            % This can be usefull if you want to log the flowrate of CO2
-            % through a branch that transports air for example            
+            % It is also possible to define a calculation as log value and
+            % e.g. multiply two values from the object. This can be usefull
+            % if you want to log the flowrate of CO2 through a branch that
+            % transports air for example.           
             oLog.addValue('Example.aoBranches(1).aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'Flowrate of CO2', 'fr_co2');
             
-            oLog.addValue('Example:s:Tank_1.aoPhases(1)', 'afMass(this.oMT.tiN2I.CO2)', 'kg');
-            oLog.addValue('Example:s:Tank_2.aoPhases(1)', 'afMass(this.oMT.tiN2I.CO2)', 'kg', 'Partial Mass CO_2 Tank 2');
+            oLog.addValue('Example:s:Tank_1:p:Tank_1_Phase_1', 'afMass(this.oMT.tiN2I.CO2)', 'kg');
+            oLog.addValue('Example:s:Tank_2:p:Tank_2_Phase_1', 'afMass(this.oMT.tiN2I.CO2)', 'kg', 'Partial Mass CO_2 Tank 2');
             
-            oLog.addValue('Example:s:Tank_1.aoPhases(1)', 'fTemperature', 'K', 'Temperature Phase 1');
-            oLog.addValue('Example:s:Tank_2.aoPhases(1)', 'fTemperature', 'K', 'Temperature Phase 2');
+            oLog.addValue('Example:s:Tank_1:p:Tank_1_Phase_1', 'fTemperature', 'K', 'Temperature Phase 1');
+            oLog.addValue('Example:s:Tank_2:p:Tank_2_Phase_1', 'fTemperature', 'K', 'Temperature Phase 2');
             
-            oLog.addValue('Example:s:Tank_1.aoPhases(1)', 'this.fMass * this.fMassToPressure', 'Pa', 'Pressure Phase 1');
-            oLog.addValue('Example:s:Tank_2.aoPhases(1)', 'this.fMass * this.fMassToPressure', 'Pa', 'Pressure Phase 2');
+            oLog.addValue('Example:s:Tank_1:p:Tank_1_Phase_1', 'this.fMass * this.fMassToPressure', 'Pa', 'Pressure Phase 1');
+            oLog.addValue('Example:s:Tank_2:p:Tank_2_Phase_1', 'this.fMass * this.fMassToPressure', 'Pa', 'Pressure Phase 2');
             
             oLog.addValue('Example.toBranches.Branch', 'fFlowRate', 'kg/s', 'Branch Flow Rate', 'branch_FR');
             
+            % Virtual values can be added before and after a simulation has
+            % run. They are combinations of existing log values that are
+            % only calculated when plotted. Note that the existing, regular
+            % log values can be referenced either by their label or their
+            % string identifier.
             this.tiLogIndexes.iIndex_1 = oLog.addVirtualValue('fr_co2 * 1000', 'g/s', 'CO_2 Flowrate', 'co2_fr_grams');
             this.tiLogIndexes.iIndex_2 = oLog.addVirtualValue('flow_temp_left - 273.15', 'degC', 'Temperature Left in Celsius');
             this.tiLogIndexes.iIndex_3 = oLog.addVirtualValue('mod(flow_temp_right .^ 2, 10) ./ "Partial Mass CO_2 Tank 2"', '-', 'Nonsense');
@@ -103,6 +96,10 @@ classdef setup < simulation.infrastructure
             
             oPlotter = plot@simulation.infrastructure(this);
             
+            % Creating some cell arrays with plot values. We can reference
+            % the recorded values using their labels, their index in the
+            % logging struct and their string identifiers. The different
+            % reference methods can be mixed within each cell. 
             cxPlotValues1 = { '"CO_2 Flowrate"', this.tiLogIndexes.iIndex_2, 'Nonsense' };
             csPlotValues2 = { '"Partial Pressure CO_2 Tank 1"', '"Partial Pressure CO_2 Tank 2"'};
             csPlotValues3 = { 'flow_temp_left', 'flow_temp_right' };
@@ -142,13 +139,15 @@ classdef setup < simulation.infrastructure
             % 
             % The bLegend field determines if the legend of the axes is
             % visible or not. The default is visible. 
+            %
+            % For additional options see the definePlot() method of the
+            % plotter class. 
             
-            %tPlotOptions = struct('csUnitOverride', {{ 'all left' }});
             tPlotOptions = struct('csUnitOverride', {{ {'degC'}, {'g/s','-'} }});
             tPlotOptions.tLineOptions.('fr_co2').csColor = 'g';
             tPlotOptions.tLineOptions.('Nonsense').csColor = 'y';
             tPlotOptions.bLegend = false;
-            coPlots{1,1} = oPlotter.definePlot(cxPlotValues1, 'Bullshit', tPlotOptions);
+            coPlots{1,1} = oPlotter.definePlot(cxPlotValues1, 'This makes no sense', tPlotOptions);
             
             tPlotOptions.tLineOptions.('ppCO2_Tank1').csColor = 'g';
             tPlotOptions.tLineOptions.('ppCO2_Tank2').csColor = 'y';
@@ -158,7 +157,7 @@ classdef setup < simulation.infrastructure
             coPlots{2,1} = oPlotter.definePlot(csPlotValues3, 'Temperatures', tPlotOptions);
             
             
-            % tFigureOptions includes turing on or off the plottools (off
+            % tFigureOptions includes turning on or off the plottools (off
             % by default), including or excluding the time plot (off by
             % default). Otherwise it can contain any fields that correspond
             % to the properties of the MATLAB figure object. 
@@ -169,7 +168,6 @@ classdef setup < simulation.infrastructure
             tPlotOptions = struct('sAlternativeXAxisValue', '"Branch Flow Rate"', 'sXLabel', 'Main Branch Flow Rate in [kg/s]', 'fTimeInterval',10);
             coPlots = {oPlotter.definePlot({'"Pressure Phase 1"'}, 'Pressure vs. Flow Rate', tPlotOptions)};
             oPlotter.defineFigure(coPlots, 'Pressure vs. Flow Rate');
-            
             
             tPlotOptions = struct('sTimeUnit','hours');
             coPlots = [];

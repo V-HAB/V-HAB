@@ -40,10 +40,12 @@ classdef Example < vsys
             % Creating a second store, volume 1 m^3
             matter.store(this, 'Tank_2', 1);
             
-            % Adding a phase to the store 'Tank_2', 2 m^3 air at 50 deg C
-            % Note that we are creating a phase that is twice as voluminous
-            % as the store it is in. This means that the pressure of this
-            % phase will be higher than that of 'Tank_1'
+            % Adding a phase to the store 'Tank_2', 1 m^3 air at 50 deg C,
+            % relative humidity of 50% and at a pressure of 2e5 Pa.
+            % Note that in comparison to Tank_1 the values for humidity and
+            % pressure are explicitly defined here. If they are not passed
+            % as parameters to the createPhase() method, the 'air' helper
+            % being used here will assume standard values. 
             oAirPhase = this.toStores.Tank_2.createPhase('air', 1, 323.15, 0.5, 2e5);
             
             % Adding a pipe to connect the tanks, 1.5 m long, 5 mm in
@@ -58,7 +60,6 @@ classdef Example < vsys
             matter.branch(this, oGasPhase, {'Pipe'}, oAirPhase, 'Branch');
             
         end
-        
         
         function createThermalStructure(this)
             % This function creates all simulation objects in the thermal
@@ -76,7 +77,6 @@ classdef Example < vsys
             % conductive heat transfer.
             
         end
-        
         
         function createSolverStructure(this)
             % This function creates all of the solver objects required for
@@ -109,8 +109,5 @@ classdef Example < vsys
             exec@vsys(this);
             
         end
-        
      end
-    
 end
-

@@ -4,7 +4,7 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams) % Constructor function
+        function this = setup(ptConfigParams, tSolverParams)
             
             
             ttMonitorConfig = struct ('oLogger', struct('cParams',{{true,100000}}));
@@ -23,12 +23,7 @@ classdef setup < simulation.infrastructure
             
             examples.algae.systems.PhotobioreactorTutorial(this.oSimulationContainer, 'Cabin');
             
-            %% Simulation length
-            % Stop when specific time in simulation is reached or after
-            % specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 3600 * 24 * 7; % In seconds
-            % this.fSimTime = 253000;
-            this.iSimTicks = 1500;
+            this.fSimTime = 3600 * 24 * 7;
             this.bUseTime = true;
         end
         
@@ -36,14 +31,14 @@ classdef setup < simulation.infrastructure
         function configureMonitors(this)
             oLog = this.toMonitors.oLogger;
             
-            %% CCAA
+            % CCAA
             oLog.addValue('Cabin:s:Cabin.toPhases.CabinAir', 'rRelHumidity', '-', 'Relative Humidity Cabin');
             
             oLog.addValue('Cabin:c:CCAA:c:CCAA_CHX', 'fTotalCondensateHeatFlow',      'W',    'CCAA Condensate Heat Flow');
             oLog.addValue('Cabin:c:CCAA:c:CCAA_CHX', 'fTotalHeatFlow',                'W',    'CCAA Total Heat Flow');
             oLog.addValue('Cabin:c:CCAA:s:CHX.toProcsP2P.CondensingHX', 'fFlowRate',  'kg/s', 'CCAA Condensate Flow Rate');
             
-            %% Cabin and Human
+            % Cabin and Human
             csStores = fieldnames(this.oSimulationContainer.toChildren.Cabin.toStores);
             for iStore = 1:length(csStores)
                 oLog.addValue(['Cabin.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fPressure',	'Pa', [csStores{iStore}, ' Pressure']);
@@ -55,11 +50,11 @@ classdef setup < simulation.infrastructure
                 oLog.addValue(['Cabin.toBranches.', csBranches{iBranch}],             'fFlowRate',    'kg/s', [csBranches{iBranch}, ' Flowrate']);
             end
             
-            %cabin O2 and CO2 partialpressures
+            % Cabin O2 and CO2 partial pressures
             oLog.addValue('Cabin.toStores.Cabin.toPhases.CabinAir', 'afPP(this.oMT.tiN2I.O2)',  'Pa',    'Cabin Partial Pressure of O2');
             oLog.addValue('Cabin.toStores.Cabin.toPhases.CabinAir', 'afPP(this.oMT.tiN2I.CO2)', 'Pa',    'Cabin Partial Pressure of CO2');
             
-            %% importnant phase masses.
+            % Important phase masses.
             oLog.addValue('Cabin.toStores.PotableWaterStorage.toPhases.PotableWater',                       'fMass',    'kg',   'Cabin System Potable Water Storage Store Potable Water Phase');
             oLog.addValue('Cabin.toStores.UrineStorage.toPhases.Urine',                                     'fMass',    'kg',   'Cabin System Urine Storage Store urine Phase');
             oLog.addValue('Cabin.toStores.FoodStore.toPhases.Food',                                         'fMass',    'kg',   'Cabin System Food Storage Store Food Phase');
@@ -69,7 +64,7 @@ classdef setup < simulation.infrastructure
             
 
 
-            %% growth values
+            % Growth values
             oLog.addValue('Cabin.toChildren.Photobioreactor.toChildren.ChlorellaInMedia.oGrowthRateCalculationModule',  'fBiomassConcentration',                            'kg/m^3',   'Biomass Concentration');
             oLog.addValue('Cabin.toChildren.Photobioreactor.toChildren.ChlorellaInMedia.oGrowthRateCalculationModule',  'fTheoreticalCurrentBiomassConcentrationIncrease',  '-',        'Theoretical Biomass Concentration Increase');
             oLog.addValue('Cabin.toChildren.Photobioreactor.toChildren.ChlorellaInMedia.oGrowthRateCalculationModule',  'fTheoreticalCurrentBiomassGrowthRate',             'kg/s',     'Theoretical Biomass Growth Rate');
@@ -142,7 +137,7 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Cabin.toChildren.Photobioreactor.toChildren.ChlorellaInMedia.oPARModule', 'fHeatPower',                  'W', 'Heat generated from absorbed Photons');
             oLog.addValue('Cabin.toChildren.Photobioreactor.toChildren.ChlorellaInMedia.oPARModule', 'fHeatFlux',                   '-', 'Heat Flux generated from absorbed Photons');
             
-            %% algae module
+            % Algae module
             oLog.addValue('Cabin.toChildren.Photobioreactor.toChildren.ChlorellaInMedia.toStores.GrowthChamber.toPhases.GrowthMedium.toManips.substance.oChemicalReactions', 'fCurrentTotalEDTA',               'kg/m^3', 'Total EDTA Concentration');
             oLog.addValue('Cabin.toChildren.Photobioreactor.toChildren.ChlorellaInMedia.toStores.GrowthChamber.toPhases.GrowthMedium.toManips.substance.oChemicalReactions', 'fCurrentTotalInorganicCarbon',    'kg/m^3', 'Total Carbon Concentration');
             oLog.addValue('Cabin.toChildren.Photobioreactor.toChildren.ChlorellaInMedia.toStores.GrowthChamber.toPhases.GrowthMedium.toManips.substance.oChemicalReactions', 'fCurrentTotalPhosphate',          'kg/m^3', 'Total Phosphate Concentration');
@@ -162,7 +157,7 @@ classdef setup < simulation.infrastructure
             oLog.addVirtualValue('cumsum("PBR H_2O Production Rate Rate" .* "Timestep")', 'kg', 'PBR produced H_2O Mass');
         end
         
-        function plot(this, varargin) % Plotting the results
+        function plot(this, varargin)
             %% Define Plots
             
             close all

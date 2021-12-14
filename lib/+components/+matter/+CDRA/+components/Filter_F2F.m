@@ -1,8 +1,9 @@
 classdef Filter_F2F < matter.procs.f2f
-    
+    % This F2F models the air outlet filter of CDRA which can become
+    % clogged, resulting in increased pressure losses
     properties (SetAccess = protected, GetAccess = public)
         
-        fFrictionFactor   = 0;
+        fFrictionFactor   = 1.6e8;
     end
     
     %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -15,7 +16,9 @@ classdef Filter_F2F < matter.procs.f2f
 
             this@matter.procs.f2f(oContainer, sName);
 
-            this.fFrictionFactor   = fFrictionFactor;
+            if nargin >= 3
+                this.fFrictionFactor   = fFrictionFactor;
+            end
             
             this.supportSolver('callback',  @this.solverDeltas);
             this.supportSolver('manual', false);

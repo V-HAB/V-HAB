@@ -16,18 +16,11 @@ classdef setup < simulation.infrastructure
     
     methods
         function this = setup(ptConfigParams, tSolverParams, fSimTime)
-            % Possible to change the constructor paths and params for the
-            % monitors
-            ttMonitorConfig = struct();
-            ttMonitorConfig.oTimeStepObserver.sClass = 'simulation.monitors.timestepObserver';
-            ttMonitorConfig.oTimeStepObserver.cParams = { 0 };
             
-            this@simulation.infrastructure('SWME_Simulation', ptConfigParams, tSolverParams, ttMonitorConfig);
+            this@simulation.infrastructure('SWME_Simulation', ptConfigParams, tSolverParams);
 
-            % Creating a Test object
             examples.SWME.systems.Example(this.oSimulationContainer, 'Test');    
             
-            % Simulation length 
             if nargin > 2 && ~isempty(fSimTime)
                 this.fSimTime = fSimTime;
             else
@@ -83,7 +76,6 @@ classdef setup < simulation.infrastructure
             
             % Creating the cell that contains all plots.
             coPlots = cell(3,3);
-            
             
             coPlots{1,1} = oPlotter.definePlot(this.tciLog.Temperatures, 'Temperatures');
             coPlots{1,2} = oPlotter.definePlot(this.tciLog.FlowRates, 'Water Flow Rates');

@@ -231,7 +231,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         bHasSubstanceSpecificMaxChangeValues = false;
         
         % Maximum time step in seconds
-        fMaxStep   = 20;
+        fMaxStep   = 60;
         
         % Minimum time step in seconds
         fMinStep;

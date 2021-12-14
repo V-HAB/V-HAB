@@ -36,19 +36,18 @@ classdef Example < vsys
             
             
             %% Insert CAMRAS subsystem
-            % Input Parameters: (oParent, sName, fTimeStep, tAtmosphere, fVolumetricFlowrateMain)
-            %             trco.subsystems.CAMRAS.CAMRAS(this, 'CAMRAS', 1, tAtmosphere, 0.0122706); % 26 cubicfeet/min == 0.0122706 cubicmeter/sec
-            %             trco.subsystems.CAMRAS.CAMRAS(this, 'CAMRAS', 1, tAtmosphere, 0.0184059); % 39 cubicfeet/min == 0.0184059 cubicmeter/sec
-            components.matter.CAMRAS.CAMRAS(this, 'CAMRAS', 1, 0.0122706, 'exercise'); % 15 cubicfeet/min == 0.0070792 cubicmeter/sec
-            %              trco.subsystems.CAMRAS.CAMRAS(this, 'CAMRAS', 1, tAtmosphere, 0.00471946); % 10 cubicfeet/min == 0.00471946 cubicmeter/sec
+            % The required inputs for CAMRAS are:   oParent, sName,     fTimeStep,  fVolumetricFlowrateMain,    sCase)
+            components.matter.CAMRAS.CAMRAS(this, 'CAMRAS', 1, 0.0122706, 'exercise'); 
+            % Description of the Inputs:
+            % case: Adjusts the cycle time of CAMRAS. It has three possible
+            %       cases: 'nominal', 'exercise' and 'sleep'. These reflect
+            %       the usual crew loads and CAMRAS is adjusted to match
+            %       those
+            % Volumetric Flowrate: This parameter can be used to adjust the
+            %       flowrate passing through CAMRAS
             
             %% In the case of using a second CAMRAS
-            % Input Parameters: (oParent, sName, fTimeStep, tAtmosphere, fVolumetricFlowrateMain)
-            %             trco.subsystems.CAMRAS.CAMRAS(this, 'CAMRAS_2', 1, tAtmosphere, 0.0122706); % 26 cubicfeet/min == 0.0122706 cubicmeter/sec
-            %             trco.subsystems.CAMRAS.CAMRAS(this, 'CAMRAS_2', 1, tAtmosphere, 0.0184059); % 39 cubicfeet/min == 0.0184059 cubicmeter/sec
-            components.matter.CAMRAS.CAMRAS(this, 'CAMRAS_2', 1, 0.0122706, 'exercise'); % 15 cubicfeet/min == 0.0070792 cubicmeter/sec
-            %             trco.subsystems.CAMRAS.CAMRAS(this, 'CAMRAS_2', 1, tAtmosphere, 0.00471946); % 10 cubicfeet/min == 0.00471946 cubicmeter/sec
-            
+            components.matter.CAMRAS.CAMRAS(this, 'CAMRAS_2', 1, 0.0122706, 'exercise');
         end
         
         function createMatterStructure(this)
@@ -57,7 +56,7 @@ classdef Example < vsys
             fTemperatureInit = 295;         % [K] equals 70 °F
             fPressureInit    = 101325;      % [Pa]
             fRelHumidityInit = 0.2;         % Chosen to match test data
-            fCO2Percent= 0.002;             % Chosen to match test data
+            fCO2Percent      = 0.002;       % Chosen to match test data
             
             
             %% Atmosphere of Orion Test Rig
@@ -99,11 +98,10 @@ classdef Example < vsys
             oCO2Supply = matter.phases.gas(...
                 this.toStores.CO2Supply, ...   % store containing phase
                 'CO2Supply', ...               % phase name
-                struct(...                          % phase contens     [kg]
+                struct(...                     % phase contents    [kg]
                 'CO2', 50), ...
-                2, ...                              % phase volume      [m^3]
+                2, ...                         % phase volume      [m^3]
                 fTemperatureInit);             % phase temperature [K]
-            
             
             matter.procs.exmes.gas(oCO2Supply, 'To_Atmosphere');
             
@@ -116,8 +114,7 @@ classdef Example < vsys
                 struct(...                          % phase contents    [kg]
                 'N2', 50), ...
                 2, ...                              % phase volume      [m^3]
-                fTemperatureInit);              % phase temperature [K]
-            
+                fTemperatureInit);                  % phase temperature [K]
             
             matter.procs.exmes.gas(oN2Supply, 'To_Atmosphere');
             
@@ -127,10 +124,10 @@ classdef Example < vsys
             oO2Supply = matter.phases.gas(...
                 this.toStores.O2Supply, ...   % store containing phase
                 'O2Supply', ...               % phase name
-                struct(...                          % phase contens     [kg]
+                struct(...                    % phase contents    [kg]
                 'O2', 50), ...
-                2, ...                              % phase volume      [m^3]
-                fTemperatureInit);              % phase temperature [K]
+                2, ...                        % phase volume      [m^3]
+                fTemperatureInit);            % phase temperature [K]
             
             
             matter.procs.exmes.gas(oO2Supply, 'To_Atmosphere');
@@ -139,10 +136,10 @@ classdef Example < vsys
             
             matter.store(this, 'Vacuum', 100000);
             oVacuum = matter.phases.gas(this.toStores.Vacuum, ...
-                'Vacuum_Phase', ...     	% Phase name
+                'Vacuum_Phase', ...     	   % Phase name
                 struct('N2',1.12*100000), ...  % Phase contents
-                100000, ...               % Phase volume
-                293.15);                  % Phase temperature
+                100000, ...                    % Phase volume
+                293.15);                       % Phase temperature
             
             matter.procs.exmes.gas(oVacuum, 'FromCAMRAS_C1_Desorb');
             matter.procs.exmes.gas(oVacuum, 'FromCAMRAS_C2_Desorb');
@@ -177,10 +174,10 @@ classdef Example < vsys
             
             %% Branches
             % create branches exclusive to this section
-            matter.branch(this, 'WaterSupply.To_Atmosphere',       {}, 'Atmosphere.From_H2O',       'H2OBufferSupply');
-            matter.branch(this, 'CO2Supply.To_Atmosphere',         {}, 'Atmosphere.From_CO2',       'CO2BufferSupply');
-            matter.branch(this, 'N2Supply.To_Atmosphere',          {}, 'Atmosphere.From_N2',        'N2BufferSupply');
-            matter.branch(this, 'O2Supply.To_Atmosphere',          {}, 'Atmosphere.From_O2',        'O2BufferSupply');
+            matter.branch(this, 'WaterSupply.To_Atmosphere', {}, 'Atmosphere.From_H2O', 'H2OBufferSupply');
+            matter.branch(this, 'CO2Supply.To_Atmosphere',   {}, 'Atmosphere.From_CO2', 'CO2BufferSupply');
+            matter.branch(this, 'N2Supply.To_Atmosphere',    {}, 'Atmosphere.From_N2',  'N2BufferSupply');
+            matter.branch(this, 'O2Supply.To_Atmosphere',    {}, 'Atmosphere.From_O2',  'O2BufferSupply');
             
             
             %% All stuff needed for a second CAMRAS goes here. If only one CAMRAS is used --> Comment this section
@@ -238,355 +235,131 @@ classdef Example < vsys
             if ~this.oTimer.fTime
                 return;
             end
-            
-            % Human Methabolic Rates Implementation
-            
-%             
-%             %
-%             if this.oTimer.fTime > 400
-%                 if this.iOff == 0
-%                     this.toChildren.CAMRAS.setOff();
-%                     this.toChildren.CAMRAS_2.setOff();
-%                     this.iOff = 1;
-%                 end
-%             end
-            %
-            %             if this.oTimer.fTime > 400
-            %                 if this.iCounter == 0
-            %                     sCase = 'exercise';
-            %                     this.toChildren.CAMRAS.setCase(sCase);
-            %                     this.toChildren.CAMRAS_2.setCase(sCase);
-            %                     this.iCounter =1;
-            %                 end
-            %             end
-            % %             if this.oTimer.fTime > 2500
-            % %                 sCase = 'exercise';
-            % %                 this.toChildren.CAMRAS.setCase(sCase);
-            % %                 this.toChildren.CAMRAS_2.setCase(sCase);
-            % %             end
-            % %
-%             if this.oTimer.fTime > 2500
-%                 if this.iOn ==0
-%                     this.toChildren.CAMRAS.setOn();
-%                     this.toChildren.CAMRAS_2.setOn();
-%                     this.iOn = 1;
-%                 end
-%             end
-%             
-%             
-%             
-%            if this.oTimer.fTime > 3500
-%                 if this.iOff2 == 0
-%                     this.toChildren.CAMRAS.setOff();
-%                     this.toChildren.CAMRAS_2.setOff();
-%                     this.iOff2 = 1;
-%                 end
-%            end
-%             
-%             
-%             
-%             if this.oTimer.fTime > 6000
-%                 if this.iOn2 ==0
-%                     this.toChildren.CAMRAS.setOn();
-%                     this.toChildren.CAMRAS_2.setOn();
-%                     this.iOn2 = 1;
-%                 end
-%             end
-            % %
-            %             if this.oTimer.fTime > 5850
-            %                sCase = 'nominal';
-            %                 this.toChildren.CAMRAS.setCase(sCase);
-            %                 this.toChildren.CAMRAS_2.setCase(sCase);
-            %             end
-            %
-            %             if this.oTimer.fTime > 8100
-            %                 sCase = 'off';
-            %                 this.toChildren.CAMRAS.setCase(sCase);
-            %                 this.toChildren.CAMRAS_2.setCase(sCase);
-            %             end
-            %
-            %             if this.oTimer.fTime > 9900
-            %              sCase = 'sleep';
-            %                 this.toChildren.CAMRAS.setCase(sCase);
-            %                 this.toChildren.CAMRAS_2.setCase(sCase);
-            %             end
-            %
-            %             if this.oTimer.fTime > 11700
-            %               sCase = 'exercise';
-            %                 this.toChildren.CAMRAS.setCase(sCase);
-            %                 this.toChildren.CAMRAS_2.setCase(sCase);
-            %             end
-            %
-            %             if this.oTimer.fTime > 13050
-            %
-            %                 sCase = 'sleep';
-            %                 this.toChildren.CAMRAS.setCase(sCase);
-            %                 this.toChildren.CAMRAS_2.setCase(sCase);
-            %             end
-            %
-            %             if this.oTimer.fTime > 15300
-            %
-            %                 sCase = 'nominal';
-            %                 this.toChildren.CAMRAS.setCase(sCase);
-            %                 this.toChildren.CAMRAS_2.setCase(sCase);
-            %             end
-            %
-            %
-            
-            
-            
-                                    if this.oTimer.fTime > 1800
-                                        this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00012267);
-                                        this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00010833);
-            
-                                    end
-                                    if this.oTimer.fTime > 2250
-                                        this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.000201);
-                                        this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00010833);
-                                    end
-                                    if this.oTimer.fTime > 2742
-                                        this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00027283);
-                                        this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00010833);
-                                    end
-                                    if this.oTimer.fTime > 3197
-                                        this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.000315);
-                                        this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00010833);
-                                    end
-                                    if this.oTimer.fTime > 3668.4
-                                        this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.0002295);
-                                        this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.0000583);
-                                    end
-                                    if this.oTimer.fTime > 4118.4
-                                        this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00016983);
-                                        this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.0000583);
-                                    end
-                                    if this.oTimer.fTime > 4578
-                                        this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.0001945);
-                                        this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00010833);
-                                    end
-                                    if this.oTimer.fTime > 5030.4
-                                        this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.000259);
-                                        this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00010833);
-                                    end
-                                    if this.oTimer.fTime > 5488.2
-                                        this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.000321);
-                                        this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00010833);
-                                    end
-                                    if this.oTimer.fTime > 5850
-                                        this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.0003528);
-                                        this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00010833);
-                                    end
-                                    if this.oTimer.fTime > 6426
-                                        this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00026533);
-                                        this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.0000583);
-                                    end
-                                    if this.oTimer.fTime > 6882
-                                        this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.0002005);
-                                        this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.0000583);
-                                    end
-                                    if this.oTimer.fTime > 7326
-                                        this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.0001945);
-                                        this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00010833);
-                                    end
-                                    if this.oTimer.fTime > 7794
-                                        this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.000259);
-                                        this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00010833);
-                                    end
-                                    if this.oTimer.fTime > 8250
-                                        this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.000321);
-                                        this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00010833);
-                                    end
-                                    if this.oTimer.fTime > 8706
-                                        this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00035633);
-                                        this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00010833);
-                                    end
-                                    if this.oTimer.fTime > 9156
-                                        this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00026533);
-                                        this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.0000583);
-                                    end
-                                    if this.oTimer.fTime > 9612
-                                        this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.000205);
-                                        this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.0000583);
-                                    end
-                                    if this.oTimer.fTime > 10086
-                                        this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.0001945);
-                                        this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00010833);
-                                    end
-                                    if this.oTimer.fTime > 10548
-                                        this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.000259);
-                                        this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00010833);
-                                    end
-                                    if this.oTimer.fTime > 10992
-                                        this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.000321);
-                                        this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00010833);
-                                    end
-                                    if this.oTimer.fTime > 11460
-                                        this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00035633);
-                                        this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00010833);
-                                    end
-                                    if this.oTimer.fTime > 11910
-                                        this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00026533);
-                                        this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.0000583);
-                                    end
-                                    if this.oTimer.fTime > 12408
-                                        this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00019917);
-                                        this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.0000583);
-                                    end
-                                    if this.oTimer.fTime > 12828
-                                        this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.0001445);
-                                        this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.0000583);
-                                    end
-                                    if this.oTimer.fTime > 13284
-                                        this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00013067);
-                                        this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.0000583);
-                        %                 sCase = 'nominal';
-                        %                 this.toChildren.CAMRAS.setCase(sCase);
-                        %                 this.toChildren.CAMRAS_2.setCase(sCase);
-                                    end
-                                    if this.oTimer.fTime > 13746
-                                        this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00012083);
-                                        this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.0000583);
-                                    end
-                                    if this.oTimer.fTime > 14202
-                                        this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.000114);
-                                        this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.0000583);
-                                    end
-                                    if this.oTimer.fTime > 14670
-                                        this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.0001085);
-                                        this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.0000583);
-                                    end
-                                    if this.oTimer.fTime > 15132
-                                        this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00010333);
-                                        this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.0000583);
-                                    end
-                                    if this.oTimer.fTime > 15600
-                                        this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.0000785);
-                                        this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.0000583);
-                        %                 sCase = 'sleep';
-                        %                 this.toChildren.CAMRAS.setCase(sCase);
-                        %                 this.toChildren.CAMRAS_2.setCase(sCase);
-                                    end
-            
-            %
-            
-            %                         % Human Methabolic Rates Implementation
-            %
-            %                         if this.oTimer.fTime > 3600
-            %                             this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.000053);
-            %                             this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00006042);
-            %                         end
-            %                         if this.oTimer.fTime > 4080
-            %                             this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00009467);
-            %                             this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.000060417);
-            %                         end
-            %                         if this.oTimer.fTime > 4560
-            %                             this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00013133);
-            %                             this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.000060417);
-            %                         end
-            %                         if this.oTimer.fTime > 5040
-            %                             this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.0001455);
-            %                             this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00005275);
-            %                         end
-            %                         if this.oTimer.fTime > 5520
-            %                             this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00009433);
-            %                             this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00002625);
-            %                         end
-            %                         if this.oTimer.fTime > 6000
-            %                             this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.000079);
-            %                             this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00003917);
-            %                         end
-            %                         if this.oTimer.fTime > 6480
-            %                             this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00009717);
-            %                             this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00006042);
-            %                         end
-            %                         if this.oTimer.fTime > 6960
-            %                             this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.000137);
-            %                             this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00006042);
-            %                         end
-            %                         if this.oTimer.fTime > 7440
-            %                             this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.0001645);
-            %                             this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00006042);
-            %                         end
-            %                         if this.oTimer.fTime > 7920
-            %                             this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00014933);
-            %                             this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.0000391);
-            %                         end
-            %                         if this.oTimer.fTime > 8400
-            %                             this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00009867);
-            %                             this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00002625);
-            %                         end
-            %                         if this.oTimer.fTime > 8880
-            %                             this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00008667);
-            %                             this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00005208);
-            %                         end
-            %                         if this.oTimer.fTime > 9360
-            %                             this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00011267);
-            %                             this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00006042);
-            %                         end
-            %                         if this.oTimer.fTime > 9840
-            %                             this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.0001485);
-            %                             this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00006042);
-            %                         end
-            %                         if this.oTimer.fTime > 10320
-            %                             this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00016933);
-            %                             this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00006042);
-            %                         end
-            %                         if this.oTimer.fTime > 10800
-            %                             this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00012433);
-            %                             this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00002625);
-            %                         end
-            %                         if this.oTimer.fTime > 11280
-            %                             this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00009117);
-            %                             this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00003083);
-            %                         end
-            %                         if this.oTimer.fTime > 11760
-            %                             this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00009083);
-            %                             this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00006042);
-            %                         end
-            %                         if this.oTimer.fTime > 12240
-            %                             this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00012817);
-            %                             this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00006042);
-            %                         end
-            %                         if this.oTimer.fTime > 12720
-            %                             this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00015783);
-            %                             this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00006042);
-            %                         end
-            %                         if this.oTimer.fTime > 13200
-            %                             this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00016133);
-            %                             this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00004833);
-            %                         end
-            %                         if this.oTimer.fTime > 13680
-            %                             this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.0001065);
-            %                             this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00002625);
-            %                         end
-            %                         if this.oTimer.fTime > 14160
-            %                             this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00007683);
-            %                             this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00002625);
-            %                         end
-            %                         if this.oTimer.fTime > 14640
-            %                             this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.0000595);
-            %                             this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00002625);
-            %                         end
-            %                         if this.oTimer.fTime > 15120
-            %                             this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.0000535);
-            %                             this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00002625);
-            %                         end
-            %                         if this.oTimer.fTime > 15600
-            %                             this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.0000495);
-            %                             this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00002625);
-            %                         end
-            %                         if this.oTimer.fTime > 16080
-            %                             this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00004633);
-            %                             this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00002625);
-            %                         end
-            %                         if this.oTimer.fTime > 16560
-            %                             this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00002767);
-            %                             this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00002625);
-            %                         end
-            
-            
-            
-            %             this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.rMaxChange = 1;
+            if this.oTimer.fTime > 1800
+                this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00012267);
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00010833);
+                
+            end
+            if this.oTimer.fTime > 2250
+                this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.000201);
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00010833);
+            end
+            if this.oTimer.fTime > 2742
+                this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00027283);
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00010833);
+            end
+            if this.oTimer.fTime > 3197
+                this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.000315);
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00010833);
+            end
+            if this.oTimer.fTime > 3668.4
+                this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.0002295);
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.0000583);
+            end
+            if this.oTimer.fTime > 4118.4
+                this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00016983);
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.0000583);
+            end
+            if this.oTimer.fTime > 4578
+                this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.0001945);
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00010833);
+            end
+            if this.oTimer.fTime > 5030.4
+                this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.000259);
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00010833);
+            end
+            if this.oTimer.fTime > 5488.2
+                this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.000321);
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00010833);
+            end
+            if this.oTimer.fTime > 5850
+                this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.0003528);
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00010833);
+            end
+            if this.oTimer.fTime > 6426
+                this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00026533);
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.0000583);
+            end
+            if this.oTimer.fTime > 6882
+                this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.0002005);
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.0000583);
+            end
+            if this.oTimer.fTime > 7326
+                this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.0001945);
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00010833);
+            end
+            if this.oTimer.fTime > 7794
+                this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.000259);
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00010833);
+            end
+            if this.oTimer.fTime > 8250
+                this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.000321);
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00010833);
+            end
+            if this.oTimer.fTime > 8706
+                this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00035633);
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00010833);
+            end
+            if this.oTimer.fTime > 9156
+                this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00026533);
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.0000583);
+            end
+            if this.oTimer.fTime > 9612
+                this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.000205);
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.0000583);
+            end
+            if this.oTimer.fTime > 10086
+                this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.0001945);
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00010833);
+            end
+            if this.oTimer.fTime > 10548
+                this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.000259);
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00010833);
+            end
+            if this.oTimer.fTime > 10992
+                this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.000321);
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00010833);
+            end
+            if this.oTimer.fTime > 11460
+                this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00035633);
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.00010833);
+            end
+            if this.oTimer.fTime > 11910
+                this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00026533);
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.0000583);
+            end
+            if this.oTimer.fTime > 12408
+                this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00019917);
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.0000583);
+            end
+            if this.oTimer.fTime > 12828
+                this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.0001445);
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.0000583);
+            end
+            if this.oTimer.fTime > 13284
+                this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00013067);
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.0000583);
+            end
+            if this.oTimer.fTime > 13746
+                this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00012083);
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.0000583);
+            end
+            if this.oTimer.fTime > 14202
+                this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.000114);
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.0000583);
+            end
+            if this.oTimer.fTime > 14670
+                this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.0001085);
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.0000583);
+            end
+            if this.oTimer.fTime > 15132
+                this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.00010333);
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.0000583);
+            end
+            if this.oTimer.fTime > 15600
+                this.toBranches.H2OBufferSupply.oHandler.setFlowRate(0.0000785);
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0.0000583);
+            end
             
             %% Get Values for Atmosphere Controller
             fPartialPressureO2  = this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afPP(this.oMT.tiN2I.O2);
@@ -603,7 +376,7 @@ classdef Example < vsys
             
             %% Pressure Controller
             if fPressure < 100000
-                this.toBranches.N2BufferSupply.oHandler.setFlowRate(this.fFlowRateN2); 
+                this.toBranches.N2BufferSupply.oHandler.setFlowRate(this.fFlowRateN2);
             else
                 this.toBranches.N2BufferSupply.oHandler.setFlowRate(0);
             end

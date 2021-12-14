@@ -72,33 +72,13 @@ classdef AcidOnCalcite < matter.manips.substance.stationary
                 
                 % get current pH value
                 this.fCurrentpH = this.opH_Manip.fpH;
-                fpH = this.fCurrentpH;
 
                 % get current volume of the TankSolution phase
                 this.fVolume = this.oTankSolution.fVolume;
 
                 % calculate Ca concentration in TankSolution after acidic dissolution of calcite in mg/L
-                fTemporaryResult = 0;
-                for i = 1:11
-                    fTemporaryResult = fTemporaryResult + (this.afPolynomialCoeff(12-i) * fpH^(i-1));
-                end
-
-                if fTemporaryResult <= 0
-                    % No additional caclite should dessolve in this case:
-                    afPartialFlowRates = zeros(1, this.oMT.iSubstances);
-                    update@matter.manips.substance.stationary(this, afPartialFlowRates);
-                    this.oPhase.oStore.toProcsP2P.Calcite_to_TankSolution.setFlowRate(afPartialFlowRates);
-                    
-                    return
-                else
-                    % Previous calculation led to too low carbon
-                    % concentrations and pH values, therefore adjusted the
-                    % calculation since the plot usded to derive this is
-                    % actually also not very well suited to the high pH
-                    % values
-                    this.fCalculatedCaConcentration = fTemporaryResult;
-                end
-
+                this.fCalculatedCaConcentration = (2470 ./ (this.fCurrentpH.^3));
+                
                 % convert to corresponding number of moles
                 this.fCalculatedMolesCalcium = (this.fCalculatedCaConcentration * 1000 * this.fVolume) / ...
                                      (1e6 * this.oMT.afMolarMass(this.oMT.tiN2I.Ca2plus));

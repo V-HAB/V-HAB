@@ -1,8 +1,11 @@
-function createSetupFile(tVHAB_Objects, sPath, sSystemLabel, sRootName, csPhases, csF2F, oMT, tSystemIDtoLabel, bHumanModel)
+function createSetupFile(tVHAB_Objects, sPath, sSystemLabel, sRootName, csPhases, csF2F, oMT, tSystemIDtoLabel)
 %% Create Setup File
 sSetupFileID = fopen([sPath, filesep, 'setup.m'], 'w');
 
-fprintf(sSetupFileID, '\n classdef setup < simulation.infrastructure\n \n properties\n end\n \n methods\n\n');
+fprintf(sSetupFileID, '\n classdef setup < simulation.infrastructure\n \n properties\n');
+fprintf(sSetupFileID, 'tiPLantLogs;\n');
+fprintf(sSetupFileID, 'tiLogIndexes;\n');
+fprintf(sSetupFileID, 'end\n \n methods\n\n');
 fprintf(sSetupFileID, '    function  this = setup(ptConfigParams, tSolverParams) \n');
 
 fprintf(sSetupFileID, '         %s Creating the monitors struct\n', '%');
@@ -31,11 +34,17 @@ fprintf(sSetupFileID, [' this@simulation.infrastructure(''', sRootName,  ''', pt
 
 fprintf(sSetupFileID, '         %s Defining Compound Masses for the Simulation\n', '%');
 fprintf(sSetupFileID, '         trBaseCompositionUrine.H2O      = 0.9644;\n');
-fprintf(sSetupFileID, '         trBaseCompositionUrine.C2H6O2N2 = 0.0356;\n');
+fprintf(sSetupFileID, '         trBaseCompositionUrine.CH4N2O = 0.0356;\n');
 fprintf(sSetupFileID, '         this.oSimulationContainer.oMT.defineCompoundMass(this, ''Urine'', trBaseCompositionUrine);\n');
 fprintf(sSetupFileID, '         trBaseCompositionFeces.H2O          = 0.7576;\n');
-fprintf(sSetupFileID, '         trBaseCompositionFeces.C42H69O13N5  = 0.2424;\n');
+fprintf(sSetupFileID, '         trBaseCompositionFeces.DietaryFiber  = 0.2424;\n');
 fprintf(sSetupFileID, '         this.oSimulationContainer.oMT.defineCompoundMass(this, ''Feces'', trBaseCompositionFeces);\n');
+fprintf(sSetupFileID, '         trBaseCompositionBrine.H2O         	= 0.8;\n');
+fprintf(sSetupFileID, '         trBaseCompositionBrine.C2H6O2N2     = 0.2;\n');
+fprintf(sSetupFileID, '         this.oSimulationContainer.oMT.defineCompoundMass(this, ''Brine'', trBaseCompositionBrine);\n');
+fprintf(sSetupFileID, '         trBaseCompositionConcentratedBrine.H2O         	= 0.44;\n');
+fprintf(sSetupFileID, '         trBaseCompositionConcentratedBrine.C2H6O2N2     = 0.56;\n');
+fprintf(sSetupFileID, '         this.oSimulationContainer.oMT.defineCompoundMass(this, ''ConcentratedBrine'', trBaseCompositionConcentratedBrine);\n');
 
 fprintf(sSetupFileID, '         %s Creating the root object\n', '%');
 fprintf(sSetupFileID, ['        DrawIoImport.', sSystemLabel, '.systems.', sRootName, '(this.oSimulationContainer, ''',  sRootName,''');\n\n']);
@@ -57,6 +66,8 @@ for iSystem = 1:length(tVHAB_Objects.System)
     tSystem = tVHAB_Objects.System{iSystem};
     % check log and plot for system
     sSystemPath = ['         oLogger.addValue(''', tSystem.sFullPath];
+    
+    fprintf(sSetupFileID, [sSystemPath,  '.oTimer'',                                	''fTimeStepFinal'',                            ''s'',   ''Timestep'');\n']);
     
     tVHAB_Objects.System{iSystem}.csLoggedNames = cell(0);
     csToLog = {tSystem.csToPlot{:}, tSystem.csToLog{:}};%#ok
@@ -225,6 +236,41 @@ for iSystem = 1:length(tVHAB_Objects.System)
         
         % TO DO: log plot F2Fs
     end
+    
+    bSubsystem = true;
+    sSystemPath = tSystem.label;
+    tParentSystem = tSystem;
+    while bSubsystem
+        try
+            sParent = tSystemIDtoLabel.(tParentSystem.ParentID);
+            sSystemPath = [sParent '.toChildren.', sSystemPath]; %#ok
+            for iParentSys = 1:length(tVHAB_Objects.System)
+                if strcmp(tVHAB_Objects.System{iParentSys}.id, tParentSystem.ParentID)
+                    tParentSystem = tVHAB_Objects.System{iParentSys};
+                end
+            end
+        catch
+            bSubsystem = false;
+        end
+    end
+    fprintf(sSetupFileID, ['     	oSystem = this.oSimulationContainer.toChildren.', sSystemPath,';\n']);
+    
+    csSubsystemTypes = {'Human', 'CDRA', 'CCAA', 'OGA', 'SCRA', 'Plants', 'Subsystem'};
+
+    for iSubsystemType = 1:length(csSubsystemTypes)
+        sSubsystemType = csSubsystemTypes{iSubsystemType};
+        for iSubsystem = 1:length(tSystem.(sSubsystemType))
+            tSubsystem = tSystem.(csSubsystemTypes{iSubsystemType}){iSubsystem};
+            
+            if isfield(tSubsystem, 'bCreateBaseLogging') && strcmp(tSubsystem.bCreateBaseLogging, 'true')
+                if strcmp(tSubsystem.sType, 'Human')
+                    fprintf(sSetupFileID, '     	tools.postprocessing.Helper.addCrewLogging(oLogger, oSystem);\n');
+                elseif strcmp(tSubsystem.sType, 'Plants')
+                    fprintf(sSetupFileID, '     	tools.postprocessing.Helper.addPlantLogging(oLogger, oSystem, this);\n');
+                end
+            end
+        end
+    end
 end
 fprintf(sSetupFileID, '     end\n\n');
 
@@ -364,6 +410,46 @@ for iSystem = 1:length(tVHAB_Objects.System)
         fprintf(sSetupFileID, '         coPlot = cell(0);\n');
         fprintf(sSetupFileID, ['         coPlot{1,1} = oPlotter.definePlot(', tPlots.(csPlots{iPlot}),', ''',  tSystem.label, ' ', csPlots{iPlot}, ''');\n']);
         fprintf(sSetupFileID, ['         oPlotter.defineFigure(coPlot,  ''', tSystem.label, ' ', csPlots{iPlot}, ''');\n']);
+    end
+    
+    
+    
+    fprintf(sSetupFileID, '     	tPlotOptions.sTimeUnit = ''days'';\n');
+    
+    bSubsystem = true;
+    sSystemPath = tSystem.label;
+    tParentSystem = tSystem;
+    while bSubsystem
+        try
+            sParent = tSystemIDtoLabel.(tParentSystem.ParentID);
+            sSystemPath = [sParent '.toChildren.', sSystemPath]; %#ok
+            for iParentSys = 1:length(tVHAB_Objects.System)
+                if strcmp(tVHAB_Objects.System{iParentSys}.id, tParentSystem.ParentID)
+                    tParentSystem = tVHAB_Objects.System{iParentSys};
+                end
+            end
+        catch
+            bSubsystem = false;
+        end
+    end
+    
+    fprintf(sSetupFileID, ['     	oSystem = this.oSimulationContainer.toChildren.', sSystemPath,';\n']);
+    
+    csSubsystemTypes = {'Human', 'CDRA', 'CCAA', 'OGA', 'SCRA', 'Plants', 'Subsystem'};
+
+    for iSubsystemType = 1:length(csSubsystemTypes)
+        sSubsystemType = csSubsystemTypes{iSubsystemType};
+        for iSubsystem = 1:length(tSystem.(sSubsystemType))
+            tSubsystem = tSystem.(csSubsystemTypes{iSubsystemType}){iSubsystem};
+            
+            if isfield(tSubsystem, 'bCreateBasePlotting') && strcmp(tSubsystem.bCreateBasePlotting, 'true')
+                if strcmp(tSubsystem.sType, 'Human')
+                    fprintf(sSetupFileID, '     	tools.postprocessing.Helper.addCrewPlotting(oPlotter, oSystem, tPlotOptions);\n');
+                elseif strcmp(tSubsystem.sType, 'Plants')
+                    fprintf(sSetupFileID, '     	tools.postprocessing.Helper.addPlantPlotting(oPlotter, tPlotOptions, this);\n');
+                end
+            end
+        end
     end
     
 end

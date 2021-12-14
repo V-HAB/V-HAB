@@ -57,7 +57,7 @@ classdef AbsorberExample < matter.procs.p2ps.stationary
             % instead of afMass(X), btw) to determine load.
             this.rLoad = this.oOut.oPhase.afMass(iSpecies) / this.fCapacity;
             
-            if this.fCapacity == 0, this.rLoad = 1; end;
+            if this.fCapacity == 0, this.rLoad = 1; end
             
             % Get all positive (i.e. inflowing) flow rates and the
             % according partial masses. Flow rates are a row vector,

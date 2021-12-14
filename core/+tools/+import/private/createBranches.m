@@ -61,89 +61,166 @@ end
 
 % Definition of the interfaces with the names from the xml drawing but the
 % order of the subsystem IF definition function
-tInterfaces.Human = {'Air_Out', 'Air_In', 'Water_In', 'Food_In', 'Feces_Out', 'Urine_Out'};
-tInterfaces.CDRA  = {'Air_In', 'Air_Out', 'CO2_Out'};
-tInterfaces.OGA  =  {'Water_In', 'O2_Out', 'H2_Out'};
-tInterfaces.SCRA  = {'H2_In', 'CO2_In', 'Gas_Out', 'Condensate_Out', 'Coolant_In', 'Coolant_Out'};
-tInterfaces.Plant = {'Air_In', 'Air_Out', 'Nutrient_In', 'Nutrient_Out', 'Biomass_Out'};
-tInterfaces.HFC   = {'Air_In', 'Air_Out'};
-tInterfaces.Electrolyzer = {'H2_Out', 'O2_Out', 'Water_In', 'Coolant_Out', 'Coolant_In'};
-tInterfaces.FuelCell     = {'H2_In',  'H2_Out', 'O2_In', 'O2_Out', 'Coolant_In', 'Coolant_Out', 'Water_Out'};
+tInterfaces.Human           = {'Air_Out', 'Air_In', 'Water_In', 'Food_In', 'Feces_Out', 'Urine_Out'};
+tInterfaces.CDRA            = {'Air_In', 'Air_Out', 'CO2_Out'};
+tInterfaces.OGA             = {'Water_In', 'O2_Out', 'H2_Out'};
+tInterfaces.SCRA            = {'H2_In', 'CO2_In', 'Gas_Out', 'Condensate_Out', 'Coolant_In', 'Coolant_Out'};
+tInterfaces.Plants          = {'Air_In', 'Air_Out', 'Nutrient_In', 'Nutrient_Out', 'Biomass_Out'};
+tInterfaces.HFC             = {'Air_In', 'Air_Out'};
+tInterfaces.Electrolyzer    = {'H2_Out', 'O2_Out', 'Water_In', 'Coolant_Out', 'Coolant_In'};
+tInterfaces.FuelCell        = {'H2_In',  'H2_Out', 'O2_In', 'O2_Out', 'Coolant_In', 'Coolant_Out', 'Water_Out'};
+tInterfaces.WPA             = {'Water_In', 'Water_Out', 'Air_In', 'Air_Out'};
+tInterfaces.UPA             = {'Urine_In', 'Water_Out', 'Brine_Out'};
+tInterfaces.BPA             = {'Brine_In', 'Air_In', 'Air_Out'};
+tInterfaces.CROP            = {'Urine_In', 'Solution_Out', 'Air_In', 'Air_Out', 'Calcite_In'};
+            
+csSubsystemTypes = fieldnames(tInterfaces);
 
 for iSubsystemType = 1:length(csSystems)
     sSubsystemType = csSystems{iSubsystemType};
     for iSubsystem = 1:length(tCurrentSystem.(sSubsystemType))
         tSubsystem = tCurrentSystem.(csSystems{iSubsystemType}){iSubsystem};
         
-        % The CCAA has a variable number of outputs
-        if strcmp(sSubsystemType, 'CCAA')
-            if isempty(tSubsystem.sCDRA)
-                tInterfaces.CCAA = {'Air_In', 'Air_Out', 'Condensate_Out', 'Coolant_In', 'Coolant_Out'};
-            else
-                tInterfaces.CCAA = {'Air_In', 'Air_Out', 'Condensate_Out', 'Coolant_In', 'Coolant_Out', 'CDRA_Air_Out'};
-            end
-        end
         
-        csInterface = cell.empty();
-        if strcmp(sSubsystemType, 'Subsystem')
-            if strcmp(tSubsystem.sSubsystemPath, 'components.matter.PlantModule.PlantCulture')
-                csInterfaces = tInterfaces.Plant;
-            elseif strcmp(tSubsystem.sSubsystemPath, 'components.matter.HFC')
-                csInterfaces = tInterfaces.HFC;
-            elseif strcmp(tSubsystem.sSubsystemPath, 'components.matter.Electrolyzer.Electrolyzer')
-                csInterfaces = tInterfaces.Electrolyzer;
-            elseif strcmp(tSubsystem.sSubsystemPath, 'components.matter.FuelCell.FuelCell')
-                csInterfaces = tInterfaces.FuelCell;
-                
-            else
-                error('unknown subsystem type was used')
-            end
+        if strcmp(sSubsystemType, 'Human')
+            fprintf(sSystemFile, '%%%% Human Interfaces\n');
+            
+            fprintf(sSystemFile, ['oCabinPhase          = ', tSubsystem.toInterfacePhases.oCabin,';\n']);
+            fprintf(sSystemFile, ['oPotableWaterPhase   = ', tSubsystem.toInterfacePhases.oWater,';\n']);
+            fprintf(sSystemFile, ['oFecesPhase          = ', tSubsystem.toInterfacePhases.oFeces,';\n']);
+            fprintf(sSystemFile, ['oUrinePhase          = ', tSubsystem.toInterfacePhases.oUrine,';\n']);
+            fprintf(sSystemFile, ['oFoodStore           = this.toStores.', tSubsystem.toInterfacePhases.oFoodStore,';\n']);
+            fprintf(sSystemFile, '\n');
+            fprintf(sSystemFile, 'for iHuman = 1:this.iCrewMembers\n');
+            fprintf(sSystemFile, '  %% Add Exmes for each human\n');
+            fprintf(sSystemFile, '  matter.procs.exmes.gas(oCabinPhase,             [''AirOut'',      num2str(iHuman)]);\n');
+            fprintf(sSystemFile, '  matter.procs.exmes.gas(oCabinPhase,             [''AirIn'',       num2str(iHuman)]);\n');
+            fprintf(sSystemFile, '  matter.procs.exmes.liquid(oPotableWaterPhase,   [''DrinkingOut'', num2str(iHuman)]);\n');
+            fprintf(sSystemFile, '  matter.procs.exmes.mixture(oFecesPhase,         [''Feces_In'',    num2str(iHuman)]);\n');
+            fprintf(sSystemFile, '  matter.procs.exmes.mixture(oUrinePhase,         [''Urine_In'',    num2str(iHuman)]);\n');
+            fprintf(sSystemFile, '  matter.procs.exmes.gas(oCabinPhase,             [''Perspiration'',num2str(iHuman)]);\n');
+            fprintf(sSystemFile, '\n');
+            fprintf(sSystemFile, '  %% Add interface branches for each human\n');
+            fprintf(sSystemFile, '  matter.branch(this, [''Air_Out'',         num2str(iHuman)],  	{}, [oCabinPhase.oStore.sName,             ''.AirOut'',      num2str(iHuman)]);\n');
+            fprintf(sSystemFile, '  matter.branch(this, [''Air_In'',          num2str(iHuman)], 	{}, [oCabinPhase.oStore.sName,             ''.AirIn'',       num2str(iHuman)]);\n');
+            fprintf(sSystemFile, '  matter.branch(this, [''Feces'',           num2str(iHuman)],  	{}, [oFecesPhase.oStore.sName,             ''.Feces_In'',    num2str(iHuman)]);\n');
+            fprintf(sSystemFile, '  matter.branch(this, [''PotableWater'',    num2str(iHuman)], 	{}, [oPotableWaterPhase.oStore.sName,      ''.DrinkingOut'', num2str(iHuman)]);\n');
+            fprintf(sSystemFile, '  matter.branch(this, [''Urine'',           num2str(iHuman)], 	{}, [oUrinePhase.oStore.sName,             ''.Urine_In'',    num2str(iHuman)]);\n');
+            fprintf(sSystemFile, '  matter.branch(this, [''Perspiration'',    num2str(iHuman)], 	{}, [oCabinPhase.oStore.sName,             ''.Perspiration'',num2str(iHuman)]);\n');
+            fprintf(sSystemFile, '  \n');
+            fprintf(sSystemFile, '  %% register each human at the food store\n');
+            fprintf(sSystemFile, '  requestFood = oFoodStore.registerHuman([''Solid_Food_'', num2str(iHuman)]);\n');
+            fprintf(sSystemFile, '  this.toChildren.([''Human_'', num2str(iHuman)]).toChildren.Digestion.bindRequestFoodFunction(requestFood);\n');
+            fprintf(sSystemFile, '  \n');
+            fprintf(sSystemFile, '  %% Set the interfaces for each human\n');
+            fprintf(sSystemFile, '  this.toChildren.([''Human_'',         num2str(iHuman)]).setIfFlows(...\n');
+            fprintf(sSystemFile, '                  [''Air_Out'',         num2str(iHuman)],...\n');
+            fprintf(sSystemFile, '                  [''Air_In'',          num2str(iHuman)],...\n');
+            fprintf(sSystemFile, '                  [''PotableWater'',    num2str(iHuman)],...\n');
+            fprintf(sSystemFile, '                  [''Solid_Food_'',     num2str(iHuman)],...\n');
+            fprintf(sSystemFile, '                  [''Feces'',           num2str(iHuman)],...\n');
+            fprintf(sSystemFile, '                  [''Urine'',           num2str(iHuman)],...\n');
+            fprintf(sSystemFile, '                  [''Perspiration'',    num2str(iHuman)]);\n');
+            fprintf(sSystemFile, 'end\n');
+            fprintf(sSystemFile, '  \n');
+        elseif strcmp(sSubsystemType, 'Plants')
+            
+            fprintf(sSystemFile, '\n');
+            fprintf(sSystemFile, '%%%% Plant Interfaces\n');
+            
+            fprintf(sSystemFile, ['oGreenhousePhase     = ', tSubsystem.toInterfacePhases.oCabin,';\n']);
+            fprintf(sSystemFile, ['oNutrientSupply      = ', tSubsystem.toInterfacePhases.oNutrient,';\n']);
+            fprintf(sSystemFile, ['oEdibleSplit         = ', tSubsystem.toInterfacePhases.oBiomass,';\n']);
+            fprintf(sSystemFile, '\n');
+            fprintf(sSystemFile, 'for iPlant = 1:length(this.csPlants)\n');
+            fprintf(sSystemFile, '  for iSubculture = 1:this.miSubcultures(iPlant)\n');
+            fprintf(sSystemFile, '      sCultureName = [this.csPlants{iPlant},''_'', num2str(iSubculture)];\n');
+            fprintf(sSystemFile, '      \n');
+            fprintf(sSystemFile, '      matter.procs.exmes.gas(oGreenhousePhase,     	[sCultureName, ''_AtmosphereCirculation_Out'']);\n');
+            fprintf(sSystemFile, '      matter.procs.exmes.gas(oGreenhousePhase,       	[sCultureName, ''_AtmosphereCirculation_In'']);\n');
+            fprintf(sSystemFile, '      matter.procs.exmes.liquid(oNutrientSupply,     	[sCultureName, ''_to_NFT'']);\n');
+            fprintf(sSystemFile, '      matter.procs.exmes.liquid(oNutrientSupply,    	[sCultureName, ''_from_NFT'']);\n');
+            fprintf(sSystemFile, '      matter.procs.exmes.mixture(oEdibleSplit,       	[sCultureName, ''_Biomass_In'']);\n');
+            fprintf(sSystemFile, '      \n');
+            fprintf(sSystemFile, '      matter.branch(this, [sCultureName, ''_Atmosphere_ToIF_Out''],      {}, [oGreenhousePhase.oStore.sName,      ''.'',	sCultureName, ''_AtmosphereCirculation_Out'']);\n');
+            fprintf(sSystemFile, '      matter.branch(this, [sCultureName, ''_Atmosphere_FromIF_In''],     {}, [oGreenhousePhase.oStore.sName,      ''.'',	sCultureName, ''_AtmosphereCirculation_In'']);\n');
+            fprintf(sSystemFile, '      matter.branch(this, [sCultureName, ''_WaterSupply_ToIF_Out''],     {}, [oNutrientSupply.oStore.sName,       ''.'',	sCultureName, ''_to_NFT'']);\n');
+            fprintf(sSystemFile, '      matter.branch(this, [sCultureName, ''_NutrientSupply_ToIF_Out''],  {}, [oNutrientSupply.oStore.sName,       ''.'',  sCultureName, ''_from_NFT'']);\n');
+            fprintf(sSystemFile, '      matter.branch(this, [sCultureName, ''_Biomass_FromIF_In''],        {}, [oEdibleSplit.oStore.sName,          ''.'',  sCultureName, ''_Biomass_In'']);\n');
+            fprintf(sSystemFile, '      \n');
+            fprintf(sSystemFile, '      this.toChildren.(sCultureName).setIfFlows(...\n');
+            fprintf(sSystemFile, '           	[sCultureName, ''_Atmosphere_ToIF_Out''], ...\n');
+            fprintf(sSystemFile, '           	[sCultureName ,''_Atmosphere_FromIF_In''], ...\n');
+            fprintf(sSystemFile, '           	[sCultureName ,''_WaterSupply_ToIF_Out''], ...\n');
+            fprintf(sSystemFile, '           	[sCultureName ,''_NutrientSupply_ToIF_Out''], ...\n');
+            fprintf(sSystemFile, '           	[sCultureName ,''_Biomass_FromIF_In'']);\n');
+            fprintf(sSystemFile, '	end\n');
+            fprintf(sSystemFile, 'end\n');
+            fprintf(sSystemFile, '\n');
+            
         else
-            csInterfaces = tInterfaces.(sSubsystemType);
-        end
-        for iInterface = 1:length(csInterfaces)
-            
-            sInterface = csInterfaces{iInterface};
-            csFields = textscan(sInterface,'%s','Delimiter','_');
-            csFields = csFields{1};
-            sInterfaceType = csFields{end};
-            sInterface = sInterface(1:end-(length(sInterfaceType) + 1));
-            
-            iCurrentNumberOfInterfaces = length(csInterface);
-            if strcmp(sInterfaceType, 'In')
-                 for iInput = 1:length(tSubsystem.Input)
-                    tInput = tSubsystem.Input{iInput};
-                    if ~isempty(regexp(tInput.label, sInterface, 'once'))
-                        csInterface{end+1} = ['''', tSubsystem.label, '_', tInput.label, '_In'''];
-                    end
-                 end
-            else
-                 for iOutput = 1:length(tSubsystem.Output)
-                    tOutput = tSubsystem.Output{iOutput};
-                    % now check if the label is represented accuratly
-                    % to prevent Air_Out and XX_Air_Out to be added
-                    % twice
-                    if strcmp(tOutput.label, sInterface)
-                        csInterface{end+1} = ['''', tSubsystem.label, '_', tOutput.label, '_Out'''];
-                    end
-                 end
+            % The CCAA has a variable number of outputs
+            if strcmp(sSubsystemType, 'CCAA')
+                if isempty(tSubsystem.sCDRA)
+                    tInterfaces.CCAA = {'Air_In', 'Air_Out', 'Condensate_Out', 'Coolant_In', 'Coolant_Out'};
+                else
+                    tInterfaces.CCAA = {'Air_In', 'Air_Out', 'Condensate_Out', 'Coolant_In', 'Coolant_Out', 'CDRA_Air_Out'};
+                end
             end
-            if iCurrentNumberOfInterfaces == length(csInterface)
-                error(['the import algorithm failed to find the interface ', csInterfaces{iInterface},' of the system ', tSubsystem.label,'. Please check if it actually located in the system (try drag and dropping it elsewhere and then back into the system it belongs to)'])
-            end
-        end
-        
-        % now we have all interface and have to define the IF definition
-        
-        sInterfaceDefinition = ['this.toChildren.', tSubsystem.label, '.setIfFlows('];
-        for iInterface = 1:length(csInterface)
-            sInterfaceDefinition = [sInterfaceDefinition, csInterface{iInterface}, ', '];
-        end
-        sInterfaceDefinition = sInterfaceDefinition(1:end-2);
-        sInterfaceDefinition = [sInterfaceDefinition, ');\n'];
-            
-        fprintf(sSystemFile, sInterfaceDefinition);
 
+            csInterfaces = cell.empty();
+            if strcmp(sSubsystemType, 'Subsystem')
+                for iGenericSubsystemType = 1:length(csSubsystemTypes)
+                    if ~isempty(regexp(tSubsystem.sSubsystemPath, csSubsystemTypes{iGenericSubsystemType}, 'once'))
+                        csInterfaces = tInterfaces.(csSubsystemTypes{iGenericSubsystemType});
+                    end
+                end
+                if isempty(csInterfaces)
+                    error('unknown subsystem type was used')
+                end
+            else
+                csInterfaces = tInterfaces.(sSubsystemType);
+            end
+            
+            csFinalInterfaces = cell(1,length(csInterfaces));
+            for iInterface = 1:length(csInterfaces)
+
+                sInterface = csInterfaces{iInterface};
+                csFields = textscan(sInterface,'%s','Delimiter','_');
+                csFields = csFields{1};
+                sInterfaceType = csFields{end};
+                sInterface = sInterface(1:end-(length(sInterfaceType) + 1));
+
+                if strcmp(sInterfaceType, 'In')
+                     for iInput = 1:length(tSubsystem.Input)
+                        tInput = tSubsystem.Input{iInput};
+                        if ~isempty(regexp(tInput.label, sInterface, 'once'))
+                            csFinalInterfaces{iInterface} = ['''', tSubsystem.label, '_', tInput.label, '_In'''];
+                        end
+                     end
+                else
+                     for iOutput = 1:length(tSubsystem.Output)
+                        tOutput = tSubsystem.Output{iOutput};
+                        % now check if the label is represented accuratly
+                        % to prevent Air_Out and XX_Air_Out to be added
+                        % twice
+                        if strcmp(tOutput.label, sInterface)
+                            csFinalInterfaces{iInterface} = ['''', tSubsystem.label, '_', tOutput.label, '_Out'''];
+                        end
+                     end
+                end
+            end
+            % now we have all interface and have to define the IF definition
+
+            sInterfaceDefinition = ['this.toChildren.', tSubsystem.label, '.setIfFlows('];
+            for iInterface = 1:length(csInterfaces)
+                sInterfaceDefinition = [sInterfaceDefinition, csFinalInterfaces{iInterface}, ', '];
+            end
+            sInterfaceDefinition = sInterfaceDefinition(1:end-2);
+            sInterfaceDefinition = [sInterfaceDefinition, ');\n'];
+
+            fprintf(sSystemFile, sInterfaceDefinition);
+        end
     end
 end
 

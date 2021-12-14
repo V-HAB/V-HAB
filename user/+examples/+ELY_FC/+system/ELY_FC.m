@@ -1,9 +1,17 @@
 classdef ELY_FC < vsys
     % This is an example model of a fuel cell and an electrolyzer to
-    % compare them to literature values
+    % compare them to literature values. For the fuel cell currently no
+    % literature data suitable for verification was identified, therefore
+    % it is currently outcommented.
+    % This simulation implements multiple electrolyzers and fuel cells to
+    % check their behavior at different conditions. A better example on how
+    % to implement and combine a single Electrolyzer with a single Fuel
+    % cell is the regenrative fuel cell (RFCS) example.
     properties
+        % Define the number of cells for the electrolyzer and fuel cell
         iCells          = 300;
         
+        % Define the conditions at which the systems shall be simulated:
         mfPressure      = [1, 10, 100]; % bar
         mfTemperature   = 30:10:70; % °C
         mfPower         = 0:1000:100000;
@@ -110,8 +118,6 @@ classdef ELY_FC < vsys
             %% Assign thermal solvers
             this.setThermalSolvers();
         end
-        
-        
     end
     
     methods (Access = protected)
@@ -127,9 +133,10 @@ classdef ELY_FC < vsys
             for iPressure = 1:length(this.mfPressure)
                 for iTemperature = 1:length(this.mfTemperature)
                     sElectrolyzer = ['Electrolyzer_', num2str(this.mfPressure(iPressure)), '_', num2str(this.mfTemperature(iTemperature))];
-                    sFuelCell     = ['FuelCell_', num2str(this.mfPressure(iPressure)), '_', num2str(this.mfTemperature(iTemperature))];
                     
                     this.toChildren.(sElectrolyzer).setPower(this.mfPower(this.iCurrentPowerTick));
+                    
+%                     sFuelCell     = ['FuelCell_', num2str(this.mfPressure(iPressure)), '_', num2str(this.mfTemperature(iTemperature))];
 %                     this.toChildren.(sFuelCell).setPower(this.mfPower(this.iCurrentPowerTick));
                 end
             end

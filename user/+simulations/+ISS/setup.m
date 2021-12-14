@@ -84,6 +84,8 @@ classdef setup < simulation.infrastructure
             % the plotting as well, otherwise that will throw errors)
             
             oLogger = this.toMonitors.oLogger;
+            oISS    = this.oSimulationContainer.toChildren.ISS_ARS_MultiStore;
+            iHumans = oISS.iCrewMembers;
             
             %% Logging for the ISS modules
             
@@ -112,7 +114,7 @@ classdef setup < simulation.infrastructure
             oLogger.addValue('ISS_ARS_MultiStore:s:FoodStore.aoPhases(1)',      'fMass', 'kg', 'Food Mass');
             
             %% CCAAs logging
-            if this.oSimulationContainer.toChildren.ISS_ARS_MultiStore.tbCases.ModelInactiveSystems
+            if oISS.tbCases.ModelInactiveSystems
                 csCCAAs = {'CCAA_Node3', 'CCAA_USLab', 'CCAA_SM', 'CCAA_Airlock', 'CCAA_Node2', 'CCAA_JEM', 'CCAA_Columbus'};
             else
                 csCCAAs = {'CCAA_Node3', 'CCAA_SM', 'CCAA_JEM', 'CCAA_Columbus'};
@@ -178,6 +180,177 @@ classdef setup < simulation.infrastructure
             oLogger.addVirtualValue('cumsum("UPA Brine Flow"    .* "Timestep")', 'kg', 'UPA Produced Brine');
             oLogger.addVirtualValue('cumsum("BPA Water Flow"    .* "Timestep")', 'kg', 'BPA Produced Water');
             
+             %% Human Logs
+            csCO2FlowRates                  = cell(1, iHumans);
+            csO2FlowRates                   = cell(1, iHumans);
+            csIngestedWaterFlowRates        = cell(1, iHumans);
+            csRespirationWaterFlowRates     = cell(1, iHumans);
+            csPerspirationWaterFlowRates    = cell(1, iHumans);
+            csMetabolismWaterFlowRates      = cell(1, iHumans);
+            csStomachWaterFlowRates         = cell(1, iHumans);
+            csFecesWaterFlowRates           = cell(1, iHumans);
+            csUrineWaterFlowRates           = cell(1, iHumans);
+            csFoodFlowRates                 = cell(1, iHumans);
+            csFecesProteinFlowRates         = cell(1, iHumans);
+            csFecesFatFlowRates             = cell(1, iHumans);
+            csFecesGlucoseFlowRates         = cell(1, iHumans);
+            csFecesFiberFlowRates           = cell(1, iHumans);
+            csFecesSodiumFlowRates          = cell(1, iHumans);
+            csUrineSodiumFlowRates          = cell(1, iHumans);
+            csUrinePotassiumFlowRates       = cell(1, iHumans);
+            csUrineUreaFlowRates            = cell(1, iHumans);
+            csFecesConverterWaterFlowRates  = cell(1, iHumans);
+            csUrineConverterWaterFlowRates  = cell(1, iHumans);
+            for iHuman = 1:(iHumans)
+                
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,'.toBranches.Potable_Water_In'],          'fFlowRate',       'kg/s', ['Ingested Water Flow Rate' num2str(iHuman)]);
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,'.toBranches.RespirationWaterOutput'],    'fFlowRate',       'kg/s', ['Respiration Water Flow Rate' num2str(iHuman)]);
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,'.toBranches.PerspirationWaterOutput'],   'fFlowRate',       'kg/s', ['Perspiration Water Flow Rate' num2str(iHuman)]);
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,'.toBranches.Urine_Out'],                 'fFlowRate',       'kg/s', ['Urine Flow Rate' num2str(iHuman)]);
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,'.toBranches.Food_In'],                   'fFlowRate',       'kg/s', ['Food Flow Rate' num2str(iHuman)]);
+                
+                
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,'.toBranches.Air_In.aoFlows(1)'], 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)',                  'kg/s',    ['CO2 Inlet Flowrate',      num2str(iHuman)]);
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,'.toBranches.Air_Out.aoFlows(1)'], 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)',                 'kg/s',    ['CO2 Outlet Flowrate',     num2str(iHuman)]);
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,'.toBranches.Air_In.aoFlows(1)'], 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.O2)',                   'kg/s',    ['O2 Inlet Flowrate',       num2str(iHuman)]);
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,'.toBranches.Air_Out.aoFlows(1)'], 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.O2)',                  'kg/s',    ['O2 Outlet Flowrate',      num2str(iHuman)]);
+                
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,':c:Metabolic'],       'rRespiratoryCoefficient',     '-', ['Respiratory Coefficient ',    num2str(iHuman)]);
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,':c:Metabolic.toStores.Metabolism.toPhases.Metabolism.toManips.substance'],       'this.afPartialFlows(this.oMT.tiN2I.C3H7NO2)',          'kg/s', ['Metabolism Protein Flow Rate',   num2str(iHuman)]);
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,':c:Metabolic.toStores.Metabolism.toPhases.Metabolism.toManips.substance'],       'this.afPartialFlows(this.oMT.tiN2I.C51H98O6)',         'kg/s', ['Metabolism Fat Flow Rate',       num2str(iHuman)]);
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,':c:Metabolic.toStores.Metabolism.toPhases.Metabolism.toManips.substance'],       'this.afPartialFlows(this.oMT.tiN2I.C6H12O6)',          'kg/s', ['Metabolism Glucose Flow Rate',   num2str(iHuman)]);
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,':c:Metabolic.toStores.Metabolism.toPhases.Metabolism.toManips.substance'],       'this.afPartialFlows(this.oMT.tiN2I.O2)',               'kg/s', ['Metabolism O2 Flow Rate',        num2str(iHuman)]);
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,':c:Metabolic.toStores.Metabolism.toPhases.Metabolism.toManips.substance'],       'this.afPartialFlows(this.oMT.tiN2I.CO2)',              'kg/s', ['Metabolism CO2 Flow Rate',       num2str(iHuman)]);
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,':c:Metabolic.toStores.Metabolism.toPhases.Metabolism.toManips.substance'],       'this.afPartialFlows(this.oMT.tiN2I.H2O)',              'kg/s', ['Metabolism H2O Flow Rate',       num2str(iHuman)]);
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,':c:Metabolic.toStores.Metabolism.toPhases.Metabolism.toManips.substance'],       'this.afPartialFlows(this.oMT.tiN2I.CH4N2O)',           'kg/s', ['Metabolism Urea Flow Rate',      num2str(iHuman)]);
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,':c:Metabolic.toStores.Metabolism.toPhases.Metabolism.toManips.substance'],       'this.afPartialFlows(this.oMT.tiN2I.Human_Tissue)',     'kg/s', ['Metabolism Muscle Flow Rate',    num2str(iHuman)]);
+                
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,':c:Digestion.toStores.Digestion.toPhases.Stomach.toManips.substance'],       'this.afPartialFlows(this.oMT.tiN2I.C3H7NO2)',              'kg/s', ['Stomach Protein Flow Rate',       num2str(iHuman)]);
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,':c:Digestion.toStores.Digestion.toPhases.Stomach.toManips.substance'],       'this.afPartialFlows(this.oMT.tiN2I.C51H98O6)',             'kg/s', ['Stomach Fat Flow Rate',       	num2str(iHuman)]);
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,':c:Digestion.toStores.Digestion.toPhases.Stomach.toManips.substance'],       'this.afPartialFlows(this.oMT.tiN2I.C6H12O6)',              'kg/s', ['Stomach Glucose Flow Rate',   	num2str(iHuman)]);
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,':c:Digestion.toStores.Digestion.toPhases.Stomach.toManips.substance'],       'this.afPartialFlows(this.oMT.tiN2I.H2O)',                  'kg/s', ['Stomach H2O Flow Rate',           num2str(iHuman)]);
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,':c:Digestion.toStores.Digestion.toPhases.Stomach.toManips.substance'],       'this.afPartialFlows(this.oMT.tiN2I.DietaryFiber)',         'kg/s', ['Stomach Fiber Flow Rate',         num2str(iHuman)]);
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,':c:Digestion.toStores.Digestion.toPhases.Stomach.toManips.substance'],       'this.afPartialFlows(this.oMT.tiN2I.Naplus)',               'kg/s', ['Stomach Sodium Flow Rate',        num2str(iHuman)]);
+
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,':c:WaterBalance.toStores.WaterBalance.toProcsP2P.KidneyToBladder'],              'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',      'kg/s',	['H2O Massflow to Bladder',	num2str(iHuman)]);
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,':c:WaterBalance.toStores.WaterBalance.toProcsP2P.KidneyToBladder'],              'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)', 	'kg/s',	['Na+ Massflow to Bladder',	num2str(iHuman)]);
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,':c:WaterBalance.toStores.WaterBalance.toProcsP2P.KidneyToBladder'],              'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Kplus)', 	'kg/s',	['K+ Massflow to Bladder',	num2str(iHuman)]);
+
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,':c:Digestion.toStores.Digestion.toProcsP2P.LargeIntestine_to_Rectum'],    	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C3H7NO2)',    	'kg/s',     ['Protein from LargeIntestine',    num2str(iHuman)]);
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,':c:Digestion.toStores.Digestion.toProcsP2P.LargeIntestine_to_Rectum'],    	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C51H98O6)',    	'kg/s',     ['Fat from LargeIntestine',    num2str(iHuman)]);
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,':c:Digestion.toStores.Digestion.toProcsP2P.LargeIntestine_to_Rectum'],    	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C6H12O6)',    	'kg/s',     ['Glucose from LargeIntestine',    num2str(iHuman)]);
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,':c:Digestion.toStores.Digestion.toProcsP2P.LargeIntestine_to_Rectum'],        'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',          'kg/s',     ['H2O from LargeIntestine',    num2str(iHuman)]);
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,':c:Digestion.toStores.Digestion.toProcsP2P.LargeIntestine_to_Rectum'],    	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.DietaryFiber)',	'kg/s',     ['Fiber from LargeIntestine',    num2str(iHuman)]);
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,':c:Digestion.toStores.Digestion.toProcsP2P.LargeIntestine_to_Rectum'],     	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',      	'kg/s',     ['Sodium from LargeIntestine',    num2str(iHuman)]);
+                
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,':c:WaterBalance.toStores.WaterBalance.toPhases.Bladder.toManips.substance'], 'this.afPartialFlows(this.oMT.tiN2I.H2O)',            'kg/s', ['Urine Converter H2O Flow Rate',    num2str(iHuman)]);
+                oLogger.addValue(['ISS_ARS_MultiStore:c:Human_', num2str(iHuman) ,':c:Digestion.toStores.Digestion.toPhases.Rectum.toManips.substance'],        'this.afPartialFlows(this.oMT.tiN2I.H2O)',            'kg/s', ['Feces Converter H2O Flow Rate',    num2str(iHuman)]);
+                
+                csCO2FlowRates{iHuman}                  = ['"CO2 Outlet Flowrate',          num2str(iHuman),'"    + "CO2 Inlet Flowrate', num2str(iHuman),'" +'];
+                csO2FlowRates{iHuman}                   = ['"O2 Outlet Flowrate',           num2str(iHuman),'"    + "O2 Inlet Flowrate', num2str(iHuman),'" +'];
+                csIngestedWaterFlowRates{iHuman}        = ['"Ingested Water Flow Rate',     num2str(iHuman),'" +'];
+                csRespirationWaterFlowRates{iHuman}     = ['"Respiration Water Flow Rate',  num2str(iHuman),'" +'];
+                csPerspirationWaterFlowRates{iHuman}    = ['"Perspiration Water Flow Rate', num2str(iHuman),'" +'];
+                csMetabolismWaterFlowRates{iHuman}      = ['"Metabolism H2O Flow Rate',     num2str(iHuman),'" +'];
+                csStomachWaterFlowRates{iHuman}         = ['"Stomach H2O Flow Rate',        num2str(iHuman),'" +'];
+                csFecesWaterFlowRates{iHuman}           = ['"H2O from LargeIntestine',      num2str(iHuman),'" +'];
+                csUrineWaterFlowRates{iHuman}           = ['"H2O Massflow to Bladder',      num2str(iHuman),'" +'];
+                csFoodFlowRates{iHuman}                 = ['"Food Flow Rate',               num2str(iHuman),'" +'];
+                csFecesProteinFlowRates{iHuman}         = ['"Protein from LargeIntestine',  num2str(iHuman),'" +'];
+                csFecesFatFlowRates{iHuman}             = ['"Fat from LargeIntestine',      num2str(iHuman),'" +'];
+                csFecesGlucoseFlowRates{iHuman}         = ['"Glucose from LargeIntestine',  num2str(iHuman),'" +'];
+                csFecesFiberFlowRates{iHuman}           = ['"Fiber from LargeIntestine',    num2str(iHuman),'" +'];
+                csFecesSodiumFlowRates{iHuman}          = ['"Sodium from LargeIntestine',   num2str(iHuman),'" +'];
+                csUrineSodiumFlowRates{iHuman}          = ['"Na+ Massflow to Bladder',      num2str(iHuman),'" +'];
+                csUrinePotassiumFlowRates{iHuman}       = ['"K+ Massflow to Bladder',       num2str(iHuman),'" +'];
+                csUrineUreaFlowRates{iHuman}            = ['"Metabolism Urea Flow Rate',    num2str(iHuman),'" +'];
+                csFecesConverterWaterFlowRates{iHuman}  = ['"Feces Converter H2O Flow Rate', num2str(iHuman),'" +'];
+                csUrineConverterWaterFlowRates{iHuman}  = ['"Urine Converter H2O Flow Rate', num2str(iHuman),'" +'];
+            end
+            
+            sFlowRates = strjoin(csCO2FlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(sFlowRates,   'kg/s', 'Effective CO_2 Flow Crew');
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Exhaled CO_2');
+            
+            sFlowRates = strjoin(csO2FlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue( sFlowRates,   'kg/s', 'Effective O_2 Flow Crew');
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Inhaled O_2');
+
+            sFlowRates = strjoin(csIngestedWaterFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Ingested Water');
+            
+            sFlowRates = strjoin(csRespirationWaterFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Respiration Water');
+            
+            sFlowRates = strjoin(csPerspirationWaterFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Perspiration Water');
+            
+            sFlowRates = strjoin(csMetabolismWaterFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Metabolism Water');
+            
+            sFlowRates = strjoin(csStomachWaterFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Ingested Water in Food');
+            
+            sFlowRates = strjoin(csFecesWaterFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Feces Water');
+            
+            sFlowRates = strjoin(csUrineWaterFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Urine Water');
+            
+            sFlowRates = strjoin(csFoodFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Ingested Food');
+            
+            sFlowRates = strjoin(csFecesProteinFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Feces Protein');
+            
+            sFlowRates = strjoin(csFecesFatFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Feces Fat');
+            
+            sFlowRates = strjoin(csFecesGlucoseFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Feces Glucose');
+            
+            sFlowRates = strjoin(csFecesFiberFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Feces Fiber');
+            
+            sFlowRates = strjoin(csFecesSodiumFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Feces Na+');
+            
+            sFlowRates = strjoin(csUrineSodiumFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Urine Na+');
+            
+            sFlowRates = strjoin(csUrinePotassiumFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Urine K+');
+            
+            sFlowRates = strjoin(csUrineUreaFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Urine Urea');
+            
+            sFlowRates = strjoin(csFecesConverterWaterFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Feces Converter Water');
+            
+            sFlowRates = strjoin(csUrineConverterWaterFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Urine Converter Water');
+            
+            
             %% Mass and Temperature logging for all phases (can be usefull for debugging)
 %             oISS_ARS_MultiStore = this.oSimulationContainer.toChildren.ISS_ARS_MultiStore;
 % 
@@ -209,7 +382,7 @@ classdef setup < simulation.infrastructure
 %             end
              
             %% ACLS Specific logging & plotting
-            if this.oSimulationContainer.toChildren.ISS_ARS_MultiStore.tbCases.ACLS
+            if oISS.tbCases.ACLS
                 
                 for iBed = 1:3
                     oLogger.addValue(['ISS_ARS_MultiStore:c:ACLS:s:CCA_Bed',num2str(iBed),'.toPhases.ResineAB',num2str(iBed)],    'afMass(this.oMT.tiN2I.H2O)',   'kg',    ['ACLS Bed ',num2str(iBed),' Absorbed Mass H2O']);
@@ -243,8 +416,7 @@ classdef setup < simulation.infrastructure
             %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%%                   PLANT MODULE LOGGING                  %%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            if this.oSimulationContainer.toChildren.ISS_ARS_MultiStore.tbCases.PlantChamber
-                oISS = this.oSimulationContainer.toChildren.ISS_ARS_MultiStore;
+            if oISS.tbCases.PlantChamber
                 this.tiPLantLogs = struct();
 
                 for iPlant = 1:length(oISS.csPlants)
@@ -639,6 +811,24 @@ classdef setup < simulation.infrastructure
 
                 oPlotter.defineFigure(coPlotNutrients,       'Plant Nutrients');
             end
+            
+            %% Basic Crew Plot
+            sSystemName = fieldnames(this.oSimulationContainer.toChildren);
+            sSystemName = sSystemName{1};
+            % First we have to get the current number of crew members:
+            iHumans = this.oSimulationContainer.toChildren.(sSystemName).iNumberOfCrewMembers;
+            
+            csRespiratoryCoefficient = cell(1,iHumans);
+            for iHuman = 1:iHumans
+                csRespiratoryCoefficient{iHuman} = ['"Respiratory Coefficient ',    num2str(iHuman), '"'];
+            end
+            coPlot = cell(0);
+            coPlot{1,1} = oPlotter.definePlot({'"Effective CO_2 Flow Crew"', '"Effective O_2 Flow Crew"'},	'Crew Respiration Flowrates', tPlotOptions);
+            coPlot{1,2} = oPlotter.definePlot(csRespiratoryCoefficient,                                     'Crew Respiratory Coefficients', tPlotOptions);
+            coPlot{2,1} = oPlotter.definePlot({'"Exhaled CO_2"', '"Inhaled O_2"'},                          'Crew Cumulative Respiration', tPlotOptions);
+            coPlot{2,2} = oPlotter.definePlot({'"Respiration Water"', '"Perspiration Water"', '"Metabolism Water"', '"Urine Urea"'},    'Crew Cumulative Masses', tPlotOptions);
+           
+            oPlotter.defineFigure(coPlot,       'Crew Values');
             
             %% Debugging plots
             

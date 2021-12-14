@@ -30,6 +30,17 @@ if length(varargin) == 1
         this.throw('calculateDensity', 'If only one param provided, has to be a matter.phase or matter.flow (derivative)');
     end
     
+    % In case a flow phase or a flow are used they may initially not have
+    % partial masses. This is quite confusing for useres trying to utilize
+    % these values as they will return 0 matter porperties and at the
+    % moment the f2f needs to implement a catch for this. Therefore, this
+    % catch is now included here
+    if ~any(arPartialMass)
+        if any(oPhase.afMass)
+            arPartialMass = this.resolveCompoundMass(oPhase.afMass ./ sum(oPhase.afMass), oPhase.arCompoundMass);
+        end
+    end
+    
     fTemperature = varargin{1}.fTemperature;
     
     fPressure = varargin{1}.fPressure;

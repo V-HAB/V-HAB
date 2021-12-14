@@ -116,7 +116,7 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
         fMaxTemperatureChange = inf;
         
         % The minimal and maximal time step of the capacity:
-        fMaxStep = 20;
+        fMaxStep = 60;
         fMinStep = 1e-8;
         
         % as for the phase in the matter domain, the time step for the
@@ -907,7 +907,11 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
             % adds the specified ExMe to this phase and sets the phase to
             % outdated
             this.toProcsEXME.(oExMe.sName) = oExMe;
-            this.aoExmes(end + 1) = oExMe;
+            if isempty(this.aoExmes)
+                this.aoExmes = oExMe;
+            else
+                this.aoExmes(end + 1) = oExMe;
+            end
             this.iProcsEXME = this.iProcsEXME + 1;
             
             this.setOutdatedTS();

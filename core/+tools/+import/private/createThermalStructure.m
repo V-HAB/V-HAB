@@ -40,7 +40,15 @@ function tCurrentSystem = createThermalStructure(tCurrentSystem, csPhases, sSyst
     
     for iHuman = 1:length(tCurrentSystem.Human)
         tHuman = tCurrentSystem.Human{iHuman};
-        fprintf(sSystemFile, ['this.toChildren.' ,tHuman.label, '.createHumanHeatSource();\n']);
+        
+        fprintf(sSystemFile, ['oCabinPhase = ',tHuman.toInterfacePhases.oCabin, ';\n']);
+        fprintf(sSystemFile, 'for iHuman = 1:this.iCrewMembers\n');
+        fprintf(sSystemFile, '	%% Add thermal IF for humans\n');
+        fprintf(sSystemFile, '	thermal.procs.exme(oCabinPhase.oCapacity, [''SensibleHeatOutput_Human_'',    num2str(iHuman)]);\n');
+        fprintf(sSystemFile, '	thermal.branch(this, [''SensibleHeatOutput_Human_'',    num2str(iHuman)], {}, [oCabinPhase.oStore.sName ''.SensibleHeatOutput_Human_'',    num2str(iHuman)], [''SensibleHeatOutput_Human_'',    num2str(iHuman)]);\n');
+        fprintf(sSystemFile, '	this.toChildren.([''Human_'',         num2str(iHuman)]).setThermalIF([''SensibleHeatOutput_Human_'',    num2str(iHuman)]);\n');
+        fprintf(sSystemFile, 'end\n');
+        fprintf(sSystemFile, '\n');
     end
     
     fprintf(sSystemFile, '\n');
