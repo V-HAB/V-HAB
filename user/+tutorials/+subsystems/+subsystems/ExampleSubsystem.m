@@ -2,8 +2,8 @@ classdef ExampleSubsystem < vsys
     %EXAMPLESUBSYSTEM A subsystem containing a filter and a pipe
     %   This example shows a vsys child representing a subsystem of a 
     %   larger system. It has a filter which removes O2 from the mass flow 
-    %   through the subsystem and it provides the neccessary setIfFlows 
-    %   function so the subsystem branches can be connected to the system 
+    %   through the subsystem and it provides the neccessary setIfFlows() 
+    %   method so the subsystem branches can be connected to the system 
     %   level branches.
     
     properties
@@ -18,55 +18,67 @@ classdef ExampleSubsystem < vsys
             
         end
         
-        
         function createMatterStructure(this)
             createMatterStructure@vsys(this);
             
-            % Creating a filter as shown in the p2p Example
-            tutorials.subsystems.components.Filter(this, 'Filter', 10);
+            fFilterVolume = 1;
+            matter.store(this, 'Filter', fFilterVolume);
+            oFlow = this.toStores.Filter.createPhase(	'gas',  'flow',	'FlowPhase',	1e-6,   struct('N2', 8e4, 'O2', 2e4, 'CO2', 500),       293,	0.5);
+            oFiltered = matter.phases.mixture(this.toStores.Filter, 'FilteredPhase', 'solid', struct('Zeolite13x', 1), 293, 1e5);
             
-            % Creating the branch from the parent system into this subsystem
-            % Input parameter format is always: 
-            % 'store.exme', {'f2f-processor, 'f2fprocessor'}, 'Interface port name'
-            matter.branch(this, 'Filter.FilterIn', {}, 'Inlet');
+            tutorials.p2p.flow.components.AbsorberExampleFlow(this.toStores.Filter, 'filterproc', oFlow, oFiltered);
             
-            % Creating the branch out of this subsystem into the parent system 
-            % Input parameter format is always: 
-            % 'store.exme', {'f2f-processor, 'f2fprocessor'}, 'Interface port name'
-            matter.branch(this, 'Filter.FilterOut', {}, 'Outlet');
+            % For the F2F components you must be carefull to use different
+            % names for all F2F components in interface branches. E.g.
+            % since the parent system uses Pipe1 and Pipe2 we cannot use
+            % these names here. Instead we use SubsystemPipe1. In your case
+            % try to use well defined names, which e.g. reflect the
+            % system to which the interface F2Fs belong. (e.g. CCAA_Pipe1)
+            components.matter.pipe(this, 'SubsystemPipe1', 1, 0.005);
+            components.matter.pipe(this, 'SubsystemPipe2', 1, 0.005);
+            
+            
+            %% Define Interfaces to parent system
+            % The definition in the subsystem also adheres to the logic,
+            % that positive flowrates leave the subsystem and enter the
+            % parent system. Therefore, the interfaces for the subsystem
+            % are defined on the "right" side of the branches!
+            matter.branch(this, oFlow, {'SubsystemPipe1'}, 'Inlet');
+            matter.branch(this, oFlow, {'SubsystemPipe2'}, 'Outlet');
             
         end
         
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
             
-            % Create the solver instances. Generally, this can be done here
-            % or directly within the vsys (after the .seal() command).
-            solver.matter.interval.branch(this.aoBranches(1));
-            solver.matter.interval.branch(this.aoBranches(2));
+            solver.matter_multibranch.iterative.branch(this.aoBranches, 'complex');
             
-            
-            
-            % Phases
-            
-            oFilterFlowPhase = this.toStores.Filter.aoPhases(1);
-            oFilterBedPhase  = this.toStores.Filter.aoPhases(2);
-            
-            % We are not really interested in the pressure, heat capacity
-            % etc. of the filtered phase, so we don't need to re-calculate
-            % it often. So we set a large maximum change. 
-            tTimeStepProperties.rMaxChange = 0.5;
-            oFilterBedPhase.setTimeStepProperties(tTimeStepProperties);
-
             this.setThermalSolvers();
         end
         
-        function setIfFlows(this, sInlet, sOutlet)
-            % This function connects the system and subsystem level branches with each other. It
-            % uses the connectIF function provided by the matter.container class
+        function setIfFlows(this, varargin)
+            % This function connects the parent system and subsystem level
+            % branches. The interfaces of the parent side are provided as
+            % strings and each individual call of "connectIF" defines to
+            % which interface the first second or third interface are
+            % connected. It is possible to use varargin for a variable
+            % number of inputs (e.g. if the subsystem has different states,
+            % for example the Common Cabin Air Assembly, CCAA, can be used
+            % with or without a CDRA and has a variable number of
+            % interfaces). However, if you use varargin you should check if
+            % a valid number of interfaces was provided to prevent erronous
+            % definitions.
+            % As alternative to varargin you could define multiple inputs,
+            % e.g. in this case you could define:
+            % setIfFlows(this, sInlet, sOutlet)
+            % And then use sInlet and sOutlet for the connectIF functions.
             
-            this.connectIF('Inlet',  sInlet);
-            this.connectIF('Outlet', sOutlet);
+            if length(varargin) ~= 2
+                error('wrong number of interfaces provided to ExampleSubsystem')
+            end
+            
+            this.connectIF('Inlet',  varargin{1});
+            this.connectIF('Outlet', varargin{2});
             
         end
     end
@@ -75,14 +87,7 @@ classdef ExampleSubsystem < vsys
         
         function exec(this, ~)
             exec@vsys(this);
-            
-            % See above - time step of this .exec() method is set above,
-            % can be used to update some stuff (e.g. apply external
-            % disturbances as closing a valve).
   
         end
-        
      end
-    
 end
-

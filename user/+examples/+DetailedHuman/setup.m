@@ -33,362 +33,478 @@ classdef setup < simulation.infrastructure
         function configureMonitors(this)
             
             %% Logging
-            oLog = this.toMonitors.oLogger;
+            oLogger = this.toMonitors.oLogger;
             
             csStores = fieldnames(this.oSimulationContainer.toChildren.Example.toStores);
             for iStore = 1:length(csStores)
-                oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fMass',        'kg', [csStores{iStore}, ' Mass']);
-                oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fPressure',	'Pa', [csStores{iStore}, ' Pressure']);
-                oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fTemperature',	'K',  [csStores{iStore}, ' Temperature']);
+                oLogger.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fMass',        'kg', [csStores{iStore}, ' Mass']);
+                oLogger.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fPressure',	'Pa', [csStores{iStore}, ' Pressure']);
+                oLogger.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fTemperature',	'K',  [csStores{iStore}, ' Temperature']);
             end
             
             csBranches = fieldnames(this.oSimulationContainer.toChildren.Example.toBranches);
             for iBranch = 1:length(csBranches)
-                oLog.addValue(['Example.toBranches.', csBranches{iBranch}],             'fFlowRate',    'kg/s', [csBranches{iBranch}, ' Flowrate']);
+                oLogger.addValue(['Example.toBranches.', csBranches{iBranch}],             'fFlowRate',    'kg/s', [csBranches{iBranch}, ' Flowrate']);
             end
             
-            oLog.addValue('Example:s:Cabin.toPhases.CabinAir',	'this.afPP(this.oMT.tiN2I.CO2)', 	'Pa',   'Partial Pressure CO2 Cabin');
-            oLog.addValue('Example:s:Cabin2.toPhases.CabinAir',	'this.afPP(this.oMT.tiN2I.CO2)', 	'Pa',   'Partial Pressure CO2 Cabin2');
+            oLogger.addValue('Example:s:Cabin.toPhases.CabinAir',	'this.afPP(this.oMT.tiN2I.CO2)', 	'Pa',   'Partial Pressure CO2 Cabin');
+            oLogger.addValue('Example:s:Cabin2.toPhases.CabinAir',	'this.afPP(this.oMT.tiN2I.CO2)', 	'Pa',   'Partial Pressure CO2 Cabin2');
             
-            oLog.addValue('Example:s:Cabin.toPhases.CabinAir',	'rRelHumidity', 	'-',   'Relative Humidity Cabin');
-            oLog.addValue('Example:s:Cabin2.toPhases.CabinAir',	'rRelHumidity', 	'-',   'Relative Humidity Cabin2');
+            oLogger.addValue('Example:s:Cabin.toPhases.CabinAir',	'rRelHumidity', 	'-',   'Relative Humidity Cabin');
+            oLogger.addValue('Example:s:Cabin2.toPhases.CabinAir',	'rRelHumidity', 	'-',   'Relative Humidity Cabin2');
             %% Parent System Logging
             csFecesComponents = {'H2O', 'DietaryFiber', 'C6H12O6', 'C51H98O6', 'C3H7NO2', 'Naplus'};
             for iComponent = 1:length(csFecesComponents)
-                oLog.addValue('Example.toStores.FecesStorage.toPhases.Feces',   ['this.afMass(this.oMT.tiN2I.Feces) .* this.arCompoundMass(this.oMT.tiN2I.Feces, this.oMT.tiN2I.', csFecesComponents{iComponent}, ')'],         'kg',   ['Feces ', csFecesComponents{iComponent},' Content']);
+                oLogger.addValue('Example.toStores.FecesStorage.toPhases.Feces',   ['this.afMass(this.oMT.tiN2I.Feces) .* this.arCompoundMass(this.oMT.tiN2I.Feces, this.oMT.tiN2I.', csFecesComponents{iComponent}, ')'],         'kg',   ['Feces ', csFecesComponents{iComponent},' Content']);
             end
             
             csUrineComponents = {'H2O', 'Naplus', 'CH4N2O'};
             for iComponent = 1:length(csUrineComponents)
-                oLog.addValue('Example.toStores.UrineStorage.toPhases.Urine',   ['this.afMass(this.oMT.tiN2I.Urine) .* this.arCompoundMass(this.oMT.tiN2I.Urine, this.oMT.tiN2I.', csUrineComponents{iComponent}, ')'],         'kg',   ['Urine ', csUrineComponents{iComponent},' Content']);
+                oLogger.addValue('Example.toStores.UrineStorage.toPhases.Urine',   ['this.afMass(this.oMT.tiN2I.Urine) .* this.arCompoundMass(this.oMT.tiN2I.Urine, this.oMT.tiN2I.', csUrineComponents{iComponent}, ')'],         'kg',   ['Urine ', csUrineComponents{iComponent},' Content']);
             end
             
-            oLog.addValue('Example:c:Human_1.toBranches.Potable_Water_In',          'fFlowRate',       'kg/s', 'Ingested Water Flow Rate');
-            oLog.addValue('Example:c:Human_1.toBranches.RespirationWaterOutput',    'fFlowRate',       'kg/s', 'Respiration Water Flow Rate');
-            oLog.addValue('Example:c:Human_1.toBranches.PerspirationWaterOutput',   'fFlowRate',       'kg/s', 'Perspiration Water Flow Rate');
-            oLog.addValue('Example:c:Human_1.toBranches.Urine_Out',                 'fFlowRate',       'kg/s', 'Urine Flow Rate');
-            oLog.addValue('Example:c:Human_1.toBranches.Food_In',                   'fFlowRate',       'kg/s', 'Food Flow Rate');
+            oLogger.addValue('Example.oTimer',     'fTimeStepFinal',	's',   'Timestep');
             
+            %% Human Logs
+            % This section contains a generalized logging for the values
+            % you are most likely interested in from the human model (e.g.
+            % O2, CO2, Water, Food etc, so basically all the interface
+            % values)
+            %
+            % We first have to get the name of the root system
+            sSystemName = fieldnames(this.oSimulationContainer.toChildren);
+            sSystemName = sSystemName{1};
+            % First we have to get the current number of crew members:
+            iHumans = this.oSimulationContainer.toChildren.(sSystemName).iNumberOfCrewMembers;
+            
+            csCO2FlowRates                  = cell(1, iHumans);
+            csO2FlowRates                   = cell(1, iHumans);
+            csIngestedWaterFlowRates        = cell(1, iHumans);
+            csRespirationWaterFlowRates     = cell(1, iHumans);
+            csPerspirationWaterFlowRates    = cell(1, iHumans);
+            csMetabolismWaterFlowRates      = cell(1, iHumans);
+            csStomachWaterFlowRates         = cell(1, iHumans);
+            csFecesWaterFlowRates           = cell(1, iHumans);
+            csUrineWaterFlowRates           = cell(1, iHumans);
+            csFoodFlowRates                 = cell(1, iHumans);
+            csFecesProteinFlowRates         = cell(1, iHumans);
+            csFecesFatFlowRates             = cell(1, iHumans);
+            csFecesGlucoseFlowRates         = cell(1, iHumans);
+            csFecesFiberFlowRates           = cell(1, iHumans);
+            csFecesSodiumFlowRates          = cell(1, iHumans);
+            csUrineSodiumFlowRates          = cell(1, iHumans);
+            csUrinePotassiumFlowRates       = cell(1, iHumans);
+            csUrineUreaFlowRates            = cell(1, iHumans);
+            csFecesConverterWaterFlowRates  = cell(1, iHumans);
+            csUrineConverterWaterFlowRates  = cell(1, iHumans);
+            for iHuman = 1:(iHumans)
+                
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,'.toBranches.Potable_Water_In'],          'fFlowRate',       'kg/s', ['Ingested Water Flow Rate' num2str(iHuman)]);
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,'.toBranches.RespirationWaterOutput'],    'fFlowRate',       'kg/s', ['Respiration Water Flow Rate' num2str(iHuman)]);
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,'.toBranches.PerspirationWaterOutput'],   'fFlowRate',       'kg/s', ['Perspiration Water Flow Rate' num2str(iHuman)]);
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,'.toBranches.Urine_Out'],                 'fFlowRate',       'kg/s', ['Urine Flow Rate' num2str(iHuman)]);
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,'.toBranches.Food_In'],                   'fFlowRate',       'kg/s', ['Food Flow Rate' num2str(iHuman)]);
+                
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,'.toBranches.Air_In.aoFlows(1)'], 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)',                  'kg/s',    ['CO2 Inlet Flowrate',      num2str(iHuman)]);
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,'.toBranches.Air_Out.aoFlows(1)'], 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)',                 'kg/s',    ['CO2 Outlet Flowrate',     num2str(iHuman)]);
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,'.toBranches.Air_In.aoFlows(1)'], 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.O2)',                   'kg/s',    ['O2 Inlet Flowrate',       num2str(iHuman)]);
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,'.toBranches.Air_Out.aoFlows(1)'], 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.O2)',                  'kg/s',    ['O2 Outlet Flowrate',      num2str(iHuman)]);
+                
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,':c:Metabolic'],       'rRespiratoryCoefficient',     '-', ['Respiratory Coefficient ',    num2str(iHuman)]);
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,':c:Metabolic.toStores.Metabolism.toPhases.Metabolism.toManips.substance'],       'this.afPartialFlows(this.oMT.tiN2I.C3H7NO2)',          'kg/s', ['Metabolism Protein Flow Rate',   num2str(iHuman)]);
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,':c:Metabolic.toStores.Metabolism.toPhases.Metabolism.toManips.substance'],       'this.afPartialFlows(this.oMT.tiN2I.C51H98O6)',         'kg/s', ['Metabolism Fat Flow Rate',       num2str(iHuman)]);
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,':c:Metabolic.toStores.Metabolism.toPhases.Metabolism.toManips.substance'],       'this.afPartialFlows(this.oMT.tiN2I.C6H12O6)',          'kg/s', ['Metabolism Glucose Flow Rate',   num2str(iHuman)]);
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,':c:Metabolic.toStores.Metabolism.toPhases.Metabolism.toManips.substance'],       'this.afPartialFlows(this.oMT.tiN2I.O2)',               'kg/s', ['Metabolism O2 Flow Rate',        num2str(iHuman)]);
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,':c:Metabolic.toStores.Metabolism.toPhases.Metabolism.toManips.substance'],       'this.afPartialFlows(this.oMT.tiN2I.CO2)',              'kg/s', ['Metabolism CO2 Flow Rate',       num2str(iHuman)]);
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,':c:Metabolic.toStores.Metabolism.toPhases.Metabolism.toManips.substance'],       'this.afPartialFlows(this.oMT.tiN2I.H2O)',              'kg/s', ['Metabolism H2O Flow Rate',       num2str(iHuman)]);
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,':c:Metabolic.toStores.Metabolism.toPhases.Metabolism.toManips.substance'],       'this.afPartialFlows(this.oMT.tiN2I.CH4N2O)',           'kg/s', ['Metabolism Urea Flow Rate',      num2str(iHuman)]);
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,':c:Metabolic.toStores.Metabolism.toPhases.Metabolism.toManips.substance'],       'this.afPartialFlows(this.oMT.tiN2I.Human_Tissue)',     'kg/s', ['Metabolism Muscle Flow Rate',    num2str(iHuman)]);
+                
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,':c:Digestion.toStores.Digestion.toPhases.Stomach.toManips.substance'],       'this.afPartialFlows(this.oMT.tiN2I.C3H7NO2)',              'kg/s', ['Stomach Protein Flow Rate',       num2str(iHuman)]);
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,':c:Digestion.toStores.Digestion.toPhases.Stomach.toManips.substance'],       'this.afPartialFlows(this.oMT.tiN2I.C51H98O6)',             'kg/s', ['Stomach Fat Flow Rate',       	num2str(iHuman)]);
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,':c:Digestion.toStores.Digestion.toPhases.Stomach.toManips.substance'],       'this.afPartialFlows(this.oMT.tiN2I.C6H12O6)',              'kg/s', ['Stomach Glucose Flow Rate',   	num2str(iHuman)]);
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,':c:Digestion.toStores.Digestion.toPhases.Stomach.toManips.substance'],       'this.afPartialFlows(this.oMT.tiN2I.H2O)',                  'kg/s', ['Stomach H2O Flow Rate',           num2str(iHuman)]);
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,':c:Digestion.toStores.Digestion.toPhases.Stomach.toManips.substance'],       'this.afPartialFlows(this.oMT.tiN2I.DietaryFiber)',         'kg/s', ['Stomach Fiber Flow Rate',         num2str(iHuman)]);
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,':c:Digestion.toStores.Digestion.toPhases.Stomach.toManips.substance'],       'this.afPartialFlows(this.oMT.tiN2I.Naplus)',               'kg/s', ['Stomach Sodium Flow Rate',        num2str(iHuman)]);
+
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,':c:WaterBalance.toStores.WaterBalance.toProcsP2P.KidneyToBladder'],              'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',      'kg/s',	['H2O Massflow to Bladder',	num2str(iHuman)]);
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,':c:WaterBalance.toStores.WaterBalance.toProcsP2P.KidneyToBladder'],              'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)', 	'kg/s',	['Na+ Massflow to Bladder',	num2str(iHuman)]);
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,':c:WaterBalance.toStores.WaterBalance.toProcsP2P.KidneyToBladder'],              'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Kplus)', 	'kg/s',	['K+ Massflow to Bladder',	num2str(iHuman)]);
+
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,':c:Digestion.toStores.Digestion.toProcsP2P.LargeIntestine_to_Rectum'],    	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C3H7NO2)',    	'kg/s',     ['Protein from LargeIntestine',    num2str(iHuman)]);
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,':c:Digestion.toStores.Digestion.toProcsP2P.LargeIntestine_to_Rectum'],    	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C51H98O6)',    	'kg/s',     ['Fat from LargeIntestine',    num2str(iHuman)]);
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,':c:Digestion.toStores.Digestion.toProcsP2P.LargeIntestine_to_Rectum'],    	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C6H12O6)',    	'kg/s',     ['Glucose from LargeIntestine',    num2str(iHuman)]);
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,':c:Digestion.toStores.Digestion.toProcsP2P.LargeIntestine_to_Rectum'],        'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',          'kg/s',     ['H2O from LargeIntestine',    num2str(iHuman)]);
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,':c:Digestion.toStores.Digestion.toProcsP2P.LargeIntestine_to_Rectum'],    	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.DietaryFiber)',	'kg/s',     ['Fiber from LargeIntestine',    num2str(iHuman)]);
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,':c:Digestion.toStores.Digestion.toProcsP2P.LargeIntestine_to_Rectum'],     	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',      	'kg/s',     ['Sodium from LargeIntestine',    num2str(iHuman)]);
+                
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,':c:WaterBalance.toStores.WaterBalance.toPhases.Bladder.toManips.substance'], 'this.afPartialFlows(this.oMT.tiN2I.H2O)',            'kg/s', ['Urine Converter H2O Flow Rate',    num2str(iHuman)]);
+                oLogger.addValue([sSystemName, ':c:Human_', num2str(iHuman) ,':c:Digestion.toStores.Digestion.toPhases.Rectum.toManips.substance'],        'this.afPartialFlows(this.oMT.tiN2I.H2O)',            'kg/s', ['Feces Converter H2O Flow Rate',    num2str(iHuman)]);
+                
+                csCO2FlowRates{iHuman}                  = ['"CO2 Outlet Flowrate',          num2str(iHuman),'"    + "CO2 Inlet Flowrate', num2str(iHuman),'" +'];
+                csO2FlowRates{iHuman}                   = ['"O2 Outlet Flowrate',           num2str(iHuman),'"    + "O2 Inlet Flowrate', num2str(iHuman),'" +'];
+                csIngestedWaterFlowRates{iHuman}        = ['"Ingested Water Flow Rate',     num2str(iHuman),'" +'];
+                csRespirationWaterFlowRates{iHuman}     = ['"Respiration Water Flow Rate',  num2str(iHuman),'" +'];
+                csPerspirationWaterFlowRates{iHuman}    = ['"Perspiration Water Flow Rate', num2str(iHuman),'" +'];
+                csMetabolismWaterFlowRates{iHuman}      = ['"Metabolism H2O Flow Rate',     num2str(iHuman),'" +'];
+                csStomachWaterFlowRates{iHuman}         = ['"Stomach H2O Flow Rate',        num2str(iHuman),'" +'];
+                csFecesWaterFlowRates{iHuman}           = ['"H2O from LargeIntestine',      num2str(iHuman),'" +'];
+                csUrineWaterFlowRates{iHuman}           = ['"H2O Massflow to Bladder',      num2str(iHuman),'" +'];
+                csFoodFlowRates{iHuman}                 = ['"Food Flow Rate',               num2str(iHuman),'" +'];
+                csFecesProteinFlowRates{iHuman}         = ['"Protein from LargeIntestine',  num2str(iHuman),'" +'];
+                csFecesFatFlowRates{iHuman}             = ['"Fat from LargeIntestine',      num2str(iHuman),'" +'];
+                csFecesGlucoseFlowRates{iHuman}         = ['"Glucose from LargeIntestine',  num2str(iHuman),'" +'];
+                csFecesFiberFlowRates{iHuman}           = ['"Fiber from LargeIntestine',    num2str(iHuman),'" +'];
+                csFecesSodiumFlowRates{iHuman}          = ['"Sodium from LargeIntestine',   num2str(iHuman),'" +'];
+                csUrineSodiumFlowRates{iHuman}          = ['"Na+ Massflow to Bladder',      num2str(iHuman),'" +'];
+                csUrinePotassiumFlowRates{iHuman}       = ['"K+ Massflow to Bladder',       num2str(iHuman),'" +'];
+                csUrineUreaFlowRates{iHuman}            = ['"Metabolism Urea Flow Rate',    num2str(iHuman),'" +'];
+                csFecesConverterWaterFlowRates{iHuman}  = ['"Feces Converter H2O Flow Rate', num2str(iHuman),'" +'];
+                csUrineConverterWaterFlowRates{iHuman}  = ['"Urine Converter H2O Flow Rate', num2str(iHuman),'" +'];
+            end
+            
+            sFlowRates = strjoin(csCO2FlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(sFlowRates,   'kg/s', 'Effective CO_2 Flow Crew');
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Exhaled CO_2');
+            
+            sFlowRates = strjoin(csO2FlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue( sFlowRates,   'kg/s', 'Effective O_2 Flow Crew');
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Inhaled O_2');
+
+            sFlowRates = strjoin(csIngestedWaterFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Ingested Water');
+            
+            sFlowRates = strjoin(csRespirationWaterFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Respiration Water');
+            
+            sFlowRates = strjoin(csPerspirationWaterFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Perspiration Water');
+            
+            sFlowRates = strjoin(csMetabolismWaterFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Metabolism Water');
+            
+            sFlowRates = strjoin(csStomachWaterFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Ingested Water in Food');
+            
+            sFlowRates = strjoin(csFecesWaterFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Feces Water');
+            
+            sFlowRates = strjoin(csUrineWaterFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Urine Water');
+            
+            sFlowRates = strjoin(csFoodFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Ingested Food');
+            
+            sFlowRates = strjoin(csFecesProteinFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Feces Protein');
+            
+            sFlowRates = strjoin(csFecesFatFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Feces Fat');
+            
+            sFlowRates = strjoin(csFecesGlucoseFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Feces Glucose');
+            
+            sFlowRates = strjoin(csFecesFiberFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Feces Fiber');
+            
+            sFlowRates = strjoin(csFecesSodiumFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Feces Na+');
+            
+            sFlowRates = strjoin(csUrineSodiumFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Urine Na+');
+            
+            sFlowRates = strjoin(csUrinePotassiumFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Urine K+');
+            
+            sFlowRates = strjoin(csUrineUreaFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Urine Urea');
+            
+            sFlowRates = strjoin(csFecesConverterWaterFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Feces Converter Water');
+            
+            sFlowRates = strjoin(csUrineConverterWaterFlowRates);
+            sFlowRates(end) = [];
+            oLogger.addVirtualValue(['cumsum((', sFlowRates,')         .* "Timestep")'], 'kg', 'Urine Converter Water');
+            
+            
+            %% %%%%%%%%%%%%% Detailed Logs %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % These are only added for one crew member:
             
             %% Respiration Logging
-            oLog.addValue('Example:c:Human_1:c:Respiration',    'fVolumetricFlow_BrainBlood',       'm^3/s', 'Volumetric Blood Flow Brain');
-            oLog.addValue('Example:c:Human_1:c:Respiration',    'fVolumetricFlow_TissueBlood',      'm^3/s', 'Volumetric Blood Flow Tissue');
-            oLog.addValue('Example:c:Human_1:c:Respiration',    'fVolumetricFlow_Air',              'm^3/s', 'Volumetric Air Flow');
+            oLogger.addValue('Example:c:Human_1:c:Respiration',    'fVolumetricFlow_BrainBlood',       'm^3/s', 'Volumetric Blood Flow Brain');
+            oLogger.addValue('Example:c:Human_1:c:Respiration',    'fVolumetricFlow_TissueBlood',      'm^3/s', 'Volumetric Blood Flow Tissue');
+            oLogger.addValue('Example:c:Human_1:c:Respiration',    'fVolumetricFlow_Air',              'm^3/s', 'Volumetric Air Flow');
             
-            oLog.addValue('Example:c:Human_1:c:Respiration',	'this.tfPartialPressure.Brain.O2', 	'Pa',   'Partial Pressure O2 Brain');
-            oLog.addValue('Example:c:Human_1:c:Respiration',    'tfPartialPressure.Brain.CO2',      'Pa',   'Partial Pressure CO2 Brain');
-            oLog.addValue('Example:c:Human_1:c:Respiration',    'tfPartialPressure.Tissue.O2',  	'Pa',   'Partial Pressure O2 Tissue');
-            oLog.addValue('Example:c:Human_1:c:Respiration',    'tfPartialPressure.Tissue.CO2', 	'Pa',   'Partial Pressure CO2 Tissue');
-            oLog.addValue('Example:c:Human_1:c:Respiration',    'tfPartialPressure.Arteries.O2',  	'Pa',   'Partial Pressure O2 Arteries');
-            oLog.addValue('Example:c:Human_1:c:Respiration',    'tfPartialPressure.Arteries.CO2', 	'Pa',   'Partial Pressure CO2 Arteries');
+            oLogger.addValue('Example:c:Human_1:c:Respiration',	'this.tfPartialPressure.Brain.O2', 	'Pa',   'Partial Pressure O2 Brain');
+            oLogger.addValue('Example:c:Human_1:c:Respiration',    'tfPartialPressure.Brain.CO2',      'Pa',   'Partial Pressure CO2 Brain');
+            oLogger.addValue('Example:c:Human_1:c:Respiration',    'tfPartialPressure.Tissue.O2',  	'Pa',   'Partial Pressure O2 Tissue');
+            oLogger.addValue('Example:c:Human_1:c:Respiration',    'tfPartialPressure.Tissue.CO2', 	'Pa',   'Partial Pressure CO2 Tissue');
+            oLogger.addValue('Example:c:Human_1:c:Respiration',    'tfPartialPressure.Arteries.O2',  	'Pa',   'Partial Pressure O2 Arteries');
+            oLogger.addValue('Example:c:Human_1:c:Respiration',    'tfPartialPressure.Arteries.CO2', 	'Pa',   'Partial Pressure CO2 Arteries');
             
-            oLog.addValue('Example:c:Human_1.toBranches.O2_from_Brain',     'fFlowRate',      'kg/s',     'Metabolic O2 from Brain');
-            oLog.addValue('Example:c:Human_1.toBranches.O2_from_Tissue',    'fFlowRate',      'kg/s',     'Metabolic O2 from Tissue');
-            oLog.addValue('Example:c:Human_1.toBranches.CO2_to_Brain',      'fFlowRate',      'kg/s',     'Metabolic CO2 to Brain');
-            oLog.addValue('Example:c:Human_1.toBranches.CO2_to_Tissue',     'fFlowRate',      'kg/s',     'Metabolic CO2 to Tissue');
+            oLogger.addValue('Example:c:Human_1.toBranches.O2_from_Brain',     'fFlowRate',      'kg/s',     'Metabolic O2 from Brain');
+            oLogger.addValue('Example:c:Human_1.toBranches.O2_from_Tissue',    'fFlowRate',      'kg/s',     'Metabolic O2 from Tissue');
+            oLogger.addValue('Example:c:Human_1.toBranches.CO2_to_Brain',      'fFlowRate',      'kg/s',     'Metabolic CO2 to Brain');
+            oLogger.addValue('Example:c:Human_1.toBranches.CO2_to_Tissue',     'fFlowRate',      'kg/s',     'Metabolic CO2 to Tissue');
             
-            oLog.addValue('Example:c:Human_1:c:Respiration.toStores.Lung.toPhases.Air',         'this.afMass(this.oMT.tiN2I.H2O)',	'kg', 	'Water in Lung Air');
-            oLog.addValue('Example:c:Human_1:c:Respiration.toStores.Lung.toPhases.Blood',       'this.afMass(this.oMT.tiN2I.H2O)',	'kg', 	'Water in Lung Blood');
-            oLog.addValue('Example:c:Human_1:c:Respiration.toStores.Arteries.toPhases.Blood', 	'this.afMass(this.oMT.tiN2I.H2O)',	'kg', 	'Water in Arteries');
-            oLog.addValue('Example:c:Human_1:c:Respiration.toStores.Veins.toPhases.Blood',     	'this.afMass(this.oMT.tiN2I.H2O)',	'kg', 	'Water in Veins');
-            oLog.addValue('Example:c:Human_1:c:Respiration.toStores.Brain.toPhases.Blood',      'this.afMass(this.oMT.tiN2I.H2O)',	'kg', 	'Water in Brain Blood');
-            oLog.addValue('Example:c:Human_1:c:Respiration.toStores.Brain.toPhases.Tissue',     'this.afMass(this.oMT.tiN2I.H2O)',	'kg', 	'Water in Brain Tissue');
-            oLog.addValue('Example:c:Human_1:c:Respiration.toStores.Tissue.toPhases.Blood',     'this.afMass(this.oMT.tiN2I.H2O)',	'kg', 	'Water in Tissue Blood');
-            oLog.addValue('Example:c:Human_1:c:Respiration.toStores.Tissue.toPhases.Tissue',    'this.afMass(this.oMT.tiN2I.H2O)',	'kg', 	'Water in Tissue Tissue');
+            oLogger.addValue('Example:c:Human_1:c:Respiration.toStores.Lung.toPhases.Air',         'this.afMass(this.oMT.tiN2I.H2O)',	'kg', 	'Water in Lung Air');
+            oLogger.addValue('Example:c:Human_1:c:Respiration.toStores.Lung.toPhases.Blood',       'this.afMass(this.oMT.tiN2I.H2O)',	'kg', 	'Water in Lung Blood');
+            oLogger.addValue('Example:c:Human_1:c:Respiration.toStores.Arteries.toPhases.Blood', 	'this.afMass(this.oMT.tiN2I.H2O)',	'kg', 	'Water in Arteries');
+            oLogger.addValue('Example:c:Human_1:c:Respiration.toStores.Veins.toPhases.Blood',     	'this.afMass(this.oMT.tiN2I.H2O)',	'kg', 	'Water in Veins');
+            oLogger.addValue('Example:c:Human_1:c:Respiration.toStores.Brain.toPhases.Blood',      'this.afMass(this.oMT.tiN2I.H2O)',	'kg', 	'Water in Brain Blood');
+            oLogger.addValue('Example:c:Human_1:c:Respiration.toStores.Brain.toPhases.Tissue',     'this.afMass(this.oMT.tiN2I.H2O)',	'kg', 	'Water in Brain Tissue');
+            oLogger.addValue('Example:c:Human_1:c:Respiration.toStores.Tissue.toPhases.Blood',     'this.afMass(this.oMT.tiN2I.H2O)',	'kg', 	'Water in Tissue Blood');
+            oLogger.addValue('Example:c:Human_1:c:Respiration.toStores.Tissue.toPhases.Tissue',    'this.afMass(this.oMT.tiN2I.H2O)',	'kg', 	'Water in Tissue Tissue');
             
-            oLog.addValue('Example:c:Human_1:c:Respiration.toStores.Lung.toProcsP2P.Alveola_to_Air',    'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)',      'kg/s', 	'Exhaled CO2');
-            oLog.addValue('Example:c:Human_1:c:Respiration.toStores.Lung.toProcsP2P.Air_to_Alveola',    'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.O2)',       'kg/s',     'Inhaled O2');
-            oLog.addValue('Example:c:Human_1:c:Respiration.toStores.Brain.toProcsP2P.Blood_to_Brain',   'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.O2)',       'kg/s',     'Brain absorbed O2');
-            oLog.addValue('Example:c:Human_1:c:Respiration.toStores.Brain.toProcsP2P.Brain_to_Blood',   'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)',      'kg/s',     'Brain desorbed CO2');
-            oLog.addValue('Example:c:Human_1:c:Respiration.toStores.Tissue.toProcsP2P.Blood_to_Tissue', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.O2)',       'kg/s',     'Tissue absorbed O2');
-            oLog.addValue('Example:c:Human_1:c:Respiration.toStores.Tissue.toProcsP2P.Tissue_to_Blood', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)',      'kg/s',     'Tissue desorbed CO2');
-            
-            oLog.addValue('Example:c:Human_1.toBranches.Air_In.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)',                  'kg/s',    'CO2 Inlet Flowrate');
-            oLog.addValue('Example:c:Human_1.toBranches.Air_Out.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)',                 'kg/s',    'CO2 Outlet Flowrate');
-            oLog.addValue('Example:c:Human_1.toBranches.Air_In.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.O2)',                   'kg/s',    'O2 Inlet Flowrate');
-            oLog.addValue('Example:c:Human_1.toBranches.Air_Out.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.O2)',                  'kg/s',    'O2 Outlet Flowrate');
-            
-            oLog.addVirtualValue('"CO2 Outlet Flowrate"    + "CO2 Inlet Flowrate"',   'kg/s', 'Effective CO2 Flow');
-            oLog.addVirtualValue( '"O2 Outlet Flowrate"    +  "O2 Inlet Flowrate"',   'kg/s', 'Effective O2 Flow');
+            oLogger.addValue('Example:c:Human_1:c:Respiration.toStores.Lung.toProcsP2P.Alveola_to_Air',    'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)',      'kg/s', 	'Exhaled CO2');
+            oLogger.addValue('Example:c:Human_1:c:Respiration.toStores.Lung.toProcsP2P.Air_to_Alveola',    'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.O2)',       'kg/s',     'Inhaled O2');
+            oLogger.addValue('Example:c:Human_1:c:Respiration.toStores.Brain.toProcsP2P.Blood_to_Brain',   'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.O2)',       'kg/s',     'Brain absorbed O2');
+            oLogger.addValue('Example:c:Human_1:c:Respiration.toStores.Brain.toProcsP2P.Brain_to_Blood',   'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)',      'kg/s',     'Brain desorbed CO2');
+            oLogger.addValue('Example:c:Human_1:c:Respiration.toStores.Tissue.toProcsP2P.Blood_to_Tissue', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.O2)',       'kg/s',     'Tissue absorbed O2');
+            oLogger.addValue('Example:c:Human_1:c:Respiration.toStores.Tissue.toProcsP2P.Tissue_to_Blood', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)',      'kg/s',     'Tissue desorbed CO2');
             
             %% Metabolic Logging
             
-            oLog.addValue('Example:c:Human_1:c:Metabolic', 'fVO2',                              'L/min',    'VO2');
-            oLog.addValue('Example:c:Human_1:c:Metabolic', 'fVO2_rest',                         'L/min',    'VO2 Rest');
-            oLog.addValue('Example:c:Human_1:c:Metabolic', 'fVO2_max',                          'L/min',    'VO2 Max');
-            oLog.addValue('Example:c:Human_1:c:Metabolic', 'rActivityLevel',                    '-',        'Activity Level');
-            oLog.addValue('Example:c:Human_1:c:Metabolic', 'fTotalMetabolicRate',               'W',        'Current Metabolic Rate');
-            oLog.addValue('Example:c:Human_1:c:Metabolic', 'fMetabolicHeatFlow',                'W',        'Current Metabolic Heatflow');
-            oLog.addValue('Example:c:Human_1:c:Metabolic', 'rRespiratoryCoefficient',           '-',        'Respiratory Coefficient');
-            oLog.addValue('Example:c:Human_1:c:Metabolic', 'fRestingDailyEnergyExpenditure',  	'-',        'Resting Daily Energy Demand');
-            oLog.addValue('Example:c:Human_1:c:Metabolic', 'fAdditionalFoodEnergyDemand',       '-',        'Additional Energy Demand from Exercise');
+            oLogger.addValue('Example:c:Human_1:c:Metabolic', 'fVO2',                              'L/min',    'VO2');
+            oLogger.addValue('Example:c:Human_1:c:Metabolic', 'fVO2_rest',                         'L/min',    'VO2 Rest');
+            oLogger.addValue('Example:c:Human_1:c:Metabolic', 'fVO2_max',                          'L/min',    'VO2 Max');
+            oLogger.addValue('Example:c:Human_1:c:Metabolic', 'rActivityLevel',                    '-',        'Activity Level');
+            oLogger.addValue('Example:c:Human_1:c:Metabolic', 'fTotalMetabolicRate',               'W',        'Current Metabolic Rate');
+            oLogger.addValue('Example:c:Human_1:c:Metabolic', 'fMetabolicHeatFlow',                'W',        'Current Metabolic Heatflow');
+            oLogger.addValue('Example:c:Human_1:c:Metabolic', 'fRestingDailyEnergyExpenditure',  	'-',        'Resting Daily Energy Demand');
+            oLogger.addValue('Example:c:Human_1:c:Metabolic', 'fAdditionalFoodEnergyDemand',       '-',        'Additional Energy Demand from Exercise');
             
-            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.Liver',            'this.afMass(this.oMT.tiN2I.C6H12O6)',  	 'kg', 'Glucose in Liver');
-            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.Liver',            'this.afMass(this.oMT.tiN2I.H2O)',          'kg', 'Water in Liver');
-            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.AdiposeTissue',    'this.afMass(this.oMT.tiN2I.C51H98O6)',  	 'kg', 'Fat Mass Adipose Tissue');
-            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.AdiposeTissue',    'this.afMass(this.oMT.tiN2I.H2O)',          'kg', 'Water in Adipose Tissue');
-            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.MuscleTissue',     'this.afMass(this.oMT.tiN2I.C6H12O6)',  	 'kg', 'Glucose in Muscle');
-            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.MuscleTissue',     'this.afMass(this.oMT.tiN2I.Human_Tissue)', 'kg', 'Muscle Mass');
-            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.MuscleTissue',     'this.afMass(this.oMT.tiN2I.H2O)',          'kg', 'Water in Muscle');
-            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.Metabolism',       'this.afMass(this.oMT.tiN2I.C3H7NO2)',      'kg', 'Protein Mass in Metabolism');
-            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.Metabolism',       'this.afMass(this.oMT.tiN2I.C51H98O6)',     'kg', 'Fat Mass in Metabolism');
-            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.Metabolism',       'this.afMass(this.oMT.tiN2I.C6H12O6)',      'kg', 'Glucose Mass in Metabolism');
-            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.Metabolism',       'this.afMass(this.oMT.tiN2I.H2O)',          'kg', 'Water Mass in Metabolism');
+            oLogger.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.Liver',            'this.afMass(this.oMT.tiN2I.C6H12O6)',  	 'kg', 'Glucose in Liver');
+            oLogger.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.Liver',            'this.afMass(this.oMT.tiN2I.H2O)',          'kg', 'Water in Liver');
+            oLogger.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.AdiposeTissue',    'this.afMass(this.oMT.tiN2I.C51H98O6)',  	 'kg', 'Fat Mass Adipose Tissue');
+            oLogger.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.AdiposeTissue',    'this.afMass(this.oMT.tiN2I.H2O)',          'kg', 'Water in Adipose Tissue');
+            oLogger.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.MuscleTissue',     'this.afMass(this.oMT.tiN2I.C6H12O6)',  	 'kg', 'Glucose in Muscle');
+            oLogger.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.MuscleTissue',     'this.afMass(this.oMT.tiN2I.Human_Tissue)', 'kg', 'Muscle Mass');
+            oLogger.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.MuscleTissue',     'this.afMass(this.oMT.tiN2I.H2O)',          'kg', 'Water in Muscle');
+            oLogger.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.Metabolism',       'this.afMass(this.oMT.tiN2I.C3H7NO2)',      'kg', 'Protein Mass in Metabolism');
+            oLogger.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.Metabolism',       'this.afMass(this.oMT.tiN2I.C51H98O6)',     'kg', 'Fat Mass in Metabolism');
+            oLogger.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.Metabolism',       'this.afMass(this.oMT.tiN2I.C6H12O6)',      'kg', 'Glucose Mass in Metabolism');
+            oLogger.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.Metabolism',       'this.afMass(this.oMT.tiN2I.H2O)',          'kg', 'Water Mass in Metabolism');
             
-            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.Metabolism.toManips.substance',       'this.afPartialFlows(this.oMT.tiN2I.C3H7NO2)',        'kg/s', 'Metabolism Protein Flow Rate');
-            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.Metabolism.toManips.substance',       'this.afPartialFlows(this.oMT.tiN2I.C51H98O6)',       'kg/s', 'Metabolism Fat Flow Rate');
-            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.Metabolism.toManips.substance',       'this.afPartialFlows(this.oMT.tiN2I.C6H12O6)',        'kg/s', 'Metabolism Glucose Flow Rate');
-            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.Metabolism.toManips.substance',       'this.afPartialFlows(this.oMT.tiN2I.O2)',             'kg/s', 'Metabolism O2 Flow Rate');
-            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.Metabolism.toManips.substance',       'this.afPartialFlows(this.oMT.tiN2I.CO2)',            'kg/s', 'Metabolism CO2 Flow Rate');
-            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.Metabolism.toManips.substance',       'this.afPartialFlows(this.oMT.tiN2I.H2O)',            'kg/s', 'Metabolism H2O Flow Rate');
-            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.Metabolism.toManips.substance',       'this.afPartialFlows(this.oMT.tiN2I.CH4N2O)',         'kg/s', 'Metabolism Urea Flow Rate');
-            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toPhases.Metabolism.toManips.substance',       'this.afPartialFlows(this.oMT.tiN2I.Human_Tissue)',   'kg/s', 'Metabolism Muscle Flow Rate');
-            
-            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toProcsP2P.Metabolism_to_Liver',               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C6H12O6)',      'kg/s', 'Glucose to Liver Flow Rate');
-            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toProcsP2P.Metabolism_to_MuscleTissue',      	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C6H12O6)',      'kg/s', 'Glucose to Muscle Flow Rate');
-            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toProcsP2P.Metabolism_to_MuscleTissue',      	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Human_Tissue)',	'kg/s', 'Muscle from Metabolism Flow Rate');
-            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toProcsP2P.Metabolism_to_AdiposeTissue',      	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C51H98O6)',     'kg/s', 'Fat to Adipose Tissue Flow Rate');
-            oLog.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toProcsP2P.Metabolism_to_AdiposeTissue',      	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',          'kg/s', 'H2O to Adipose Tissue Flow Rate');
+            oLogger.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toProcsP2P.Metabolism_to_Liver',               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C6H12O6)',      'kg/s', 'Glucose to Liver Flow Rate');
+            oLogger.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toProcsP2P.Metabolism_to_MuscleTissue',      	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C6H12O6)',      'kg/s', 'Glucose to Muscle Flow Rate');
+            oLogger.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toProcsP2P.Metabolism_to_MuscleTissue',      	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Human_Tissue)',	'kg/s', 'Muscle from Metabolism Flow Rate');
+            oLogger.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toProcsP2P.Metabolism_to_AdiposeTissue',      	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C51H98O6)',     'kg/s', 'Fat to Adipose Tissue Flow Rate');
+            oLogger.addValue('Example:c:Human_1:c:Metabolic.toStores.Metabolism.toProcsP2P.Metabolism_to_AdiposeTissue',      	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',          'kg/s', 'H2O to Adipose Tissue Flow Rate');
             
             %% Water Balance Logging
             
-            oLog.addValue('Example:c:Human_1:c:WaterBalance',      	'fConcentrationOfADHinBloodPlasma',             'munits/L', 'ADH in Blood Plasma');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance',      	'fConcentrationOfReninInBloodPlasma',           'ng/L',     'Renin in Blood Plasma');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance',      	'fConcentrationOfAngiotensinIIInBloodPlasma',  	'ng/L',     'Angiotensin II in Blood Plasma');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance',      	'fConcentrationOfAldosteronInBloodPlasma',    	'ng/L',     'Aldosteron in Blood Plasma');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance',      	'fConcentrationOfADHinBloodPlasma',             'munits/L', 'ADH in Blood Plasma');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance',      	'fConcentrationOfReninInBloodPlasma',           'ng/L',     'Renin in Blood Plasma');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance',      	'fConcentrationOfAngiotensinIIInBloodPlasma',  	'ng/L',     'Angiotensin II in Blood Plasma');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance',      	'fConcentrationOfAldosteronInBloodPlasma',    	'ng/L',     'Aldosteron in Blood Plasma');
             
-            oLog.addValue('Example:c:Human_1:c:WaterBalance',      	'rRatioOfAvailableSweat',                       '-',        'Available Sweat');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance',      	'fThirst',                                      '-',        'Thirst Level');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance',      	'rRatioOfAvailableSweat',                       '-',        'Available Sweat');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance',      	'fThirst',                                      '-',        'Thirst Level');
             
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.BloodPlasma',      	'this.afMass(this.oMT.tiN2I.H2O)',      'kg',	'H2O Mass in Blood Plasma');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.BloodPlasma',      	'this.afMass(this.oMT.tiN2I.Naplus)',  	'kg',	'Na+ Mass in Blood Plasma');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.BloodPlasma',      	'this.afMass(this.oMT.tiN2I.Kplus)',   	'kg',	'K+ Mass in Blood Plasma');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.BloodPlasma',      	'this.afMass(this.oMT.tiN2I.H2O)',      'kg',	'H2O Mass in Blood Plasma');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.BloodPlasma',      	'this.afMass(this.oMT.tiN2I.Naplus)',  	'kg',	'Na+ Mass in Blood Plasma');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.BloodPlasma',      	'this.afMass(this.oMT.tiN2I.Kplus)',   	'kg',	'K+ Mass in Blood Plasma');
             
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.InterstitialFluid',	'this.afMass(this.oMT.tiN2I.H2O)',      'kg',	'H2O Mass in InterstitialFluid');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.InterstitialFluid',	'this.afMass(this.oMT.tiN2I.Naplus)',  	'kg',	'Na+ Mass in InterstitialFluid');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.InterstitialFluid', 	'this.afMass(this.oMT.tiN2I.Kplus)',   	'kg',	'K+ Mass in InterstitialFluid');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.InterstitialFluid',	'this.afMass(this.oMT.tiN2I.H2O)',      'kg',	'H2O Mass in InterstitialFluid');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.InterstitialFluid',	'this.afMass(this.oMT.tiN2I.Naplus)',  	'kg',	'Na+ Mass in InterstitialFluid');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.InterstitialFluid', 	'this.afMass(this.oMT.tiN2I.Kplus)',   	'kg',	'K+ Mass in InterstitialFluid');
             
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.IntracellularFluid',	'this.afMass(this.oMT.tiN2I.H2O)',      'kg',	'H2O Mass in IntracellularFluid');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.IntracellularFluid',	'this.afMass(this.oMT.tiN2I.Naplus)',  	'kg',	'Na+ Mass in IntracellularFluid');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.IntracellularFluid', 'this.afMass(this.oMT.tiN2I.Kplus)',   	'kg',	'K+ Mass in IntracellularFluid');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.IntracellularFluid',	'this.afMass(this.oMT.tiN2I.H2O)',      'kg',	'H2O Mass in IntracellularFluid');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.IntracellularFluid',	'this.afMass(this.oMT.tiN2I.Naplus)',  	'kg',	'Na+ Mass in IntracellularFluid');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.IntracellularFluid', 'this.afMass(this.oMT.tiN2I.Kplus)',   	'kg',	'K+ Mass in IntracellularFluid');
             
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.Kidney',             'this.afMass(this.oMT.tiN2I.H2O)',      'kg',	'H2O Mass in Kidney');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.Kidney',             'this.afMass(this.oMT.tiN2I.Naplus)',  	'kg',	'Na+ Mass in Kidney');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.Kidney',             'this.afMass(this.oMT.tiN2I.Kplus)',   	'kg',	'K+ Mass in Kidney');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.Kidney',             'this.afMass(this.oMT.tiN2I.H2O)',      'kg',	'H2O Mass in Kidney');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.Kidney',             'this.afMass(this.oMT.tiN2I.Naplus)',  	'kg',	'Na+ Mass in Kidney');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.Kidney',             'this.afMass(this.oMT.tiN2I.Kplus)',   	'kg',	'K+ Mass in Kidney');
             
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.Bladder',            'this.afMass(this.oMT.tiN2I.H2O)',      'kg',	'H2O Mass in Bladder');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.Bladder',            'this.afMass(this.oMT.tiN2I.Naplus)',  	'kg',	'Na+ Mass in Bladder');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.Bladder',            'this.afMass(this.oMT.tiN2I.Kplus)',   	'kg',	'K+ Mass in Bladder');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.Bladder',            'this.afMass(this.oMT.tiN2I.Urine)',   	'kg',	'Urine Mass in Bladder');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.Bladder',            'this.afMass(this.oMT.tiN2I.H2O)',      'kg',	'H2O Mass in Bladder');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.Bladder',            'this.afMass(this.oMT.tiN2I.Naplus)',  	'kg',	'Na+ Mass in Bladder');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.Bladder',            'this.afMass(this.oMT.tiN2I.Kplus)',   	'kg',	'K+ Mass in Bladder');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.Bladder',            'this.afMass(this.oMT.tiN2I.Urine)',   	'kg',	'Urine Mass in Bladder');
             
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.PerspirationOutput.toPhases.PerspirationFlow', 'this.afMass(this.oMT.tiN2I.H2O)',  'kg',	'Persipiration Flow Water Mass');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.PerspirationOutput.toPhases.PerspirationFlow', 'this.afMass(this.oMT.tiN2I.H2O)',  'kg',	'Persipiration Flow Water Mass');
             
             % Flux through endothelium is from Interstitial to Blood Plasma
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.FluxThroughEndothelium',       'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',   	'kg/s',	'H2O Massflow through Endothelium');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.ReFluxThroughEndothelium',    	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',   	'kg/s',	'H2O MassREflow through Endothelium');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.FluxThroughEndothelium',       'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',	'kg/s',	'Na+ Massflow through Endothelium');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.ReFluxThroughEndothelium',    	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',	'kg/s',	'Na+ MassREflow through Endothelium');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.FluxThroughEndothelium',       'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Kplus)', 	'kg/s',	'K+ Massflow through Endothelium');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.ReFluxThroughEndothelium',    	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Kplus)', 	'kg/s',	'K+ MassREflow through Endothelium');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.FluxThroughEndothelium',       'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',   	'kg/s',	'H2O Massflow through Endothelium');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.ReFluxThroughEndothelium',    	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',   	'kg/s',	'H2O MassREflow through Endothelium');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.FluxThroughEndothelium',       'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',	'kg/s',	'Na+ Massflow through Endothelium');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.ReFluxThroughEndothelium',    	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',	'kg/s',	'Na+ MassREflow through Endothelium');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.FluxThroughEndothelium',       'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Kplus)', 	'kg/s',	'K+ Massflow through Endothelium');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.ReFluxThroughEndothelium',    	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Kplus)', 	'kg/s',	'K+ MassREflow through Endothelium');
             
             % Flux through cell membranes is from interstital to
             % intracellular
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.FluxthroughCellMembranes',    	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',   	'kg/s',	'H2O Massflow through CellMembranes');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.ReFluxthroughCellMembranes', 	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',   	'kg/s',	'H2O MassREflow through CellMembranes');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.FluxthroughCellMembranes',   	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',	'kg/s',	'Na+ Massflow through CellMembranes');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.ReFluxthroughCellMembranes',  	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',	'kg/s',	'Na+ MassREflow through CellMembranes');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.FluxthroughCellMembranes',  	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Kplus)', 	'kg/s',	'K+ Massflow through CellMembranes');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.ReFluxthroughCellMembranes',	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Kplus)', 	'kg/s',	'K+ MassREflow through CellMembranes');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.FluxthroughCellMembranes',    	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',   	'kg/s',	'H2O Massflow through CellMembranes');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.ReFluxthroughCellMembranes', 	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',   	'kg/s',	'H2O MassREflow through CellMembranes');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.FluxthroughCellMembranes',   	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',	'kg/s',	'Na+ Massflow through CellMembranes');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.ReFluxthroughCellMembranes',  	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',	'kg/s',	'Na+ MassREflow through CellMembranes');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.FluxthroughCellMembranes',  	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Kplus)', 	'kg/s',	'K+ Massflow through CellMembranes');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.ReFluxthroughCellMembranes',	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Kplus)', 	'kg/s',	'K+ MassREflow through CellMembranes');
             
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.InFluxKidney',                 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',      'kg/s',	'H2O Massflow to Kidney');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.InFluxKidney',                 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)', 	'kg/s',	'Na+ Massflow to Kidney');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.InFluxKidney',                 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Kplus)', 	'kg/s',	'K+ Massflow to Kidney');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.ReadsorptionFluxFromKidney', 	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',      'kg/s',	'H2O readsorption from Kidney');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.ReadsorptionFluxFromKidney',  	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)', 	'kg/s',	'Na+ readsorption from Kidney');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.ReadsorptionFluxFromKidney',  	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Kplus)', 	'kg/s',	'K+ readsorption from Kidney');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.KidneyToBladder',              'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',      'kg/s',	'H2O Massflow to Bladder');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.KidneyToBladder',              'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)', 	'kg/s',	'Na+ Massflow to Bladder');
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.KidneyToBladder',              'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Kplus)', 	'kg/s',	'K+ Massflow to Bladder');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.InFluxKidney',                 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',      'kg/s',	'H2O Massflow to Kidney');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.InFluxKidney',                 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)', 	'kg/s',	'Na+ Massflow to Kidney');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.InFluxKidney',                 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Kplus)', 	'kg/s',	'K+ Massflow to Kidney');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.ReadsorptionFluxFromKidney', 	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',      'kg/s',	'H2O readsorption from Kidney');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.ReadsorptionFluxFromKidney',  	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)', 	'kg/s',	'Na+ readsorption from Kidney');
+            oLogger.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toProcsP2P.ReadsorptionFluxFromKidney',  	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Kplus)', 	'kg/s',	'K+ readsorption from Kidney');
             
             % Since it is confusing to blood the flowrates that basically
             % handle negative flows as two values, we create virtual values
             % for the overall flows
-            oLog.addVirtualValue('"H2O Massflow through Endothelium" - "H2O MassREflow through Endothelium"',       'kg/s', 'Endothelium H2O Massflow');
-            oLog.addVirtualValue('"Na+ Massflow through Endothelium" - "Na+ MassREflow through Endothelium"',       'kg/s', 'Endothelium Na+ Massflow');
-            oLog.addVirtualValue('"K+ Massflow through Endothelium"  - "K+ MassREflow through Endothelium"',        'kg/s', 'Endothelium K+ Massflow');
+            oLogger.addVirtualValue('"H2O Massflow through Endothelium" - "H2O MassREflow through Endothelium"',       'kg/s', 'Endothelium H2O Massflow');
+            oLogger.addVirtualValue('"Na+ Massflow through Endothelium" - "Na+ MassREflow through Endothelium"',       'kg/s', 'Endothelium Na+ Massflow');
+            oLogger.addVirtualValue('"K+ Massflow through Endothelium"  - "K+ MassREflow through Endothelium"',        'kg/s', 'Endothelium K+ Massflow');
             
-            oLog.addVirtualValue('"H2O Massflow through CellMembranes" - "H2O MassREflow through CellMembranes"',   'kg/s', 'CellMembranes H2O Massflow');
-            oLog.addVirtualValue('"Na+ Massflow through CellMembranes" - "Na+ MassREflow through CellMembranes"',   'kg/s', 'CellMembranes Na+ Massflow');
-            oLog.addVirtualValue('"K+ Massflow through CellMembranes"  - "K+ MassREflow through CellMembranes"',    'kg/s', 'CellMembranes K+ Massflow');
+            oLogger.addVirtualValue('"H2O Massflow through CellMembranes" - "H2O MassREflow through CellMembranes"',   'kg/s', 'CellMembranes H2O Massflow');
+            oLogger.addVirtualValue('"Na+ Massflow through CellMembranes" - "Na+ MassREflow through CellMembranes"',   'kg/s', 'CellMembranes Na+ Massflow');
+            oLogger.addVirtualValue('"K+ Massflow through CellMembranes"  - "K+ MassREflow through CellMembranes"',    'kg/s', 'CellMembranes K+ Massflow');
             
-            oLog.addVirtualValue('"H2O Massflow to Kidney" - "H2O readsorption from Kidney"',   'kg/s', 'Kidney H2O Massflow');
-            oLog.addVirtualValue('"Na+ Massflow to Kidney" - "Na+ readsorption from Kidney"',   'kg/s', 'Kidney Na+ Massflow');
-            oLog.addVirtualValue('"K+ Massflow to Kidney"  - "K+ readsorption from Kidney"',    'kg/s', 'Kidney K+ Massflow');
+            oLogger.addVirtualValue('"H2O Massflow to Kidney" - "H2O readsorption from Kidney"',   'kg/s', 'Kidney H2O Massflow');
+            oLogger.addVirtualValue('"Na+ Massflow to Kidney" - "Na+ readsorption from Kidney"',   'kg/s', 'Kidney Na+ Massflow');
+            oLogger.addVirtualValue('"K+ Massflow to Kidney"  - "K+ readsorption from Kidney"',    'kg/s', 'Kidney K+ Massflow');
             
             %% Digestion
             % Stomach
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Stomach',                          'fMass',                                            'kg',   'Total Mass in Stomach');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Stomach',                          'this.afMass(this.oMT.tiN2I.C3H7NO2)',              'kg',   'Protein Mass in Stomach');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Stomach',                          'this.afMass(this.oMT.tiN2I.C51H98O6)',            	'kg',   'Fat Mass in Stomach');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Stomach',                          'this.afMass(this.oMT.tiN2I.C6H12O6)',              'kg',   'Glucose Mass in Stomach');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Stomach',                          'this.afMass(this.oMT.tiN2I.H2O)',                  'kg',   'H2O Mass in Stomach');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Stomach',                          'this.afMass(this.oMT.tiN2I.DietaryFiber)',     	'kg',   'Fiber Mass in Stomach');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Stomach',                          'this.afMass(this.oMT.tiN2I.Naplus)',            	'kg',   'Sodium Mass in Stomach');
-            
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Stomach.toManips.substance',       'this.afPartialFlows(this.oMT.tiN2I.C3H7NO2)',   	'kg/s', 'Stomach Protein Flow Rate');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Stomach.toManips.substance',       'this.afPartialFlows(this.oMT.tiN2I.C51H98O6)',    	'kg/s', 'Stomach Fat Flow Rate');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Stomach.toManips.substance',       'this.afPartialFlows(this.oMT.tiN2I.C6H12O6)',    	'kg/s', 'Stomach Glucose Flow Rate');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Stomach.toManips.substance',       'this.afPartialFlows(this.oMT.tiN2I.H2O)',          'kg/s', 'Stomach H2O Flow Rate');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Stomach.toManips.substance',       'this.afPartialFlows(this.oMT.tiN2I.DietaryFiber)', 'kg/s', 'Stomach Fiber Flow Rate');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Stomach.toManips.substance',       'this.afPartialFlows(this.oMT.tiN2I.Naplus)',      	'kg/s', 'Stomach Sodium Flow Rate');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Stomach',                          'fMass',                                            'kg',   'Total Mass in Stomach');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Stomach',                          'this.afMass(this.oMT.tiN2I.C3H7NO2)',              'kg',   'Protein Mass in Stomach');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Stomach',                          'this.afMass(this.oMT.tiN2I.C51H98O6)',            	'kg',   'Fat Mass in Stomach');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Stomach',                          'this.afMass(this.oMT.tiN2I.C6H12O6)',              'kg',   'Glucose Mass in Stomach');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Stomach',                          'this.afMass(this.oMT.tiN2I.H2O)',                  'kg',   'H2O Mass in Stomach');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Stomach',                          'this.afMass(this.oMT.tiN2I.DietaryFiber)',     	'kg',   'Fiber Mass in Stomach');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Stomach',                          'this.afMass(this.oMT.tiN2I.Naplus)',            	'kg',   'Sodium Mass in Stomach');
             
             % Duodenum
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Duodenum',                         'this.afMass(this.oMT.tiN2I.C3H7NO2)',              'kg',   'Protein Mass in Duodenum');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Duodenum',                         'this.afMass(this.oMT.tiN2I.C51H98O6)',            	'kg',   'Fat Mass in Duodenum');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Duodenum',                         'this.afMass(this.oMT.tiN2I.C6H12O6)',              'kg',   'Glucose Mass in Duodenum');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Duodenum',                         'this.afMass(this.oMT.tiN2I.H2O)',                  'kg',   'H2O Mass in Duodenum');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Duodenum',                         'this.afMass(this.oMT.tiN2I.DietaryFiber)',     	'kg',   'Fiber Mass in Duodenum');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Duodenum',                         'this.afMass(this.oMT.tiN2I.Naplus)',             	'kg',   'Sodium Mass in Duodenum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Duodenum',                         'this.afMass(this.oMT.tiN2I.C3H7NO2)',              'kg',   'Protein Mass in Duodenum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Duodenum',                         'this.afMass(this.oMT.tiN2I.C51H98O6)',            	'kg',   'Fat Mass in Duodenum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Duodenum',                         'this.afMass(this.oMT.tiN2I.C6H12O6)',              'kg',   'Glucose Mass in Duodenum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Duodenum',                         'this.afMass(this.oMT.tiN2I.H2O)',                  'kg',   'H2O Mass in Duodenum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Duodenum',                         'this.afMass(this.oMT.tiN2I.DietaryFiber)',     	'kg',   'Fiber Mass in Duodenum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Duodenum',                         'this.afMass(this.oMT.tiN2I.Naplus)',             	'kg',   'Sodium Mass in Duodenum');
             
             % Jejunum
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Jejunum',                          'this.afMass(this.oMT.tiN2I.C3H7NO2)',              'kg',   'Protein Mass in Jejunum');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Jejunum',                          'this.afMass(this.oMT.tiN2I.C51H98O6)',             'kg',   'Fat Mass in Jejunum');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Jejunum',                          'this.afMass(this.oMT.tiN2I.C6H12O6)',              'kg',   'Glucose Mass in Jejunum');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Jejunum',                          'this.afMass(this.oMT.tiN2I.H2O)',                  'kg',   'H2O Mass in Jejunum');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Jejunum',                          'this.afMass(this.oMT.tiN2I.DietaryFiber)',     	'kg',   'Fiber Mass in Jejunum');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Jejunum',                          'this.afMass(this.oMT.tiN2I.Naplus)',             	'kg',   'Sodium Mass in Jejunum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Jejunum',                          'this.afMass(this.oMT.tiN2I.C3H7NO2)',              'kg',   'Protein Mass in Jejunum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Jejunum',                          'this.afMass(this.oMT.tiN2I.C51H98O6)',             'kg',   'Fat Mass in Jejunum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Jejunum',                          'this.afMass(this.oMT.tiN2I.C6H12O6)',              'kg',   'Glucose Mass in Jejunum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Jejunum',                          'this.afMass(this.oMT.tiN2I.H2O)',                  'kg',   'H2O Mass in Jejunum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Jejunum',                          'this.afMass(this.oMT.tiN2I.DietaryFiber)',     	'kg',   'Fiber Mass in Jejunum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Jejunum',                          'this.afMass(this.oMT.tiN2I.Naplus)',             	'kg',   'Sodium Mass in Jejunum');
             
             % Ileum
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Ileum',                            'this.afMass(this.oMT.tiN2I.C3H7NO2)',              'kg',   'Protein Mass in Ileum');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Ileum',                            'this.afMass(this.oMT.tiN2I.C51H98O6)',             'kg',   'Fat Mass in Ileum');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Ileum',                            'this.afMass(this.oMT.tiN2I.C6H12O6)',              'kg',   'Glucose Mass in Ileum');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Ileum',                            'this.afMass(this.oMT.tiN2I.H2O)',                  'kg',   'H2O Mass in Ileum');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Ileum',                            'this.afMass(this.oMT.tiN2I.DietaryFiber)',     	'kg',   'Fiber Mass in Ileum');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Ileum',                            'this.afMass(this.oMT.tiN2I.Naplus)',           	'kg',   'Sodium Mass in Ileum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Ileum',                            'this.afMass(this.oMT.tiN2I.C3H7NO2)',              'kg',   'Protein Mass in Ileum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Ileum',                            'this.afMass(this.oMT.tiN2I.C51H98O6)',             'kg',   'Fat Mass in Ileum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Ileum',                            'this.afMass(this.oMT.tiN2I.C6H12O6)',              'kg',   'Glucose Mass in Ileum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Ileum',                            'this.afMass(this.oMT.tiN2I.H2O)',                  'kg',   'H2O Mass in Ileum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Ileum',                            'this.afMass(this.oMT.tiN2I.DietaryFiber)',     	'kg',   'Fiber Mass in Ileum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Ileum',                            'this.afMass(this.oMT.tiN2I.Naplus)',           	'kg',   'Sodium Mass in Ileum');
             
             % LargeIntestine
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.LargeIntestine',                   'this.afMass(this.oMT.tiN2I.C3H7NO2)',              'kg',   'Protein Mass in LargeIntestine');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.LargeIntestine',                	'this.afMass(this.oMT.tiN2I.C51H98O6)',             'kg',   'Fat Mass in LargeIntestine');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.LargeIntestine',               	'this.afMass(this.oMT.tiN2I.C6H12O6)',              'kg',   'Glucose Mass in LargeIntestine');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.LargeIntestine',                	'this.afMass(this.oMT.tiN2I.H2O)',                  'kg',   'H2O Mass in LargeIntestine');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.LargeIntestine',                   'this.afMass(this.oMT.tiN2I.DietaryFiber)',     	'kg',   'Fiber Mass in LargeIntestine');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.LargeIntestine',                 	'this.afMass(this.oMT.tiN2I.Naplus)',              	'kg',   'Sodium Mass in LargeIntestine');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.LargeIntestine',                   'this.afMass(this.oMT.tiN2I.C3H7NO2)',              'kg',   'Protein Mass in LargeIntestine');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.LargeIntestine',                	'this.afMass(this.oMT.tiN2I.C51H98O6)',             'kg',   'Fat Mass in LargeIntestine');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.LargeIntestine',               	'this.afMass(this.oMT.tiN2I.C6H12O6)',              'kg',   'Glucose Mass in LargeIntestine');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.LargeIntestine',                	'this.afMass(this.oMT.tiN2I.H2O)',                  'kg',   'H2O Mass in LargeIntestine');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.LargeIntestine',                   'this.afMass(this.oMT.tiN2I.DietaryFiber)',     	'kg',   'Fiber Mass in LargeIntestine');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.LargeIntestine',                 	'this.afMass(this.oMT.tiN2I.Naplus)',              	'kg',   'Sodium Mass in LargeIntestine');
             
             % Rectum
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Rectum',                           'fMass',                                            'kg',   'Total Mass in Rectum');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Rectum',                           'this.afMass(this.oMT.tiN2I.Feces)',                'kg',   'Feces Mass in Rectum');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Rectum',                           'this.afMass(this.oMT.tiN2I.H2O)',                  'kg',   'Water Mass in Rectum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Rectum',                           'fMass',                                            'kg',   'Total Mass in Rectum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Rectum',                           'this.afMass(this.oMT.tiN2I.Feces)',                'kg',   'Feces Mass in Rectum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Rectum',                           'this.afMass(this.oMT.tiN2I.H2O)',                  'kg',   'Water Mass in Rectum');
             
             % Branches to Metabolic Layer
-            oLog.addValue('Example:c:Human_1.toBranches.DuodenumToMetabolism.aoFlows(1)',                               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C3H7NO2)',    	'kg/s',     'Digested Protein from Duodenum');
-            oLog.addValue('Example:c:Human_1.toBranches.DuodenumToMetabolism.aoFlows(1)',                               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C51H98O6)',   	'kg/s',     'Digested Fat from Duodenum');
-            oLog.addValue('Example:c:Human_1.toBranches.DuodenumToMetabolism.aoFlows(1)',                               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C6H12O6)',    	'kg/s',     'Digested Glucose from Duodenum');
+            oLogger.addValue('Example:c:Human_1.toBranches.DuodenumToMetabolism.aoFlows(1)',                               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C3H7NO2)',    	'kg/s',     'Digested Protein from Duodenum');
+            oLogger.addValue('Example:c:Human_1.toBranches.DuodenumToMetabolism.aoFlows(1)',                               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C51H98O6)',   	'kg/s',     'Digested Fat from Duodenum');
+            oLogger.addValue('Example:c:Human_1.toBranches.DuodenumToMetabolism.aoFlows(1)',                               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C6H12O6)',    	'kg/s',     'Digested Glucose from Duodenum');
             
-            oLog.addValue('Example:c:Human_1.toBranches.JejunumToMetabolism.aoFlows(1)',                                'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C3H7NO2)',    	'kg/s',     'Digested Protein from Jejunum');
-            oLog.addValue('Example:c:Human_1.toBranches.JejunumToMetabolism.aoFlows(1)',                                'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C51H98O6)',   	'kg/s',     'Digested Fat from Jejunum');
-            oLog.addValue('Example:c:Human_1.toBranches.JejunumToMetabolism.aoFlows(1)',                                'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C6H12O6)',    	'kg/s',     'Digested Glucose from Jejunum');
+            oLogger.addValue('Example:c:Human_1.toBranches.JejunumToMetabolism.aoFlows(1)',                                'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C3H7NO2)',    	'kg/s',     'Digested Protein from Jejunum');
+            oLogger.addValue('Example:c:Human_1.toBranches.JejunumToMetabolism.aoFlows(1)',                                'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C51H98O6)',   	'kg/s',     'Digested Fat from Jejunum');
+            oLogger.addValue('Example:c:Human_1.toBranches.JejunumToMetabolism.aoFlows(1)',                                'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C6H12O6)',    	'kg/s',     'Digested Glucose from Jejunum');
             
-            oLog.addValue('Example:c:Human_1.toBranches.IleumToMetabolism.aoFlows(1)',                                  'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C3H7NO2)',    	'kg/s',     'Digested Protein from Ileum');
-            oLog.addValue('Example:c:Human_1.toBranches.IleumToMetabolism.aoFlows(1)',                                  'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C51H98O6)',   	'kg/s',     'Digested Fat from Ileum');
-            oLog.addValue('Example:c:Human_1.toBranches.IleumToMetabolism.aoFlows(1)',                                  'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C6H12O6)',    	'kg/s',     'Digested Glucose from Ileum');
+            oLogger.addValue('Example:c:Human_1.toBranches.IleumToMetabolism.aoFlows(1)',                                  'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C3H7NO2)',    	'kg/s',     'Digested Protein from Ileum');
+            oLogger.addValue('Example:c:Human_1.toBranches.IleumToMetabolism.aoFlows(1)',                                  'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C51H98O6)',   	'kg/s',     'Digested Fat from Ileum');
+            oLogger.addValue('Example:c:Human_1.toBranches.IleumToMetabolism.aoFlows(1)',                                  'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C6H12O6)',    	'kg/s',     'Digested Glucose from Ileum');
             
             % Readsorption Branches
-            oLog.addValue('Example:c:Human_1.toBranches.ReadsorptionFromDuodenum.aoFlows(1)',                           'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',          'kg/s',     'H2O Readsorption Duodenum');
-            oLog.addValue('Example:c:Human_1.toBranches.ReadsorptionFromDuodenum.aoFlows(1)',                           'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',      	'kg/s',     'Sodium Readsorption Duodenum');
+            oLogger.addValue('Example:c:Human_1.toBranches.ReadsorptionFromDuodenum.aoFlows(1)',                           'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',          'kg/s',     'H2O Readsorption Duodenum');
+            oLogger.addValue('Example:c:Human_1.toBranches.ReadsorptionFromDuodenum.aoFlows(1)',                           'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',      	'kg/s',     'Sodium Readsorption Duodenum');
             
-            oLog.addValue('Example:c:Human_1.toBranches.ReadsorptionFromJejunum.aoFlows(1)',                            'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',          'kg/s',     'H2O Readsorption Jejunum');
-            oLog.addValue('Example:c:Human_1.toBranches.ReadsorptionFromJejunum.aoFlows(1)',                            'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',    	'kg/s',     'Sodium Readsorption Jejunum');
+            oLogger.addValue('Example:c:Human_1.toBranches.ReadsorptionFromJejunum.aoFlows(1)',                            'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',          'kg/s',     'H2O Readsorption Jejunum');
+            oLogger.addValue('Example:c:Human_1.toBranches.ReadsorptionFromJejunum.aoFlows(1)',                            'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',    	'kg/s',     'Sodium Readsorption Jejunum');
             
-            oLog.addValue('Example:c:Human_1.toBranches.ReadsorptionFromIleum.aoFlows(1)',                              'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',          'kg/s',     'H2O Readsorption Ileum');
-            oLog.addValue('Example:c:Human_1.toBranches.ReadsorptionFromIleum.aoFlows(1)',                              'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',      	'kg/s',     'Sodium Readsorption Ileum');
+            oLogger.addValue('Example:c:Human_1.toBranches.ReadsorptionFromIleum.aoFlows(1)',                              'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',          'kg/s',     'H2O Readsorption Ileum');
+            oLogger.addValue('Example:c:Human_1.toBranches.ReadsorptionFromIleum.aoFlows(1)',                              'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',      	'kg/s',     'Sodium Readsorption Ileum');
             
-            oLog.addValue('Example:c:Human_1.toBranches.ReadsorptionFromLargeIntestine.aoFlows(1)',                     'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',          'kg/s',     'H2O Readsorption LargeIntestine');
-            oLog.addValue('Example:c:Human_1.toBranches.ReadsorptionFromLargeIntestine.aoFlows(1)',                 	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',      	'kg/s',     'Sodium Readsorption LargeIntestine');
+            oLogger.addValue('Example:c:Human_1.toBranches.ReadsorptionFromLargeIntestine.aoFlows(1)',                     'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',          'kg/s',     'H2O Readsorption LargeIntestine');
+            oLogger.addValue('Example:c:Human_1.toBranches.ReadsorptionFromLargeIntestine.aoFlows(1)',                 	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',      	'kg/s',     'Sodium Readsorption LargeIntestine');
             
             % Secretion Branches
-            oLog.addValue('Example:c:Human_1.toBranches.SecretionToStomach.aoFlows(1)',                                 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',          'kg/s',     'H2O Secretion Stomach');
-            oLog.addValue('Example:c:Human_1.toBranches.SecretionToStomach.aoFlows(1)',                                 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',      	'kg/s',     'Sodium Secretion Stomach');
+            oLogger.addValue('Example:c:Human_1.toBranches.SecretionToStomach.aoFlows(1)',                                 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',          'kg/s',     'H2O Secretion Stomach');
+            oLogger.addValue('Example:c:Human_1.toBranches.SecretionToStomach.aoFlows(1)',                                 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',      	'kg/s',     'Sodium Secretion Stomach');
             
-            oLog.addValue('Example:c:Human_1.toBranches.SecretionToDuodenum.aoFlows(1)',                                'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',          'kg/s',     'H2O Secretion Duodenum');
-            oLog.addValue('Example:c:Human_1.toBranches.SecretionToDuodenum.aoFlows(1)',                                'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',     	'kg/s',     'Sodium Secretion Duodenum');
+            oLogger.addValue('Example:c:Human_1.toBranches.SecretionToDuodenum.aoFlows(1)',                                'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',          'kg/s',     'H2O Secretion Duodenum');
+            oLogger.addValue('Example:c:Human_1.toBranches.SecretionToDuodenum.aoFlows(1)',                                'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',     	'kg/s',     'Sodium Secretion Duodenum');
             
-            oLog.addValue('Example:c:Human_1.toBranches.SecretionToJejunum.aoFlows(1)',                                 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',          'kg/s',     'H2O Secretion Jejunum');
-            oLog.addValue('Example:c:Human_1.toBranches.SecretionToJejunum.aoFlows(1)',                                 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',     	'kg/s',     'Sodium Secretion Jejunum');
+            oLogger.addValue('Example:c:Human_1.toBranches.SecretionToJejunum.aoFlows(1)',                                 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',          'kg/s',     'H2O Secretion Jejunum');
+            oLogger.addValue('Example:c:Human_1.toBranches.SecretionToJejunum.aoFlows(1)',                                 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',     	'kg/s',     'Sodium Secretion Jejunum');
             
-            oLog.addValue('Example:c:Human_1.toBranches.SecretionToIleum.aoFlows(1)',                                   'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',          'kg/s',     'H2O Secretion Ileum');
-            oLog.addValue('Example:c:Human_1.toBranches.SecretionToIleum.aoFlows(1)',                                   'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',     	'kg/s',     'Sodium Secretion Ileum');
+            oLogger.addValue('Example:c:Human_1.toBranches.SecretionToIleum.aoFlows(1)',                                   'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',          'kg/s',     'H2O Secretion Ileum');
+            oLogger.addValue('Example:c:Human_1.toBranches.SecretionToIleum.aoFlows(1)',                                   'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',     	'kg/s',     'Sodium Secretion Ileum');
             
-            oLog.addValue('Example:c:Human_1.toBranches.SecretionToLargeIntestine.aoFlows(1)',                          'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',          'kg/s',     'H2O Secretion LargeIntestine');
-            oLog.addValue('Example:c:Human_1.toBranches.SecretionToLargeIntestine.aoFlows(1)',                        	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',     	'kg/s',     'Sodium Secretion LargeIntestine');
+            oLogger.addValue('Example:c:Human_1.toBranches.SecretionToLargeIntestine.aoFlows(1)',                          'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',          'kg/s',     'H2O Secretion LargeIntestine');
+            oLogger.addValue('Example:c:Human_1.toBranches.SecretionToLargeIntestine.aoFlows(1)',                        	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',     	'kg/s',     'Sodium Secretion LargeIntestine');
             
             % Transport P2Ps
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Stomach_to_Duodenum',            'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C3H7NO2)',    	'kg/s',     'Protein from Stomach');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Stomach_to_Duodenum',            'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C51H98O6)',    	'kg/s',     'Fat from Stomach');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Stomach_to_Duodenum',            'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C6H12O6)',    	'kg/s',     'Glucose from Stomach');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Stomach_to_Duodenum',            'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',          'kg/s',     'H2O from Stomach');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Stomach_to_Duodenum',            'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.DietaryFiber)',	'kg/s',     'Fiber from Stomach');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Stomach_to_Duodenum',            'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',      	'kg/s',     'Sodium from Stomach');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Stomach_to_Duodenum',            'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C3H7NO2)',    	'kg/s',     'Protein from Stomach');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Stomach_to_Duodenum',            'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C51H98O6)',    	'kg/s',     'Fat from Stomach');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Stomach_to_Duodenum',            'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C6H12O6)',    	'kg/s',     'Glucose from Stomach');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Stomach_to_Duodenum',            'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',          'kg/s',      'H2O from Stomach');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Stomach_to_Duodenum',            'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.DietaryFiber)',	'kg/s',     'Fiber from Stomach');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Stomach_to_Duodenum',            'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',      	'kg/s',     'Sodium from Stomach');
             
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Duodenum_to_Jejunum',            'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C3H7NO2)',    	'kg/s',     'Protein from Duodenum');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Duodenum_to_Jejunum',            'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C51H98O6)',    	'kg/s',     'Fat from Duodenum');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Duodenum_to_Jejunum',            'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C6H12O6)',    	'kg/s',     'Glucose from Duodenum');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Duodenum_to_Jejunum',            'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',          'kg/s',     'H2O from Duodenum');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Duodenum_to_Jejunum',            'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.DietaryFiber)',	'kg/s',     'Fiber from Duodenum');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Duodenum_to_Jejunum',            'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',      	'kg/s',     'Sodium from Duodenum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Duodenum_to_Jejunum',            'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C3H7NO2)',    	'kg/s',     'Protein from Duodenum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Duodenum_to_Jejunum',            'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C51H98O6)',    	'kg/s',     'Fat from Duodenum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Duodenum_to_Jejunum',            'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C6H12O6)',    	'kg/s',     'Glucose from Duodenum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Duodenum_to_Jejunum',            'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',          'kg/s',     'H2O from Duodenum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Duodenum_to_Jejunum',            'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.DietaryFiber)',	'kg/s',     'Fiber from Duodenum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Duodenum_to_Jejunum',            'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',      	'kg/s',     'Sodium from Duodenum');
             
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Jejunum_to_Ileum',               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C3H7NO2)',    	'kg/s',     'Protein from Jejunum');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Jejunum_to_Ileum',               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C51H98O6)',    	'kg/s',     'Fat from Jejunum');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Jejunum_to_Ileum',               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C6H12O6)',    	'kg/s',     'Glucose from Jejunum');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Jejunum_to_Ileum',               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',          'kg/s',     'H2O from Jejunum');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Jejunum_to_Ileum',               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.DietaryFiber)',	'kg/s',     'Fiber from Jejunum');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Jejunum_to_Ileum',               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',      	'kg/s',     'Sodium from Jejunum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Jejunum_to_Ileum',               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C3H7NO2)',    	'kg/s',     'Protein from Jejunum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Jejunum_to_Ileum',               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C51H98O6)',    	'kg/s',     'Fat from Jejunum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Jejunum_to_Ileum',               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C6H12O6)',    	'kg/s',     'Glucose from Jejunum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Jejunum_to_Ileum',               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',          'kg/s',     'H2O from Jejunum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Jejunum_to_Ileum',               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.DietaryFiber)',	'kg/s',     'Fiber from Jejunum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Jejunum_to_Ileum',               'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',      	'kg/s',     'Sodium from Jejunum');
             
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Ileum_to_LargeIntestine',       	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C3H7NO2)',    	'kg/s',     'Protein from Ileum');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Ileum_to_LargeIntestine',     	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C51H98O6)',    	'kg/s',     'Fat from Ileum');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Ileum_to_LargeIntestine',       	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C6H12O6)',    	'kg/s',     'Glucose from Ileum');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Ileum_to_LargeIntestine',    	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',          'kg/s',     'H2O from Ileum');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Ileum_to_LargeIntestine',     	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.DietaryFiber)',	'kg/s',     'Fiber from Ileum');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Ileum_to_LargeIntestine',     	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',      	'kg/s',     'Sodium from Ileum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Ileum_to_LargeIntestine',       	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C3H7NO2)',    	'kg/s',     'Protein from Ileum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Ileum_to_LargeIntestine',     	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C51H98O6)',    	'kg/s',     'Fat from Ileum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Ileum_to_LargeIntestine',       	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C6H12O6)',    	'kg/s',     'Glucose from Ileum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Ileum_to_LargeIntestine',         'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',          'kg/s',     'H2O from Ileum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Ileum_to_LargeIntestine',     	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.DietaryFiber)',	'kg/s',     'Fiber from Ileum');
+            oLogger.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.Ileum_to_LargeIntestine',     	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',      	'kg/s',     'Sodium from Ileum');
             
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.LargeIntestine_to_Rectum',    	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C3H7NO2)',    	'kg/s',     'Protein from LargeIntestine');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.LargeIntestine_to_Rectum',    	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C51H98O6)',    	'kg/s',     'Fat from LargeIntestine');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.LargeIntestine_to_Rectum',    	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C6H12O6)',    	'kg/s',     'Glucose from LargeIntestine');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.LargeIntestine_to_Rectum',   	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',          'kg/s',     'H2O from LargeIntestine');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.LargeIntestine_to_Rectum',    	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.DietaryFiber)',	'kg/s',     'Fiber from LargeIntestine');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toProcsP2P.LargeIntestine_to_Rectum',     	'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.Naplus)',      	'kg/s',     'Sodium from LargeIntestine');
-            
-            % Manipulator water flow rates:
-            oLog.addValue('Example:c:Human_1:c:WaterBalance.toStores.WaterBalance.toPhases.Bladder.toManips.substance', 'this.afPartialFlows(this.oMT.tiN2I.H2O)',            'kg/s', 'Urine Converter H2O Flow Rate');
-            oLog.addValue('Example:c:Human_1:c:Digestion.toStores.Digestion.toPhases.Rectum.toManips.substance',        'this.afPartialFlows(this.oMT.tiN2I.H2O)',            'kg/s', 'Feces Converter H2O Flow Rate');
-            % 'Stomach H2O Flow Rate'
-            % 'Metabolism H2O Flow Rate'
-            
-            
-            oLog.addValue('Example.oTimer',     'fTimeStepFinal',	's',   'Timestep');
-            
-            oLog.addVirtualValue('cumsum("Ingested Water Flow Rate"         .* "Timestep")', 'kg', 'Ingested Water');
-            oLog.addVirtualValue('cumsum("Respiration Water Flow Rate"      .* "Timestep")', 'kg', 'Respiration Water');
-            oLog.addVirtualValue('cumsum("Perspiration Water Flow Rate"     .* "Timestep")', 'kg', 'Perspiration Water');
-            oLog.addVirtualValue('cumsum("Metabolism H2O Flow Rate"         .* "Timestep")', 'kg', 'Metabolism Water');
-            oLog.addVirtualValue('cumsum("Stomach H2O Flow Rate"            .* "Timestep")', 'kg', 'Stomach Water');
-            oLog.addVirtualValue('cumsum("H2O from LargeIntestine"          .* "Timestep")', 'kg', 'Feces Water');
-            oLog.addVirtualValue('cumsum("H2O Massflow to Bladder"          .* "Timestep")', 'kg', 'Urine Water');
-            oLog.addVirtualValue('cumsum("Food Flow Rate"                   .* "Timestep")', 'kg', 'Ingested Food');
-            oLog.addVirtualValue('cumsum("Protein from LargeIntestine"      .* "Timestep")', 'kg', 'Feces Protein');
-            oLog.addVirtualValue('cumsum("Fat from LargeIntestine"          .* "Timestep")', 'kg', 'Feces Fat');
-            oLog.addVirtualValue('cumsum("Glucose from LargeIntestine"      .* "Timestep")', 'kg', 'Feces Glucose');
-            oLog.addVirtualValue('cumsum("Fiber from LargeIntestine"		.* "Timestep")', 'kg', 'Feces Fiber');
-            oLog.addVirtualValue('cumsum("Sodium from LargeIntestine"       .* "Timestep")', 'kg', 'Feces Na+');
-            oLog.addVirtualValue('cumsum("Na+ Massflow to Bladder"          .* "Timestep")', 'kg', 'Urine Na+');
-            oLog.addVirtualValue('cumsum("K+ Massflow to Bladder"           .* "Timestep")', 'kg', 'Urine K+');
-            oLog.addVirtualValue('cumsum("Metabolism Urea Flow Rate"        .* "Timestep")', 'kg', 'Urine Urea');
-            oLog.addVirtualValue('cumsum("Feces Converter H2O Flow Rate"	.* "Timestep")', 'kg', 'Feces Converter Water');
-            oLog.addVirtualValue('cumsum("Urine Converter H2O Flow Rate"	.* "Timestep")', 'kg', 'Urine Converter Water');
-            
-            oLog.addVirtualValue('"H2O Mass in LargeIntestine" + "H2O Mass in Ileum" + "H2O Mass in Jejunum" + "H2O Mass in Duodenum" + "H2O Mass in Stomach" + "Water Mass in Rectum"',                                         	'kg', 'Water Mass in Digestion Layer');
-            oLog.addVirtualValue('"H2O Mass in Blood Plasma" + "H2O Mass in InterstitialFluid" + "H2O Mass in IntracellularFluid" + "H2O Mass in Kidney" + "H2O Mass in Bladder" + "Persipiration Flow Water Mass"',                'kg', 'Water Mass in Water Layer');
-            oLog.addVirtualValue('"Water in Adipose Tissue" + "Water Mass in Metabolism" + "Water in Liver" + "Water in Muscle"',                                                                                                   'kg', 'Water Mass in Metabolic Layer');
-            oLog.addVirtualValue('"Water in Lung Air" + "Water in Lung Blood" + "Water in Arteries" + "Water in Veins" + "Water in Brain Blood" + "Water in Brain Tissue" + "Water in Tissue Blood" + "Water in Tissue Tissue"',	'kg', 'Water Mass in Respiration Layer');
+            oLogger.addVirtualValue('"H2O Mass in LargeIntestine" + "H2O Mass in Ileum" + "H2O Mass in Jejunum" + "H2O Mass in Duodenum" + "H2O Mass in Stomach" + "Water Mass in Rectum"',                                         	'kg', 'Water Mass in Digestion Layer');
+            oLogger.addVirtualValue('"H2O Mass in Blood Plasma" + "H2O Mass in InterstitialFluid" + "H2O Mass in IntracellularFluid" + "H2O Mass in Kidney" + "H2O Mass in Bladder" + "Persipiration Flow Water Mass"',                'kg', 'Water Mass in Water Layer');
+            oLogger.addVirtualValue('"Water in Adipose Tissue" + "Water Mass in Metabolism" + "Water in Liver" + "Water in Muscle"',                                                                                                   'kg', 'Water Mass in Metabolic Layer');
+            oLogger.addVirtualValue('"Water in Lung Air" + "Water in Lung Blood" + "Water in Arteries" + "Water in Veins" + "Water in Brain Blood" + "Water in Brain Tissue" + "Water in Tissue Blood" + "Water in Tissue Tissue"',	'kg', 'Water Mass in Respiration Layer');
             
             
             
@@ -403,6 +519,29 @@ classdef setup < simulation.infrastructure
             
             
             tPlotOptions.sTimeUnit  = 'hours';
+            
+            
+            %% Basic Crew Plot
+            % This section contains the basic plots which show the
+            % interfaces of the crew. This can be added to your simulations
+            % if you want a plot showing this overview
+            
+            sSystemName = fieldnames(this.oSimulationContainer.toChildren);
+            sSystemName = sSystemName{1};
+            % First we have to get the current number of crew members:
+            iHumans = this.oSimulationContainer.toChildren.(sSystemName).iNumberOfCrewMembers;
+            
+            csRespiratoryCoefficient = cell(1,iHumans);
+            for iHuman = 1:iHumans
+                csRespiratoryCoefficient{iHuman} = ['"Respiratory Coefficient ',    num2str(iHuman), '"'];
+            end
+            coPlot = cell(0);
+            coPlot{1,1} = oPlotter.definePlot({'"Effective CO_2 Flow Crew"', '"Effective O_2 Flow Crew"'},	'Crew Respiration Flowrates', tPlotOptions);
+            coPlot{1,2} = oPlotter.definePlot(csRespiratoryCoefficient,                                     'Crew Respiratory Coefficients', tPlotOptions);
+            coPlot{2,1} = oPlotter.definePlot({'"Exhaled CO_2"', '"Inhaled O_2"'},                          'Crew Cumulative Respiration', tPlotOptions);
+            coPlot{2,2} = oPlotter.definePlot({'"Respiration Water"', '"Perspiration Water"', '"Metabolism Water"', '"Urine Urea"'},    'Crew Cumulative Masses', tPlotOptions);
+           
+            oPlotter.defineFigure(coPlot,       'Crew Values');
             
             %% General Plots
             
@@ -422,7 +561,7 @@ classdef setup < simulation.infrastructure
             coPlot{1,1} = oPlotter.definePlot(csFecesMass, 'Feces Composition', tPlotOptions);
             coPlot{2,1} = oPlotter.definePlot(csUrineMass, 'Urine Composition', tPlotOptions);
            
-            coPlot{1,2} = oPlotter.definePlot({'"Ingested Water Flow Rate"', '"Respiration Water Flow Rate"', '"Perspiration Water Flow Rate"', '"Urine Flow Rate"'}, 'Human Water Flows', tPlotOptions);
+            coPlot{1,2} = oPlotter.definePlot({'"Ingested Water Flow Rate1"', '"Respiration Water Flow Rate1"', '"Perspiration Water Flow Rate1"', '"Urine Flow Rate1"'}, 'Human Water Flows', tPlotOptions);
             
             coPlot{2,2} = oPlotter.definePlot({'"Partial Pressure CO2 Cabin"', '"Partial Pressure CO2 Cabin2"'}, 'Cabin CO2', tPlotOptions);
             coPlot{3,1} = oPlotter.definePlot({'"Relative Humidity Cabin"', '"Relative Humidity Cabin2"'}, 'Cabin Relative Humidity', tPlotOptions);
@@ -443,12 +582,12 @@ classdef setup < simulation.infrastructure
             coPlot = cell(3,3);
             coPlot{1,1} = oPlotter.definePlot({'"VO2"', '"VO2 Rest"', '"VO2 Max"'}, 'VO2', tPlotOptions);
             coPlot{1,2} = oPlotter.definePlot({ '"Current Metabolic Rate"', '"Current Metabolic Heatflow"'}, 'Metabolic Rate', tPlotOptions);
-            coPlot{1,3} = oPlotter.definePlot({'"Activity Level"', '"Respiratory Coefficient"'}, 'Activity Level and Respiratory Coefficient', tPlotOptions);
+            coPlot{1,3} = oPlotter.definePlot({'"Activity Level"', '"Respiratory Coefficient 1"'}, 'Activity Level and Respiratory Coefficient', tPlotOptions);
             coPlot{2,1} = oPlotter.definePlot({'"Fat Mass Adipose Tissue"', '"Water in Adipose Tissue"', '"Muscle Mass"'}, 'Masses in Metabolic Layer', tPlotOptions);
             coPlot{2,2} = oPlotter.definePlot({'"Protein Mass in Metabolism"', '"Fat Mass in Metabolism"', '"Glucose Mass in Metabolism"', '"Water Mass in Metabolism"'}, 'Masses in Metabolism Phase', tPlotOptions);
             
-            coPlot{2,3} = oPlotter.definePlot({'"Metabolism Protein Flow Rate"', '"Metabolism Fat Flow Rate"', '"Metabolism Glucose Flow Rate"', '"Metabolism O2 Flow Rate"',...
-                '"Metabolism CO2 Flow Rate"', '"Metabolism H2O Flow Rate"', '"Metabolism Urea Flow Rate"', '"Metabolism Muscle Flow Rate"'}, 'Manipulator Flowrates in Metabolism', tPlotOptions);
+            coPlot{2,3} = oPlotter.definePlot({'"Metabolism Protein Flow Rate1"', '"Metabolism Fat Flow Rate1"', '"Metabolism Glucose Flow Rate1"', '"Metabolism O2 Flow Rate1"',...
+                '"Metabolism CO2 Flow Rate1"', '"Metabolism H2O Flow Rate1"', '"Metabolism Urea Flow Rate1"', '"Metabolism Muscle Flow Rate1"'}, 'Manipulator Flowrates in Metabolism', tPlotOptions);
             
             coPlot{3,1} = oPlotter.definePlot({'"Glucose in Liver"', '"Glucose in Muscle"', }, 'Glucose Masses in Metabolic Layer', tPlotOptions);
             
@@ -472,14 +611,13 @@ classdef setup < simulation.infrastructure
             
             coPlot{3,2} = oPlotter.definePlot({'"CellMembranes H2O Massflow"',      '"CellMembranes Na+ Massflow"',   	'"CellMembranes K+ Massflow"'},                                       	'Cell Membrane Flows', tPlotOptions);
             
-            coPlot{3,3} = oPlotter.definePlot({'"Kidney H2O Massflow"',         	'"Kidney Na+ Massflow"',         	'"Kidney K+ Massflow"',...
-                '"H2O Massflow to Bladder"',      	'"Na+ Massflow to Bladder"',      	'"K+ Massflow to Bladder"'},                                           	'Kidney Flows', tPlotOptions);
+            coPlot{3,3} = oPlotter.definePlot({'"Kidney H2O Massflow"',         	'"Kidney Na+ Massflow"',         	'"Kidney K+ Massflow"', '"H2O Massflow to Bladder1"',      	'"Na+ Massflow to Bladder1"',      	'"K+ Massflow to Bladder1"'},	'Kidney Flows', tPlotOptions);
             
             oPlotter.defineFigure(coPlot,  'Water Balance');
             
             coPlot = cell(2,2);
             coPlot{1,1} = oPlotter.definePlot({'"Water Mass in Digestion Layer"', '"Water Mass in Water Layer"', '"Water Mass in Metabolic Layer"', '"Water Mass in Respiration Layer"'},      'Water Masses in Layers',       tPlotOptions);
-            coPlot{1,2} = oPlotter.definePlot({'"Ingested Water Flow Rate"', '"Respiration Water Flow Rate"', '"Perspiration Water Flow Rate"', '"Metabolism H2O Flow Rate"', '"Stomach H2O Flow Rate"', '"H2O from LargeIntestine"', '"H2O Massflow to Bladder"'},      'Water Flows',       tPlotOptions);
+            coPlot{1,2} = oPlotter.definePlot({'"Ingested Water Flow Rate1"', '"Respiration Water Flow Rate1"', '"Perspiration Water Flow Rate1"', '"Metabolism H2O Flow Rate1"', '"Stomach H2O Flow Rate1"', '"H2O from LargeIntestine1"', '"H2O Massflow to Bladder1"'},      'Water Flows',       tPlotOptions);
                 
             oPlotter.defineFigure(coPlot,  'Water Balance all Layers Overview');
             
@@ -499,6 +637,8 @@ classdef setup < simulation.infrastructure
                 end
             end
             
+            csPhases{end} = 'LargeIntestine1';
+            
             % For the transport flows inside the digestion layer, consider
             % all phases and masses again:
             tfTransportFlows = struct();
@@ -507,13 +647,14 @@ classdef setup < simulation.infrastructure
                 for iPhase = 1:iPhases
                     tfTransportFlows.(csMasses{iMass}){iPhase} = ['"', csMasses{iMass}, ' from ', csPhases{iPhase}, '"'];
                 end
-                tfTransportFlows.(csMasses{iMass}){iPhases + 1} = ['"Stomach ', csMasses{iMass}, ' Flow Rate"'];
+                tfTransportFlows.(csMasses{iMass}){iPhases + 1} = ['"Stomach ', csMasses{iMass}, ' Flow Rate1"'];
             end
             
             % For the flows to metabolism, all phases except stomach and
             % large intestine, and for masses only the major nutrients
             % (water and sodium are handled in the readsorption part)
             csMasses = {'Protein', 'Fat', 'Glucose'};
+            csPhases{end} = 'LargeIntestine';
             iMasses = length(csMasses);
             
             tfMetabolismFlows = struct();
@@ -604,7 +745,7 @@ classdef setup < simulation.infrastructure
                     afProducedPerspirationWater = oLogger.tVirtualValues(iVirtualLog).calculationHandle(oLogger.mfLog);
                 elseif strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel, 'Metabolism Water')
                     afProducedMetabolicWater    = oLogger.tVirtualValues(iVirtualLog).calculationHandle(oLogger.mfLog);
-                elseif strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel, 'Stomach Water')
+                elseif strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel, 'Ingested Water in Food')
                     afIngestedWaterInFood       = oLogger.tVirtualValues(iVirtualLog).calculationHandle(oLogger.mfLog);
                 elseif strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel, 'Feces Water')
                     afFecesWater                = oLogger.tVirtualValues(iVirtualLog).calculationHandle(oLogger.mfLog);
@@ -636,10 +777,10 @@ classdef setup < simulation.infrastructure
                     afWaterMetabolicLayer       = oLogger.tVirtualValues(iVirtualLog).calculationHandle(oLogger.mfLog);
                 elseif strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel,  'Water Mass in Respiration Layer')
                     afWaterRespirationLayer     = oLogger.tVirtualValues(iVirtualLog).calculationHandle(oLogger.mfLog);
-                elseif strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel, 'Effective CO2 Flow')
-                    mfEffectiveCO2Flow          = oLogger.tVirtualValues(iVirtualLog).calculationHandle(oLogger.mfLog);
-                elseif strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel, 'Effective O2 Flow')
-                    mfEffectiveO2Flow           = oLogger.tVirtualValues(iVirtualLog).calculationHandle(oLogger.mfLog);
+                elseif strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel, 'Exhaled CO_2')
+                    mfExhaledCO2                = oLogger.tVirtualValues(iVirtualLog).calculationHandle(oLogger.mfLog);
+                elseif strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel, 'Inhaled O_2')
+                    mfInhaledO2                 = oLogger.tVirtualValues(iVirtualLog).calculationHandle(oLogger.mfLog);
                 elseif strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel, 'Feces Converter Water')
                     afFecesConverterWaterFlow   = oLogger.tVirtualValues(iVirtualLog).calculationHandle(oLogger.mfLog);
                 elseif strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel, 'Urine Converter Water')
@@ -657,8 +798,8 @@ classdef setup < simulation.infrastructure
             afGeneratedCO2Mass  = zeros(iLogs,1);
             afConsumedO2Mass    = zeros(iLogs,1);
             for iVirtualLog = 2:iLogs
-                afGeneratedCO2Mass(iVirtualLog)  = sum(afTimeSteps(1:iVirtualLog-1)' .* mfEffectiveCO2Flow(2:iVirtualLog));
-                afConsumedO2Mass(iVirtualLog)    = sum(afTimeSteps(1:iVirtualLog-1)' .* mfEffectiveO2Flow(2:iVirtualLog));
+                afGeneratedCO2Mass(iVirtualLog)  = sum(afTimeSteps(1:iVirtualLog-1)' .* mfExhaledCO2(2:iVirtualLog));
+                afConsumedO2Mass(iVirtualLog)    = sum(afTimeSteps(1:iVirtualLog-1)' .* mfInhaledO2(2:iVirtualLog));
             end
             
             if any(isnan(afConsumedO2Mass))

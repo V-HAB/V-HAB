@@ -151,12 +151,6 @@ classdef flow < thermal.capacity
             this.fLastTemperatureUpdate     = fTime;
             this.fTemperatureUpdateTimeStep = fLastStep;
             
-            if fTemperatureNew ~= this.fTemperature
-                bSetBranchesOutdated = true;
-            else
-                bSetBranchesOutdated = false;
-            end
-            
             % The temperature is not set directly, because we want to
             % ensure that the phase and capacity have the exact same
             % temperature at all times
@@ -165,11 +159,6 @@ classdef flow < thermal.capacity
             % check if we have to update the specific heat capacity
             if fOverallHeatCapacityFlow ~= 0
                 this.updateSpecificHeatCapacity();
-            end
-            
-            % Trigger branch solver updates in post tick for all branches
-            if bSetBranchesOutdated
-                this.setBranchesOutdated();
             end
             
             % Capacity sets new time step (registered with parent store, used

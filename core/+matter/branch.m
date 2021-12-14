@@ -143,7 +143,7 @@ classdef branch < base.branch
             % changed (closing a valve).
             
             % Only trigger if not yet set
-            if ~this.bOutdated
+            if ~this.bOutdated || this.oTimer.fTime > this.oHandler.fLastUpdate
                 this.bOutdated = true;
 
                 % Trigger outdated so e.g. the branch solver can register a

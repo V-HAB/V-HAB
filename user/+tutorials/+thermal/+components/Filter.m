@@ -31,17 +31,17 @@ classdef Filter < matter.store
             % Again, to make the simulation start up a bit faster, we
             % include a small amount of matter right from the start, rather
             % than setting the mass to exactly zero. 
-            oFiltered = matter.phases.gas(this, ...
-                          'FilteredPhase', ... Phase name
-                          struct('O2',0.0001), ... Phase contents
-                          0.01, ... Phase volume
-                          293.15); % Phase temperature 
+            matter.phases.gas(this, ...
+                              'FilteredPhase', ... Phase name
+                              struct('O2',0.0001), ... Phase contents
+                              0.01, ... Phase volume
+                              293.15); % Phase temperature 
             
             % Create the according exmes - default for the external
             % connections, i.e. the air stream that should be filtered. The
             % filterports are internal ones for the p2p processor to use.
-            matter.procs.exmes.gas(oFlow,     'FilterIn');
-            matter.procs.exmes.gas(oFlow,     'FilterOut');
+            matter.procs.exmes.gas(oFlow, 'FilterIn');
+            matter.procs.exmes.gas(oFlow, 'FilterOut');
             
             % Creating the p2p processor
             % Input parameters: name, flow phase name, absorber phase name, 

@@ -907,7 +907,11 @@ classdef capacity < base & event.source & matlab.mixin.Heterogeneous
             % adds the specified ExMe to this phase and sets the phase to
             % outdated
             this.toProcsEXME.(oExMe.sName) = oExMe;
-            this.aoExmes(end + 1) = oExMe;
+            if isempty(this.aoExmes)
+                this.aoExmes = oExMe;
+            else
+                this.aoExmes(end + 1) = oExMe;
+            end
             this.iProcsEXME = this.iProcsEXME + 1;
             
             this.setOutdatedTS();

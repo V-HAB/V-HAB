@@ -10,20 +10,20 @@ classdef setup < simulation.infrastructure
     
     methods
         function this = setup(ptConfigParams, tSolverParams)
-            
             ttMonitorCfg = struct();
-            
-            
-            % First we call the parent constructor and tell it the name of
-            % this simulation we are creating.
             this@simulation.infrastructure('CROP_Example', ptConfigParams, tSolverParams, ttMonitorCfg);
             
+            % Water content of Urine and Feces is based on BVAD, not all
+            % possible components of both substances defined here
+            trBaseCompositionUrine.H2O      = 0.9644;
+            trBaseCompositionUrine.CH4N2O   = 0.0356;
+            this.oSimulationContainer.oMT.defineCompoundMass(this, 'Urine', trBaseCompositionUrine)
             
             % Creating the CROP system as a child of the root system
             % of this simulation.
             examples.CROP.system.Example(this.oSimulationContainer, 'Example');
 
-  %% Simulation length
+            %% Simulation length
             % Simulation length - stop when specific time in sim is reached
             % or after specific amount of ticks (bUseTime true/false).
             this.fSimTime = 100 * 24 * 3600;
@@ -40,14 +40,12 @@ classdef setup < simulation.infrastructure
             
             oLogger.addValue('Example.oTimer',	'fTimeStepFinal',	's',   'Timestep');
             
-            for iCROP = 1:1
+            for iCROP = 1:this.oSimulationContainer.toChildren.Example.iChildren
                 sCROP = ['CROP_', num2str(iCROP)];
                 
                 oLogger.addValue(['Example:c:',sCROP,':s:CROP_Tank.toPhases.TankSolution'], 'fMass', 'kg', [sCROP, ' CROP Tank Mass']);
                 
                 oLogger.addValue(['Example:c:',sCROP,'.toBranches.CROP_Calcite_Inlet'], 'fFlowRate', 'kg/s', [sCROP, ' CROP Calcite Inlet']);
-                
-                
                 
                 this.tiLogIndexes.mfPH{iCROP} = oLogger.addValue(['Example:c:',sCROP,':s:CROP_BioFilter.toPhases.BioPhase.toManips.substance'], 'fpH', '-',              [sCROP ,' BioFilter pH']);
                 
@@ -101,7 +99,7 @@ classdef setup < simulation.infrastructure
          function plot(this)
             % The plots are defined in this function. The detailed informations 
             % are included in the figure name.
-                       
+            
             try
                 this.toMonitors.oLogger.readFromMat;
             catch
@@ -109,7 +107,6 @@ classdef setup < simulation.infrastructure
             end
             
             oPlotter = plot@simulation.infrastructure(this);
-            oLogger = oPlotter.oSimulationInfrastructure.toMonitors.oLogger;
             
             tPlotOptions.sTimeUnit = 'hours';
             
@@ -149,10 +146,79 @@ classdef setup < simulation.infrastructure
             oPlotter.defineFigure(coPlots, 'CROP Enzyme Flowrates');
             oPlotter.plot();
             
+            % Please note, that most of the available test data was for
+            % below 100% urine concentration while the current operating
+            % conditions are at 100%. It was planned to receive additional
+            % data for 100% urine concentration from DLR, however this was
+            % not possible up to date. The available 100% test data series
+            % did not convert urine properly, which is an issue that was
+            % fixed by DLR in the current CROP. Therefore, the current
+            % comparison to test data is just implemented to ease the
+            % future addition of new test data. It does not serve as a
+            % valid verification point for the current CROP model!
             TestData = load('+examples\+CROP\+TestData\Data_Experiment.mat');
-            % Value b is NH4OH, c is HNO2 and d is HNO3 
+            TestData = TestData.Data_Modified;
+            
+            % Value b is NH4+, c is NO2- and d is NO3-. All values are
+            % mmol / L
+            figure('name', 'Test Comparison')
+            
+            oLogger = this.toMonitors.oLogger;
+            afTime = oLogger.afTime ./ 86400;
+            
+            
+            csSeries = {'C', 'A', 'B', 'D', 'E', 'F', 'G'};
+            for iSeries = 1:length(csSeries)
+                %% Plot NH4OH
+                subplot(3,7,iSeries)
+                title([num2str(TestData.(csSeries{iSeries}).UreaPercent), '% Urea NH4^+'])
+                hold on
+                for iTest = 1:size(TestData.(csSeries{iSeries}).b, 2) - 1
+                    scatter(TestData.(csSeries{iSeries}).b(:,1), TestData.(csSeries{iSeries}).b(:,iTest+1), 'x')
+                end
+                grid on
+                xlabel('Time / d')
+                ylabel('NH4^+ Concentration / mmol/l')
+                
+                % plot corresponding simulation data:
+                mfData = oLogger.mfLog(:, this.tiLogIndexes.mfNH4{iSeries});
+                mfData = mfData(1:length(afTime));
+                plot(afTime, mfData);
+                
+                %% Plot HNO2
+                subplot(3,7,iSeries+7)
+                title([num2str(TestData.(csSeries{iSeries}).UreaPercent), '% Urea NO2^-'])
+                hold on
+                for iTest = 1:size(TestData.(csSeries{iSeries}).c, 2) - 1
+                    scatter(TestData.(csSeries{iSeries}).c(:,1), TestData.(csSeries{iSeries}).c(:,iTest+1), 'x')
+                end
+                grid on
+                xlabel('Time / d')
+                ylabel('NO2^- Concentration / mmol/l')
+                
+                % Plot corresponding simulation data
+                mfData = oLogger.mfLog(:, this.tiLogIndexes.mfNO2{iSeries});
+                mfData = mfData(1:length(afTime));
+                plot(afTime, mfData);
+                
+                %% Plot HNO3
+                subplot(3,7,iSeries+14)
+                title([num2str(TestData.(csSeries{iSeries}).UreaPercent), '% Urea NO3^-'])
+                hold on
+                for iTest = 1:size(TestData.(csSeries{iSeries}).d, 2) - 1
+                    scatter(TestData.(csSeries{iSeries}).d(:,1), TestData.(csSeries{iSeries}).d(:,iTest+1), 'x')
+                end
+                grid on
+                xlabel('Time / d')
+                ylabel('NO3^- Concentration / mmol/l')
+                
+                % Plot corresponding simulation data
+                mfData = oLogger.mfLog(:, this.tiLogIndexes.mfNO3{iSeries});
+                mfData = mfData(1:length(afTime));
+                plot(afTime, mfData);
+                 
+            end
+            
          end
     end
-    
 end
-

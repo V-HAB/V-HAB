@@ -405,13 +405,13 @@ classdef CCAA < vsys
             solver.matter.manual.branch(this.toBranches.Coolant_In);
             
             aoMultiSolverBranches = [this.toBranches.TCCV_Cabin, this.toBranches.CHX_Cabin, this.toBranches.CCAA_Air_Out, this.toBranches.Coolant_Out];
-            solver.matter_multibranch.iterative.branch(aoMultiSolverBranches, 'complex');
             
             if ~isempty(this.sCDRA)
-                solver.matter.manual.branch(this.toBranches.CHX_CDRA);
-                
-                this.toBranches.CHX_CDRA.oHandler.setFlowRate(this.fCDRA_FlowRate);
+%                 solver.matter.manual.branch(this.toBranches.CHX_CDRA);
+%                 this.toBranches.CHX_CDRA.oHandler.setFlowRate(this.fCDRA_FlowRate);
+                aoMultiSolverBranches(end+1) = this.toBranches.CHX_CDRA;
             end
+            solver.matter_multibranch.iterative.branch(aoMultiSolverBranches, 'complex');
             
             if this.bUseFixValues
                 
@@ -716,13 +716,13 @@ classdef CCAA < vsys
                 
                 this.fOldError = fError;
                 
-                if ~isempty(this.sCDRA)
-                    if fCHX_FlowRate >= this.fCDRA_FlowRate
-                        this.toBranches.CHX_CDRA.oHandler.setFlowRate(this.fCDRA_FlowRate);
-                    else
-                        this.toBranches.CHX_CDRA.oHandler.setFlowRate(fCHX_FlowRate);
-                    end
-                end
+%                 if ~isempty(this.sCDRA)
+%                     if fCHX_FlowRate >= this.fCDRA_FlowRate
+%                         this.toBranches.CHX_CDRA.oHandler.setFlowRate(this.fCDRA_FlowRate);
+%                     else
+%                         this.toBranches.CHX_CDRA.oHandler.setFlowRate(fCHX_FlowRate);
+%                     end
+%                 end
             end
             
             this.setTimeStep(this.fOriginalTimeStep);

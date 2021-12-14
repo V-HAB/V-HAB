@@ -147,7 +147,7 @@ classdef setup < simulation.infrastructure
             tPlotOptions.tLineOptions.('fr_co2').csColor = 'g';
             tPlotOptions.tLineOptions.('Nonsense').csColor = 'y';
             tPlotOptions.bLegend = false;
-            coPlots{1,1} = oPlotter.definePlot(cxPlotValues1, 'Bullshit', tPlotOptions);
+            coPlots{1,1} = oPlotter.definePlot(cxPlotValues1, 'This makes no sense', tPlotOptions);
             
             tPlotOptions.tLineOptions.('ppCO2_Tank1').csColor = 'g';
             tPlotOptions.tLineOptions.('ppCO2_Tank2').csColor = 'y';
@@ -155,7 +155,6 @@ classdef setup < simulation.infrastructure
             
             tPlotOptions = struct('sTimeUnit','hours');
             coPlots{2,1} = oPlotter.definePlot(csPlotValues3, 'Temperatures', tPlotOptions);
-            
             
             % tFigureOptions includes turing on or off the plottools (off
             % by default), including or excluding the time plot (off by

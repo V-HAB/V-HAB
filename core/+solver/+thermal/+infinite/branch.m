@@ -148,10 +148,10 @@ classdef branch < solver.thermal.base.branch
                                 iBranchSign = sign(oMatterObject.fFlowRate);
                                 if iBranchSign * iExMeSign < 0
                                     mfSpecificHeatCapacity(iExme) = oMatterObject.aoFlows(1).fSpecificHeatCapacity;
-                                    mfTemperature(iExme)          = oMatterObject.aoFlows(1).fTemperature;
+                                    mfTemperature(iExme)          = oFlowCapacity.aoExmes(iExme).oBranch.afTemperatures(1); %oMatterObject.aoFlows(1).fTemperature;
                                 else
                                     mfSpecificHeatCapacity(iExme) = oMatterObject.aoFlows(end).fSpecificHeatCapacity;
-                                    mfTemperature(iExme)          = oMatterObject.aoFlows(end).fTemperature;
+                                    mfTemperature(iExme)          = oFlowCapacity.aoExmes(iExme).oBranch.afTemperatures(end); %oMatterObject.aoFlows(end).fTemperature;
                                 end
                             catch oFirstError
                                 try
@@ -178,6 +178,11 @@ classdef branch < solver.thermal.base.branch
                     fFlowTemperature = oNormalCapacity.fTemperature;
                 end
                 
+                if oFlowCapacity.iHeatSources > 0
+                    fFlowHeatSourceHeatFlow = sum(cellfun(@(cCell) cCell.fHeatFlow, this.coHeatSource));
+                else
+                    fFlowHeatSourceHeatFlow = 0;
+                end
                 % now we can calculate what the required heat flow is to
                 % enter the flow capacity so that it has the same
                 % temperature as the other phase. Note that we use the
@@ -185,7 +190,7 @@ classdef branch < solver.thermal.base.branch
                 % impact of the temperatures of the flows entering the flow
                 % capacity because these are already considered as heat
                 % flows for the corresponding thermal exmes
-                fRequiredFlowHeatFlow = (oNormalCapacity.fTemperature - fFlowTemperature) * fOverallHeatCapacityFlow;
+                fRequiredFlowHeatFlow = ((oNormalCapacity.fTemperature - fFlowTemperature) * fOverallHeatCapacityFlow) + fFlowHeatSourceHeatFlow;
                 
                 % if the flow phase is on the left side we subtract the
                 % current heat flow of the left side from the required heat

@@ -1,140 +1,74 @@
 classdef Example < vsys
-    %EXAMPLE Example simulation for a simple flow in V-HAB 2.0
-    %   Two tanks filled with gas at different pressures and a pipe in between
+    %EXAMPLE Example simulation for a fan driven looped gas flow in V-HAB 2
+    %   It includes 5 tanks which are connected in a loop. Two tanks
+    %   represent a parallel flow path, for which either one of the two or
+    %   both can be open. This behavior is controlled by valves. Two tanks
+    %   contain flow phases, as the current implementation of the matter
+    %   multibranch solver requires fans
+  	%   to be placed in between two flow phases!
     
-    properties (SetAccess = protected, GetAccess = public)
-        fPipeLength   = 0.5;
-        fPipeDiameter = 0.01; %% for 3/5 mm overflow of warnings
-        
-        oManual;
+    properties
     end
     
     methods
         function this = Example(oParent, sName)
             this@vsys(oParent, sName, 100);
-            
-            
-            eval(this.oRoot.oCfgParams.configCode(this));
         end
-        
         
         function createMatterStructure(this)
             createMatterStructure@vsys(this);
             
+            matter.store(this, 'Tank_1', 1);
+            oGasPhase1 = this.toStores.Tank_1.createPhase('air', 1);
             
+            % In the implementation of the matter multibranch solver fans
+            % currently must be placed in between two flow phases!
+            matter.store(this, 'Tank_2', 1);
+            oGasPhase2 = this.toStores.Tank_2.createPhase('air', 'flow', 1);
             
-            matter.store(this, 'Vacuum', 1);
-            this.toStores.Vacuum.createPhase('air',  1);
-            matter.procs.exmes.gas(this.toStores.Vacuum.aoPhases(1), 'Port_1');
-            %%%
-            %matter.procs.exmes.gas(this.toStores.Vacuum.aoPhases(1), 'Port_2');
+            matter.store(this, 'Tank_3', 1);
+            oGasPhase3 = this.toStores.Tank_3.createPhase('air', 'flow', 1);
             
-            %%special.matter.const_press_exme(this.toStores.Vacuum.aoPhases(1), 'Port_2', 0);
-            matter.procs.exmes.gas(this.toStores.Vacuum.aoPhases(1), 'Port_2');
+            matter.store(this, 'Tank_4', 1);
+            oGasPhase4 = this.toStores.Tank_4.createPhase('air', 1);
             
+            matter.store(this, 'Tank_5', 1);
+            oGasPhase5 = this.toStores.Tank_5.createPhase('air', 1);
             
+            oFan = components.matter.fan(this, 'Fan', 57500);
+            oFan.fPowerFactor = 0;
             
+            fRoughness = 2e-3;
+            components.matter.pipe(this, 'Pipe_1', 1, 0.02, fRoughness);
+            components.matter.pipe(this, 'Pipe_2', 1, 0.02, fRoughness);
+            components.matter.pipe(this, 'Pipe_3', 1, 0.02, fRoughness);
+            components.matter.pipe(this, 'Pipe_4', 1, 0.02, fRoughness);
+            components.matter.pipe(this, 'Pipe_5', 1, 0.02, fRoughness);
             
-            matter.store(this, 'Store', 1);
-            this.toStores.Store.createPhase('air', this.toStores.Store.fVolume);
-            %%%special.matter.const_press_exme(this.toStores.Store.aoPhases(1), 'Port_Out', 600 + this.toStores.Store.aoPhases(1).fPressure);
-            %%%special.matter.const_press_exme(this.toStores.Store.aoPhases(1), 'Port_Rtn', this.toStores.Store.aoPhases(1).fPressure);
+            % Now we add two valves to control which part of the parallel
+            % flow path shall be open:
+            components.matter.valve(this, 'Valve_1', true);
+            components.matter.valve(this, 'Valve_2', false);
+            % We also add two check valves to prevent an unintentional back
+            % flow in the parallel flow path
+            components.matter.checkvalve(this, 'CheckValve_1');
+            components.matter.checkvalve(this, 'CheckValve_2');
             
-            %%matter.procs.exmes.gas(this.toStores.Store.aoPhases(1), 'Port_Out');
-            matter.procs.exmes.gas(this.toStores.Store.aoPhases(1), 'Port_Out');
+            matter.branch(this, oGasPhase1, {'Pipe_1'}, oGasPhase2);
+            matter.branch(this, oGasPhase2, {'Fan'}, 	oGasPhase3);
             
-            
-            matter.store(this, 'Valve_1', 1e-6);
-            cParams = matter.helper.phase.create.air(this, this.toStores.Valve_1.fVolume);
-            matter.phases.flow.gas(this.toStores.Valve_1, 'flow', cParams{:});
-            matter.procs.exmes.gas(this.toStores.Valve_1.aoPhases(1), 'In'); 
-            matter.procs.exmes.gas(this.toStores.Valve_1.aoPhases(1), 'Out'); 
-            
-            
-            
-            matter.store(this, 'Filter', 1e-1);
-            cParams = matter.helper.phase.create.air(this, this.toStores.Filter.fVolume);
-            matter.phases.flow.gas(this.toStores.Filter, 'flow', cParams{:});
-            matter.procs.exmes.gas(this.toStores.Filter.aoPhases(1), 'In');
-            matter.procs.exmes.gas(this.toStores.Filter.aoPhases(1), 'Out');
-            matter.procs.exmes.gas(this.toStores.Filter.aoPhases(1), 'Filtered');
-            
-            %this.toStores.Filter.createPhase('air', 'adsorbed', 0);
-            
-            
-            
-            
-            %P2P!
-            %components.matter.generic.filter(this.toStores.Filter, 'co2_filter', 'flow', 'adsorbed', 'CO2', inf);%0.01);
-            %components.matter.generic.filter(this.toStores.Filter, 'co2_filter', 'flow', 'adsorbed', 'CO2', 0.001, 1);%inf);%0.01);
-            %components.matter.generic.filter(this.toStores.Filter, 'a_filter', 'flow', 'adsorbed', 'CO2', 0.05);%0.01);
-            
-            %%components.matter.generic.filter(this.toStores.Filter, 'a_filter', 'flow', 'adsorbed', 'CO2', 0.01, 2);%0.01);
-            %components.matter.generic.filter(this.toStores.Filter, 'a_filter', 'flow', 'adsorbed', 'CO2', 0.025);
-            
-            
-            matter.store(this, 'Valve_2', 1e-6);
-            cParams = matter.helper.phase.create.air(this, this.toStores.Valve_2.fVolume);
-            matter.phases.flow.gas(this.toStores.Valve_2, 'flow', cParams{:});
-            matter.procs.exmes.gas(this.toStores.Valve_2.aoPhases(1), 'In'); 
-            matter.procs.exmes.gas(this.toStores.Valve_2.aoPhases(1), 'Out'); 
-            
-            fRoughness = 0;% 0.002;
-            
-            components.matter.pipe(this, 'Pipe_Store_Valve1_1',  this.fPipeLength, this.fPipeDiameter, fRoughness);
-            components.matter.pipe(this, 'Pipe_Store_Valve1_2',  this.fPipeLength, this.fPipeDiameter, fRoughness);
-            components.matter.pipe(this, 'Pipe_Valve1_Filter_1', this.fPipeLength, this.fPipeDiameter, fRoughness);
-            components.matter.pipe(this, 'Pipe_Valve1_Filter_2', this.fPipeLength, this.fPipeDiameter, fRoughness);
-            components.matter.pipe(this, 'Pipe_Filter_Valve2_1', this.fPipeLength, this.fPipeDiameter, fRoughness);
-            components.matter.pipe(this, 'Pipe_Filter_Valve2_2', this.fPipeLength, this.fPipeDiameter, fRoughness);
-            components.matter.pipe(this, 'Pipe_Valve2_Store_1',  this.fPipeLength, this.fPipeDiameter, fRoughness);
-            components.matter.pipe(this, 'Pipe_Valve2_Store_2',  this.fPipeLength, this.fPipeDiameter, fRoughness);
-            
-            
-            matter.branch(this, 'Store.Port_Out', { 'Pipe_Store_Valve1_1',  'Pipe_Store_Valve1_2'  }, 'Valve_1.In');
-            matter.branch(this, 'Valve_1.Out',    { 'Pipe_Valve1_Filter_1', 'Pipe_Valve1_Filter_2' }, 'Filter.In');
-            matter.branch(this, 'Filter.Out',     { 'Pipe_Filter_Valve2_1', 'Pipe_Filter_Valve2_2' }, 'Valve_2.In');
-            
-            %%%
-            %%%matter.branch(this, 'Valve_2.Out',    { 'Pipe_Valve2_Store_1',  'Pipe_Valve2_Store_2'  }, 'Store.Port_Rtn');
-            matter.branch(this, 'Valve_2.Out',    { 'Pipe_Valve2_Store_1',  'Pipe_Valve2_Store_2'  }, 'Vacuum.Port_2');
-            
-            
-            matter.branch(this, 'Filter.Filtered', {}, 'Vacuum.Port_1');
-            %TODO something like
-            %matter.branch(this, 'Filter.Filtered', {}, oVacuum.createNewPortAndGetName());
+            % Tank 4 and Tank 5 are used as the parallel flow path. They
+            % are both connected to Tank 1 and Tank 3!
+            matter.branch(this, oGasPhase3, {'Pipe_2', 'Valve_1'},      oGasPhase4);
+            matter.branch(this, oGasPhase4, {'Pipe_3', 'CheckValve_1'},	oGasPhase1);
+            matter.branch(this, oGasPhase3, {'Pipe_4', 'Valve_2'},      oGasPhase5);
+            matter.branch(this, oGasPhase5, {'Pipe_5', 'CheckValve_2'},	oGasPhase1);
         end
-        
         
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
             
-            % Set CPE pressures from phase
-            %%%
-            %%%fPressure = this.toStores.Store.aoPhases(1).fPressure;
-            
-            %%%this.toStores.Store.aoPhases(1).coProcsEXME{1}.fPortPressure = fPressure + 600;
-            %%%this.toStores.Store.aoPhases(1).coProcsEXME{2}.fPortPressure = fPressure;
-            %%%
-            
-            tProps.rMaxChange = 0.01;
-            this.toStores.Store.aoPhases(1).setTimeStepProperties(tProps);
-            this.toStores.Vacuum.aoPhases(1).setTimeStepProperties(tProps);
-            %this.toStores.Filter.aoPhases(2).rMaxChange = 0.15;
-            %this.toStores.Filter.aoPhases(2).rMaxChange = 0.01;
-            
-            
-            %this.toStores.Filter.aoPhases(2).rMaxChange = 5;
-            %this.toStores.Filter.aoPhases(2).rMaxChange = 0.01;
-            % Hack
-            %this.toStores.Filter.aoPhases(2).setVolume(10000);
-            
-            solver.matter_multibranch.iterative.branch(this.aoBranches(1:4));
-            
-            
-            this.oManual = solver.matter.manual.branch(this.aoBranches(5));
-            
-            this.oManual.setFlowRate(0.01);
+            solver.matter_multibranch.iterative.branch(this.aoBranches);
             
             this.setThermalSolvers();
         end
@@ -143,30 +77,21 @@ classdef Example < vsys
      methods (Access = protected)
         
         function exec(this, ~)
+            % exec(ute) function for this system
+            % Here it only calls its parent's exec function
             exec@vsys(this);
             
-%             if this.oTimer.fTime == 540 %&& this.oManual.fFlowRate == 0.01
-%                 this.oManual.setFlowRate(0.02);
-%                 
-%             elseif this.oTimer.fTime == 990 %&& this.oManual.fFlowRate == 0.02
-%                 this.oManual.setFlowRate(0.005);
-%                 
-%             elseif this.oTimer.fTime == 1520 %&& this.oManual.fFlowRate == 0.005
-%                 this.oManual.setFlowRate(0.01);
-%                 
-%             elseif this.oTimer.fTime == 2030 %&& this.oManual.fFlowRate == 0.01
-%                 this.oManual.setFlowRate(0);
-%                 
-%             elseif this.oTimer.fTime >= 2500 && this.oTimer.fTime <= 3500
-%                 this.oManual.setFlowRate(rand() * 0.01);
-%                 
-%             elseif this.oTimer.fTime == 3600
-%                 this.oManual.setFlowRate(0);
-%                 
-%             end
+            % The flowpath through valve 1 is initially open, after 600
+            % seconds we open the flowpath through valve 2 and close valve
+            % 1 and after another 600 seconds we open both valves:
+            if this.oTimer.fTime > 1200 && ~this.toProcsF2F.Valve_1.bOpen
+                this.toProcsF2F.Valve_1.setOpen(true);
+                this.toProcsF2F.Valve_2.setOpen(true);
+            elseif this.oTimer.fTime > 600 && ~this.toProcsF2F.Valve_2.bOpen
+                this.toProcsF2F.Valve_1.setOpen(false);
+                this.toProcsF2F.Valve_2.setOpen(true);
+            end
+            
         end
-        
      end
-    
 end
-

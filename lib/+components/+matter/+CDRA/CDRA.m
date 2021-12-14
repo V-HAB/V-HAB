@@ -296,27 +296,40 @@ classdef CDRA < vsys
             % spherical and using absorbent mass and the mass of each
             % sphere to calculate the number of spheres, then multiply this
             % with the area of each sphere!
+            %            
+            % Effective Particle Diameter De = 4*As/P = Dp for spheres
+            % Sphericity = (6/De)/(As/V) = 1.0 for spheres
+            % If the sorbent bed uses non-spherical pellets, then one must 
+            % calculate both the Particle Effective Diameter and Sphericity 
             %
             % According to ICES-2014-168 the diameter of the pellets for
             % 13x is 2.19 mm --> the volume of each sphere is
             % 4/3*pi*(2.19/2)^3 = 5.5 mm3, while the area is 
             % 4*pi*(2.19/2)^2 = 15 mm2
+            this.tGeometry.Zeolite13x.fAdsorbentParticleDiameter = 2.19e-3; % [m]
+            this.tGeometry.Zeolite13x.fSphericity = 1.0; % 
             nSpheres_13x = (tInitialization.Zeolite13x.tfMassAbsorber.Zeolite13x/(this.oMT.ttxMatter.Zeolite13x.ttxPhases.tSolid.Density * 5.5e-9));
             this.tGeometry.Zeolite13x.fAbsorberSurfaceArea      = (15e-6)*nSpheres_13x;
+            
             % For Sylobead the average diameter is mentioned to be 2.25 mm:
             % 4/3*pi*(2.25/2)^3 = 5.96 mm3, while the area is 
             % 4*pi*(2.25/2)^2 = 15.9 mm2
+            this.tGeometry.Sylobead.fAdsorbentParticleDiameter = 2.25e-3; % [m]
+            this.tGeometry.Sylobead.fSphericity = 1.0; % spherical particles
             nSpheres_Sylobead = (tInitialization.Zeolite13x.tfMassAbsorber.Zeolite13x/(this.oMT.ttxMatter.Zeolite13x.ttxPhases.tSolid.Density * 5.96e-9));
             this.tGeometry.Sylobead.fAbsorberSurfaceArea        = (15.9e-6)*nSpheres_Sylobead;
+            
             % For 5a the average diameter is mentioned to be 2.21 mm:
             % 4/3*pi*(2.1/2)^3 = 4.85 mm3, while the area is 
             % 4*pi*(2.1/2)^2 = 13.85 mm2
+            this.tGeometry.Zeolite5A.fAdsorbentParticleDiameter = 2.21e-3; % [m]
+            this.tGeometry.Zeolite5A.fSphericity = 1.0; % spherical particles
             nSpheres_5A = (tInitialization.Zeolite13x.tfMassAbsorber.Zeolite13x/(this.oMT.ttxMatter.Zeolite13x.ttxPhases.tSolid.Density * 4.85e-9));
             this.tGeometry.Zeolite5A.fAbsorberSurfaceArea       = (13.85e-6)*nSpheres_5A;
             
             % Define the standard values used for pipes
             fPipelength         = 1;
-            fPipeDiameter       = 0.1;
+            fPipeDiameter       = 0.05;
             fFrictionFactor     = 2e-4;
             
             % Now all values to create the system are defined and the 6
@@ -343,7 +356,14 @@ classdef CDRA < vsys
                 fTemperatureAbsorber    = tInitialization.(csTypes{iType}).fTemperature;
                 fPressure               = this.tAtmosphere.fPressure;
                 mfMassTransferCoefficient = tInitialization.(csTypes{iType}).mfMassTransferCoefficient;
-
+                
+                %define modified Ergun parameters
+                tModifiedErgunInput.fAdsorbentParticleDiameter = this.tGeometry.(csTypes{iType}).fAdsorbentParticleDiameter;
+                tModifiedErgunInput.fSphericity = this.tGeometry.(csTypes{iType}).fSphericity;
+                tModifiedErgunInput.fCellLength = this.tGeometry.(csTypes{iType}).fLength/iCellNumber;
+                tModifiedErgunInput.rVoidFraction = this.tGeometry.(csTypes{iType}).rVoidFraction;
+                tModifiedErgunInput.fCrossSection = this.tGeometry.(csTypes{iType}).fCrossSection;
+                
                 % Adds two stores (filter stores), containing sylobead
                 % A special filter store has to be used for the filter to
                 % prevent the gas phase volume from beeing overwritten since
@@ -481,7 +501,8 @@ classdef CDRA < vsys
                         % Note: Only the branches in between the cells of
                         % the currently generated filter are created here!
                         if iCell ~= 1
-                            components.matter.CDRA.components.Filter_F2F(this, [sName, '_FrictionProc_',num2str(iCell)], this.tGeometry.(csTypes{iType}).mfFrictionFactor(iCell));
+                            %components.matter.CDRA.components.Filter_F2F(this, [sName, '_FrictionProc_',num2str(iCell)], this.tGeometry.(csTypes{iType}).mfFrictionFactor(iCell));
+                            components.matter.CDRA.components.ModifiedErgun_F2F(this, [sName, '_FrictionProc_',num2str(iCell)], tModifiedErgunInput);
                             % branch between the current and the previous cell
                             oBranch = matter.branch(this, [sName,'.','Outflow_',num2str(iCell-1)], {[sName, '_FrictionProc_',num2str(iCell)]}, [sName,'.','Inflow_',num2str(iCell)], [sName, 'Flow',num2str(iCell-1),'toFlow',num2str(iCell)]);
                             
@@ -520,13 +541,22 @@ classdef CDRA < vsys
             matter.store(this, 'VacuumInterface', 1e-6);
             oVacuumInterface = this.toStores.VacuumInterface.createPhase('air', 'flow', 1e-6, 293, 0.5, 1e5);
             
+            matter.store(this, 'DessicantThreeWayValve', 1e-6);
+            oDessicantThreeWay = this.toStores.DessicantThreeWayValve.createPhase('air', 'flow', 1e-6, 293, 0.5, 1e5);
+            
+            matter.store(this, 'AdsorberThreeWayValve', 1e-6);
+            oAdsorberThreeWay = this.toStores.AdsorberThreeWayValve.createPhase('air', 'flow', 1e-6, 293, 0.5, 1e5);
+            
+            matter.store(this, 'FanStore', 1e-6);
+            oFanPhase = this.toStores.FanStore.createPhase('air', 'flow', 1e-6, 293, 0.5, 1e5);
+            
             %% Definition of interface branches
             
             % Sylobead branches
             % Inlet of sylobed one (the outlet requires another interface
             % because the location from which the air is supplied is
             % different
-            fInterfacePipeLength = 0.01;
+            fInterfacePipeLength = 0.1;
             
             components.matter.pipe(this, 'InletPipe', fInterfacePipeLength, fPipeDiameter, fFrictionFactor);
             sBranchName = 'CDRA_Air_In';
@@ -534,8 +564,9 @@ classdef CDRA < vsys
             this.tMassNetwork.InterfaceBranches.(sBranchName) = oBranch;
             
             components.matter.pipe(this, 'OutletPipe', fInterfacePipeLength, fPipeDiameter, fFrictionFactor);
+            components.matter.CDRA.components.Filter_F2F(this, 'OutletFilter');
             sBranchName = 'CDRA_Air_Out';
-            oBranch = matter.branch(this, oAirOutlet, {'OutletPipe'}, 'CDRA_Air_Out', sBranchName);
+            oBranch = matter.branch(this, oAirOutlet, {'OutletPipe', 'OutletFilter'}, 'CDRA_Air_Out', sBranchName);
             this.tMassNetwork.InterfaceBranches.(sBranchName) = oBranch;
             
             components.matter.pipe(this, 'VacuumPipe', fInterfacePipeLength, fPipeDiameter, fFrictionFactor);
@@ -589,21 +620,39 @@ classdef CDRA < vsys
             oBranch = matter.branch(this, ['Sylobead_2.Outflow_', num2str(this.tGeometry.Sylobead.iCellNumber)], {'Sylobead_2_to_13x2_Pipe'}, 'Zeolite13x_2.Inflow_1', sBranchName);
             this.tMassNetwork.InternalBranches_Sylobead_2(end+1) = oBranch;
             
-            % Interface between 13x and 5A zeolite absorber beds
-            components.matter.Temp_Dummy(this, 'PreCooler_5A1', 281, 1000);
-            components.matter.Temp_Dummy(this, 'PreCooler_5A2', 281, 1000);
-            components.matter.valve(this, 'Valve_13x1_to_5A_1', 0);
-            components.matter.valve(this, 'Valve_13x2_to_5A_2', 0);
-            components.matter.pipe(this, 'Pipe_13x1_to_5A_1', fPipelength, fPipeDiameter, fFrictionFactor);
-            components.matter.pipe(this, 'Pipe_13x2_to_5A_2', fPipelength, fPipeDiameter, fFrictionFactor);
+            %% Interface between 13x and 5A zeolite absorber beds
+            components.matter.Temp_Dummy(this, 'PreCooler', 281, 1000);
+            components.matter.valve(this, 'Valve_13x1_to_Fan', 0);
+            components.matter.valve(this, 'Valve_13x2_to_Fan', 0);
+            components.matter.pipe(this, 'Pipe_13x_to_5A', fPipelength, fPipeDiameter, fFrictionFactor);
+            components.matter.CDRA.components.CDRA_Fan(this, 'CDRA_Fan');
             
             sBranchName = 'Zeolite13x1_to_5A1';
-            oBranch = matter.branch(this, ['Zeolite13x_1.Outflow_', num2str(this.tGeometry.Zeolite13x.iCellNumber)], {'Pipe_13x1_to_5A_1', 'PreCooler_5A1', 'Valve_13x1_to_5A_1'}, 'Zeolite5A_1.Inflow_1', sBranchName);
+            oBranch = matter.branch(this, ['Zeolite13x_1.Outflow_', num2str(this.tGeometry.Zeolite13x.iCellNumber)], {'Valve_13x1_to_Fan'}, oDessicantThreeWay, sBranchName);
             this.tMassNetwork.InternalBranches_Zeolite13x_1(end+1) = oBranch;
             
             sBranchName = 'Zeolite13x2_to_5A2';
-            oBranch = matter.branch(this, ['Zeolite13x_2.Outflow_', num2str(this.tGeometry.Zeolite13x.iCellNumber)], {'Pipe_13x2_to_5A_2', 'PreCooler_5A2', 'Valve_13x2_to_5A_2'}, 'Zeolite5A_2.Inflow_1', sBranchName);
+            oBranch = matter.branch(this, ['Zeolite13x_2.Outflow_', num2str(this.tGeometry.Zeolite13x.iCellNumber)], {'Valve_13x2_to_Fan'}, oDessicantThreeWay, sBranchName);
             this.tMassNetwork.InternalBranches_Zeolite13x_2(end+1) = oBranch;
+            
+            
+            sBranchName = 'CDRA_Fan';
+            oBranch = matter.branch(this, oDessicantThreeWay, {'CDRA_Fan'}, oFanPhase, sBranchName);
+            this.tMassNetwork.InterfaceBranches.(sBranchName) = oBranch;
+            
+            sBranchName = 'CDRA_PostFan';
+            oBranch = matter.branch(this, oFanPhase, {'PreCooler', 'Pipe_13x_to_5A'}, oAdsorberThreeWay, sBranchName);
+            this.tMassNetwork.InterfaceBranches.(sBranchName) = oBranch;
+            
+            components.matter.valve(this, 'Valve_Fan_to_5A_1', 0);
+            components.matter.valve(this, 'Valve_Fan_to_5A_2', 0);
+            
+            sBranchName = 'Fan_to_5A_1';
+            oBranch = matter.branch(this, oAdsorberThreeWay , {'Valve_Fan_to_5A_1'}, 'Zeolite5A_1.Inflow_1', sBranchName);
+            this.tMassNetwork.InterfaceBranches.(sBranchName) = oBranch;
+            sBranchName = 'Fan_to_5A_2';
+            oBranch = matter.branch(this, oAdsorberThreeWay , {'Valve_Fan_to_5A_2'}, 'Zeolite5A_2.Inflow_1', sBranchName);
+            this.tMassNetwork.InterfaceBranches.(sBranchName) = oBranch;
             
             oFlowPhase = this.toStores.Zeolite13x_1.toPhases.(['Flow_', num2str(this.tGeometry.Zeolite13x.iCellNumber)]);
             matter.procs.exmes.gas(oFlowPhase, 'Inlet_From_5A2');
@@ -626,7 +675,8 @@ classdef CDRA < vsys
             oBranch = matter.branch(this, ['Zeolite5A_2.Outflow_',num2str(iCellNumber)] , {'Pipe_5A_2_to_13x1', 'Valve_5A_2_to_13x1'}, 'Zeolite13x_1.Inlet_From_5A2', sBranchName);
             this.tMassNetwork.InterfaceBranches.(sBranchName) = oBranch;
             
-            % 5A to Vacuum connection branches
+            
+            %% 5A to Vacuum connection branches
             oFlow1 = this.toStores.Zeolite5A_1.toPhases.Flow_1;
             oFlow2 = this.toStores.Zeolite5A_2.toPhases.Flow_1;
 
@@ -673,15 +723,17 @@ classdef CDRA < vsys
             
             this.tMassNetwork.aoActiveValvesCycleOne(1) = this.toProcsF2F.Cycle_One_InletValve;
             this.tMassNetwork.aoActiveValvesCycleOne(2) = this.toProcsF2F.Cycle_One_OutletValve;
-            this.tMassNetwork.aoActiveValvesCycleOne(3) = this.toProcsF2F.Valve_13x1_to_5A_1;
-            this.tMassNetwork.aoActiveValvesCycleOne(4) = this.toProcsF2F.Valve_5A_1_to_13x2;
-            this.tMassNetwork.aoActiveValvesCycleOne(5) = this.toProcsF2F.Valve_5A_2_Airsave;
+            this.tMassNetwork.aoActiveValvesCycleOne(3) = this.toProcsF2F.Valve_13x1_to_Fan;
+            this.tMassNetwork.aoActiveValvesCycleOne(4) = this.toProcsF2F.Valve_Fan_to_5A_1;
+            this.tMassNetwork.aoActiveValvesCycleOne(5) = this.toProcsF2F.Valve_5A_1_to_13x2;
+            this.tMassNetwork.aoActiveValvesCycleOne(6) = this.toProcsF2F.Valve_5A_2_Airsave;
             
             this.tMassNetwork.aoActiveValvesCycleTwo(1) = this.toProcsF2F.Cycle_Two_InletValve;
             this.tMassNetwork.aoActiveValvesCycleTwo(2) = this.toProcsF2F.Cycle_Two_OutletValve;
-            this.tMassNetwork.aoActiveValvesCycleTwo(3) = this.toProcsF2F.Valve_13x2_to_5A_2;
-            this.tMassNetwork.aoActiveValvesCycleTwo(4) = this.toProcsF2F.Valve_5A_2_to_13x1;
-            this.tMassNetwork.aoActiveValvesCycleTwo(5) = this.toProcsF2F.Valve_5A_1_Airsave;
+            this.tMassNetwork.aoActiveValvesCycleTwo(3) = this.toProcsF2F.Valve_13x2_to_Fan;
+            this.tMassNetwork.aoActiveValvesCycleTwo(4) = this.toProcsF2F.Valve_Fan_to_5A_2;
+            this.tMassNetwork.aoActiveValvesCycleTwo(5) = this.toProcsF2F.Valve_5A_2_to_13x1;
+            this.tMassNetwork.aoActiveValvesCycleTwo(6) = this.toProcsF2F.Valve_5A_1_Airsave;
         end
         
         function createThermalStructure(this)
@@ -760,7 +812,7 @@ classdef CDRA < vsys
             oSolver = solver.matter_multibranch.iterative.branch(this.aoBranches, 'complex');
             oSolver.setSolverProperties(tSolverProperties);
             
-            solver.thermal.multi_branch.basic.branch(this.aoThermalMultiSolverBranches, this.fTimeStep);
+            solver.thermal.multi_branch.basic.branch(this.aoThermalMultiSolverBranches);
             
             csStores = fieldnames(this.toStores);
             % sets numerical properties for the phases of CDRA

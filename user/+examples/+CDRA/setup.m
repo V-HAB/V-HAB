@@ -1,36 +1,18 @@
 classdef setup < simulation.infrastructure
-    %SETUP This class is used to setup a simulation
-    %   There should always be a setup file present for each project. It is
-    %   used for the following:
-    %   - instantiate the root object
-    %   - register branches to their appropriate solvers
-    %   - determine which items are logged
-    %   - set the simulation duration
-    %   - provide methods for plotting the results
-    %
-    % if you want to change the cell numbers for the model use:
-    % containers.Map({'tInitialization'},{struct('Zeolite13x', struct('iCellNumber', 10), 'Sylobead', struct('iCellNumber', 10), 'Zeolite5A', struct('iCellNumber', 10))})
+    %SETUP This class is used as setup for CDRA example (which also serves
+    % as verification).
+    % The CDRA model is programmed to allow a variable number of cells
+    % larger than 2 cells per bed. You can run this simulation with
+    % different cell numbers by using the following exec call:
+    % vhab.exec('examples.CDRA.setup', containers.Map({'tInitialization'},{struct('Zeolite13x', struct('iCellNumber', 10), 'Sylobead', struct('iCellNumber', 10), 'Zeolite5A', struct('iCellNumber', 10))}));
     
     properties
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams) % Constructor function
+        function this = setup(ptConfigParams, tSolverParams)
             
-            % Possible to change the constructor paths and params for the
-            % monitors
             ttMonitorConfig = struct();
-%             ttMonitorConfig.oLogger.cParams = {true, 10000};
-            
-%             ttMonitorConfig.oTimeStepObserver.sClass = 'simulation.monitors.timestepObserver';
-%             ttMonitorConfig.oTimeStepObserver.cParams = { 0 };
-            
-%             ttMonitorConfig.oMassBalanceObserver.sClass = 'simulation.monitors.massbalanceObserver';
-%             fAccuracy = 1e-8;
-%             fMaxMassBalanceDifference = inf;
-%             bSetBreakPoints = false;
-%             ttMonitorConfig.oMassBalanceObserver.cParams = { fAccuracy, fMaxMassBalanceDifference, bSetBreakPoints };
-            
             this@simulation.infrastructure('Example_CDRA', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             % Creating the root object

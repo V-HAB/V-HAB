@@ -1,32 +1,14 @@
 classdef setup < simulation.infrastructure
-    %SETUP This class is used to setup a simulation
-    %   There should always be a setup file present for each project. It is
-    %   used for the following:
-    %   - instantiate the root object
-    %   - register branches to their appropriate solvers
-    %   - determine which items are logged
-    %   - set the simulation duration
-    %   - provide methods for plotting the results
     
     properties
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig, fSimTime) % Constructor function
-            % Possible to change the constructor paths and params for the
-            % monitors
-            
-            % First we call the parent constructor and tell it the name of
-            % this simulation we are creating.
+        function this = setup(ptConfigParams, tSolverParams, ttMonitorConfig, fSimTime)
             this@simulation.infrastructure('Example_Mixture_Flow', ptConfigParams, tSolverParams, ttMonitorConfig);
             
-            % Creating the 'Example' system as a child of the root system
-            % of this simulation. 
-            examples.mixture_flow.systems.Example(this.oSimulationContainer, 'Example');
+            tests.mixture_flow.systems.Example(this.oSimulationContainer, 'Example');
             
-            %% Simulation length
-            % Stop when specific time in simulation is reached or after 
-            % specific amount of ticks (bUseTime true/false).
             if nargin < 4 || isempty(fSimTime)
                 this.fSimTime = 3000;
             else 
@@ -34,8 +16,6 @@ classdef setup < simulation.infrastructure
             end
         end
         function configureMonitors(this)
-            
-            %% Logging
             oLog = this.toMonitors.oLogger;
             
             csStores = fieldnames(this.oSimulationContainer.toChildren.Example.toStores);
@@ -58,9 +38,7 @@ classdef setup < simulation.infrastructure
             
         end
         
-        function plot(this) % Plotting the results
-            
-            %% Define Plots
+        function plot(this)
             
             close all
             oPlotter = plot@simulation.infrastructure(this);
@@ -104,6 +82,4 @@ classdef setup < simulation.infrastructure
             oPlotter.plot();
         end
     end
-    
 end
-

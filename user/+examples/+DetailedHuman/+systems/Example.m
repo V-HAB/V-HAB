@@ -1,9 +1,28 @@
 classdef Example < vsys
     %EXAMPLE Example simulation for a human model in V-HAB 2.0
+    % The way the human model is implemented here scales with the number of
+    % crew members set to the iNumberOfCrewMembers property. Therefore, it
+    % is suggested to use the implementation provided in this example for
+    % any human model implementation, as it will ease the variation of crew
+    % size in all simulations.
+    %
+    % The human model is compared to the values from the Baseline Values
+    % and Assumptions Document of NASA and to the HumMod human model.
     
     properties (SetAccess = protected, GetAccess = public)
-        iNumberOfCrewMembers;
+        % A property to store the total number of crew members. This is
+        % usefull to only define this value once, and then it can be used
+        % for all definitions required for the human mode. For that reason,
+        % it is suggested to add this property to any system implementing
+        % the human model. In this case only one crew member is modelled,
+        % however the implementation inside the example automatically
+        % scales with this number, which makes it easy to simulate
+        % different crew sizes.
+        iNumberOfCrewMembers = 7;
         
+        % Just a property used in this example to check if the human was
+        % moved from one location to another. This is not required in other
+        % systems implementing the human model
         bHumanMoved = false;
     end
     
@@ -11,72 +30,101 @@ classdef Example < vsys
         function this = Example(oParent, sName)
             this@vsys(oParent, sName, 600);
             
-            %% crew planer
-            % Since the crew schedule follows the same pattern every day,
-            % it was changed to a loop. Thereby, longer mission durations
-            % can easily be set just by changing the iLengthOfMission
-            % parameter. Currently, 10 days are set. If the number is
-            % higher tan the actual simulation time, this does not make any
-            % difference. If it is too short, the impact of the humans
-            % stops somewhen during the simulation time and the simulation
-            % is not usable. So make sure to ajust the parameter properly.         
-            
-            %Number of CrewMember goes here:
-            this.iNumberOfCrewMembers = 1;
+            %% %%%%%%%%%%%%%%%%% crew planer %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%      
+            %% User Inputs
             
             % Number of days that events shall be planned goes here:
-            iLengthOfMission = 200; % [d]
+            iLengthOfMission        = 200; % [d]
+            % Please note that if your simulated mission time is longer
+            % than this, the human will stop executing tasks!
+            
+            % Define the times at which the human eats. Three mealtimes are
+            % usually planned for each crew member:
+            tMealTimes.Breakfast    = 0.1;  % [h]
+            tMealTimes.Lunch        = 6;    % [h]
+            tMealTimes.Dinner       = 15;   % [h]
+            
+            % Time at which the exercise starts. Each entry in the vector
+            % will create a new exercise group. E.g. at the moment three
+            % groups are defined. So for three crew members every crew
+            % member will perform an exercise at a seperate time slow. For
+            % six crew members, two crew members will exercise at the same
+            % time:
+            mfExerciseStartTime     = [1,       5,      9]; % h
+            % Duration of each exericse
+            mfExerciseDuration      = [0.5,     0.5,    0.5]; % h
+            % percent of VO2 max at which the exercise is performed:
+            mfExerciseLevel         = [0.75,    0.75,   0.75];
+            
+            % Similar to the exercise, you can also define "sleep groups"
+            % which means you can simulate shift work if you select
+            % multiple groups. At the moment only one sleep shift is
+            % schedule, but you can simply turn this into a vector if you
+            % want different sleep schedules.
+            mfSleepStartTime        = 14;   % [h]
+            mfSleepDuration         = 8;    % [h]
+            
+            %% Create Crew Schedule
             
             ctEvents = cell(iLengthOfMission, this.iNumberOfCrewMembers);
             
-            %% Nominal Operation
-            
-            tMealTimes.Breakfast = 0.1*3600;
-            tMealTimes.Lunch = 6*3600;
-            tMealTimes.Dinner = 15*3600;
+            iExerciseGroups  	= length(mfExerciseStartTime);
+            iSleepGroups        = length(mfSleepStartTime);
             
             for iCrewMember = 1:this.iNumberOfCrewMembers
                 
                 iEvent = 1;
+                % Find current exercise group to which this crew member
+                % belongs:
+                iCurrentExerciseGroup = iCrewMember;
+                iCounter = 0;
+                while iCurrentExerciseGroup > iExerciseGroups
+                    iCurrentExerciseGroup = iCurrentExerciseGroup - iExerciseGroups;
+                    iCounter = iCounter + 1;
+                    if iCounter > 1000
+                        error('something went wrong during the crew schedule exercise definition')
+                    end
+                end
+                
+                % Find current sleep group to which this crew member
+                % belongs:
+                iCurrentSleepGroup = iCrewMember;
+                iCounter = 0;
+                while iCurrentSleepGroup > iSleepGroups
+                    iCurrentSleepGroup = iCurrentSleepGroup - iSleepGroups;
+                    iCounter = iCounter + 1;
+                    if iCounter > 1000
+                        error('something went wrong during the crew schedule sleep definition')
+                    end
+                end
                 
                 for iDay = 1:iLengthOfMission
-                    if iCrewMember == 1 || iCrewMember == 4
-                        
-                        ctEvents{iEvent, iCrewMember}.State = 2;
-                        ctEvents{iEvent, iCrewMember}.Start = ((iDay-1) * 24 +  1) * 3600;
-                        ctEvents{iEvent, iCrewMember}.End = ((iDay-1) * 24 +  1.5) * 3600;
-                        ctEvents{iEvent, iCrewMember}.Started = false;
-                        ctEvents{iEvent, iCrewMember}.Ended = false;
-                        ctEvents{iEvent, iCrewMember}.VO2_percent = 0.75;
-                        
-                    elseif iCrewMember==2 || iCrewMember ==5
-                        ctEvents{iEvent, iCrewMember}.State = 2;
-                        ctEvents{iEvent, iCrewMember}.Start = ((iDay-1) * 24 +  5) * 3600;
-                        ctEvents{iEvent, iCrewMember}.End = ((iDay-1) * 24 +  5.5) * 3600;
-                        ctEvents{iEvent, iCrewMember}.Started = false;
-                        ctEvents{iEvent, iCrewMember}.Ended = false;
-                        ctEvents{iEvent, iCrewMember}.VO2_percent = 0.75;
-                        
-                    elseif iCrewMember ==3 || iCrewMember == 6
-                        ctEvents{iEvent, iCrewMember}.State = 2;
-                        ctEvents{iEvent, iCrewMember}.Start = ((iDay-1) * 24 +  9) * 3600;
-                        ctEvents{iEvent, iCrewMember}.End = ((iDay-1) * 24 +  9.5) * 3600;
-                        ctEvents{iEvent, iCrewMember}.Started = false;
-                        ctEvents{iEvent, iCrewMember}.Ended = false;
-                        ctEvents{iEvent, iCrewMember}.VO2_percent = 0.75;
-                    end
                     
+                    ctEvents{iEvent, iCrewMember}.State         = 2;
+                    ctEvents{iEvent, iCrewMember}.Start         = ((iDay-1) * 24 +  mfExerciseStartTime(iCurrentExerciseGroup)) * 3600;
+                    ctEvents{iEvent, iCrewMember}.End           = ((iDay-1) * 24 +  mfExerciseStartTime(iCurrentExerciseGroup) + mfExerciseDuration(iCurrentExerciseGroup)) * 3600;
+                    ctEvents{iEvent, iCrewMember}.Started       = false;
+                    ctEvents{iEvent, iCrewMember}.Ended         = false;
+                    ctEvents{iEvent, iCrewMember}.VO2_percent   = mfExerciseLevel(iCurrentExerciseGroup);
+                        
                     iEvent = iEvent + 1;
                     
-                    ctEvents{iEvent, iCrewMember}.State = 0;
-                    ctEvents{iEvent, iCrewMember}.Start =   ((iDay-1) * 24 +  14) * 3600;
-                    ctEvents{iEvent, iCrewMember}.End =     ((iDay-1) * 24 +  22) * 3600;
-                    ctEvents{iEvent, iCrewMember}.Started = false;
-                    ctEvents{iEvent, iCrewMember}.Ended = false;
+                    ctEvents{iEvent, iCrewMember}.State     = 0;
+                    ctEvents{iEvent, iCrewMember}.Start     = ((iDay-1) * 24 +  mfSleepStartTime(iCurrentSleepGroup)) * 3600;
+                    ctEvents{iEvent, iCrewMember}.End       = ((iDay-1) * 24 +  mfSleepStartTime(iCurrentSleepGroup) + mfSleepDuration(iCurrentSleepGroup)) * 3600;
+                    ctEvents{iEvent, iCrewMember}.Started   = false;
+                    ctEvents{iEvent, iCrewMember}.Ended     = false;
                     
                     iEvent = iEvent + 1;
                 end
             end
+            
+            % Meal times are required in seconds, but for user simplicity
+            % are defined in hours above. Therefore we transform them to
+            % seconds here:
+            tMealTimes.Breakfast    = tMealTimes.Breakfast  * 3600;
+            tMealTimes.Lunch        = tMealTimes.Lunch      * 3600;
+            tMealTimes.Dinner       = tMealTimes.Dinner     * 3600;
             
             for iCrewMember = 1:this.iNumberOfCrewMembers
                 
@@ -88,6 +136,7 @@ classdef Example < vsys
                 clear txCrewPlaner;
             end
             
+            %% End of crew implementation
             
             eval(this.oRoot.oCfgParams.configCode(this));
             
@@ -122,17 +171,15 @@ classdef Example < vsys
             fWaterStorageVolume = 10;
             matter.store(this, 'PotableWaterStorage', fWaterStorageVolume);
             
-            % fWaterMol  = fWaterMass / this.oMT.afMolarMass(this.oMT.tiN2I.H2O);
-            
             % Concentration of Sodium in ISS potable water
             % From Appendix 1, "International Space Station Potable Water
             % Characterization for 2013", John E. Straub II, Debrah K.
             % Plumlee, and John R. Schultz, Paul D. Mudgett, 44th
             % International Conference on Environmental Systems, 13-17 July
             % 2014, Tucson, Arizona
-            fSodiumMass = 4e-6 * (0.9 * fWaterStorageVolume * 1000);
-            fSodiumMol = fSodiumMass / this.oMT.afMolarMass(this.oMT.tiN2I.Naplus);
-            fChlorideMass = fSodiumMol * this.oMT.afMolarMass(this.oMT.tiN2I.Clminus);
+            fSodiumMass     = 4e-6 * (0.9 * fWaterStorageVolume * 1000);
+            fSodiumMol      = fSodiumMass / this.oMT.afMolarMass(this.oMT.tiN2I.Naplus);
+            fChlorideMass   = fSodiumMol * this.oMT.afMolarMass(this.oMT.tiN2I.Clminus);
             
             oPotableWaterPhase = matter.phases.liquid(this.toStores.PotableWaterStorage, 'PotableWater', struct('H2O', fDensityH2O * 0.9 * fWaterStorageVolume, 'Naplus', fSodiumMass, 'Clminus', fChlorideMass), fAmbientTemperature, 101325);
             
@@ -171,6 +218,31 @@ classdef Example < vsys
             afCO2Flow(this.oMT.tiN2I.CO2) = this.iNumberOfCrewMembers * 1.04 / (24 * 3600);
             oCO2P2P.setFlowRate(afCO2Flow)
             
+            
+            %% Interface Definition for Crew
+            % this definition is designed to make the addition of crew to
+            % your system easier. You can simply define the following
+            % varibale beforehand to the desired values for your case:
+            %
+            % oCabinPhase:          gas phase in which respiration of crew
+            %                       is occuring
+            % oPotableWaterPhase:   water phase from which the crew
+            %                       receives potable drinking water
+            % oFecesPhase:          mixture phase into which the human
+            %                       deposits feces
+            % oUrinePhase:          mixture phase into which the human
+            %                       deposits urine
+            % oFoodStore:           food store object from which the human
+            %                       receives food
+            %
+            % Note that you can also pace the crew in different
+            % compartments, as is for example the case in the ISS
+            % simulation. In this case the easiest way to achieve it is to
+            % create a phase object array with the corresponding phases for
+            % each crew member and reference this in the definitions below.
+            % For an example on how to do this, you can view the ISS
+            % simulation in the user/+simulations/+ISS folder.
+            
             for iHuman = 1:this.iNumberOfCrewMembers
                 % Add Exmes for each human
                 matter.procs.exmes.gas(oCabinPhase,             ['AirOut',      num2str(iHuman)]);
@@ -187,8 +259,7 @@ classdef Example < vsys
                 matter.branch(this, ['PotableWater',    num2str(iHuman)], 	{}, [oPotableWaterPhase.oStore.sName,      '.DrinkingOut', num2str(iHuman)]);
                 matter.branch(this, ['Urine',           num2str(iHuman)], 	{}, [oUrinePhase.oStore.sName,             '.Urine_In',    num2str(iHuman)]);
                 matter.branch(this, ['Perspiration',    num2str(iHuman)], 	{}, [oCabinPhase.oStore.sName,             '.Perspiration',num2str(iHuman)]);
-
-
+                
                 % register each human at the food store
                 requestFood = oFoodStore.registerHuman(['Solid_Food_', num2str(iHuman)]);
                 this.toChildren.(['Human_', num2str(iHuman)]).toChildren.Digestion.bindRequestFoodFunction(requestFood);
@@ -203,6 +274,7 @@ classdef Example < vsys
                                 ['Urine',           num2str(iHuman)],...
                                 ['Perspiration',    num2str(iHuman)]);
             end
+            %% End of crew interface definition
         end
         
         function createThermalStructure(this)
