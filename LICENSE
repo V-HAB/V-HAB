@@ -1,11 +1,8 @@
-Copyright (c) 2019, STEPS
-All rights reserved.
+Copyright 2019 Institute of Astronautics, Technical University of Munich
 
-Redistribution of this code in source and binary forms is currently not 
-permitted without the consent of LRT TUM.
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software (V-HAB) and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
-Use in source and binary forms, with or without modification, are permitted
-provided that the following conditions are met:
+The copyright notice and this permission notice shall be included in all copies or substantial portions of the Software, as well as reference to the authors of V-HAB Daniel Kaschubek, Claas Olthoff and Jonas Schnaitmann. Scientific publications which use V-HAB shall cite the V-HAB documentation (https://wiki.tum.de/display/vhab) attributing LiSTOT to the named authors or the publication https://ttu-ir.tdl.org/handle/2346/84930.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
