@@ -1,3 +1,8 @@
+Welcome to the Virtual Habitat (V-HAB)
+------------------------
+V-HAB is a MATLAB-based simulation system specifically designed for the analysis of life support systems in crewed spacecraft. 
+
+
 V-HAB Base Repository
 ------------------------
 
