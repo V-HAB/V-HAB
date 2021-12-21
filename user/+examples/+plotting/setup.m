@@ -59,14 +59,14 @@ classdef setup < simulation.infrastructure
             % The log is built like this:
             %
             %              Path to the object containing the log value   Log Value                   Unit   Label of log value (used for legends and to plot the value)   String identifier of the log item (can be used in the plotter to reference this item)
-            oLog.addValue('Example:s:Tank_1:p:Tank1Air',                'afPP(this.oMT.tiN2I.CO2)', 'Pa',  'Partial Pressure CO_2 Tank 1',                               'ppCO2_Tank1');
-            oLog.addValue('Example:s:Tank_2:p:Tank2Air',                'afPP(this.oMT.tiN2I.CO2)', 'Pa',  'Partial Pressure CO_2 Tank 2', 'ppCO2_Tank2');
-            
+            oLog.addValue('Example:s:Tank_1:p:Tank_1_Phase_1', 'afPP(this.oMT.tiN2I.CO2)', 'Pa', 'Partial Pressure CO_2 Tank 1', 'ppCO2_Tank1'); 
+            oLog.addValue('Example:s:Tank_2:p:Tank_2_Phase_1', 'afPP(this.oMT.tiN2I.CO2)', 'Pa', 'Partial Pressure CO_2 Tank 2', 'ppCO2_Tank2'); 
+
             % It is also possible to define a calculation as log value and
             % e.g. multiply two values from the object. This can be usefull
             % if you want to log the flowrate of CO2 through a branch that
             % transports air for example.           
-            oLog.addValue('Example.aoBranches(1).aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'Flowrate of CO2', 'fr_co2');
+            oLog.addValue('Example.toBranches.Branch.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'Flowrate of CO2', 'fr_co2');
             
             oLog.addValue('Example:s:Tank_1:p:Tank_1_Phase_1', 'afMass(this.oMT.tiN2I.CO2)', 'kg');
             oLog.addValue('Example:s:Tank_2:p:Tank_2_Phase_1', 'afMass(this.oMT.tiN2I.CO2)', 'kg', 'Partial Mass CO_2 Tank 2');
@@ -78,7 +78,10 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Example:s:Tank_2:p:Tank_2_Phase_1', 'this.fMass * this.fMassToPressure', 'Pa', 'Pressure Phase 2');
             
             oLog.addValue('Example.toBranches.Branch', 'fFlowRate', 'kg/s', 'Branch Flow Rate', 'branch_FR');
-            
+
+            oLog.addValue('Example.toProcsF2F.Pipe.aoFlows(1)', 'fTemperature', 'K', 'Flow Temperature - Left', 'flow_temp_left');
+            oLog.addValue('Example.toProcsF2F.Pipe.aoFlows(2)', 'fTemperature', 'K', 'Flow Temperature - Right', 'flow_temp_right');
+
             % Virtual values can be added before and after a simulation has
             % run. They are combinations of existing log values that are
             % only calculated when plotted. Note that the existing, regular
