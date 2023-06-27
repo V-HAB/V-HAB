@@ -193,11 +193,17 @@ classdef UPA < vsys
             
             if ~this.bManualUrineSupply && this.toStores.WSTA.toPhases.Urine.fMass < this.fWSTACapacity
                 fDesiredUrineMass = this.fWSTACapacity - this.toStores.WSTA.toPhases.Urine.fMass;
-                if ~this.toBranches.Inlet.oHandler.bMassTransferActive
-                    if this.toBranches.Inlet.coExmes{2}.oPhase.fMass > fDesiredUrineMass
-                        this.toBranches.Inlet.oHandler.setMassTransfer(-fDesiredUrineMass, 60);
-                    else
-                        this.toBranches.Inlet.oHandler.setMassTransfer(-(this.toBranches.Inlet.coExmes{2}.oPhase.fMass - this.fInitialMassParentUrineSupply), 60);
+
+                fCurrentlyAvailableUrineParent = this.toBranches.Inlet.coExmes{2}.oPhase.fMass - this.fInitialMassParentUrineSupply;
+                if fCurrentlyAvailableUrineParent < 0
+                    % in this case no Urine for UPA operation is available
+                else
+                    if ~this.toBranches.Inlet.oHandler.bMassTransferActive
+                        if fCurrentlyAvailableUrineParent > fDesiredUrineMass
+                            this.toBranches.Inlet.oHandler.setMassTransfer(-fDesiredUrineMass, 60);
+                        else
+                            this.toBranches.Inlet.oHandler.setMassTransfer(-fCurrentlyAvailableUrineParent, 60);
+                        end
                     end
                 end
             end
