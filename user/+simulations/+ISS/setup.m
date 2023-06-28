@@ -816,7 +816,7 @@ classdef setup < simulation.infrastructure
             sSystemName = fieldnames(this.oSimulationContainer.toChildren);
             sSystemName = sSystemName{1};
             % First we have to get the current number of crew members:
-            iHumans = this.oSimulationContainer.toChildren.(sSystemName).iNumberOfCrewMembers;
+            iHumans = this.oSimulationContainer.toChildren.(sSystemName).iCrewMembers;
             
             csRespiratoryCoefficient = cell(1,iHumans);
             for iHuman = 1:iHumans
