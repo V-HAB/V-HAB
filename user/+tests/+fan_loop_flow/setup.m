@@ -12,6 +12,8 @@ classdef setup < simulation.infrastructure
             
             if nargin < 4
                 fSimTime = 3600;
+            elseif isempty(fSimTime)
+                fSimTime = 3600;
             end
             this.fSimTime = fSimTime; 
             this.iSimTicks = 600;
