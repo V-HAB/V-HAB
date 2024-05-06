@@ -103,19 +103,17 @@ classdef branch < solver.thermal.base.branch
                 this.setTimeStep(this.fTimeStep, true);
             end
             
-            if this.oBranch.fHeatFlow ~= this.fRequestedHeatFlow
-                % set heat flows
-                this.oBranch.coExmes{1}.setHeatFlow(this.fRequestedHeatFlow);
-                this.oBranch.coExmes{2}.setHeatFlow(this.fRequestedHeatFlow);
+            % set heat flows
+            this.oBranch.coExmes{1}.setHeatFlow(this.fRequestedHeatFlow);
+            this.oBranch.coExmes{2}.setHeatFlow(this.fRequestedHeatFlow);
 
-                % the temperatures between the conductors are not always
-                % required. If it is of interest to model various temperatures
-                % multiple thermal branches for each step of the heat transfer
-                % can be used e.g. to calculate the wall temperature in a heat
-                % exchanger
-                afTemperatures = []; 
-                update@solver.thermal.base.branch(this, this.fRequestedHeatFlow, afTemperatures);
-            end
+            % the temperatures between the conductors are not always
+            % required. If it is of interest to model various temperatures
+            % multiple thermal branches for each step of the heat transfer
+            % can be used e.g. to calculate the wall temperature in a heat
+            % exchanger
+            afTemperatures = []; 
+            update@solver.thermal.base.branch(this, this.fRequestedHeatFlow, afTemperatures);
         end
     end
 end

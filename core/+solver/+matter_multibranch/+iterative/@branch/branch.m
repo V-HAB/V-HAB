@@ -1,5 +1,5 @@
 classdef branch < base & event.source
-        %% General Information
+    %% General Information
     % This solver is used to solve networks of branches including gas flow
     % nodes. Gas flow nodes are basically phases that are considered to
     % have no mass and therefore allow the representation of very small
@@ -754,6 +754,11 @@ classdef branch < base & event.source
                 for iE = 1:2
                     this.aoBranches(iB).coExmes{iE}.oPhase.registerMassupdate();
                 end
+                % Also tell all associated thermal branches to update, as
+                % otherwise it may happen that only the one thermal branch
+                % connected to the mass branch that triggered the original
+                % update is updated
+                this.aoBranches(iB).oThermalBranch.setOutdated();
             end
             
             % Allows other functions to register an event to this trigger

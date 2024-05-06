@@ -90,6 +90,10 @@ classdef ModifiedErgun_F2F < matter.procs.f2f
                 fDensity = oInExme.oPhase.fDensity;
             end
 
+            if fDensity == 0 
+                fDensity = this.oBranch.oContainer.toStores.AirInlet.toPhases.AirInlet_Phase_1.fDensity;
+            end
+
             % Flow speed for a circular geometry. Flowrate is current mass
             % flow in kg/s
             this.fSuperficialVelocity = abs(fFlowRate) / (this.fCrossSection * fDensity); % [m/s]

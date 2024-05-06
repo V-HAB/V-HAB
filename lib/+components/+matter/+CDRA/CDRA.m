@@ -569,7 +569,7 @@ classdef CDRA < vsys
             oBranch = matter.branch(this, oAirOutlet, {'OutletPipe', 'OutletFilter'}, 'CDRA_Air_Out', sBranchName);
             this.tMassNetwork.InterfaceBranches.(sBranchName) = oBranch;
             
-            components.matter.pipe(this, 'VacuumPipe', fInterfacePipeLength, fPipeDiameter, fFrictionFactor);
+            components.matter.CDRA.components.CDRA_VacuumPipe(this, 'VacuumPipe', fInterfacePipeLength, fPipeDiameter, fFrictionFactor);
             sBranchName = 'CDRA_Vacuum';
             oBranch = matter.branch(this, oVacuumInterface, {'VacuumPipe'}, 'CDRA_Vacuum', sBranchName);
             this.tMassNetwork.InterfaceBranches.(sBranchName) = oBranch;
@@ -691,8 +691,8 @@ classdef CDRA < vsys
             components.matter.valve(this, 'Valve_5A_2_Vacuum', 0);
             components.matter.fan_simple(this, 'AirsaveFanOne', 1*10^5);
             components.matter.fan_simple(this, 'AirsaveFanTwo', 1*10^5);
-            components.matter.pipe(this, 'Pipe_5A_1_Vacuum', fPipelength, fPipeDiameter, fFrictionFactor);
-            components.matter.pipe(this, 'Pipe_5A_2_Vacuum', fPipelength, fPipeDiameter, fFrictionFactor);
+            components.matter.CDRA.components.CDRA_VacuumPipe(this, 'Pipe_5A_1_Vacuum', fPipelength, fPipeDiameter, fFrictionFactor);
+            components.matter.CDRA.components.CDRA_VacuumPipe(this, 'Pipe_5A_2_Vacuum', fPipelength, fPipeDiameter, fFrictionFactor);
             components.matter.pipe(this, 'Pipe_5A_1_Airsave', fPipelength, 0.01, fFrictionFactor);
             components.matter.pipe(this, 'Pipe_5A_2_Airsave', fPipelength, 0.01, fFrictionFactor);
             

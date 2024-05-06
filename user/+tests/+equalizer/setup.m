@@ -9,6 +9,8 @@ classdef setup < simulation.infrastructure
             tests.equalizer.systems.Example(this.oSimulationContainer, 'Example');
             if nargin < 4
                 fSimTime = 3600;
+            elseif isempty(fSimTime)
+                fSimTime = 3600;
             end
             this.fSimTime = fSimTime;
         end
