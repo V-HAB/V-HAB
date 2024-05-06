@@ -669,7 +669,7 @@ classdef plotter < base
             % course, so we use a regular expression to strip the lower
             % case letters from the beginning of each string in the
             % csOptions cell.
-            csObjectOptions = cellfun(@(x) x(regexp(x,'[A-Z]'):end), csOptions, 'UniformOutput', false);
+            csObjectOptions = cellfun(@(x) x(regexp(x,'[A-Z]','once'):end), csOptions, 'UniformOutput', false);
             
             % Now we can loop through all entries in the cell and set the
             % properties.
