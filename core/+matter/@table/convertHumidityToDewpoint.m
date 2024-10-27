@@ -29,36 +29,49 @@ else
     rRelativeHumidity = varargin{1};
     fTemperature  = varargin{2};
     
-    fPartialPressure = rRelativeHumidity * this.calculateVaporPressure(fTemperature, 'H2O');
+    fPartialPressure = rRelativeHumidity .* this.calculateVaporPressure(fTemperature, 'H2O');
 end
-% Values for antoine equation from nist chemistry webbook
-if fTemperature >= 255.9 && fTemperature < 379
-    %parameters for the vapor pressure calculation
-    fA = 4.6543;
-    fB = 1435.264;
-    fC = -64.848;
-elseif fTemperature >= 379 && fTemperature < 573
-    %parameters for the vapor pressure calculation
-    fA = 3.55959;
-    fB = 643.748;
-    fC = -198.043;
+if length(fTemperature) > 1
+    % Values for antoine equation from nist chemistry webbook
+    mfA = (fTemperature >= 255.9 & fTemperature < 379) .* 4.6543    + (fTemperature >= 379 & fTemperature < 573) .*  3.55959;
+    mfB = (fTemperature >= 255.9 & fTemperature < 379) .* 1435.264  + (fTemperature >= 379 & fTemperature < 573) .*  643.748;
+    mfC = (fTemperature >= 255.9 & fTemperature < 379) .*-64.848    + (fTemperature >= 379 & fTemperature < 573) .* -198.043;
+
+    mfA(fTemperature < 255.9) = inf;
+    mfB(fTemperature >= 572)  = inf;
+
+    % Antoine Equation solved for the temperature
+    fDewPoint = mfB./(mfA - log10(fPartialPressure./(1e5))) - mfC;
     
-% In the following cases the dewpoint cannot be calculated because the
-% temperature is outside of the limits for the available antoine equations.
-% However if the temperature is below the limits the substance is liquid
-% and the dewpoint can be seen as 0 K. If the temperature is above the
-% limit the substance is gaseous and the dewpoint can be seen as infinite
-elseif fTemperature < 255.9
-    fA = inf;
-    fB = 0;
-    fC = 0;
-elseif fTemperature >= 573
-    fA = 0;
-    fB = inf;
-    fC = 0;
+else
+    if fTemperature >= 255.9 && fTemperature < 379
+        %parameters for the vapor pressure calculation
+        fA = 4.6543;
+        fB = 1435.264;
+        fC = -64.848;
+    elseif fTemperature >= 379 && fTemperature < 573
+        %parameters for the vapor pressure calculation
+        fA = 3.55959;
+        fB = 643.748;
+        fC = -198.043;
+        
+    % In the following cases the dewpoint cannot be calculated because the
+    % temperature is outside of the limits for the available antoine equations.
+    % However if the temperature is below the limits the substance is liquid
+    % and the dewpoint can be seen as 0 K. If the temperature is above the
+    % limit the substance is gaseous and the dewpoint can be seen as infinite
+    elseif fTemperature < 255.9
+        fA = inf;
+        fB = 0;
+        fC = 0;
+    elseif fTemperature >= 573
+        fA = 0;
+        fB = inf;
+        fC = 0;
+    end
+    % Antoine Equation solved for the temperature
+    fDewPoint = fB/(fA - log10(fPartialPressure/(1e5))) - fC;
 end
-% Antoine Equation solved for the temperature
-fDewPoint = fB/(fA - log10(fPartialPressure/(1e5))) - fC;
 end
 
  
