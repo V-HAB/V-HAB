@@ -534,11 +534,14 @@ lastfilled = max( 1, round( lastval*psize(1) ) );
 % makes a small speed difference, but every little helps!
 if force || (filled<lastfilled)
     % Create the bar background
-    startIdx = 1;
-    bgim = entry.BackgroundCData(:,ones( 1, psize(1)-filled ),:);
-    barim = iMakeBarImage(entry.CData, startIdx, filled);
-    progresscdata = [barim,bgim];
-    
+    try
+        startIdx = 1;
+        bgim = entry.BackgroundCData(:,ones( 1, psize(1)-filled ),:);
+        barim = iMakeBarImage(entry.CData, startIdx, filled);
+        progresscdata = [barim,bgim];
+    catch
+        warning('failed to update bar background')
+    end
     % Set the image into the checkbox
     entry.BarCData = progresscdata;
     set( entry.Progress, 'cdata', progresscdata );
