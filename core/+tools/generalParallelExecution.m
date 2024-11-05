@@ -30,13 +30,13 @@ function generalParallelExecution(sSimulationPath, cmInputs, csSimulationNames, 
     
     iSimulations = length(cmInputs);
     
-    if nargin < 2
+    if nargin < 3
         csSimulationNames = cell(1, iSimulations);
         for iSimulation = 1:iSimulations
             csSimulationNames{iSimulation} = num2str(iSimulation);
         end
     end
-    if nargin < 3
+    if nargin < 4
         iTicksBetweenUpdateWaitBar = 1;
     end
     

@@ -216,14 +216,22 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 % zeolith of this cell:
                 if ~this.bDesorption
                     fEmptyBedContactTime = this.oIn.oPhase.fVolume / (sum(this.afPartialInFlows) ./ this.oIn.oPhase.fDensity); % this.oStore.oContainer.fTimeStep
+                    
                 else
                     % During desorption we have no flow through the bed and
                     % therefore must use a different time step, otherwise
                     % no desorption occurs.
                     fEmptyBedContactTime = this.oStore.oContainer.fTimeStep;
                 end
-                this.mfFlowRates = (mfEquilibriumLoading - (mfEquilibriumLoading - mfCurrentLoading) .* exp(- this.mfMassTransferCoefficient * fEmptyBedContactTime) - mfCurrentLoading) ./ fEmptyBedContactTime;
-
+                if fEmptyBedContactTime == 0
+                    % this case can happen if the phase density is
+                    % currently 0 and would lead to nan values. Therefore,
+                    % as when the contact time is 0, nothing can be
+                    % adsorbed or desorbed, mfFlowRates is set to 0.
+                    this.mfFlowRates = zeros(1, this.oMT.iSubstances);
+                else
+                    this.mfFlowRates = (mfEquilibriumLoading - (mfEquilibriumLoading - mfCurrentLoading) .* exp(- this.mfMassTransferCoefficient * fEmptyBedContactTime) - mfCurrentLoading) ./ fEmptyBedContactTime;
+                end
                 %% Seperate the calculate flowrates into adsorption and desorption flowrates
                 mfFlowRatesAdsorption = zeros(1,this.oMT.iSubstances);
                 mfFlowRatesDesorption = zeros(1,this.oMT.iSubstances);

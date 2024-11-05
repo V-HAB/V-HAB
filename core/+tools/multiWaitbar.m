@@ -526,7 +526,7 @@ val = entry.Value;
 lastval = entry.LastValue;
 
 % Now update the bar
-psize = entry.ProgressSize;
+psize = int16(entry.ProgressSize);
 filled = max( 1, round( val*psize(1) ) );
 lastfilled = max( 1, round( lastval*psize(1) ) );
 
@@ -538,7 +538,6 @@ if force || (filled<lastfilled)
     bgim = entry.BackgroundCData(:,ones( 1, psize(1)-filled ),:);
     barim = iMakeBarImage(entry.CData, startIdx, filled);
     progresscdata = [barim,bgim];
-    
     % Set the image into the checkbox
     entry.BarCData = progresscdata;
     set( entry.Progress, 'cdata', progresscdata );

@@ -10,9 +10,14 @@ classdef branch < base & event.source
         setBranchHeatFlow;
     end
     
-    properties (SetAccess = private, GetAccess = protected)
+    properties (SetAccess = protected, GetAccess = protected)
         % Callback to set time step (default: inf) in [s]
         setTimeStep;
+
+        % maximum allowed time between a recalculation of this solver.
+        % Other events can trigger an earlier recalculation (e.g. the
+        % matter.branch update also triggers an update of this solver)
+        fTimeStep = inf;
     end
     
     properties (SetAccess = private, GetAccess = public)
@@ -21,12 +26,6 @@ classdef branch < base & event.source
         
         % last time at which this solver was updated
         fLastUpdate = -10; % [s]
-        
-        % maximum allowed time between a recalculation of this solver.
-        % Other events can trigger an earlier recalculation (e.g. the
-        % matter.branch update also triggers an update of this solver)
-        fTimeStep = inf;
-        
     end
     
     properties (SetAccess = private, GetAccess = protected)

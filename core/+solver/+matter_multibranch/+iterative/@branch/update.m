@@ -56,11 +56,13 @@ function update(this)
     % parameters necessary in case the P2P flowrates oscillate
     iP2PUpdates = 0;
     bP2POscillationDetected = false;
+    bUseFinalP2PFlows = false;
+    bReachedFinalP2PFlows = false;
     
     % These values are only used for debugging. Therefore they are also
     % initialized with nans (as nans are ignored during plotting)
     mfFlowRates = nan(this.iMaxIterations, this.iBranches);
-    afP2PFlows  = nan(this.iMaxIterations, this.iBranches);
+    afP2PFlows  = nan(this.iMaxIterations, length(this.csVariablePressurePhases));
     
     this.fInitializationFlowRate = this.oTimer.fMinimumTimeStep;
     
@@ -68,7 +70,17 @@ function update(this)
         this.iIteration = this.iIteration + 1;
         
         % if we have reached convergence recalculate the p2ps
-        if this.bFinalLoop || (mod(this.iIteration, this.iIterationsBetweenP2PUpdate) == 0) || bP2POscillationDetected
+        if bReachedFinalP2PFlows
+            bForceP2PUpdate = false;
+        elseif this.bFinalLoop || (mod(this.iIteration, this.iIterationsBetweenP2PUpdate) == 0) || bP2POscillationDetected
+            bForceP2PUpdate = true;
+        elseif this.iIteration > this.iMaxIterations
+            % also update the P2Ps in every tick in case we are already
+            % above the maximum iterations. This ensures that P2Ps are
+            % calculated in all ticks following this, and in case
+            % oscillations are converging, the "FinalP2PFlows" can be
+            % properly used to select a best fit from the oscillating
+            % results.
             bForceP2PUpdate = true;
         else
             bForceP2PUpdate = false;
@@ -99,7 +111,19 @@ function update(this)
             afP2PFlowsHelper = afFullBoundaryConditions(iStartZeroSumEquationsFull:end)';
             afP2PFlows(iP2PUpdates, 1:length(afP2PFlowsHelper)) = afP2PFlowsHelper;
             
-            if ~bP2POscillationDetected && iP2PUpdates > 3
+            if bUseFinalP2PFlows
+                % we still have to update the P2P and branches as usual,
+                % however in this case we check whether a convergence
+                % condition
+                fMaxDiffP2PFlows = max(abs(afFinalP2PFlows - afP2PFlowsHelper));
+
+                if fMaxDiffP2PFlows < 1e-5
+                    % once this flag is reached, we stop updating the P2Ps
+                    % completly
+                    bReachedFinalP2PFlows = true;
+                end
+
+            elseif ~bP2POscillationDetected && iP2PUpdates > 3
                 afP2PDiffLastCalc = afP2PFlows(iP2PUpdates,:)   - afP2PFlows(iP2PUpdates-1,:);
                 afP2PDiff1        = afP2PFlows(iP2PUpdates,:)   - afP2PFlows(iP2PUpdates-2,:);
                 afP2PDiff2        = afP2PFlows(iP2PUpdates-1,:) - afP2PFlows(iP2PUpdates-3,:);
@@ -109,6 +133,29 @@ function update(this)
                     % tick
                     bP2POscillationDetected = true;
                 end
+            end
+
+            if this.iIteration > this.iMaxIterations + 50 && ~bUseFinalP2PFlows
+                % in case updating the P2P in every tick does not solve the
+                % oscillations we calculate the average P2P flowrates over
+                % the last 50 ticks and average them. Afterwards the
+                % closest result from the last 50 ticks to the average is
+                % selected, but not individually but for all P2Ps from the
+                % same tick, to avoid unphysical results
+                mfSelectedP2PFlows = afP2PFlows;
+                mfSelectedP2PFlows(isnan(mfSelectedP2PFlows)) = 0;
+                mfSelectedP2PFlows = mfSelectedP2PFlows(end-50:end,:);
+                mfMeanP2PFlows = mean(mfSelectedP2PFlows, 1);
+                mfDiffToAverage = mfSelectedP2PFlows - mfMeanP2PFlows;
+                afMinDiff = sum(abs(mfDiffToAverage),2);
+                abMinDiff = find(afMinDiff == min(afMinDiff));
+
+                if isscalar(abMinDiff)
+                    afFinalP2PFlows = mfSelectedP2PFlows(abMinDiff, :);
+                else
+                    afFinalP2PFlows = mfSelectedP2PFlows(abMinDiff(end), :);
+                end
+                bUseFinalP2PFlows = true;
             end
             
         else
@@ -499,6 +546,12 @@ function update(this)
                 % if you reach this, please view debugging tipps at the
                 % beginning of this file!
                 keyboard();
+                this.throw('update', 'too many iterations, error %.12f', rError);
+            end
+            if this.iIteration > this.iMaxIterations + 100
+                % if you reach this, please view debugging tipps at the
+                % beginning of this file!
+                keyboard()
                 this.throw('update', 'too many iterations, error %.12f', rError);
             end
         end
